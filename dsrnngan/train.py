@@ -36,9 +36,8 @@ def setup_gan(train_years=None, val_years=None,
               lr_disc=0.0001, lr_gen=0.0001):
 
     (gen, _) = models.generator()
-    init_model = models.initial_state_model()
     (gen_init, noise_shapes) = models.generator_initialized(
-        gen, init_model)
+        gen)
     disc = models.discriminator()
     wgan = gan.WGANGP(gen_init, disc, lr_disc=lr_disc, lr_gen=lr_gen)
 

@@ -83,6 +83,24 @@ def generator(era_dim=(10,10,9), const_dim=(250,250,2), noise_dim=(10,10,2), fil
     noise_shapes = noise_dim
     return (model, noise_shapes)
 
+def generator_initialized(gen, num_channels=1):
+    noise_in = Input(shape=(None,None,8),
+        name="noise_input")
+    lores_in = Input(shape=(None,None,num_channels),
+        name="generator_input")
+    const_in = Input(shape=(), name = "constants")
+    inputs = [lores_in, const_in, noise_in]
+
+    (img_out,h) = gen(inputs)
+
+    model = Model(inputs=inputs, outputs=img_out)
+
+    def noise_shapes(img_shape=(250,250)):
+        noise_shape = (img_shape[0]//25, img_shape[1]//25, 8)
+        return noise_shape
+
+    return (model, noise_shape)
+
 
 def discriminator(era_dim=(10,10,9), const_dim=(250,250,2), nimrod_dim=(250,250,1), filters=32, conv_size=(3,3), stride=1, relu_alpha=0.2, norm=None, dropout_rate=None):
     
@@ -199,29 +217,7 @@ def discriminator(era_dim=(10,10,9), const_dim=(250,250,2), nimrod_dim=(250,250,
 
 #     return (model, noise_shapes)
 
-# def generator_initialized(gen, init_model,
-#     num_channels=1, num_timesteps=8):
-#     noise_in_initial = Input(shape=(None,None,8),
-#         name="noise_in_initial")
-#     noise_in_update = Input(shape=(num_timesteps,None,None,8),
-#         name="noise_in_update")
-#     lores_in = Input(shape=(num_timesteps,None,None,num_channels),
-#         name="cond_in")
-#     inputs = [lores_in, noise_in_initial, noise_in_update]
 
-#     initial_state = init_model([lores_in[:,0,...], noise_in_initial])
-#     (img_out,h) = gen([lores_in, initial_state, noise_in_update])
-
-#     model = Model(inputs=inputs, outputs=img_out)
-
-#     def noise_shapes(img_shape=(128,128)):
-#         noise_shape_initial = (img_shape[0]//16, img_shape[1]//16, 8)
-#         noise_shape_update = (
-#             num_timesteps, img_shape[0]//16, img_shape[1]//16, 8
-#         )
-#         return [noise_shape_initial, noise_shape_update]
-
-#     return (model, noise_shapes)
 
 # def discriminator(num_channels=1, num_timesteps=8):
 #     hires_in = Input(shape=(num_timesteps,None,None,num_channels), name="sample_in")
