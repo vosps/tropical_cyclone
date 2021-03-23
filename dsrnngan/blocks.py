@@ -1,67 +1,51 @@
-import numpy as np
-from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Add, Conv2D, Dense, Input
-from tensorflow.keras.layers import ELU, LeakyReLU, ReLU, ThresholdedReLU
-from tensorflow.keras.layers import BatchNormalization
-from tensorflow.keras.layers import AveragePooling2D
-from tensorflow.keras.layers import BatchNormalization, TimeDistributed
-from tensorflow.keras.regularizers import l2
-from layers import SNConv2D, ReflectionPadding2D
+from tensorflow.keras.layers import Add, Conv2D, Dropout, LeakyReLU, BatchNormalization, AveragePooling2D
 
 
-def conv_block(channels, conv_size=(3,3), time_dist=False,
-    norm=None, stride=1, activation='leakyrelu', padding='valid'):
+def residual_block(x, filters, conv_size=(3,3), stride=1, relu_alpha=0.2, norm=None, dropout_rate=None):
+    in_channels = int(x.shape[-1])
+    print(f"in_channels is {in_channels}")
+    x_in = x
+        
+    x_in = AveragePooling2D(pool_size=(stride,stride))(x_in)
+    if (filters != in_channels):
+        x_in = Conv2D(filters=filters, kernel_size=(1,1), padding="same")(x_in)
+        
+    ## first block of activation and 3x3 convolution
+    x = LeakyReLU(relu_alpha)(x)
+    x = Conv2D(filters=filters, kernel_size=conv_size, padding="same")(x)
+    if norm == "batch":
+        x = BatchNormalization()(x)
+    elif norm == None:
+        pass
+    else:
+        print("norm type not implemented")
+    if dropout_rate is not None:
+         x = Dropout(dropout_rate)(x)
+         print("Dropout rate is {dropout_rate}")
+    
+    ## second block of activation and 3x3 convolution
+    x = LeakyReLU(relu_alpha)(x)
+    x = Conv2D(filters=filters, kernel_size=conv_size, padding="same")(x)
+    if norm == "batch":
+        x = BatchNormalization()(x)
+    elif norm == None:
+        pass
+    else:
+        print("norm type not implemented")
+    if dropout_rate is not None:
+         x = Dropout(dropout_rate)(x)
+         print("Dropout rate is {dropout_rate}")
+    
+    ## skip connection
+    x = Add()([x,x_in])
+    
+    return x
 
-    Conv = SNConv2D if norm=="spectral" else Conv2D
-    TD = TimeDistributed if time_dist else (lambda x: x)
+def const_upscale_block(const_input, filters):
+    
+    ## Map (n x 250 x 250 x 2) to (n x 10 x 10 x f)
+    const_output = Conv2D(filters=filters, kernel_size=(6,6), strides=4, padding="valid", activation="relu")(const_input)
+    const_output = Conv2D(filters=filters, kernel_size=(2,2), strides=3, padding="valid", activation="relu")(const_output)
+    const_output = Conv2D(filters=filters, kernel_size=(3,3), strides=2, padding="valid", activation="relu")(const_output)
 
-    def block(x):
-        if norm=="batch":
-            x = BatchNormalization(momentum=0.8, scale=False)(x)
-        if activation == 'leakyrelu':
-            x = LeakyReLU(0.2)(x)
-        elif activation == 'relu':
-            x = ReLU()(x)
-        elif activation == 'thresholdedrelu':
-            x = ThresholdedReLU()(x)
-        elif activation == 'elu':
-            x = ELU()(x)
-        if padding == 'reflect':
-            pad = tuple((s-1)//2 for s in conv_size)
-            x = TD(ReflectionPadding2D(padding=pad))(x)
-        x = TD(Conv(channels, conv_size, 
-            padding='valid' if padding=='reflect' else padding,
-            strides=(stride,stride), 
-            kernel_regularizer=(l2(1e-4) if norm!="spectral" else None)
-        ))(x)
-        return x
-
-    return block
-
-
-def res_block(channels, conv_size=(3,3), stride=1, norm=None,
-    time_dist=False, activation='leakyrelu'):
-
-    TD = TimeDistributed if time_dist else (lambda x: x)
-
-    def block(x):
-        in_channels = int(x.shape[-1])
-        x_in = x
-        if (stride > 1):
-            x_in = TD(AveragePooling2D(pool_size=(stride,stride)))(x_in)
-        if (channels != in_channels):
-            x_in = conv_block(channels, conv_size=(1,1), stride=1, 
-                activation=False, time_dist=time_dist)(x_in)
-
-        x = conv_block(channels, conv_size=conv_size, stride=stride,
-            padding='reflect', norm=norm, time_dist=time_dist,
-            activation=activation)(x)
-        x = conv_block(channels, conv_size=conv_size, stride=1,
-            padding='reflect', norm=norm, time_dist=time_dist,
-            activation=activation)(x)
-
-        x = Add()([x,x_in])
-
-        return x
-
-    return block
+    return const_output
