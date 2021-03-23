@@ -80,7 +80,11 @@ def generator(era_dim=(10,10,9), const_dim=(250,250,2), noise_dim=(10,10,2), fil
     print(f"Output shape: {generator_output.shape}")
     
     model = Model(inputs=[generator_input, const_input, noise_input], outputs=generator_output, name='gen')
-    noise_shapes = noise_dim
+    
+    def noise_shapes(img_shape=(250,250)):
+        noise_shape = (img_shape[0]//25, img_shape[1]//25, 8)
+        return [noise_shape]
+    
     return (model, noise_shapes)
 
 def generator_initialized(gen, num_channels=1):
@@ -97,9 +101,9 @@ def generator_initialized(gen, num_channels=1):
 
     def noise_shapes(img_shape=(250,250)):
         noise_shape = (img_shape[0]//25, img_shape[1]//25, 8)
-        return noise_shape
+        return [noise_shape]
 
-    return (model, noise_shape)
+    return (model, noise_shapes)
 
 
 def discriminator(era_dim=(10,10,9), const_dim=(250,250,2), nimrod_dim=(250,250,1), filters=32, conv_size=(3,3), stride=1, relu_alpha=0.2, norm=None, dropout_rate=None):
