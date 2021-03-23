@@ -4,7 +4,7 @@ import os
 import netCDF4
 import numpy as np
 import tensorflow as tf
-tf.compat.v1.disable_eager_execution()
+# tf.compat.v1.disable_eager_execution()
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.optimizers import Adam
 
@@ -20,8 +20,8 @@ path = os.path.dirname(os.path.abspath(__file__))
 def setup_batch_gen(train_years,val_years,batch_size=64,
                     val_size = None):# ,
                     # train_images=5,val_images=5):
-    train = Datagenerator(train_years,batch_size=batch_size)
-    val = Datagenerator(val_years,batch_size=batch_size)
+    train = DataGenerator(train_years,batch_size=batch_size)
+    val = DataGenerator(val_years,batch_size=batch_size)
     if val_size is not None:
         val = val.take(val_size)
     # train_im = train.take(train_images)
@@ -35,11 +35,11 @@ def setup_gan(train_years=None, val_years=None,
               batch_size=16,
               lr_disc=0.0001, lr_gen=0.0001):
 
-    (gen, _) = models.generator()
-    (gen_init, noise_shapes) = models.generator_initialized(
-        gen)
+    (gen, noise_shapes) = models.generator()
+    # (gen_init, noise_shapes) = models.generator_initialized(
+    #     gen)
     disc = models.discriminator()
-    wgan = gan.WGANGP(gen_init, disc, lr_disc=lr_disc, lr_gen=lr_gen)
+    wgan = gan.WGANGP(gen, disc, lr_disc=lr_disc, lr_gen=lr_gen)
 
     (batch_gen_train, batch_gen_valid, batch_gen_test) = setup_batch_gen(
         train_years = train_years, val_years = val_years,
@@ -60,6 +60,7 @@ def train_gan(wgan, batch_gen_train, batch_gen_valid, noise_shapes,
     cond,img = next(iter(batch_gen_train))
     img_shape = cond['generator_input'].shape[1:-1]
     batch_size = cond['generator_input'].shape[0]
+    print(noise_shapes(img_shape))
     noise_gen = noise.NoiseGenerator(noise_shapes(img_shape),
         batch_size=batch_size)
 

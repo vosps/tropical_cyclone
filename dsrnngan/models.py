@@ -83,7 +83,7 @@ def generator(era_dim=(10,10,9), const_dim=(250,250,2), noise_dim=(10,10,2), fil
     
     def noise_shapes(img_shape=(250,250)):
         noise_shape = (img_shape[0]//25, img_shape[1]//25, 8)
-        return [noise_shape]
+        return noise_shape
     
     return (model, noise_shapes)
 
@@ -101,7 +101,7 @@ def generator_initialized(gen, num_channels=1):
 
     def noise_shapes(img_shape=(250,250)):
         noise_shape = (img_shape[0]//25, img_shape[1]//25, 8)
-        return [noise_shape]
+        return noise_shape
 
     return (model, noise_shapes)
 

@@ -48,7 +48,7 @@ def create_dataset(year,clss,era_shape=(10,10,9),con_shape=(250,250,2),out_shape
     elif type(year)==list:
         fl = []
         for y in year:
-            fl.append(glob.glob(f"{folder}/{y}_*.{clss}.tfrecords"))
+            fl+=glob.glob(f"{folder}/{y}_*.{clss}.tfrecords")
     else:
         assert False, f"TFRecords not configure for type {type(year)}"
 

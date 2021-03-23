@@ -120,16 +120,20 @@ class WGANGP(object):
         training_ratio=1, show_progress=True):
 
         disc_target_real = None
+
+        tmp_batch,_ = next(iter(batch_gen))
+        batch_size = tmp_batch['generator_input'].shape[0]
+        del tmp_batch
         if show_progress:
             # Initialize progbar and batch counter
             progbar = generic_utils.Progbar(
-                num_gen_batches*batch_gen.batch_size)
+                num_gen_batches*batch_size)
 
         disc_target_real = np.ones(
-            (batch_gen.batch_size, batch_gen.num_frames, 1), dtype=np.float32)
+            (batch_size, 1), dtype=np.float32)
         disc_target_fake = -disc_target_real
         gen_target = disc_target_real
-        target_gp = np.zeros((batch_gen.batch_size, 1), dtype=np.float32)
+        target_gp = np.zeros((batch_size, 1), dtype=np.float32)
         disc_target = [disc_target_real, disc_target_fake, target_gp]
 
         loss_log = []
@@ -144,6 +148,8 @@ class WGANGP(object):
             for rep in range(training_ratio):
                 # generate some real samples
                 (cond, sample) = batch_gen_iter.get_next()
+                print(type(cond))
+                print(type(noise_gen()))
                 cond['noise']=noise_gen()
                 cond['generator_output']=sample
                 with Nontrainable(self.gen):   
@@ -173,7 +179,7 @@ class WGANGP(object):
                     losses.append(("D{}".format(i), dl))
                 for (i,gl) in enumerate([gen_loss]):
                     losses.append(("G{}".format(i), gl))
-                progbar.add(batch_gen.batch_size, 
+                progbar.add(batch_size, 
                     values=losses)
 
             loss_log.append(np.hstack((disc_loss,gen_loss)))
