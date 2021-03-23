@@ -62,8 +62,8 @@ class WGANGP(object):
 
         # find shapes for inputs
         cond_shapes = input_shapes(self.gen, "generator_input")
-        const_shapes = input_shapes(self.gen, "const_input")
-        noise_shapes = input_shapes(self.gen, "noise_input")
+        const_shapes = input_shapes(self.gen, "const")
+        noise_shapes = input_shapes(self.gen, "noise")
         sample_shapes = input_shapes(self.disc, "generator_output")
 
         # Create generator training network
