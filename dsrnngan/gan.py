@@ -143,21 +143,12 @@ class WGANGP(object):
             disc_loss_n = 0
             for rep in range(training_ratio):
                 # generate some real samples
-<<<<<<< HEAD
                 (cond, sample) = batch_gen_iter.get_next()
                 cond['noise']=noise_gen()
                 cond['generator_output']=sample
                 with Nontrainable(self.gen):   
                     dl = self.disc_trainer.train_on_batch(
                         cond, disc_target)
-=======
-                (sample, cond, const) = next(batch_gen)
-                noise = noise_gen()
-
-                with Nontrainable(self.gen):   
-                    dl = self.disc_trainer.train_on_batch(
-                        [cond, const, sample] + noise, disc_target)
->>>>>>> architectures
 
                 if disc_loss is None:
                     disc_loss = np.array(dl)
@@ -165,23 +156,16 @@ class WGANGP(object):
                     disc_loss += np.array(dl)
                 disc_loss_n += 1
 
-                del sample, cond, const
+                del sample, cond
 
             disc_loss /= disc_loss_n
 
             with Nontrainable(self.disc):
-<<<<<<< HEAD
                 (cond, sample) = batch_gen_iter.get_next()
                 cond['noise']=noise_gen()
                 gen_loss = self.gen_trainer.train_on_batch(
                     cond, gen_target)
                 del sample, cond
-=======
-                (sample, cond, const) = next(batch_gen)
-                gen_loss = self.gen_trainer.train_on_batch(
-                    [cond, const] + noise_gen(), gen_target)
-                del sample, cond, const
->>>>>>> architectures
 
             if show_progress:
                 losses = []
