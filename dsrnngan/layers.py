@@ -1,4 +1,3 @@
-import numpy as np
 import tensorflow as tf
 from tensorflow.python.keras.engine import InputSpec
 from tensorflow.python.keras.engine import base_layer_utils

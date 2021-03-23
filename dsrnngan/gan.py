@@ -61,36 +61,39 @@ class WGANGP(object):
     def build_wgan_gp(self):
 
         # find shapes for inputs
-        cond_shapes = input_shapes(self.gen, "cond")
-        noise_shapes = input_shapes(self.gen, "noise")
-        sample_shapes = input_shapes(self.disc, "sample")
+        cond_shapes = input_shapes(self.gen, "generator_input")
+        const_shapes = input_shapes(self.gen, "const_input")
+        noise_shapes = input_shapes(self.gen, "noise_input")
+        sample_shapes = input_shapes(self.disc, "generator_output")
 
         # Create generator training network
         with Nontrainable(self.disc):
             cond_in = [Input(shape=s) for s in cond_shapes]
+            const_in = [Input(shape=s) for s in const_shapes]
             noise_in = [Input(shape=s) for s in noise_shapes]
-            gen_in = cond_in+noise_in
+            gen_in = cond_in + const_in + noise_in
             gen_out = self.gen(gen_in)
             gen_out = ensure_list(gen_out)
-            disc_in_gen = cond_in+[gen_out]
+            disc_in_gen = cond_in + const_in + [gen_out]
             disc_out_gen = self.disc(disc_in_gen)
             self.gen_trainer = Model(inputs=gen_in, outputs=disc_out_gen)
 
         # Create discriminator training network
         with Nontrainable(self.gen):
             cond_in = [Input(shape=s) for s in cond_shapes]
+            const_in = [Input(shape=s) for s in const_shapes]
             noise_in = [Input(shape=s) for s in noise_shapes]
             sample_in = [Input(shape=s) for s in sample_shapes]
-            gen_in = cond_in+noise_in
+            gen_in = cond_in + const_in + noise_in
             disc_in_real = sample_in[0]
             disc_in_fake = self.gen(gen_in) 
-            disc_in_avg = RandomWeightedAverage()([disc_in_real,disc_in_fake])
-            disc_out_real = self.disc(cond_in+[disc_in_real])
-            disc_out_fake = self.disc(cond_in+[disc_in_fake])
-            disc_out_avg = self.disc(cond_in+[disc_in_avg])
+            disc_in_avg = RandomWeightedAverage()([disc_in_real, disc_in_fake])
+            disc_out_real = self.disc(cond_in + const_in + [disc_in_real])
+            disc_out_fake = self.disc(cond_in + const_in + [disc_in_fake])
+            disc_out_avg = self.disc(cond_in + const_in + [disc_in_avg])
             disc_gp = GradientPenalty()([disc_out_avg, disc_in_avg])
-            self.disc_trainer = Model(inputs=cond_in+sample_in+noise_in,
-                outputs=[disc_out_real,disc_out_fake,disc_gp])
+            self.disc_trainer = Model(inputs=cond_in + const_in + sample_in + noise_in,
+                outputs=[disc_out_real, disc_out_fake, disc_gp])
 
         self.compile()
 
@@ -138,12 +141,12 @@ class WGANGP(object):
             disc_loss_n = 0
             for rep in range(training_ratio):
                 # generate some real samples
-                (sample, cond) = next(batch_gen)
+                (sample, cond, const) = next(batch_gen)
                 noise = noise_gen()
 
                 with Nontrainable(self.gen):   
                     dl = self.disc_trainer.train_on_batch(
-                        [cond,sample]+noise, disc_target)
+                        [cond, const, sample] + noise, disc_target)
 
                 if disc_loss is None:
                     disc_loss = np.array(dl)
@@ -151,15 +154,15 @@ class WGANGP(object):
                     disc_loss += np.array(dl)
                 disc_loss_n += 1
 
-                del sample, cond
+                del sample, cond, const
 
             disc_loss /= disc_loss_n
 
             with Nontrainable(self.disc):
-                (sample, cond) = next(batch_gen)
+                (sample, cond, const) = next(batch_gen)
                 gen_loss = self.gen_trainer.train_on_batch(
-                    [cond]+noise_gen(), gen_target)
-                del sample, cond
+                    [cond, const] + noise_gen(), gen_target)
+                del sample, cond, const
 
             if show_progress:
                 losses = []
