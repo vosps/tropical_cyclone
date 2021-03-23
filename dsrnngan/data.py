@@ -1,186 +1,118 @@
+
+""" File for handling data loading and saving. """
+
+
+import os
 import numpy as np
-from scipy.ndimage import convolve
+import xarray as xr
+from glob import glob
+from dask.array.chunk import coarsen
 
+def get_dates(year):
+    files = glob(f"/ppdata/NIMROD/{year}/*.nc")
+    dates = []
+    for f in files:
+        dates.append(f[:-3].split('_')[-1])
+    return dates
 
-class Smoothener(object):
-    def __init__(self):
-        (x,y) = np.mgrid[-2:3,-2:3]
-        self.smoothing_kernel = np.exp(-0.5*(x**2+y**2)/(0.65**2))
-        self.smoothing_kernel /= self.smoothing_kernel.sum()
-        self.edge_shapes = {}
+def list_dates(years):
+    """inputs: list of years
+      outputs: unpacked list of all dates for those years """
+    dates = []
+    for year in years:
+        dates.append(get_dates(year))
+        ## unpack list of lists into a list
+        ## new list produced for each year and we want a single list
+    dates_list = [val for sublist in dates for val in sublist]
+    return dates_list
 
-    def smoothen(self, img):
-        img_shape = tuple(img.shape[2:4])
-        if img_shape not in self.edge_shapes:
-            s = convolve(np.ones(img_shape, dtype=np.float32),
-                self.smoothing_kernel, mode="constant")
-            s = 1.0/s
-            self.edge_shapes[img_shape] = s
-        else:
-            s = self.edge_shapes[img_shape]
+def load_nimrod(date, nimrod_path, hour, log_precip=False):
+    year = date[:4]
+    data = xr.open_dataset(f"{nimrod_path}{year}/metoffice-c-band-rain-radar_uk_{date}.nc")
+    y = np.array(data['unknown'][hour,:,:])
+    data.close()
+    # The remapping of NIMROD left a few negative numbers
+    # So remove those
+    y[y<0]=0
+    if log_precip:
+        return np.log10(1+y)
+    else:            
+        return y
 
-        img_smooth = np.empty_like(img)
-        for i in range(img.shape[0]):
-            for j in range(img.shape[1]):
-                for k in range(img.shape[-1]):
-                    img_smooth[i,j,:,:,k] = convolve(img[i,j,:,:,k],
-                        self.smoothing_kernel, mode="constant") * s
+def load_norm(norm_year=2016):
+    import pickle
+    with open(f'/ppdata/constants/ERANorm{norm_year}.pkl', 'rb') as f:
+        return pickle.load(f)
 
-        return img_smooth
+def load_era(date, era_path, field, hour, log_precip=False, era_norm=False, era_crop=2, norm_year=2016):
+    year = date[:4]
+    data = xr.open_dataarray(f"{era_path}{year}/{field}{date}.nc")
+    norm_yr = load_norm(norm_year)
+    if era_crop is None or era_crop == 0:
+        y = np.array(data[hour,:,:])
+    else:
+        y = np.array(data[hour,era_crop:-era_crop,era_crop:-era_crop])        
+    data.close()
+    if log_precip and field in ['pr','prc','prl']:
+        # ERA precip is measure in meters, so multiple up
+        return np.log10(1+y*1000)
+    elif era_norm:
+        return (y-norm_yr[field][0])/norm_yr[field][1]
+    else:
+        return y
 
+def load_erastack(date, era_path, fields, hour, log_precip=False, era_norm=False, era_crop=2, norm_year=2016):
+    field_arrays = []
+    for f in fields:
+        field_arrays.append(load_era(date, era_path, f, hour, log_precip=log_precip, era_norm=era_norm, era_crop=era_crop, norm_year=norm_year))
+    return np.stack(field_arrays,-1)
 
-class BatchGenerator(object):
+def load_hires_constants(constants_path, batch_size=1):
+    df = xr.load_dataset(f"{constants_path}.nc")
+    # Should rewrite this file to have increasing latitudes
+    z = np.array(df['Z'])[:,::-1,:]
+    # Normalise orography by max
+    z = z/z.max()
+    # LSM is already 0:1
+    lsm = np.array(df['LSM'])[:,::-1,:]
+    return np.repeat(np.stack([z,lsm],-1),batch_size,axis=0)
+
+def load_era_nimrod_batch(batch_dates, era_path, nimrod_path, constants_path, era_fields, log_precip=False,
+                          constants=False, hour=0, era_norm=False, era_crop=2, norm_year=2016):
+    batch_x = [] 
+    batch_y = []
+    if hour=='random':
+        hours = np.random.randint(24,size=[len(batch_dates)])
+    elif type(hour)==int:
+        hours = len(batch_dates)*[hour]
     
-    def __init__(self, sequences, decoder, downsampler, batch_size=32,
-        random_seed=None, augment=True, smoothen_image=True, zeros_frac=0.0):
+    for i,date in enumerate(batch_dates):
+        h = hours[i]
+        batch_x.append(load_erastack(date, era_path, era_fields, h, log_precip=log_precip, era_norm=era_norm, era_crop=era_crop, norm_year=norm_year))
+        batch_y.append(load_nimrod(date, nimrod_path, h, log_precip=log_precip))
+    
+    ## load_nimrod returns a (1, 951, 951) tuple, so we expand the dimensions to (1, 951, 951, 1)
+    ## this helps TensorFlow match up the dimensions
+    ## axis is -1 because we will always add the last dimension
+    batch_y = np.expand_dims(np.array(batch_y), axis=-1)
+    if type(constants) is bool:
+        if (not constants):
+            return np.array(batch_x), batch_y
+        else:
+            return [np.array(batch_x), load_hires_constants(constants_path, len(batch_dates))], batch_y
+    elif constants is not None:
+        return [np.array(batch_x), constants], batch_y
+        
 
-        self.batch_size = batch_size
-        self.sequences = sequences
-        self.N = self.sequences.shape[0]
-        self.img_shape = tuple(self.sequences.shape[2:4])
-        self.num_frames = self.sequences.shape[1]
-        self.decoder = decoder
-        self.downsampler = downsampler
-        self.augment = augment
-        self.smoothen_image = smoothen_image
-        self.zeros_frac = zeros_frac
-        self.smoothener = Smoothener()
-        self.reset()
+def logprec(y,log_precip=True):
+    if log_precip:
+        return np.log10(1+y)
+    else:
+        return y
 
-    def __iter__(self):
-        return self
+def repeat_upscale(data,upscale_factor=25):
+    assert len(data.shape) == 4
+    crop = int(np.floor(upscale_factor/2))
+    reshaped_inputs = np.repeat(np.repeat(data,upscale_factor,axis=-2),upscale_factor,axis=-3)
+    return reshaped_inputs[:,crop:-crop,crop:-crop,:]
 
-    def reset(self, random_seed=None):
-        self.prng = np.random.RandomState(seed=random_seed)
-        self.next_ind = np.array([], dtype=int)
-
-    def next_indices(self):
-        while len(self.next_ind) < self.batch_size:
-            ind = np.arange(self.N, dtype=int)
-            self.prng.shuffle(ind)
-            self.next_ind = np.concatenate([self.next_ind, ind])
-        return self.next_ind[:self.batch_size]
-
-    def __next__(self):
-        ind = self.next_indices()
-        self.next_ind = self.next_ind[self.batch_size:]
-
-        X = self.sequences[ind,...]
-
-        X = self.decoder(X)
-        if self.augment:
-            X = self.augment_sequence_batch(X)
-        Y = self.downsampler(X)
-        X = self.decoder.normalize(X)
-        Y = self.decoder.normalize(Y)
-        if self.smoothen_image:
-            X = self.smoothener.smoothen(X)
-
-        if self.zeros_frac > 0.0:
-            set_zero = (self.prng.rand(X.shape[0]) < self.zeros_frac)
-            X[set_zero,...] = 0.0
-            Y[set_zero,...] = 0.0
-
-        return (X,Y)
-
-    def augment_sequence(self, sequence):
-        seq = sequence.copy()
-
-        # mirror
-        if bool(self.prng.randint(2)):
-            seq = np.flip(seq, axis=1)
-        if bool(self.prng.randint(2)):
-            seq = np.flip(seq, axis=2)
-
-        # rotate
-        num_rot = self.prng.randint(4)
-        if num_rot > 0:
-            seq = np.rot90(seq, k=num_rot, axes=(1,2))
-
-        return seq
-
-    def augment_sequence_batch(self, sequences):
-        sequences = sequences.copy()
-        for i in range(sequences.shape[0]):
-            sequences[i,...] = self.augment_sequence(sequences[i,...])
-        return sequences
-
-
-class RainRateDecoder(object):
-    def __init__(self, scaling_fn, value_range=(np.log10(0.1), np.log10(100)),
-        below_val=np.nan, normalize=False):
-
-        self.logR = np.log10(np.load(scaling_fn))
-        self.logR[0] = np.nan
-        #self.x = np.arange(len(self.logR))
-        self.value_range = value_range
-        self.below_val = below_val
-        self.normalize_output = normalize
-
-    def __call__(self, img):
-        valid = (img != 0)
-        img_dec = np.full(img.shape, np.nan, dtype=np.float32)
-        img_dec[valid] = self.logR[img[valid]]
-        img_dec[img_dec<self.value_range[0]] = self.below_val
-        img_dec.clip(max=self.value_range[1], out=img_dec)
-        if self.normalize_output:
-            img_dec = self.normalize(img_dec)
-        return img_dec
-
-    def normalize(self, img):
-        return (img-self.below_val) / \
-            (self.value_range[1]-self.below_val) 
-
-    def denormalize(self, img, set_nan=True):
-        img = img*(self.value_range[1]-self.below_val) + self.below_val
-        img[img < self.value_range[0]] = self.below_val
-        if set_nan:
-            img[img == self.below_val] = np.nan
-        return img
-
-
-class CODDecoder(RainRateDecoder):
-    def __init__(self,
-        value_range=(np.log(1.19), np.log(158.48865)),
-        below_val=np.nan, normalize=False,
-        scale_factor=158.48865/(2**16-2)):
-
-        self.value_range = value_range
-        self.below_val = below_val
-        self.normalize_output = normalize
-        self.scale_factor = scale_factor
-
-    def __call__(self, img):
-        valid = (img != 0)
-        img_dec = np.full(img.shape, np.nan, dtype=np.float32)
-        img_dec[valid] = np.log(img[valid]*self.scale_factor)
-        img_dec[(img_dec<self.value_range[0]) | ~valid] = self.below_val
-        img_dec.clip(max=self.value_range[1], out=img_dec)
-        if self.normalize_output:
-            img_dec = self.normalize(img_dec)
-        return img_dec
-
-
-class LogDownsampler(object):
-    def __init__(self, pool_size=16, min_val=np.nan, threshold_val=None):
-        self.pool_size = pool_size 
-        self.min_val = min_val
-        self.threshold_val = threshold_val
-
-    def __call__(self, log_R):
-        R = 10**log_R
-        R[~np.isfinite(R)] = 0.0
-        lores_shape = (log_R.shape[0], log_R.shape[1], 
-            log_R.shape[2]//self.pool_size, log_R.shape[3]//self.pool_size,
-            log_R.shape[4])
-        R_ds = np.zeros(lores_shape, dtype=np.float32)
-        for (il,ih) in enumerate(range(0,log_R.shape[2],self.pool_size)):
-            for (jl,jh) in enumerate(range(0,log_R.shape[3],self.pool_size)):
-                R_ds[:,:,il,jl,:] = R[:,:,ih:ih+self.pool_size,
-                    jh:jh+self.pool_size,:].mean(axis=(2,3))
-        log_R_ds = np.log10(R_ds)
-        min_mask = ~np.isfinite(log_R_ds)
-        if self.threshold_val is not None:
-            min_mask |= (log_R_ds < self.threshold_val)
-        log_R_ds[min_mask] = self.min_val
-        return log_R_ds

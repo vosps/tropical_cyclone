@@ -19,4 +19,4 @@ class NoiseGenerator(object):
                 n += mean
             return n
 
-        return [noise(s) for s in self.noise_shapes]
+        return noise(self.noise_shapes)

@@ -35,12 +35,12 @@ def ensemble_ranks(gen, batch_gen, noise_gen,
 
     ranks = []
     crps_scores = []
-
+    batch_gen_iter = iter(batch_gen)
     for k in range(num_batches):
-        (sample,cond) = next(batch_gen)
+        (cond,sample) = next(batch_gen)
         sample_crps = sample
         sample = sample.ravel()
-        sample = batch_gen.decoder.denormalize(sample)
+        # sample = batch_gen.decoder.denormalize(sample)
         randomize_nans(sample, batch_gen.decoder.below_val, rnd_range)
 
         samples_gen = []
@@ -50,7 +50,8 @@ def ensemble_ranks(gen, batch_gen, noise_gen,
             for nn in n:
                 nn *= noise_mul
                 nn -= noise_offset
-            sample_gen = gen.predict([cond]+n)
+            cond['noise']=n
+            sample_gen = gen.predict(cond)
             samples_gen.append(sample_gen)
 
         samples_gen = np.stack(samples_gen, axis=-1)
@@ -60,8 +61,8 @@ def ensemble_ranks(gen, batch_gen, noise_gen,
 
         samples_gen = samples_gen.reshape(
             (np.prod(samples_gen.shape[:-1]), samples_gen.shape[-1]))
-        samples_gen = batch_gen.decoder.denormalize(samples_gen)
-        randomize_nans(samples_gen, batch_gen.decoder.below_val, rnd_range)
+        # samples_gen = batch_gen.decoder.denormalize(samples_gen)
+        # randomize_nans(samples_gen, batch_gen.decoder.below_val, rnd_range)
 
         rank = np.count_nonzero(sample[:,None] >= samples_gen, axis=-1)
         ranks.append(rank)
@@ -215,7 +216,7 @@ def reconstruct_time_series_partial(images_fn, gen, noise_shapes,
     init_model, out_fn,
     time_range, h=None, last_t=None, application="mchrzc", ds_factor=16, n_ensemble=4,
     scaling_fn=path+"/../data/scale_rzc.npy", relax_lam=0.0):
-
+    assert False, "Not yet updated"
     if application == "mchrzc":
         dec = data.RainRateDecoder(scaling_fn, below_val=np.log10(0.025))
     else:

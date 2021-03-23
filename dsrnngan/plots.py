@@ -24,7 +24,6 @@ import train
 
 path = os.path.dirname(os.path.abspath(__file__))
 
-
 def plot_img(img, value_range=(np.log10(0.1), np.log10(100)), extent=None):
     plt.imshow(img, interpolation='nearest',
         norm=colors.Normalize(*value_range), extent=extent)
@@ -36,31 +35,29 @@ def plot_sequences(gen, batch_gen, noise_gen,
     num_samples=8, num_instances=4, out_fn=None,
     plot_stride=1):
 
-    old_batch_size = batch_gen.batch_size
     try:
-        batch_gen.batch_size = num_samples
+        batch_gen_tmp = batch_gen.unbatch().batch(num_samples)
         noise_gen.batch_size = num_samples
-        (seq_real, cond) = next(batch_gen)
+        (cond, seq_real) = next(iter(batch_gen_tmp))
         seq_gen = []
         for i in range(num_instances):
-            seq_gen.append(gen.predict([cond]+noise_gen()))
+            cond['noise']=noise_gen()
+            seq_gen.append(gen.predict(cond))
     finally:
-        batch_gen.batch_size = old_batch_size
         noise_gen.batch_size = old_batch_size
 
-    seq_real = batch_gen.decoder.denormalize(seq_real)
-    cond = batch_gen.decoder.denormalize(cond)
-    seq_gen = [batch_gen.decoder.denormalize(seq) for seq in seq_gen]
+    # seq_real = batch_gen.decoder.denormalize(seq_real)
+    # cond = batch_gen.decoder.denormalize(cond)
+    # seq_gen = [batch_gen.decoder.denormalize(seq) for seq in seq_gen]
 
-    num_frames = batch_gen.num_frames
-    if plot_stride > 1:
-        seq_real = seq_real[:,::plot_stride,...]
-        cond = cond[:,::plot_stride,...]
-        for i in range(len(seq_gen)):
-            seq_gen[i] = seq_gen[i][:,::plot_stride,...]
-        num_frames = seq_real.shape[1]
+    # if plot_stride > 1:
+    #     seq_real = seq_real[:,::plot_stride,...]
+    #     cond = cond[:,::plot_stride,...]
+    #     for i in range(len(seq_gen)):
+    #         seq_gen[i] = seq_gen[i][:,::plot_stride,...]
+    #     num_frames = seq_real.shape[1]
 
-    num_rows = num_samples*num_frames
+    num_rows = num_samples
     num_cols = 2+num_instances
 
     figsize = (num_cols*1.5, num_rows*1.5)
@@ -72,16 +69,15 @@ def plot_sequences(gen, batch_gen, noise_gen,
     value_range = batch_gen.decoder.value_range
 
     for s in range(num_samples):
-        for t in range(num_frames):
-            i = s*num_frames+t
-            plt.subplot(gs[i,0])
-            plot_img(seq_real[s,t,:,:,0], value_range=value_range)
-            plt.subplot(gs[i,1])
-            plot_img(cond[s,t,:,:,0], value_range=value_range)
-            for k in range(num_instances):
-                j = 2+k
-                plt.subplot(gs[i,j])
-                plot_img(seq_gen[k][s,t,:,:,0], value_range=value_range) 
+        i = s*num_frames+t
+        plt.subplot(gs[i,0])
+        plot_img(seq_real[s,:,:,0], value_range=value_range)
+        plt.subplot(gs[i,1])
+        plot_img(cond[s,:,:,0], value_range=value_range)
+        for k in range(num_instances):
+            j = 2+k
+            plt.subplot(gs[i,j])
+            plot_img(seq_gen[k][s,:,:,0], value_range=value_range) 
             
     if out_fn is not None:
         plt.savefig(out_fn, bbox_inches='tight')
@@ -205,44 +201,40 @@ def plot_quality_metrics_by_samples_multiple(
 
 def plot_sequences_horiz(gen, noise_shapes, batch_gen,
     samples=[0,1,2], num_instances=3, out_fn=None,
-    plot_stride=2, random_seed=1234, application="mchrzc"):
+    random_seed=1234, application="mchrzc"):
 
     num_samples = len(samples)
-    old_batch_size = batch_gen.batch_size
-    old_augment = batch_gen.augment
-    old_zeros_frac = batch_gen.zeros_frac
     img_shape = batch_gen.sequences.shape[2:4]
     noise_gen = noise.NoiseGenerator(noise_shapes(img_shape),
         batch_size=num_samples, random_seed=random_seed)
     # force the batch generator to return the selected samples
     batch_gen.next_ind = np.array(samples)
     try:
-        batch_gen.batch_size = num_samples
-        batch_gen.augment = False
-        batch_gen.zeros_frac = 0.0
-        (seq_real, cond) = next(batch_gen)
+        batch_gen_tmp = batch_gen.unbatch().batch(num_samples)
+        # batch_gen.batch_size = num_samples
+        # batch_gen.augment = False
+        # batch_gen.zeros_frac = 0.0
+        ( cond, seq_real) = next(iter(batch_gen_tmp))
         seq_gen = []
         for i in range(num_instances):
-            seq_gen.append(gen.predict([cond]+noise_gen()))
-    finally:
-        batch_gen.batch_size = old_batch_size
-        batch_gen.augment = old_augment
-        batch_gen.zeros_frac = old_zeros_frac
+            cond['noise']=noise_gen()
+            seq_gen.append(gen.predict(cond))
+    except:
+        print("Failed to predict dataset")
+    # seq_real = batch_gen.decoder.denormalize(seq_real)
+    # cond = batch_gen.decoder.denormalize(cond)
+    # seq_gen = [batch_gen.decoder.denormalize(seq) for seq in seq_gen]
 
-    seq_real = batch_gen.decoder.denormalize(seq_real)
-    cond = batch_gen.decoder.denormalize(cond)
-    seq_gen = [batch_gen.decoder.denormalize(seq) for seq in seq_gen]
-
-    num_frames = batch_gen.num_frames
-    if plot_stride > 1:
-        seq_real = seq_real[:,::plot_stride,...]
-        cond = cond[:,::plot_stride,...]
-        for i in range(len(seq_gen)):
-            seq_gen[i] = seq_gen[i][:,::plot_stride,...]
-        num_frames = seq_real.shape[1]
+    # num_frames = batch_gen.num_frames
+    # if plot_stride > 1:
+    #     seq_real = seq_real[:,::plot_stride,...]
+    #     cond = cond[:,::plot_stride,...]
+    #     for i in range(len(seq_gen)):
+    #         seq_gen[i] = seq_gen[i][:,::plot_stride,...]
+    #     num_frames = seq_real.shape[1]
 
     num_rows = num_samples
-    num_cols = num_frames
+    num_cols = 1
     num_rows_s = 2+num_instances
 
     figsize = (num_cols*1.5, num_rows*num_rows_s*1.60)
@@ -256,9 +248,9 @@ def plot_sequences_horiz(gen, noise_shapes, batch_gen,
     for s in range(num_samples):
         gs_s = gridspec.GridSpecFromSubplotSpec(num_rows_s, num_cols,
             subplot_spec=gs[s,0], wspace=0.05, hspace=0.05)
-        for t in range(num_frames):
+        for t in range(1):
             plt.subplot(gs_s[0,t])
-            plot_img(seq_real[s,t,:,:,0], value_range=value_range)
+            plot_img(seq_real[s,:,:,0], value_range=value_range)
             if t==0:
                 plt.ylabel("Real", fontsize=16)
                 plt.text(0.01, 0.97, "({})".format(ascii_lowercase[s]),
@@ -267,13 +259,13 @@ def plot_sequences_horiz(gen, noise_shapes, batch_gen,
                 if s==0:
                     plt.title("Time \u2192", fontsize=16)
             plt.subplot(gs_s[1,t])
-            plot_img(cond[s,t,:,:,0], value_range=value_range)
+            plot_img(cond[s,:,:,0], value_range=value_range)
             if t==0:
                 plt.ylabel("Downs.", fontsize=16)
             for k in range(num_instances):
                 j = 2+k
                 plt.subplot(gs_s[j,t])
-                plot_img(seq_gen[k][s,t,:,:,0], value_range=value_range) 
+                plot_img(seq_gen[k][s,:,:,0], value_range=value_range) 
                 if t==0:
                     plt.ylabel("Gen. #{}".format(k+1), fontsize=16)
 
@@ -661,7 +653,7 @@ def plot_comparison(test_data_file, gen_gan_weights, gen_det_mse_weights,
         application=application, random_seed=random_seed,
         batch_size=1
     )
-
+    assert False, "Not yet ready"
     old_batch_size = batch_gen.batch_size
     try:
         batch_gen.batch_size = 1

@@ -131,6 +131,8 @@ class WGANGP(object):
 
         loss_log = []
 
+        batch_gen_iter = iter(batch_gen)
+
         for k in range(num_gen_batches):
         
             # train discriminator
@@ -138,12 +140,12 @@ class WGANGP(object):
             disc_loss_n = 0
             for rep in range(training_ratio):
                 # generate some real samples
-                (sample, cond) = next(batch_gen)
-                noise = noise_gen()
-
+                (cond, sample) = batch_gen_iter.get_next()
+                cond['noise']=noise_gen()
+                cond['generator_output']=sample
                 with Nontrainable(self.gen):   
                     dl = self.disc_trainer.train_on_batch(
-                        [cond,sample]+noise, disc_target)
+                        cond, disc_target)
 
                 if disc_loss is None:
                     disc_loss = np.array(dl)
@@ -156,9 +158,10 @@ class WGANGP(object):
             disc_loss /= disc_loss_n
 
             with Nontrainable(self.disc):
-                (sample, cond) = next(batch_gen)
+                (cond, sample) = batch_gen_iter.get_next()
+                cond['noise']=noise_gen()
                 gen_loss = self.gen_trainer.train_on_batch(
-                    [cond]+noise_gen(), gen_target)
+                    cond, gen_target)
                 del sample, cond
 
             if show_progress:
