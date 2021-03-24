@@ -36,8 +36,7 @@ def _parse_batch(record_batch,insize=(10,10,9),consize=(250,250,2),
         return {'generator_input':example['generator_input'], 'constants':example['constants']},\
             {'generator_output':example['generator_output']}
     else:
-        return [example['generator_input'],example['constants']],\
-            example['generator_output']
+        return example['generator_input'], example['constants'], example['generator_output']
 
 
 def create_dataset(year,clss,era_shape=(10,10,9),con_shape=(250,250,2),out_shape=(250,250,1),

@@ -36,13 +36,15 @@ def plot_sequences(gen, batch_gen, noise_gen,
     plot_stride=1):
 
     try:
+        old_batch_size = noise_gen.batch_size
         batch_gen_tmp = batch_gen.unbatch().batch(num_samples)
         noise_gen.batch_size = num_samples
-        (cond, seq_real) = next(iter(batch_gen_tmp))
+        for cond, const, seq_real in batch_gen_tmp.take(1).as_numpy_iterator():
+            pass
         seq_gen = []
         for i in range(num_instances):
-            cond['noise']=noise_gen()
-            seq_gen.append(gen.predict(cond))
+            noise=noise_gen()
+            seq_gen.append(gen.predict([cond, const, noise]))
     finally:
         noise_gen.batch_size = old_batch_size
 
@@ -66,10 +68,10 @@ def plot_sequences(gen, batch_gen, noise_gen,
     gs = gridspec.GridSpec(num_rows, num_cols, 
         wspace=0.05, hspace=0.05)
 
-    value_range = batch_gen.decoder.value_range
+    value_range = (0,1)# batch_gen.decoder.value_range
 
     for s in range(num_samples):
-        i = s*num_frames+t
+        i = s
         plt.subplot(gs[i,0])
         plot_img(seq_real[s,:,:,0], value_range=value_range)
         plt.subplot(gs[i,1])
@@ -214,11 +216,12 @@ def plot_sequences_horiz(gen, noise_shapes, batch_gen,
         # batch_gen.batch_size = num_samples
         # batch_gen.augment = False
         # batch_gen.zeros_frac = 0.0
-        ( cond, seq_real) = next(iter(batch_gen_tmp))
+        for cond, const, seq_real in batch_gen_tmp.take(1).as_numpy_iterator():
+            pass
         seq_gen = []
         for i in range(num_instances):
-            cond['noise']=noise_gen()
-            seq_gen.append(gen.predict(cond))
+            noise=noise_gen()
+            seq_gen.append(gen.predict([cond, const, noise]))
     except:
         print("Failed to predict dataset")
     # seq_real = batch_gen.decoder.denormalize(seq_real)

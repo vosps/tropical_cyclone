@@ -80,10 +80,10 @@ class WGANGP(object):
 
         # Create discriminator training network
         with Nontrainable(self.gen):
-            cond_in = [Input(shape=s) for s in cond_shapes]
-            const_in = [Input(shape=s) for s in const_shapes]
-            noise_in = [Input(shape=s) for s in noise_shapes]
-            sample_in = [Input(shape=s) for s in sample_shapes]
+            cond_in = [Input(shape=s,name='generator_input') for s in cond_shapes]
+            const_in = [Input(shape=s,name='constants') for s in const_shapes]
+            noise_in = [Input(shape=s,name='noise_input') for s in noise_shapes]
+            sample_in = [Input(shape=s,name='generator_output') for s in sample_shapes]
             gen_in = cond_in + const_in + noise_in
             disc_in_real = sample_in[0]
             disc_in_fake = self.gen(gen_in) 
@@ -92,7 +92,7 @@ class WGANGP(object):
             disc_out_fake = self.disc(cond_in + const_in + [disc_in_fake])
             disc_out_avg = self.disc(cond_in + const_in + [disc_in_avg])
             disc_gp = GradientPenalty()([disc_out_avg, disc_in_avg])
-            self.disc_trainer = Model(inputs=cond_in + const_in + sample_in + noise_in,
+            self.disc_trainer = Model(inputs=cond_in + const_in + noise_in + sample_in,
                 outputs=[disc_out_real, disc_out_fake, disc_gp])
 
         self.compile()
@@ -115,20 +115,19 @@ class WGANGP(object):
                 loss_weights=[1.0, 1.0, self.gradient_penalty_weight],
                 optimizer=self.opt_disc
             )
+            self.disc_trainer.summary()
 
     def train(self, batch_gen, noise_gen, num_gen_batches=1, 
         training_ratio=1, show_progress=True):
 
         disc_target_real = None
-
-        tmp_batch,_ = next(iter(batch_gen))
-        batch_size = tmp_batch['generator_input'].shape[0]
+        for tmp_batch, _, _ in batch_gen.take(1).as_numpy_iterator():
+            batch_size = tmp_batch.shape[0]
         del tmp_batch
         if show_progress:
             # Initialize progbar and batch counter
             progbar = generic_utils.Progbar(
                 num_gen_batches*batch_size)
-
         disc_target_real = np.ones(
             (batch_size, 1), dtype=np.float32)
         disc_target_fake = -disc_target_real
@@ -147,14 +146,14 @@ class WGANGP(object):
             disc_loss_n = 0
             for rep in range(training_ratio):
                 # generate some real samples
-                (cond, sample) = batch_gen_iter.get_next()
-                print(type(cond))
-                print(type(noise_gen()))
-                cond['noise']=noise_gen()
-                cond['generator_output']=sample
+                (cond,const,sample) = batch_gen_iter.get_next()
+                noise = noise_gen()
+                # cond['noise_input']=noise_gen()
+                # cond['generator_output'] = sample
+                
                 with Nontrainable(self.gen):   
                     dl = self.disc_trainer.train_on_batch(
-                        cond, disc_target)
+                        [cond,const,noise,sample], disc_target)
 
                 if disc_loss is None:
                     disc_loss = np.array(dl)
@@ -162,17 +161,17 @@ class WGANGP(object):
                     disc_loss += np.array(dl)
                 disc_loss_n += 1
 
-                del sample, cond
+                del sample, cond, const
 
             disc_loss /= disc_loss_n
 
             with Nontrainable(self.disc):
-                (cond, sample) = batch_gen_iter.get_next()
-                cond['noise']=noise_gen()
+                (cond, const, sample) = batch_gen_iter.get_next()
+                # cond['noise_input']=noise_gen()
                 gen_loss = self.gen_trainer.train_on_batch(
-                    cond, gen_target)
-                del sample, cond
-
+                    [cond,const,noise], gen_target)
+                del sample, cond, const
+                
             if show_progress:
                 losses = []
                 for (i,dl) in enumerate(disc_loss):

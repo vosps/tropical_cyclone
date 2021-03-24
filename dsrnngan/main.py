@@ -54,9 +54,10 @@ if __name__ == "__main__":
         opt_switch_point = args.opt_switch_point
         train_years = args.train_years
         val_years = args.val_years
+        application = args.application
 
         if not save_weights_root:
-            save_weights_root = path + "../models"
+            save_weights_root = path + "/../models"
 
         # initialize GAN
         (wgan, batch_gen_train, batch_gen_valid, _, noise_shapes, _) = \
@@ -97,8 +98,9 @@ if __name__ == "__main__":
 
             # train for some number of batches
             loss_log = train.train_gan(wgan, batch_gen_train,
-                batch_gen_valid, noise_shapes,
-                steps_per_epoch, 1, plot_fn=plot_fn)
+                                       batch_gen_valid, noise_shapes,
+                                       steps_per_epoch, 1, plot_samples=val_size,
+                                       plot_fn=plot_fn)
             loss_log = np.mean(loss_log, axis=0)
             training_samples += steps_per_epoch * batch_size
 

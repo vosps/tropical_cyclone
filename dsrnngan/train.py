@@ -9,6 +9,7 @@ from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.optimizers import Adam
 
 import gan
+import tfrecords_generator
 from tfrecords_generator import DataGenerator
 import models
 import noise
@@ -20,10 +21,13 @@ path = os.path.dirname(os.path.abspath(__file__))
 def setup_batch_gen(train_years,val_years,batch_size=64,
                     val_size = None):# ,
                     # train_images=5,val_images=5):
+    tfrecords_generator.return_dic = False
     train = DataGenerator(train_years,batch_size=batch_size)
-    val = DataGenerator(val_years,batch_size=batch_size)
     if val_size is not None:
-        val = val.take(val_size)
+        val = DataGenerator(val_years,batch_size=val_size)
+        val = val.take(1)
+    else:
+        val = DataGenerator(val_years,batch_size=batch_size)
     # train_im = train.take(train_images)
     # val_im = val.take(val_images)
     return train,val,None
@@ -57,10 +61,10 @@ def train_gan(wgan, batch_gen_train, batch_gen_valid, noise_shapes,
     steps_per_epoch, num_epochs,
     plot_samples=8, plot_fn="../figures/progress.pdf"):
     
-    cond,img = next(iter(batch_gen_train))
-    img_shape = cond['generator_input'].shape[1:-1]
-    batch_size = cond['generator_input'].shape[0]
-    print(noise_shapes(img_shape))
+    for _, _, sample in batch_gen_train.take(1).as_numpy_iterator():
+        img_shape = sample.shape[1:-1]
+        batch_size = sample.shape[0]
+    del sample
     noise_gen = noise.NoiseGenerator(noise_shapes(img_shape),
         batch_size=batch_size)
 
