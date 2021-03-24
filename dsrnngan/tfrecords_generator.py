@@ -7,6 +7,14 @@ return_dic = True
 def DataGenerator(year,batch_size):
     return create_mixed_dataset(year,batch_size)
 
+def create_random_dataset(year,batch_size,era_shape=(10,10,9),con_shape=(250,250,2),
+                         out_shape=(250,250,1),
+                         folder='/ppdata/tfrecords2/', shuffle_size = 1024):
+    dataset = create_dataset(year, '*', era_shape=era_shape,con_shape=con_shape,
+                               out_shape=out_shape,folder=folder,
+                               shuffle_size = shuffle_size)
+    return dataset.batch(batch_size).prefetch(2)
+
 def create_mixed_dataset(year,batch_size,era_shape=(10,10,9),con_shape=(250,250,2),
                          out_shape=(250,250,1),
                          folder='/ppdata/tfrecords2/', shuffle_size = 1024):
@@ -20,6 +28,9 @@ def create_mixed_dataset(year,batch_size,era_shape=(10,10,9),con_shape=(250,250,
                 weights=[1./classes]*classes).batch(batch_size).prefetch(2)
     return sampled_ds
 
+# Note, if we wanted fewer classes, we can use glob syntax to grab multiple classes as once
+# e.g. create_dataset(2015,"[67]",repeat=False)
+# will take classes 6 & 7 together
 
 def _parse_batch(record_batch,insize=(10,10,9),consize=(250,250,2),
                  outsize=(250,250,1)):
@@ -40,7 +51,7 @@ def _parse_batch(record_batch,insize=(10,10,9),consize=(250,250,2),
 
 
 def create_dataset(year,clss,era_shape=(10,10,9),con_shape=(250,250,2),out_shape=(250,250,1),
-                   folder='/ppdata/tfrecords2/', shuffle_size = 1024):
+                   folder='/ppdata/tfrecords2/', shuffle_size = 1024, repeat=True):
     AUTOTUNE = tf.data.experimental.AUTOTUNE
     if type(year)==str or type(year) == int:
         fl = glob.glob(f"{folder}/{year}_*.{clss}.tfrecords")
@@ -56,8 +67,11 @@ def create_dataset(year,clss,era_shape=(10,10,9),con_shape=(250,250,2),out_shape
                                  num_parallel_reads=AUTOTUNE)
     ds = ds.shuffle(shuffle_size)
     ds = ds.map(lambda x: _parse_batch(x, insize=era_shape,consize=con_shape,
-                                       outsize=out_shape)).repeat()
-    return ds
+                                       outsize=out_shape))
+    if repeat:
+        return ds.repeat()
+    else:
+        return ds
 
 def _float_feature(list_of_floats):  # float32
     return tf.train.Feature(float_list=tf.train.FloatList(value=list_of_floats))
@@ -71,7 +85,8 @@ def write_data(year,
                log_precip = True,
                era_norm = True
 ):
-
+    from data import get_dates
+    import data_generator
     dates=get_dates(year)
 
     nim_size = 951
@@ -92,9 +107,10 @@ def write_data(year,
 
 
     for hour in hours:
-        dgc = DataGenerator(dates=dates,era_fields=era_fields,
-                            batch_size=1,log_precip=log_precip,constants=True,
-                            hour=hour,era_norm=era_norm)
+        dgc = data_generator.DataGenerator(dates=dates,
+                                           era_fields=era_fields,
+                                           batch_size=1,log_precip=log_precip,constants=True,
+                                           hour=hour,era_norm=era_norm)
         fle_hdles = []
         for fh in range(num_class):
             flename=f"/ppdata/tfrecords2/{year}_{hour}.{fh}.tfrecords"

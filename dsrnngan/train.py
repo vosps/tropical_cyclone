@@ -19,17 +19,18 @@ import plots
 path = os.path.dirname(os.path.abspath(__file__))
 
 def setup_batch_gen(train_years,val_years,batch_size=64,
-                    val_size = None):# ,
+                    val_size = None, val_fixed=True):# ,
                     # train_images=5,val_images=5):
     tfrecords_generator.return_dic = False
     train = DataGenerator(train_years,batch_size=batch_size)
     if val_size is not None:
         val = DataGenerator(val_years,batch_size=val_size)
         val = val.take(1)
+        if val_fixed:
+            # This ensures the examples are fixed
+            val = val.cache()
     else:
         val = DataGenerator(val_years,batch_size=batch_size)
-    # train_im = train.take(train_images)
-    # val_im = val.take(val_images)
     return train,val,None
 
 

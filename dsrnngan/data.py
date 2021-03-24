@@ -5,31 +5,136 @@
 import os
 import numpy as np
 import xarray as xr
-from glob import glob
 from dask.array.chunk import coarsen
 
+ERA_PATH = '/ppdata/ERA5/'
+NIMROD_PATH = '/ppdata/NIMROD/'
+
+era_fields = ['pr','prc','prl','tcrw','lwp','prw','cape','tosr','psl','u700','v700']
+
+# Global constants
+UK_LAT_LIMIT = (50, 60)
+UK_LON_LIMIT = (-2, 12)
+
+
+def select_precip_region(data, lat_limit, lon_limit):
+
+    #Get the region's minimum and maximum latitudes and longitudes
+    lat_min=lat_limit[0]
+    lat_max=lat_limit[1]
+    lon_min=lon_limit[0]
+    lon_max=lon_limit[1]
+
+    #Crop data to region
+    data_region=data.isel({'latitude':np.logical_and(data.latitude>lat_min, data.latitude<lat_max),
+                           'longitude':np.logical_and(data.longitude>lon_min, data.longitude<lon_max)})
+
+    return data_region
+
+def calculate_image_dimensions(lat_limit, lon_limit):
+
+    # Calculate size of region, multiply by ten to convert degrees to pixels
+    x_dim=10*(lon_limit[1]-lon_limit[0])
+    y_dim=10*(lat_limit[1]-lat_limit[0])
+
+    img_dim=np.array([x_dim, y_dim])
+
+    return img_dim
+
+def calculate_input_dimensions(img_dim, upscaling_factor):
+
+    # Calculate input image dimensions after upscaling
+    img_dim_input=img_dim//upscaling_factor
+
+    return img_dim_input
+
+def select_masks_region(masks, lat_limit, lon_limit):
+    return [select_precip_region(mask, lat_limit, lon_limit) for mask in masks]
+
+def add_masks(data, masks, mask_paths):
+    for mask in masks:
+        mask = xr.open_dataset(mask_paths)
+        data = concatenate_mask_to_data(data, mask)
+    return data
+
+def concatenate_mask_to_data(data, mask):
+    data = np.concatenate(data, mask, axis=-1)
+    return data
+
+def preprocess_masks(masks, lat_limit, lon_limit):
+    masks_region = select_masks_region(masks, lat_limit, lon_limit)
+    masks_region = [np.expand_dims(np.array(mask_region), axis=-1) for mask_region in masks_region]
+    return masks_region
+
+def load_masks_data(mask_paths):
+    masks = []
+    for mask_path in mask_paths:
+        masks.append(xr.open_dataset(mask_path))
+    return masks
+
+def load_and_preprocess_masks(mask_paths, lat_limit=UK_LAT_LIMIT, lon_limit=UK_LON_LIMIT):
+    masks = load_masks_data(mask_paths)
+    return preprocess_masks(masks, lat_limit, lon_limit)
+
+def load_precip_data(data_path, upscaling_factor, lat_limit=UK_LAT_LIMIT, lon_limit=UK_LON_LIMIT, masks=[]):
+
+    data = xr.open_dataset(data_path)
+
+    # Get a reference to the precip data
+    precip = data['precipitationcal']
+
+    # Select region according to latitude and longitude limits
+    data_region = select_precip_region(precip, lat_limit, lon_limit)
+
+    # Add 'channel' axis to the data
+    data_region = np.expand_dims(np.array(data_region), axis=-1)
+
+    # Add the masks to the data channels
+    data_region = add_masks(data_region, masks)
+
+    # Upscale data by the upscaling factor to provide input to network at first time instance
+    # TODO: change time indexing when working with recurrent network
+    # TODO: allow for more complex/noisy upscaling
+    x = np.array(data_region[0,::upscaling_factor,::upscaling_factor])
+    y = np.array(data_region[0])
+
+    return (x,y)
+
+def load_precip_data_batch(batch_data_paths, upscaling_factor, lat_limit=UK_LAT_LIMIT, lon_limit=UK_LON_LIMIT, masks=[]):
+    batch_x = []
+    batch_y = []
+
+    for data_path in batch_data_paths:
+        x, y = load_precip_data(data_path, upscaling_factor, lat_limit, lon_limit, masks)
+        batch_x.append(x)
+        batch_y.append(y)
+
+    batch_x = np.array(batch_x, dtype="float32")
+    batch_y = np.array(batch_y, dtype="float32")
+
+    return batch_x, batch_y
+
+def gather_files_in_dir(file_dir):
+    """ Collect the paths of all the files in a given directory """
+    file_ids = os.listdir(file_dir)
+    file_paths = [os.path.join(file_dir, file_id) for file_id in file_ids]
+    file_paths = [file_path for file_path in file_paths if ".nc" in file_path]
+
+    return file_paths
+
 def get_dates(year):
+    from glob import glob
     files = glob(f"/ppdata/NIMROD/{year}/*.nc")
     dates = []
     for f in files:
         dates.append(f[:-3].split('_')[-1])
     return dates
 
-def list_dates(years):
-    """inputs: list of years
-      outputs: unpacked list of all dates for those years """
-    dates = []
-    for year in years:
-        dates.append(get_dates(year))
-        ## unpack list of lists into a list
-        ## new list produced for each year and we want a single list
-    dates_list = [val for sublist in dates for val in sublist]
-    return dates_list
-
-def load_nimrod(date, nimrod_path, hour, log_precip=False):
+def load_nimrod(date,hour,log_precip=False,aggregate=1):
     year = date[:4]
-    data = xr.open_dataset(f"{nimrod_path}{year}/metoffice-c-band-rain-radar_uk_{date}.nc")
-    y = np.array(data['unknown'][hour,:,:])
+    data = xr.open_dataset(f"{NIMROD_PATH}{year}/metoffice-c-band-rain-radar_uk_{date}.nc")
+    assert hour+aggregate < 25
+    y = np.array(data['unknown'][hour:hour+aggregate,:,:]).sum(axis=0)
     data.close()
     # The remapping of NIMROD left a few negative numbers
     # So remove those
@@ -39,36 +144,59 @@ def load_nimrod(date, nimrod_path, hour, log_precip=False):
     else:            
         return y
 
-def load_norm(norm_year=2016):
-    import pickle
-    with open(f'/ppdata/constants/ERANorm{norm_year}.pkl', 'rb') as f:
-        return pickle.load(f)
+def logprec(y,log_precip=True):
+    if log_precip:
+        return np.log10(1+y)
+    else:
+        return y
 
-def load_era(date, era_path, field, hour, log_precip=False, era_norm=False, era_crop=2, norm_year=2016):
+def load_nimrod_coarse(date,hour,log_precip=False,aggregate=1):
+    nim_hr = load_nimrod(date,hour,log_precip=False,aggregate=aggregate)
+    y = coarsen_nimrod(nim_hr)
+    if log_precip:
+        return np.log10(1+y)
+    else:            
+        return y
+
+def coarsen_nimrod(nim_hr):
+    nim_hr2 = np.pad(nim_hr,((12,),(12,)),mode="reflect")
+    da=xr.DataArray(nim_hr2,dims=("x","y"),coords={"x":np.arange(nim_hr2.shape[0]),"y":np.arange(nim_hr2.shape[1])})
+    da2 = da.coarsen(x=25,y=25).mean()
+    return da2.data
+
+def load_era(field,date,hour,log_precip=False,norm=False,crop=2):
     year = date[:4]
-    data = xr.open_dataarray(f"{era_path}{year}/{field}{date}.nc")
-    norm_yr = load_norm(norm_year)
-    if era_crop is None or era_crop == 0:
+    data = xr.open_dataarray(f"{ERA_PATH}{year}/{field}{date}.nc")
+    if crop is None or crop == 0:
         y = np.array(data[hour,:,:])
     else:
-        y = np.array(data[hour,era_crop:-era_crop,era_crop:-era_crop])        
+        y = np.array(data[hour,crop:-crop,crop:-crop])        
     data.close()
     if log_precip and field in ['pr','prc','prl']:
         # ERA precip is measure in meters, so multiple up
         return np.log10(1+y*1000)
-    elif era_norm:
-        return (y-norm_yr[field][0])/norm_yr[field][1]
+    elif norm:
+        return (y-era_norm[field][0])/era_norm[field][1]
     else:
         return y
 
-def load_erastack(date, era_path, fields, hour, log_precip=False, era_norm=False, era_crop=2, norm_year=2016):
+def load_erastack(fields,date,hour,log_precip=False,norm=False,crop=2,
+                  aggregate=1):
     field_arrays = []
     for f in fields:
-        field_arrays.append(load_era(date, era_path, f, hour, log_precip=log_precip, era_norm=era_norm, era_crop=era_crop, norm_year=norm_year))
+        for agg in range(aggregate):
+            field_arrays.append(load_era(f,date,hour+agg,log_precip=log_precip,norm=norm,crop=crop))
     return np.stack(field_arrays,-1)
 
-def load_hires_constants(constants_path, batch_size=1):
-    df = xr.load_dataset(f"{constants_path}.nc")
+def load_era_nimrod(nimrodfile=None,date=None,era_fields=['pr','prc'],hour=0,
+                    log_precip=False,era_norm=False,era_crop=2):
+    if nimrodfile is not None:
+        date=nimrodfile[:-3].split('_')[-1]
+    return load_erastack(era_fields,date,hour,log_precip=log_precip,norm=era_norm,crop=era_crop),\
+        load_nimrod(date,hour,log_precip=log_precip)
+
+def load_hires_constants(batch_size=1):
+    df = xr.load_dataset('/ppdata/constants/hgj2_constants_0.01_degree.nc')
     # Should rewrite this file to have increasing latitudes
     z = np.array(df['Z'])[:,::-1,:]
     # Normalise orography by max
@@ -77,8 +205,8 @@ def load_hires_constants(constants_path, batch_size=1):
     lsm = np.array(df['LSM'])[:,::-1,:]
     return np.repeat(np.stack([z,lsm],-1),batch_size,axis=0)
 
-def load_era_nimrod_batch(batch_dates, era_path, nimrod_path, constants_path, era_fields, log_precip=False,
-                          constants=False, hour=0, era_norm=False, era_crop=2, norm_year=2016):
+def load_era_nimrod_batch(batch_dates, era_fields,log_precip=False,
+                          constants=False,hour=0,era_norm=False,era_crop=2):
     batch_x = [] 
     batch_y = []
     if hour=='random':
@@ -88,31 +216,63 @@ def load_era_nimrod_batch(batch_dates, era_path, nimrod_path, constants_path, er
     
     for i,date in enumerate(batch_dates):
         h = hours[i]
-        batch_x.append(load_erastack(date, era_path, era_fields, h, log_precip=log_precip, era_norm=era_norm, era_crop=era_crop, norm_year=norm_year))
-        batch_y.append(load_nimrod(date, nimrod_path, h, log_precip=log_precip))
+        batch_x.append(load_erastack(era_fields,date,h,log_precip=log_precip,norm=era_norm))
+        batch_y.append(load_nimrod(date,h,log_precip=log_precip))
     
-    ## load_nimrod returns a (1, 951, 951) tuple, so we expand the dimensions to (1, 951, 951, 1)
-    ## this helps TensorFlow match up the dimensions
-    ## axis is -1 because we will always add the last dimension
-    batch_y = np.expand_dims(np.array(batch_y), axis=-1)
-    if type(constants) is bool:
-        if (not constants):
-            return np.array(batch_x), batch_y
-        else:
-            return [np.array(batch_x), load_hires_constants(constants_path, len(batch_dates))], batch_y
-    elif constants is not None:
-        return [np.array(batch_x), constants], batch_y
-        
-
-def logprec(y,log_precip=True):
-    if log_precip:
-        return np.log10(1+y)
+    if (not constants):
+        return np.array(batch_x), np.array(batch_y)
     else:
-        return y
+        return [np.array(batch_x),load_hires_constants(len(batch_dates))],np.array(batch_y)
 
-def repeat_upscale(data,upscale_factor=25):
-    assert len(data.shape) == 4
-    crop = int(np.floor(upscale_factor/2))
-    reshaped_inputs = np.repeat(np.repeat(data,upscale_factor,axis=-2),upscale_factor,axis=-3)
-    return reshaped_inputs[:,crop:-crop,crop:-crop,:]
+def load_nimrod_nimrod_batch(batch_dates, log_precip=False,
+                             constants=False,hour=0,aggregate=1):
+    batch_x = [] 
+    batch_y = []
+    if hour=='random':
+        hours = np.random.randint(25-aggregate,size=[len(batch_dates)])
+    elif type(hour)==int:
+        hours = len(batch_dates)*[hour]
+    
+    for i,date in enumerate(batch_dates):
+        h = hours[i]
+        dta=load_nimrod(date,h,log_precip=False,aggregate=aggregate)
+        crs=coarsen_nimrod(dta)
+        batch_x.append(logprec(crs,log_precip=log_precip))
+        batch_y.append(logprec(dta,log_precip=log_precip))
+    
+    if (not constants):
+        return np.array(batch_x), np.array(batch_y)
+    else:
+        return [np.array(batch_x),load_hires_constants(len(batch_dates))],np.array(batch_y)
 
+def getstats(field,year=2016):
+    # Get various stats of the ERA field
+    ds=xr.load_dataarray(f'/ppdata/ERA5/original/{field}{year}.nc')
+    mi = ds.min().data
+    mx = ds.max().data
+    mn = ds.mean().data
+    sd = ds.std().data
+    return mi,mx,mn,sd
+
+def gen_norm(year=2016):
+    # Save stats for specific year
+    import pickle
+    stats_dic = {}
+    for f in era_fields:
+        stats=getstats(f,year)
+        if f == 'psl':
+            stats_dic[f] = [stats[2],stats[3]]
+        elif f == "u700" or f == "v700":
+            stats_dic[f] = [0,max(-stats[0],stats[1])]
+        else:
+            stats_dic[f] = [0,stats[1]]
+    with open(f'/ppdata/constants/ERANorm{year}.pkl', 'wb') as f:
+        pickle.dump(stats_dic, f, 0)
+    return
+        
+def load_norm(year=2016):
+    import pickle
+    with open(f'/ppdata/constants/ERANorm{year}.pkl', 'rb') as f:
+        return pickle.load(f)
+
+era_norm = load_norm()
