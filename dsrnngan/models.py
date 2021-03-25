@@ -24,7 +24,7 @@ def initial_state_model(num_preproc=3):
     )
 
 
-def generator(era_dim=(10,10,9), const_dim=(250,250,2), noise_dim=(10,10,8), filters=32, conv_size=(3,3), stride=1, relu_alpha=0.2, norm=None, dropout_rate=None):
+def generator(era_dim=(10,10,9), const_dim=(250,250,2), noise_dim=(10,10,8), filters=64, conv_size=(3,3), stride=1, relu_alpha=0.2, norm=None, dropout_rate=None):
     
     # Network inputs 
     ##rainfall image                                                                                                                                                                                           
@@ -106,7 +106,7 @@ def generator_initialized(gen, num_channels=1):
     return (model, noise_shapes)
 
 
-def discriminator(era_dim=(10,10,9), const_dim=(250,250,2), nimrod_dim=(250,250,1), filters=32, conv_size=(3,3), stride=1, relu_alpha=0.2, norm=None, dropout_rate=None):
+def discriminator(era_dim=(10,10,9), const_dim=(250,250,2), nimrod_dim=(250,250,1), filters=64, conv_size=(3,3), stride=1, relu_alpha=0.2, norm=None, dropout_rate=None):
     
     # Network inputs 
     ##rainfall image                                                                                                                                                                                         
