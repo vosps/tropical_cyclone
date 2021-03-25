@@ -37,9 +37,9 @@ def plot_sequences(gen, batch_gen, noise_gen,
 
     try:
         old_batch_size = noise_gen.batch_size
-        batch_gen_tmp = batch_gen.unbatch().batch(num_samples)
+        # batch_gen_tmp = batch_gen.unbatch().batch(num_samples)
         noise_gen.batch_size = num_samples
-        for cond, const, seq_real in batch_gen_tmp.take(1).as_numpy_iterator():
+        for cond, const, seq_real in batch_gen:# _tmp.take(1).as_numpy_iterator():
             pass
         seq_gen = []
         for i in range(num_instances):
@@ -733,7 +733,7 @@ def gridplot(models,model_labels=None):
         for j in range(ny):
             # print(i,j)
             ax = plt.subplot(gs1[i+j*nx])# plt.subplot(ny,nx,i+1+j*nx)
-            ax.pcolormesh(models[j][i,:,:],vmin=0,vmax=.5)
+            ax.pcolormesh(models[j][i,:,:],vmin=0,vmax=1.)
             # ax.axis('off')
             ax.set(xticks=[], yticks=[])
             if i == 0 and (model_labels is not None):

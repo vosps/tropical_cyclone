@@ -148,8 +148,6 @@ class WGANGP(object):
                 # generate some real samples
                 (cond,const,sample) = batch_gen_iter.get_next()
                 noise = noise_gen()
-                # cond['noise_input']=noise_gen()
-                # cond['generator_output'] = sample
                 
                 with Nontrainable(self.gen):   
                     dl = self.disc_trainer.train_on_batch(

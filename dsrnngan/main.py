@@ -20,7 +20,7 @@ if __name__ == "__main__":
     parser.add_argument('--application', type=str, default='ERA')
     parser.add_argument('--train_years', type=int, nargs='+', default=[2015],
                         help="Training years")
-    parser.add_argument('--val_years', type=int, nargs='+', default=[2017],
+    parser.add_argument('--val_years', type=int, nargs='+', default=[2019],
                         help="Validation years")
     parser.add_argument('--val_size', type=int, default=8,
                         help='Num val examples')

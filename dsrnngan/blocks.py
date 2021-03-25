@@ -3,7 +3,6 @@ from tensorflow.keras.layers import Add, Conv2D, Dropout, LeakyReLU, BatchNormal
 
 def residual_block(x, filters, conv_size=(3,3), stride=1, relu_alpha=0.2, norm=None, dropout_rate=None):
     in_channels = int(x.shape[-1])
-    print(f"in_channels is {in_channels}")
     x_in = x
         
     x_in = AveragePooling2D(pool_size=(stride,stride))(x_in)
@@ -49,3 +48,4 @@ def const_upscale_block(const_input, filters):
     const_output = Conv2D(filters=filters, kernel_size=(3,3), strides=2, padding="valid", activation="relu")(const_output)
 
     return const_output
+

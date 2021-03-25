@@ -4,32 +4,32 @@ import glob
 
 return_dic = True
 
-def DataGenerator(year,batch_size):
-    return create_mixed_dataset(year,batch_size)
+def DataGenerator(year,batch_size,repeat=True):
+    return create_mixed_dataset(year,batch_size,repeat=repeat)
 
 def create_random_dataset(year,batch_size,era_shape=(10,10,9),con_shape=(250,250,2),
-                         out_shape=(250,250,1),
+                         out_shape=(250,250,1),repeat=True,
                          folder='/ppdata/tfrecords2/', shuffle_size = 1024):
     dataset = create_dataset(year, '*', era_shape=era_shape,con_shape=con_shape,
-                               out_shape=out_shape,folder=folder,
+                               out_shape=out_shape,folder=folder,repeat=repeat,
                                shuffle_size = shuffle_size)
     return dataset.batch(batch_size).prefetch(2)
 
 def create_mixed_dataset(year,batch_size,era_shape=(10,10,9),con_shape=(250,250,2),
-                         out_shape=(250,250,1),
+                         out_shape=(250,250,1),repeat=True,
                          folder='/ppdata/tfrecords2/', shuffle_size = 1024):
 
     classes = 8
     datasets = [create_dataset(year, i, era_shape=era_shape,con_shape=con_shape,
                                out_shape=out_shape,folder=folder,
-                               shuffle_size = shuffle_size)
+                               shuffle_size = shuffle_size,repeat=repeat)
                 for i in range(classes)]
     sampled_ds=tf.data.experimental.sample_from_datasets(datasets,
                 weights=[1./classes]*classes).batch(batch_size).prefetch(2)
     return sampled_ds
 
 # Note, if we wanted fewer classes, we can use glob syntax to grab multiple classes as once
-# e.g. create_dataset(2015,"[67]",repeat=False)
+# e.g. create_dataset(2015,"[67]")
 # will take classes 6 & 7 together
 
 def _parse_batch(record_batch,insize=(10,10,9),consize=(250,250,2),

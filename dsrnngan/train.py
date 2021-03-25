@@ -24,7 +24,7 @@ def setup_batch_gen(train_years,val_years,batch_size=64,
     tfrecords_generator.return_dic = False
     train = DataGenerator(train_years,batch_size=batch_size)
     if val_size is not None:
-        val = DataGenerator(val_years,batch_size=val_size)
+        val = DataGenerator(val_years,batch_size=val_size,repeat=False)
         val = val.take(1)
         if val_fixed:
             # This ensures the examples are fixed
@@ -72,7 +72,7 @@ def train_gan(wgan, batch_gen_train, batch_gen_valid, noise_shapes,
     for epoch in range(num_epochs):
         print("Epoch {}/{}".format(epoch+1,num_epochs))
         loss_log = wgan.train(batch_gen_train, noise_gen,
-            steps_per_epoch, training_ratio=5)
+                              steps_per_epoch, training_ratio=5)
         plots.plot_sequences(wgan.gen, batch_gen_valid, noise_gen, 
             num_samples=plot_samples, out_fn=plot_fn)
 
