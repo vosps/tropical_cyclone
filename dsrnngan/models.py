@@ -53,7 +53,7 @@ def generator(era_dim=(10,10,9), const_dim=(250,250,2), noise_dim=(10,10,8), fil
     
     print(f"Shape before upsampling: {generator_output.shape}")
     ## Upsampling residual blocks 
-    block_channels = [64, 32]
+    block_channels = [2*filters, filters]
     ## There are 2 items in block_channels so we upsample 2 times
     ## Upsampling size is hardcoded at (5,5)
     for i, channels in enumerate(block_channels):
@@ -134,7 +134,7 @@ def discriminator(era_dim=(10,10,9), const_dim=(250,250,2), nimrod_dim=(250,250,
     ##encode inputs using residual blocks
     ##stride of 5 means hi-res inputs are downsampled
     ##there are 2 items in block_channels so we pass through 2 residual blocks
-    block_channels = [32, 64]
+    block_channels = [filters, 2*filters]
     for (i,channels) in enumerate(block_channels):
         lo_res_input = residual_block(lo_res_input, filters=channels, conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate)
         print(f"Shape of lo-res input after residual block: {lo_res_input.shape}")
