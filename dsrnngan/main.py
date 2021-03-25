@@ -16,7 +16,7 @@ path = os.path.dirname(os.path.abspath(__file__))
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('mode', type=str, help="train or plot")
+    parser.add_argument('mode', type=str, help="train, plot, train_deterministic")
     parser.add_argument('--application', type=str, default='ERA')
     parser.add_argument('--train_years', type=int, nargs='+', default=[2015],
                         help="Training years")
@@ -61,7 +61,7 @@ if __name__ == "__main__":
 
         # initialize GAN
         (wgan, batch_gen_train, batch_gen_valid, _, noise_shapes, _) = \
-            train.setup_gan(train_years, val_years, val_size = val_size ,
+            train.setup_gan(train_years, val_years, val_size = val_size,
                 batch_size=batch_size)
 
         if load_weights_root: # load weights and run status
@@ -134,3 +134,78 @@ if __name__ == "__main__":
         goescod_data_fn = args.goescod_data_file
 
         plots.plot_all(mchrzc_data_fn, goescod_data_fn)
+        
+    elif mode == "train_deterministic":
+        load_weights_root = args.load_weights_root
+        save_weights_root = args.save_weights_root
+        log_path = args.log_path
+        steps_per_epoch = args.steps_per_epoch
+        batch_size = args.batch_size
+        val_size = args.val_size
+        num_samples = args.num_samples
+        train_years = args.train_years
+        val_years = args.val_years
+        application = args.application
+
+        if not save_weights_root:
+            save_weights_root = path + "/../models"
+
+        # initialize deterministic run
+        (gen_det, batch_gen_train, batch_gen_valid, _, _) = \
+            train.setup_deterministic(train_years, val_years, 
+                                      val_size=val_size,
+                                      steps_per_epoch=steps_per_epoch, 
+                                      batch_size=batch_size)
+   
+
+        if load_weights_root: # load weights and run status
+            gen_det.load(gen_det.filenames_from_root(load_weights_root))
+            with open(load_weights_root+"-run_status.json", 'r') as f:
+                run_status = json.load(f)
+            training_samples = run_status["training_samples"]
+
+            if log_path:
+                log_file = "{}/log-{}.txt".format(log_path,application)
+                log = pd.read_csv(log_file)
+
+        else: # initialize run status
+            training_samples = 0
+
+            if log_path:
+                log_file = "{}/log-{}.txt".format(log_path,application)
+                log = pd.DataFrame(columns=["training_samples", "accuracy", 
+                                            "gen_loss", "val_accuracy", "val_loss"])
+
+        plot_fn = "{}/progress-{}.pdf".format(log_path,application) if log_path \
+            else path+"/../figures/progress.pdf"
+
+        while (training_samples < num_samples): # main training loop
+
+            # train for some number of batches
+            history = train.train_deterministic(gen_det, batch_gen_train,
+                                       batch_gen_valid, steps_per_epoch, 1)
+            training_samples += steps_per_epoch * batch_size
+            
+            # save results
+            gen_det.save(save_weights_root)
+            run_status = {
+                "application": application,
+                "training_samples": training_samples,
+            }
+            with open(save_weights_root+"-run_status.json", 'w') as f:
+                json.dump(run_status, f)
+
+            if log_path: # log losses and generator weights for evaluation
+                log = log.append(pd.DataFrame(data={
+                    "training_samples": [training_samples],
+                    "accuracy": [history.history['accuracy']],
+                    "gen_loss": [history.history['loss']],
+                    "val_accuracy": [history.history['val_accuracy']],
+                    "val_loss": [history.history['val_loss']]
+                }))
+                log.to_csv(log_file, index=False, float_format="%.6f")
+                        
+                gen_det_weights_file = "{}/gen_det_weights-{}-{:07d}.h5".format(
+                    log_path, application, training_samples)
+                gen_det.gen.save_weights(gen_det_weights_file)
+

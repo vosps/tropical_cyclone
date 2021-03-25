@@ -87,9 +87,8 @@ def setup_deterministic(train_years=None, val_years=None,
                         lr=1e-4):
 
     (gen, _) = models.generator()
-    init_model = models.initial_state_model()
     (gen_init, noise_shapes) = models.generator_initialized(
-        gen, init_model)
+        gen)
     gen_det = models.generator_deterministic(gen_init)
     gen_det.compile(loss=loss, optimizer=Adam(lr=lr))
 
