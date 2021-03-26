@@ -49,7 +49,7 @@ class Deterministic(object):
         
         self.get_det_trainer.summary()
     
-    def train_deterministic(batch_gen_train, steps_per_epoch=1, show_progress=True):
+    def train_deterministic(self, batch_gen_train, steps_per_epoch=1, show_progress=True):
         
         for tmp_batch, _, _ in batch_gen_train.take(1).as_numpy_iterator():
             batch_size = tmp_batch.shape[0]
