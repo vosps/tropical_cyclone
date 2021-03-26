@@ -173,8 +173,7 @@ if __name__ == "__main__":
 
             if log_path:
                 log_file = "{}/log-{}.txt".format(log_path,application)
-                log = pd.DataFrame(columns=["training_samples", "accuracy", 
-                                            "gen_loss", "val_accuracy", "val_loss"])
+                log = pd.DataFrame(columns=["training_samples", "loss"])
 
         plot_fn = "{}/progress-{}.pdf".format(log_path,application) if log_path \
             else path+"/../figures/progress.pdf"
@@ -185,7 +184,7 @@ if __name__ == "__main__":
             history = train.train_deterministic(gen_det, batch_gen_train,
                                        batch_gen_valid, steps_per_epoch, 1)
             training_samples += steps_per_epoch * batch_size
-            
+
             # save results
             gen_det.save(save_weights_root)
             run_status = {
@@ -198,10 +197,7 @@ if __name__ == "__main__":
             if log_path: # log losses and generator weights for evaluation
                 log = log.append(pd.DataFrame(data={
                     "training_samples": [training_samples],
-                    "accuracy": [history.history['accuracy']],
-                    "gen_loss": [history.history['loss']],
-                    "val_accuracy": [history.history['val_accuracy']],
-                    "val_loss": [history.history['val_loss']]
+                    "loss": [history[0]],
                 }))
                 log.to_csv(log_file, index=False, float_format="%.6f")
                         
