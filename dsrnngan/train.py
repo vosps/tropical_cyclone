@@ -41,8 +41,6 @@ def setup_gan(train_years=None, val_years=None,
               lr_disc=0.0001, lr_gen=0.0001):
 
     (gen, noise_shapes) = models.generator()
-    # (gen_init, noise_shapes) = models.generator_initialized(
-    #     gen)
     disc = models.discriminator()
     wgan = gan.WGANGP(gen, disc, lr_disc=lr_disc, lr_gen=lr_gen)
 
@@ -86,10 +84,9 @@ def setup_deterministic(train_years=None, val_years=None,
                         loss='mse', 
                         lr=1e-4):
 
-    (gen, _) = models.generator()
-    (gen_init, noise_shapes) = models.generator_initialized(
-        gen)
-    gen_det = models.generator_deterministic(gen_init)
+    #gen = models.generator_deterministic()
+    #gen_init = models.generator_initialized_deterministic(gen)
+    gen_det = models.generator_deterministic()
     gen_det.compile(loss=loss, optimizer=Adam(lr=lr))
 
     (batch_gen_train, batch_gen_valid, batch_gen_test) = setup_batch_gen(

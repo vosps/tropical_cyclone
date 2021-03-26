@@ -86,11 +86,9 @@ def generator_initialized(gen, num_channels=1):
 
     return (model, noise_shapes)
 
-
 def generator_deterministic(era_dim=(10,10,9), const_dim=(250,250,2), filters=64, conv_size=(3,3), stride=1, relu_alpha=0.2, norm=None, dropout_rate=None):
-    
     # Network inputs 
-    ##rainfall image                                                                                                                                                                                           
+    ##rainfall image                                                                                                                                                 
     generator_input = Input(shape=era_dim, name="generator_input")
     ##constant fields
     const_input = Input(shape=const_dim, name="constants")
