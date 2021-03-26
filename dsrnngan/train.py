@@ -9,6 +9,7 @@ from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.optimizers import Adam
 
 import gan
+import deterministic
 import tfrecords_generator
 from tfrecords_generator import DataGenerator
 import models
@@ -84,11 +85,10 @@ def setup_deterministic(train_years=None, val_years=None,
                         loss='mse', 
                         lr=1e-4):
 
-    #gen = models.generator_deterministic()
-    #gen_init = models.generator_initialized_deterministic(gen)
     gen_det = models.generator_deterministic()
-    gen_det.compile(loss=loss, optimizer=Adam(lr=lr))
-
+    #gen_det.compile(loss=loss, optimizer=Adam(lr=lr))
+    det = deterministic.Deterministic(gen_det, lr)
+    
     (batch_gen_train, batch_gen_valid, batch_gen_test) = setup_batch_gen(
         train_years = train_years, val_years = val_years,
         val_size = val_size,
@@ -101,13 +101,20 @@ def setup_deterministic(train_years=None, val_years=None,
         steps_per_epoch)
 
 
-def train_deterministic(gen, batch_gen_train, batch_gen_valid,
+def train_deterministic(gen_det, batch_gen_train, batch_gen_valid,
     steps_per_epoch, num_epochs):
+    
+    #callback = EarlyStopping(monitor='val_loss', patience=5,restore_best_weights=True)
 
-    callback = EarlyStopping(monitor='val_loss', patience=5,
-        restore_best_weights=True)
 
-    gen.fit(batch_gen_train, epochs=num_epochs,
-            steps_per_epoch=steps_per_epoch,
-            validation_data=batch_gen_valid, validation_steps=32,
-            callbacks=[callback])
+    # gen_det.fit(batch_gen_train, epochs=num_epochs,
+    #         steps_per_epoch=steps_per_epoch,
+    #         validation_data=batch_gen_valid, validation_steps=32,
+    #         callbacks=[callback])
+    
+    for epoch in range(num_epochs):
+        print("Epoch {}/{}".format(epoch+1,num_epochs))
+        loss_log = det.train(batch_gen_train, steps_per_epoch)
+        #plots.plot_sequences(wgan.gen, batch_gen_valid, num_samples=plot_samples, out_fn=plot_fn
+
+return loss_log
