@@ -8,11 +8,14 @@ from meta import save_opt_weights, load_opt_weights
 
 class Deterministic(object):
 
-    def __init__(self, gen_det, lr):
+    def __init__(self, gen_det, lr, loss, optimizer):
 
         self.gen_det = gen_det
         self.lr = lr
-        
+        self.loss = loss
+        self.optimizer = optimizer
+        self.build_deterministic()
+    
     def filenames_from_root(self, root):
         fn = {
             "gen_det_weights": root+"-gen_det_weights.h5",
@@ -27,11 +30,10 @@ class Deterministic(object):
      
     def save(self, save_fn_root):
         paths = self.filenames_from_root(save_fn_root)
-        self.gen.save_weights(paths["gen_det_weights"], overwrite=True)
-        self.disc.save_weights(paths["disc_weights"], overwrite=True)
+        self.gen_det.save_weights(paths["gen_det_weights"], overwrite=True)
         save_opt_weights(self.gen_det_trainer, paths["gen_det_opt_weights"])
     
-    def build_deterministic(self, loss, optimizer):
+    def build_deterministic(self):
 
         # find shapes for inputs
         cond_shapes = input_shapes(self.gen_det, "generator_input")
@@ -45,9 +47,9 @@ class Deterministic(object):
         gen_det_out = ensure_list(gen_det_out)
         self.gen_det_trainer = Model(inputs=gen_det_in, outputs=gen_det_out)
 
-        self.gen_det_trainer.compile(loss=loss, optimizer=optimizer)
+        self.gen_det_trainer.compile(loss=self.loss, optimizer=self.optimizer(lr=self.lr))
         
-        self.get_det_trainer.summary()
+        self.gen_det_trainer.summary()
     
     def train_deterministic(self, batch_gen_train, steps_per_epoch=1, show_progress=True):
         

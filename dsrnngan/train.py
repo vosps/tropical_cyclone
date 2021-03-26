@@ -83,11 +83,11 @@ def setup_deterministic(train_years=None, val_years=None,
                         steps_per_epoch=50,
                         batch_size=64,
                         loss='mse', 
-                        lr=1e-4):
+                        lr=1e-4, optimizer=Adam):
 
     gen_det = models.generator_deterministic()
     #gen_det.compile(loss=loss, optimizer=Adam(lr=lr))
-    gen_det = deterministic.Deterministic(gen_det, lr)
+    gen_det = deterministic.Deterministic(gen_det, lr, loss, optimizer)
     
     (batch_gen_train, batch_gen_valid, batch_gen_test) = setup_batch_gen(
         train_years = train_years, val_years = val_years,
