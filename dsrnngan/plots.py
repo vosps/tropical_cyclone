@@ -85,6 +85,53 @@ def plot_sequences(gen, batch_gen, noise_gen,
         plt.savefig(out_fn, bbox_inches='tight')
         plt.close()
 
+def plot_sequences_deterministic(gen_det, batch_gen,
+    num_samples=8, num_instances=4, out_fn=None,
+    plot_stride=1):
+    
+    for cond, const, seq_real in batch_gen:
+        pass
+    seq_gen = []
+    for i in range(num_instances):
+        seq_gen.append(gen_det.predict([cond, const]))
+
+    # try:
+        # old_batch_size = noise_gen.batch_size
+        # # noise_gen.batch_size = num_samples
+        # for cond, const, seq_real in batch_gen:
+        #     pass
+        # seq_gen = []
+        # for i in range(num_instances):
+        #     seq_gen.append(gen_det.predict([cond, const]))
+    # f¡nally:
+        # noise_gen.batch_size = old_batch_size
+
+    num_rows = num_samples
+    num_cols = 2+num_instances
+
+    figsize = (num_cols*1.5, num_rows*1.5)
+    plt.figure(figsize=figsize)
+
+    gs = gridspec.GridSpec(num_rows, num_cols, 
+        wspace=0.05, hspace=0.05)
+
+    value_range = (0,1)# batch_gen.decoder.value_range
+
+    for s in range(num_samples):
+        i = s
+        plt.subplot(gs[i,0])
+        plot_img(seq_real[s,:,:,0], value_range=value_range)
+        plt.subplot(gs[i,1])
+        plot_img(cond[s,:,:,0], value_range=value_range)
+        for k in range(num_instances):
+            j = 2+k
+            plt.subplot(gs[i,j])
+            plot_img(seq_gen[k][s,:,:,0], value_range=value_range) 
+            
+    if out_fn is not None:
+        plt.savefig(out_fn, bbox_inches='tight')
+        plt.close()
+
 
 def plot_rank_metrics_by_samples(metrics_fn,ax=None,
     plot_metrics=["KS", "DKL", "OP", "mean"], value_range=(-0.1,0.2),

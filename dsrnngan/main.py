@@ -101,6 +101,7 @@ if __name__ == "__main__":
                                        batch_gen_valid, noise_shapes,
                                        steps_per_epoch, 1, plot_samples=val_size,
                                        plot_fn=plot_fn)
+
             loss_log = np.mean(loss_log, axis=0)
             training_samples += steps_per_epoch * batch_size
 
@@ -150,8 +151,8 @@ if __name__ == "__main__":
         if not save_weights_root:
             save_weights_root = path + "/../models"
 
-        # initialize deterministic run
-        (gen_det, batch_gen_train, batch_gen_valid, _, _) = \
+        # initialize deterministic model
+        (det_model, batch_gen_train, batch_gen_valid, _, _) = \
             train.setup_deterministic(train_years, val_years, 
                                       val_size=val_size,
                                       steps_per_epoch=steps_per_epoch, 
@@ -159,7 +160,7 @@ if __name__ == "__main__":
    
 
         if load_weights_root: # load weights and run status
-            gen_det.load(gen_det.filenames_from_root(load_weights_root))
+            det_model.load(det_model.filenames_from_root(load_weights_root))
             with open(load_weights_root+"-run_status.json", 'r') as f:
                 run_status = json.load(f)
             training_samples = run_status["training_samples"]
@@ -181,12 +182,14 @@ if __name__ == "__main__":
         while (training_samples < num_samples): # main training loop
 
             # train for some number of batches
-            history = train.train_deterministic(gen_det, batch_gen_train,
-                                       batch_gen_valid, steps_per_epoch, 1)
+            loss_log = train.train_deterministic(det_model, batch_gen_train,
+                                                 batch_gen_valid, steps_per_epoch, 1, plot_samples=val_size,
+                                                 plot_fn=plot_fn)
+            loss_log = np.mean(loss_log)
             training_samples += steps_per_epoch * batch_size
 
             # save results
-            gen_det.save(save_weights_root)
+            det_model.save(save_weights_root)
             run_status = {
                 "application": application,
                 "training_samples": training_samples,
@@ -197,11 +200,11 @@ if __name__ == "__main__":
             if log_path: # log losses and generator weights for evaluation
                 log = log.append(pd.DataFrame(data={
                     "training_samples": [training_samples],
-                    "loss": [history[0]],
+                    "loss": [loss_log],
                 }))
                 log.to_csv(log_file, index=False, float_format="%.6f")
                         
                 gen_det_weights_file = "{}/gen_det_weights-{}-{:07d}.h5".format(
                     log_path, application, training_samples)
-                gen_det.gen_det.save_weights(gen_det_weights_file)
+                det_model.gen_det.save_weights(gen_det_weights_file)
 

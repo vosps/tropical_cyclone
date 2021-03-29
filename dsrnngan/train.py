@@ -87,7 +87,7 @@ def setup_deterministic(train_years=None, val_years=None,
 
     gen_det = models.generator_deterministic()
     #gen_det.compile(loss=loss, optimizer=Adam(lr=lr))
-    gen_det = deterministic.Deterministic(gen_det, lr, loss, optimizer)
+    det_model = deterministic.Deterministic(gen_det, lr, loss, optimizer)
     
     (batch_gen_train, batch_gen_valid, batch_gen_test) = setup_batch_gen(
         train_years = train_years, val_years = val_years,
@@ -97,12 +97,12 @@ def setup_deterministic(train_years=None, val_years=None,
 
     gc.collect()
 
-    return (gen_det, batch_gen_train, batch_gen_valid, batch_gen_test,
+    return (det_model, batch_gen_train, batch_gen_valid, batch_gen_test,
         steps_per_epoch)
 
 
-def train_deterministic(gen_det, batch_gen_train, batch_gen_valid,
-    steps_per_epoch, num_epochs):
+def train_deterministic(det_model, batch_gen_train, batch_gen_valid,
+                        steps_per_epoch, num_epochs, plot_samples=8, plot_fn="../figures/progress.pdf"):
     
     #callback = EarlyStopping(monitor='val_loss', patience=5,restore_best_weights=True)
 
@@ -114,7 +114,7 @@ def train_deterministic(gen_det, batch_gen_train, batch_gen_valid,
     
     for epoch in range(num_epochs):
         print("Epoch {}/{}".format(epoch+1,num_epochs))
-        loss_log = gen_det.train_deterministic(batch_gen_train, steps_per_epoch)
-        #plots.plot_sequences(wgan.gen, batch_gen_valid, num_samples=plot_samples, out_fn=plot_fn
+        loss_log = det_model.train_det(batch_gen_train, steps_per_epoch)
+        plots.plot_sequences_deterministic(det_model.gen_det, batch_gen_valid, num_samples=plot_samples, out_fn=plot_fn)
 
         return loss_log

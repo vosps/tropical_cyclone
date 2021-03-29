@@ -51,7 +51,7 @@ class Deterministic(object):
         
         self.gen_det_trainer.summary()
     
-    def train_deterministic(self, batch_gen_train, steps_per_epoch=1, show_progress=True):
+    def train_det(self, batch_gen_train, steps_per_epoch=1, show_progress=True):
         
         for tmp_batch, _, _ in batch_gen_train.take(1).as_numpy_iterator():
             batch_size = tmp_batch.shape[0]
@@ -68,17 +68,16 @@ class Deterministic(object):
         for k in range(steps_per_epoch):
             (cond,const,sample) = batch_gen_iter.get_next()
             loss = self.gen_det_trainer.train_on_batch([cond, const], sample)
-            
             del sample, cond, const
         
-        if show_progress:
-            loss = []
-            for (i,l) in enumerate(loss):
-                loss.append(("Loss{}".format(i), l))
-            progbar.add(batch_size, values=loss)
-
+            if show_progress:
+                losses = []
+                for (i,l) in enumerate([loss]):
+                    losses.append(("Loss".format(i), l))
+                progbar.add(batch_size, values=losses)
+            
             loss_log.append(loss)
-
+                
             gc.collect()
 
         return np.array(loss_log)
