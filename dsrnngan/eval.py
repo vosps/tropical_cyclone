@@ -1,5 +1,6 @@
 from bisect import bisect_left
 from datetime import datetime, timedelta
+from tensorflow.python.keras.utils import generic_utils
 import os
 
 import netCDF4
@@ -27,21 +28,28 @@ def randomize_nans(x, rnd_mean, rnd_range):
 
 
 def ensemble_ranks(gen, batch_gen, noise_gen, 
-    noise_offset=0.0, noise_mul=1.0,
-    num_batches=1024, rank_samples=100, normalize_ranks=True):
+                   noise_offset=0.0, noise_mul=1.0,
+                   num_batches=1024, rank_samples=100, normalize_ranks=True,
+                   show_progress=True):
 
-    rnd_range = 0.1 * (batch_gen.decoder.value_range[0] -
-        batch_gen.decoder.below_val)
+    # rnd_range = 0.1 * (batch_gen.decoder.value_range[0] -
+    #     batch_gen.decoder.below_val)
 
     ranks = []
     crps_scores = []
     batch_gen_iter = iter(batch_gen)
+
+    if show_progress:
+        # Initialize progbar and batch counter
+        progbar = generic_utils.Progbar(
+            num_batches)
+
     for k in range(num_batches):
-        (cond,sample) = next(batch_gen)
-        sample_crps = sample
-        sample = sample.ravel()
+        (cond,const,sample) = next(batch_gen_iter)
+        sample_crps = sample.numpy()
+        sample = sample.numpy().ravel()
         # sample = batch_gen.decoder.denormalize(sample)
-        randomize_nans(sample, batch_gen.decoder.below_val, rnd_range)
+        # randomize_nans(sample, batch_gen.decoder.below_val, rnd_range)
 
         samples_gen = []
         crps_scores = []
@@ -50,8 +58,7 @@ def ensemble_ranks(gen, batch_gen, noise_gen,
             for nn in n:
                 nn *= noise_mul
                 nn -= noise_offset
-            cond['noise']=n
-            sample_gen = gen.predict(cond)
+            sample_gen = gen.predict([cond,const,n])
             samples_gen.append(sample_gen)
 
         samples_gen = np.stack(samples_gen, axis=-1)
@@ -66,6 +73,13 @@ def ensemble_ranks(gen, batch_gen, noise_gen,
 
         rank = np.count_nonzero(sample[:,None] >= samples_gen, axis=-1)
         ranks.append(rank)
+        
+        if show_progress:
+            crps_mean = np.mean(crps_score)
+            losses = [("CRPS",crps_mean)]
+            progbar.add(1, 
+                        values=losses)
+
 
     ranks = np.concatenate(ranks)
     crps_scores = np.concatenate(crps_scores)
