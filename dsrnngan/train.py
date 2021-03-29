@@ -112,9 +112,11 @@ def train_deterministic(det_model, batch_gen_train, batch_gen_valid,
     #         validation_data=batch_gen_valid, validation_steps=32,
     #         callbacks=[callback])
     
-    for epoch in range(num_epochs):
-        print("Epoch {}/{}".format(epoch+1,num_epochs))
-        loss_log = det_model.train_det(batch_gen_train, steps_per_epoch)
-        plots.plot_sequences_deterministic(det_model.gen_det, batch_gen_valid, num_samples=plot_samples, out_fn=plot_fn)
+    loss_log = det_model.train_det(batch_gen_train, steps_per_epoch)
+    plots.plot_sequences_deterministic(det_model.gen_det, batch_gen_valid, num_samples=plot_samples, out_fn=plot_fn)
+    #for epoch in range(num_epochs):
+        #print("Epoch {}/{}".format(epoch+1, num_epochs))
+        #loss_log = det_model.train_det(batch_gen_train, steps_per_epoch)
+        #plots.plot_sequences_deterministic(det_model.gen_det, batch_gen_valid, num_samples=plot_samples, out_fn=plot_fn)
 
-        return loss_log
+    return loss_log

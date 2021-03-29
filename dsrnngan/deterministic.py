@@ -60,7 +60,7 @@ class Deterministic(object):
         if show_progress:
             # Initialize progbar and batch counter
             progbar = generic_utils.Progbar(steps_per_epoch*batch_size)
-        
+            
         loss_log = []
     
         batch_gen_iter = iter(batch_gen_train)
@@ -75,9 +75,9 @@ class Deterministic(object):
                 for (i,l) in enumerate([loss]):
                     losses.append(("Loss".format(i), l))
                 progbar.add(batch_size, values=losses)
-            
+
             loss_log.append(loss)
-                
+
             gc.collect()
 
         return np.array(loss_log)
