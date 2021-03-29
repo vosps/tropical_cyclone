@@ -203,5 +203,5 @@ if __name__ == "__main__":
                         
                 gen_det_weights_file = "{}/gen_det_weights-{}-{:07d}.h5".format(
                     log_path, application, training_samples)
-                gen_det.gen.save_weights(gen_det_weights_file)
+                gen_det.gen_det.save_weights(gen_det_weights_file)
 
