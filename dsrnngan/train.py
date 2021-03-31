@@ -9,6 +9,7 @@ from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.optimizers import Adam
 
 import gan
+import deterministic
 import tfrecords_generator
 from tfrecords_generator import DataGenerator
 import models
@@ -41,8 +42,6 @@ def setup_gan(train_years=None, val_years=None,
               lr_disc=0.0001, lr_gen=0.0001):
 
     (gen, noise_shapes) = models.generator()
-    # (gen_init, noise_shapes) = models.generator_initialized(
-    #     gen)
     disc = models.discriminator()
     wgan = gan.WGANGP(gen, disc, lr_disc=lr_disc, lr_gen=lr_gen)
 
@@ -70,7 +69,6 @@ def train_gan(wgan, batch_gen_train, batch_gen_valid, noise_shapes,
         batch_size=batch_size)
 
     for epoch in range(num_epochs):
-        print("Epoch {}/{}".format(epoch+1,num_epochs))
         loss_log = wgan.train(batch_gen_train, noise_gen,
                               steps_per_epoch, training_ratio=5)
         plots.plot_sequences(wgan.gen, batch_gen_valid, noise_gen, 
@@ -84,15 +82,12 @@ def setup_deterministic(train_years=None, val_years=None,
                         steps_per_epoch=50,
                         batch_size=64,
                         loss='mse', 
-                        lr=1e-4):
+                        lr=1e-4, optimizer=Adam):
 
-    (gen, _) = models.generator()
-    init_model = models.initial_state_model()
-    (gen_init, noise_shapes) = models.generator_initialized(
-        gen, init_model)
-    gen_det = models.generator_deterministic(gen_init)
-    gen_det.compile(loss=loss, optimizer=Adam(lr=lr))
-
+    gen_det = models.generator_deterministic()
+    #gen_det.compile(loss=loss, optimizer=Adam(lr=lr))
+    det_model = deterministic.Deterministic(gen_det, lr, loss, optimizer)
+    
     (batch_gen_train, batch_gen_valid, batch_gen_test) = setup_batch_gen(
         train_years = train_years, val_years = val_years,
         val_size = val_size,
@@ -101,17 +96,26 @@ def setup_deterministic(train_years=None, val_years=None,
 
     gc.collect()
 
-    return (gen_det, batch_gen_train, batch_gen_valid, batch_gen_test,
+    return (det_model, batch_gen_train, batch_gen_valid, batch_gen_test,
         steps_per_epoch)
 
 
-def train_deterministic(gen, batch_gen_train, batch_gen_valid,
-    steps_per_epoch, num_epochs):
+def train_deterministic(det_model, batch_gen_train, batch_gen_valid,
+                        steps_per_epoch, num_epochs, plot_samples=8, plot_fn="../figures/progress.pdf"):
+    
+    #callback = EarlyStopping(monitor='val_loss', patience=5,restore_best_weights=True)
 
-    callback = EarlyStopping(monitor='val_loss', patience=5,
-        restore_best_weights=True)
 
-    gen.fit(batch_gen_train, epochs=num_epochs,
-            steps_per_epoch=steps_per_epoch,
-            validation_data=batch_gen_valid, validation_steps=32,
-            callbacks=[callback])
+    # gen_det.fit(batch_gen_train, epochs=num_epochs,
+    #         steps_per_epoch=steps_per_epoch,
+    #         validation_data=batch_gen_valid, validation_steps=32,
+    #         callbacks=[callback])
+    
+    loss_log = det_model.train_det(batch_gen_train, steps_per_epoch)
+    plots.plot_sequences_deterministic(det_model.gen_det, batch_gen_valid, num_samples=plot_samples, out_fn=plot_fn)
+    #for epoch in range(num_epochs):
+        #print("Epoch {}/{}".format(epoch+1, num_epochs))
+        #loss_log = det_model.train_det(batch_gen_train, steps_per_epoch)
+        #plots.plot_sequences_deterministic(det_model.gen_det, batch_gen_valid, num_samples=plot_samples, out_fn=plot_fn)
+
+    return loss_log
