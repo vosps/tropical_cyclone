@@ -57,6 +57,7 @@ if __name__ == "__main__":
         application = args.application
 
         num_epochs = int(num_samples/(steps_per_epoch * batch_size))
+        epoch = 1
 
         if not save_weights_root:
             save_weights_root = path + "/../models"
@@ -90,6 +91,9 @@ if __name__ == "__main__":
         switched_opt = (training_samples >= opt_switch_point)
 
         while (training_samples < num_samples): # main training loop
+            
+            print("Epoch {}/{}".format(epoch, num_epochs))
+            epoch += 1
 
             # check if we should switch optimizers
             if (training_samples >= opt_switch_point) and not switched_opt:
@@ -191,7 +195,7 @@ if __name__ == "__main__":
             
             # train for some number of batches
             loss_log = train.train_deterministic(det_model, batch_gen_train,
-                                                 batch_gen_valid, steps_per_epoch, num_epochs, plot_samples=val_size,
+                                                 batch_gen_valid, steps_per_epoch, 1, plot_samples=val_size,
                                                  plot_fn=plot_fn)
             loss_log = np.mean(loss_log)
             training_samples += steps_per_epoch * batch_size
