@@ -123,14 +123,14 @@ def rank_OP(norm_ranks, num_ranks=100):
     return op
 
 
-def rank_metrics_by_time(application, data_file, out_fn,
-    weights_dir, check_every=1, N_range=None):
-    (wgan, batch_gen_train, batch_gen_valid, batch_gen_test,
-        noise_shapes, steps_per_epoch) = train.setup_gan(data_file,
-        application=application, batch_size=64)
+def rank_metrics_by_time(train_years, val_years, application, out_fn,
+                         weights_dir, check_every=1, N_range=None, batch_size=16, num_batches=64):
+
+    (wgan, _, batch_gen_valid, _, noise_shapes, _) = train.setup_gan(train_years, val_years, batch_size)
+
     gen = wgan.gen
-    noise_gen = noise.NoiseGenerator(noise_shapes(),
-        batch_size=batch_gen_valid.batch_size)
+    noise_gen = noise.NoiseGenerator(noise_shapes(), batch_size)
+    batch_gen_valid = batch_gen_valid.take(num_batches).cache()
 
     files = os.listdir(weights_dir)
     def get_id(fn):
@@ -146,9 +146,8 @@ def rank_metrics_by_time(application, data_file, out_fn,
         N_samples = int(fn.split("-")[-1].split(".")[0])
         if (N_range is not None) and not (N_range[0] <= N_samples < N_range[1]):
             continue
-        gen.load_weights(weights_dir+"/"+fn)
-        (ranks, crps_scores) = ensemble_ranks(gen, batch_gen_valid,
-            noise_gen, num_batches=8)
+        gen.load_weights(weights_dir + "/" + fn)
+        (ranks, crps_scores) = ensemble_ranks(gen, batch_gen_valid, noise_gen, num_batches)
         
         KS = rank_KS(ranks)
         CvM = rank_CvM(ranks) 

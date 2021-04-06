@@ -36,6 +36,8 @@ if __name__ == "__main__":
         help="Batches per epoch")
     parser.add_argument('--batch_size', type=int, default=16,
         help="Batch size")
+    parser.add_argument('--num_batches', type=int, default=64,
+        help="Number of batches for eval metrics")
     parser.add_argument('--opt_switch_point', type=int, default=350000,
         help="The num. of samples at which the optimizer is switched to SGD")
         
@@ -55,6 +57,7 @@ if __name__ == "__main__":
         train_years = args.train_years
         val_years = args.val_years
         application = args.application
+        num_batches = args.num_batches
 
         num_epochs = int(num_samples/(steps_per_epoch * batch_size))
 
@@ -130,6 +133,9 @@ if __name__ == "__main__":
                 gen_weights_file = "{}/gen_weights-{}-{:07d}.h5".format(
                     log_path, application, training_samples)
                 wgan.gen.save_weights(gen_weights_file)
+                
+                (ranks, crps_scores) = rank_metrics_by_time(train_years, val_years, application, out_fn,
+                                                            weights_dir=log_path, check_every=1, N_range=None, batch_size=batch_size, num_batches=num_batches)
 
 
     elif mode == "plot":
@@ -149,6 +155,7 @@ if __name__ == "__main__":
         train_years = args.train_years
         val_years = args.val_years
         application = args.application
+        num_batches = args.num_batches
 
         num_epochs = int(num_samples/(steps_per_epoch * batch_size))
         epoch = 1
@@ -216,3 +223,5 @@ if __name__ == "__main__":
                     log_path, application, training_samples)
                 det_model.gen_det.save_weights(gen_det_weights_file)
 
+                (ranks, crps_scores) = rank_metrics_by_time(train_years, val_years, application, out_fn,
+                                                            weights_dir=log_path, check_every=1, N_range=None, batch_size=batch_size, num_batches=num_batches)
