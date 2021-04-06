@@ -67,8 +67,11 @@ def train_gan(wgan, batch_gen_train, batch_gen_valid, noise_shapes,
     del sample
     noise_gen = noise.NoiseGenerator(noise_shapes(img_shape),
         batch_size=batch_size)
-
+    
+    epoch_print = 1
     for epoch in range(num_epochs):
+        print("Epoch {}/{}".format(epoch_print, num_epochs))
+        epoch_print += 1
         loss_log = wgan.train(batch_gen_train, noise_gen,
                               steps_per_epoch, training_ratio=5)
         plots.plot_sequences(wgan.gen, batch_gen_valid, noise_gen, 

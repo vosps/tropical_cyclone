@@ -57,7 +57,6 @@ if __name__ == "__main__":
         application = args.application
 
         num_epochs = int(num_samples/(steps_per_epoch * batch_size))
-        epoch = 1
 
         if not save_weights_root:
             save_weights_root = path + "/../models"
@@ -91,9 +90,6 @@ if __name__ == "__main__":
         switched_opt = (training_samples >= opt_switch_point)
 
         while (training_samples < num_samples): # main training loop
-            
-            print("Epoch {}/{}".format(epoch, num_epochs))
-            epoch += 1
 
             # check if we should switch optimizers
             if (training_samples >= opt_switch_point) and not switched_opt:
