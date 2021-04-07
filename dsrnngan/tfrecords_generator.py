@@ -20,7 +20,8 @@ def create_mixed_dataset(year,batch_size,era_shape=(10,10,9),con_shape=(250,250,
                          folder='/ppdata/tfrecords2/', shuffle_size = 1024):
 
     classes = 8
-    datasets = [create_dataset(year, i, era_shape=era_shape,con_shape=con_shape,
+    datasets = [create_dataset(year, i, era_shape=era_shape,
+                               con_shape=con_shape,
                                out_shape=out_shape,folder=folder,
                                shuffle_size = shuffle_size,repeat=repeat)
                 for i in range(classes)]

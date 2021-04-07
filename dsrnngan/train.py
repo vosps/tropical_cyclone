@@ -25,10 +25,13 @@ def setup_batch_gen(train_years,val_years,batch_size=64,
     tfrecords_generator.return_dic = False
     train = DataGenerator(train_years,batch_size=batch_size)
     if val_size is not None:
-        val = DataGenerator(val_years,batch_size=val_size,repeat=False)
-        val = val.take(1)
+        if val_size <= batch_size:
+            val = DataGenerator(val_years,batch_size=val_size,repeat=False)
+            val = val.take(1)
+        else:
+            val = DataGenerator(val_years,batch_size=batch_size,repeat=False)
+            val = val.take(val_size//batch_size)
         if val_fixed:
-            # This ensures the examples are fixed
             val = val.cache()
     else:
         val = DataGenerator(val_years,batch_size=batch_size)
@@ -46,7 +49,7 @@ def setup_gan(train_years=None, val_years=None,
     wgan = gan.WGANGP(gen, disc, lr_disc=lr_disc, lr_gen=lr_gen)
 
     (batch_gen_train, batch_gen_valid, batch_gen_test) = setup_batch_gen(
-        train_years = train_years, val_years = val_years,
+        train_years = train_years, val_years = val_years, 
         val_size = val_size,
         batch_size=batch_size
     )
@@ -81,7 +84,7 @@ def train_gan(wgan, batch_gen_train, batch_gen_valid, noise_shapes,
 
 
 def setup_deterministic(train_years=None, val_years=None,
-                        val_size = None,
+                        val_size = None, 
                         steps_per_epoch=50,
                         batch_size=64,
                         loss='mse', 
@@ -92,7 +95,7 @@ def setup_deterministic(train_years=None, val_years=None,
     det_model = deterministic.Deterministic(gen_det, lr, loss, optimizer)
     
     (batch_gen_train, batch_gen_valid, batch_gen_test) = setup_batch_gen(
-        train_years = train_years, val_years = val_years,
+        train_years = train_years, val_years = val_years, 
         val_size = val_size,
         batch_size=batch_size
     )

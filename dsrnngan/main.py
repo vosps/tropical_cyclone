@@ -8,7 +8,7 @@ from tensorflow.keras.optimizers import SGD
 
 import plots
 import train
-
+import eval
 
 path = os.path.dirname(os.path.abspath(__file__))
 
@@ -90,6 +90,10 @@ if __name__ == "__main__":
 
         plot_fn = "{}/progress-{}.pdf".format(log_path,application) if log_path \
             else path+"/../figures/progress.pdf"
+
+        eval_fn = "{}/eval-{}.txt".format(log_path, application) if log_path \
+            else path+"/../figures/eval.txt"
+
         switched_opt = (training_samples >= opt_switch_point)
 
         while (training_samples < num_samples): # main training loop
@@ -134,7 +138,7 @@ if __name__ == "__main__":
                     log_path, application, training_samples)
                 wgan.gen.save_weights(gen_weights_file)
                 
-                (ranks, crps_scores) = rank_metrics_by_time(train_years, val_years, application, out_fn,
+                eval.rank_metrics_by_time(train_years, val_years, application, out_fn=eval_fn,
                                                             weights_dir=log_path, check_every=1, N_range=None, batch_size=batch_size, num_batches=num_batches)
 
 
@@ -191,6 +195,9 @@ if __name__ == "__main__":
         plot_fn = "{}/progress-{}.pdf".format(log_path,application) if log_path \
             else path+"/../figures/progress.pdf"
 
+        eval_fn = "{}/eval-{}.txt".format(log_path, application) if log_path \
+            else path+"/../figures/eval.txt"
+
         while (training_samples < num_samples): # main training loop
             
             print("Epoch {}/{}".format(epoch, num_epochs))
@@ -223,5 +230,5 @@ if __name__ == "__main__":
                     log_path, application, training_samples)
                 det_model.gen_det.save_weights(gen_det_weights_file)
 
-                (ranks, crps_scores) = rank_metrics_by_time(train_years, val_years, application, out_fn,
+                eval.rank_metrics_by_time(train_years, val_years, application, out_fn=eval_fn,
                                                             weights_dir=log_path, check_every=1, N_range=None, batch_size=batch_size, num_batches=num_batches)
