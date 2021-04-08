@@ -16,7 +16,7 @@ path = os.path.dirname(os.path.abspath(__file__))
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('mode', type=str, help="train, plot, train_deterministic")
+    parser.add_argument('mode', type=str, help="train, plot, deterministic")
     parser.add_argument('--application', type=str, default='ERA')
     parser.add_argument('--train_years', type=int, nargs='+', default=[2015],
                         help="Training years")
@@ -137,9 +137,11 @@ if __name__ == "__main__":
                 gen_weights_file = "{}/gen_weights-{}-{:07d}.h5".format(
                     log_path, application, training_samples)
                 wgan.gen.save_weights(gen_weights_file)
-                
-                eval.rank_metrics_by_time(train_years, val_years, application, out_fn=eval_fn,
-                                                            weights_dir=log_path, check_every=1, N_range=None, batch_size=batch_size, num_batches=num_batches)
+       
+        #evaluate model performance        
+        eval.rank_metrics_by_time(mode, train_years, val_years, application, out_fn=eval_fn, 
+                                  weights_dir=log_path, check_every=1, N_range=None, 
+                                  batch_size=batch_size, num_batches=num_batches)
 
 
     elif mode == "plot":
@@ -148,7 +150,7 @@ if __name__ == "__main__":
 
         plots.plot_all(mchrzc_data_fn, goescod_data_fn)
         
-    elif mode == "train_deterministic":
+    elif mode == "deterministic":
         load_weights_root = args.load_weights_root
         save_weights_root = args.save_weights_root
         log_path = args.log_path
@@ -230,5 +232,7 @@ if __name__ == "__main__":
                     log_path, application, training_samples)
                 det_model.gen_det.save_weights(gen_det_weights_file)
 
-                eval.rank_metrics_by_time(train_years, val_years, application, out_fn=eval_fn,
-                                                            weights_dir=log_path, check_every=1, N_range=None, batch_size=batch_size, num_batches=num_batches)
+        #evaluate model performance                                                                                                                        
+        eval.rank_metrics_by_time(mode, train_years, val_years, application, out_fn=eval_fn,
+                                  weights_dir=log_path, check_every=1, N_range=None,
+                                  batch_size=batch_size, num_batches=num_batches)

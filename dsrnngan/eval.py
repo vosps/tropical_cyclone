@@ -27,9 +27,9 @@ def randomize_nans(x, rnd_mean, rnd_range):
         (np.random.rand(*nan_shape)-0.5)*rnd_range
 
 
-def ensemble_ranks(gen, batch_gen, noise_gen, 
+def ensemble_ranks(mode, gen, batch_gen, noise_gen, num_batches,
                    noise_offset=0.0, noise_mul=1.0,
-                   num_batches=1024, rank_samples=100, normalize_ranks=True,
+                   rank_samples=100, normalize_ranks=True,
                    show_progress=True):
 
     # rnd_range = 0.1 * (batch_gen.decoder.value_range[0] -
@@ -53,13 +53,22 @@ def ensemble_ranks(gen, batch_gen, noise_gen,
 
         samples_gen = []
         crps_scores = []
-        for i in range(rank_samples):
-            n = noise_gen()
-            for nn in n:
-                nn *= noise_mul
-                nn -= noise_offset
-            sample_gen = gen.predict([cond,const,n])
+
+        if mode == "train":
+            for i in range(rank_samples):
+                n = noise_gen()
+                for nn in n:
+                    nn *= noise_mul
+                    nn -= noise_offset
+                sample_gen = gen.predict([cond,const,n])
+                samples_gen.append(sample_gen)
+        
+        elif mode == "deterministic":
+            sample_gen = gen.predict([cond,const])
             samples_gen.append(sample_gen)
+            
+        else:
+            print("mode type not implemented in ensemble_ranks")
 
         samples_gen = np.stack(samples_gen, axis=-1)
 
@@ -77,8 +86,7 @@ def ensemble_ranks(gen, batch_gen, noise_gen,
         if show_progress:
             crps_mean = np.mean(crps_score)
             losses = [("CRPS",crps_mean)]
-            progbar.add(1, 
-                        values=losses)
+            progbar.add(1, values=losses)
 
 
     ranks = np.concatenate(ranks)
@@ -123,14 +131,25 @@ def rank_OP(norm_ranks, num_ranks=100):
     return op
 
 
-def rank_metrics_by_time(train_years, val_years, application, out_fn,
+def rank_metrics_by_time(mode, train_years, val_years, application, out_fn,
                          weights_dir, check_every=1, N_range=None, batch_size=16, num_batches=64):
 
-    (wgan, _, batch_gen_valid, _, noise_shapes, _) = train.setup_gan(train_years, val_years, batch_size=batch_size, val_size = batch_size * num_batches)
+    #(wgan, _, batch_gen_valid, _, noise_shapes, _) = train.setup_gan(train_years, val_years, batch_size=batch_size, val_size=batch_size*num_batches)
 
-    gen = wgan.gen
-    noise_gen = noise.NoiseGenerator(noise_shapes(), batch_size)
+    #gen = wgan.gen
+    #noise_gen = noise.NoiseGenerator(noise_shapes(), batch_size)
     # batch_gen_valid = batch_gen_valid.take(num_batches).cache()
+    if mode == "train":
+        (wgan, _, batch_gen_valid, _, noise_shapes, _) = train.setup_gan(train_years=2015, val_years=2019, val_size=batch_size*num_batches, batch_size=batch_size)
+        gen = wgan.gen
+        noise_gen = noise.NoiseGenerator(noise_shapes(), batch_size=batch_size)
+        print("loaded gan model")
+    elif mode == "deterministic":
+        (det_model, _, batch_gen_valid, _, _) = train.setup_deterministic(train_years=2015, val_years=2019, val_size=batch_size*num_batches, batch_size=batch_size)
+        gen_det = det_model.gen_det
+        print("loaded deterministic model")
+    else:
+        print("rank_metrics_by_time not implemented for mode type")
 
     files = os.listdir(weights_dir)
     def get_id(fn):
@@ -146,8 +165,18 @@ def rank_metrics_by_time(train_years, val_years, application, out_fn,
         N_samples = int(fn.split("-")[-1].split(".")[0])
         if (N_range is not None) and not (N_range[0] <= N_samples < N_range[1]):
             continue
-        gen.load_weights(weights_dir + "/" + fn)
-        (ranks, crps_scores) = ensemble_ranks(gen, batch_gen_valid, noise_gen, num_batches = num_batches)
+        print(weights_dir + "/" + fn)
+
+        if mode == "train":
+            gen.load_weights(weights_dir + "/" + fn)
+            (ranks, crps_scores) = ensemble_ranks(mode, gen, batch_gen_valid, noise_gen, num_batches=num_batches)
+        elif mode == "deterministic":
+            gen_det.load_weights(weights_dir + "/" + fn)
+            (ranks, crps_scores) = ensemble_ranks(mode, gen_det, batch_gen_valid, noise_gen=[], num_batches=num_batches)
+        else:
+            print("rank_metrics_by_time not implemented for mode type")
+        #gen.load_weights(weights_dir + "/" + fn)
+        #(ranks, crps_scores) = ensemble_ranks(gen, batch_gen_valid, noise_gen, num_batches = num_batches)
         
         KS = rank_KS(ranks)
         CvM = rank_CvM(ranks) 
@@ -157,8 +186,7 @@ def rank_metrics_by_time(train_years, val_years, application, out_fn,
         mean = ranks.mean()
         std = ranks.std()
 
-        log_line("{} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}".format(
-            N_samples, KS, CvM, DKL, OP, CRPS, mean, std))
+        log_line("{} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}".format(N_samples, KS, CvM, DKL, OP, CRPS, mean, std))
 
 
 def rank_metrics_by_noise(application, run_id, data_file,
