@@ -41,11 +41,11 @@ def setup_batch_gen(train_years,val_years,batch_size=64,
 def setup_gan(train_years=None, val_years=None,
               val_size = None,
               steps_per_epoch=50,
-              batch_size=16,
+              batch_size=16, filters=64,
               lr_disc=0.0001, lr_gen=0.0001):
 
-    (gen, noise_shapes) = models.generator()
-    disc = models.discriminator()
+    (gen, noise_shapes) = models.generator(filters=filters)
+    disc = models.discriminator(filters=filters)
     wgan = gan.WGANGP(gen, disc, lr_disc=lr_disc, lr_gen=lr_gen)
 
     (batch_gen_train, batch_gen_valid, batch_gen_test) = setup_batch_gen(
@@ -87,10 +87,11 @@ def setup_deterministic(train_years=None, val_years=None,
                         val_size = None, 
                         steps_per_epoch=50,
                         batch_size=64,
+                        filters=64,
                         loss='mse', 
                         lr=1e-4, optimizer=Adam):
 
-    gen_det = models.generator_deterministic()
+    gen_det = models.generator_deterministic(filters=filters)
     #gen_det.compile(loss=loss, optimizer=Adam(lr=lr))
     det_model = deterministic.Deterministic(gen_det, lr, loss, optimizer)
     
@@ -119,9 +120,5 @@ def train_deterministic(det_model, batch_gen_train, batch_gen_valid,
     
     loss_log = det_model.train_det(batch_gen_train, steps_per_epoch)
     plots.plot_sequences_deterministic(det_model.gen_det, batch_gen_valid, num_samples=plot_samples, out_fn=plot_fn)
-    #for epoch in range(num_epochs):
-        #print("Epoch {}/{}".format(epoch+1, num_epochs))
-        #loss_log = det_model.train_det(batch_gen_train, steps_per_epoch)
-        #plots.plot_sequences_deterministic(det_model.gen_det, batch_gen_valid, num_samples=plot_samples, out_fn=plot_fn)
 
     return loss_log

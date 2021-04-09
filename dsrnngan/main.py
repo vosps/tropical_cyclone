@@ -38,6 +38,8 @@ if __name__ == "__main__":
         help="Batch size")
     parser.add_argument('--num_batches', type=int, default=64,
         help="Number of batches for eval metrics")
+    parser.add_argument('--filters', type=int, default=64,
+        help="Number of filters used in model architecture")
     parser.add_argument('--opt_switch_point', type=int, default=350000,
         help="The num. of samples at which the optimizer is switched to SGD")
         
@@ -58,7 +60,8 @@ if __name__ == "__main__":
         val_years = args.val_years
         application = args.application
         num_batches = args.num_batches
-
+        filters = args.filters
+        
         num_epochs = int(num_samples/(steps_per_epoch * batch_size))
 
         if not save_weights_root:
@@ -67,7 +70,7 @@ if __name__ == "__main__":
         # initialize GAN
         (wgan, batch_gen_train, batch_gen_valid, _, noise_shapes, _) = \
             train.setup_gan(train_years, val_years, val_size = val_size,
-                batch_size=batch_size)
+                            batch_size=batch_size, filters=filters)
 
         if load_weights_root: # load weights and run status
             wgan.load(wgan.filenames_from_root(load_weights_root))
@@ -162,6 +165,7 @@ if __name__ == "__main__":
         val_years = args.val_years
         application = args.application
         num_batches = args.num_batches
+        filters = args.filters
 
         num_epochs = int(num_samples/(steps_per_epoch * batch_size))
         epoch = 1
@@ -174,7 +178,7 @@ if __name__ == "__main__":
             train.setup_deterministic(train_years, val_years, 
                                       val_size=val_size,
                                       steps_per_epoch=steps_per_epoch, 
-                                      batch_size=batch_size)
+                                      batch_size=batch_size, filters=filters)
    
 
         if load_weights_root: # load weights and run status
