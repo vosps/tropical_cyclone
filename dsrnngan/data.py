@@ -16,6 +16,8 @@ era_fields = ['pr','prc','prl','tcrw','lwp','prw','cape','tosr','psl','u700','v7
 UK_LAT_LIMIT = (50, 60)
 UK_LON_LIMIT = (-2, 12)
 
+def denormalise(x):
+    return 10**x - 1
 
 def select_precip_region(data, lat_limit, lon_limit):
 

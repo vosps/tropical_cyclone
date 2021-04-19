@@ -63,6 +63,7 @@ if __name__ == "__main__":
         filters = args.filters
         
         num_epochs = int(num_samples/(steps_per_epoch * batch_size))
+        epoch = 1
 
         if not save_weights_root:
             save_weights_root = path + "/../models"
@@ -97,9 +98,14 @@ if __name__ == "__main__":
         eval_fn = "{}/eval-{}.txt".format(log_path, application) if log_path \
             else path+"/../figures/eval.txt"
 
+        qual_fn = "{}/qual-{}.txt".format(log_path, application) if log_path \
+            else path+"/../figures/eval.txt"
+
         switched_opt = (training_samples >= opt_switch_point)
 
         while (training_samples < num_samples): # main training loop
+            print("Epoch {}/{}".format(epoch, num_epochs))
+            epoch += 1
 
             # check if we should switch optimizers
             if (training_samples >= opt_switch_point) and not switched_opt:
@@ -111,7 +117,7 @@ if __name__ == "__main__":
             # train for some number of batches
             loss_log = train.train_gan(wgan, batch_gen_train,
                                        batch_gen_valid, noise_shapes,
-                                       steps_per_epoch, num_epochs, plot_samples=val_size,
+                                       steps_per_epoch, num_epochs=1, plot_samples=val_size,
                                        plot_fn=plot_fn)
 
             loss_log = np.mean(loss_log, axis=0)
@@ -144,8 +150,11 @@ if __name__ == "__main__":
         #evaluate model performance        
         eval.rank_metrics_by_time(mode, train_years, val_years, application, out_fn=eval_fn, 
                                   weights_dir=log_path, check_every=1, N_range=None, 
-                                  batch_size=batch_size, num_batches=num_batches)
-
+                                  batch_size=batch_size, num_batches=num_batches, filters=filters)
+    
+        eval.quality_metrics_by_time(mode, train_years, val_years, application, out_fn=qual_fn,
+                                     weights_dir=log_path, check_every=1, batch_size=batch_size,
+                                     num_batches=num_batches, filters=filters)
 
     elif mode == "plot":
         mchrzc_data_fn = args.mchrzc_data_file
@@ -203,6 +212,9 @@ if __name__ == "__main__":
 
         eval_fn = "{}/eval-{}.txt".format(log_path, application) if log_path \
             else path+"/../figures/eval.txt"
+        
+        qual_fn = "{}/quall-{}.txt".format(log_path, application) if log_path \
+            else path+"/../figures/eval.txt"
 
         while (training_samples < num_samples): # main training loop
             
@@ -236,7 +248,11 @@ if __name__ == "__main__":
                     log_path, application, training_samples)
                 det_model.gen_det.save_weights(gen_det_weights_file)
 
-        #evaluate model performance                                                                                                                        
+        #evaluate model performance              
         eval.rank_metrics_by_time(mode, train_years, val_years, application, out_fn=eval_fn,
                                   weights_dir=log_path, check_every=1, N_range=None,
-                                  batch_size=batch_size, num_batches=num_batches)
+                                  batch_size=batch_size, num_batches=num_batches, filters=filters)
+        
+        eval.quality_metrics_by_time(mode, train_years, val_years, application, out_fn=qual_fn, 
+                                     weights_dir=log_path, check_every=1, batch_size=batch_size, 
+                                     num_batches=num_batches, filters=filters)

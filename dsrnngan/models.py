@@ -1,7 +1,7 @@
 import tensorflow as tf
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, concatenate, Flatten, Conv2D, UpSampling2D
-from tensorflow.keras.layers import GlobalAveragePooling2D
+from tensorflow.keras.layers import GlobalAveragePooling2D, Dense
 
 from blocks import residual_block, const_upscale_block
 
@@ -57,7 +57,7 @@ def generator(era_dim=(10,10,9), const_dim=(250,250,2), noise_dim=(10,10,8), fil
     print(f"Shape after third residual block: {generator_output.shape}")
     
     ## Output layer
-    generator_output = Conv2D(filters=1, kernel_size=(1,1), activation='sigmoid', name="generator_output")(generator_output)
+    generator_output = Conv2D(filters=1, kernel_size=(1,1), activation='relu', name="generator_output")(generator_output)
     print(f"Output shape: {generator_output.shape}")
     
     model = Model(inputs=[generator_input, const_input, noise_input], outputs=generator_output, name='gen')
@@ -184,12 +184,12 @@ def discriminator(era_dim=(10,10,9), const_dim=(250,250,2), nimrod_dim=(250,250,
     print(f"Shape after residual block: {disc_input.shape}")
     print('End of second residual block')
 
-    ##discriminator output (in logits)
-    disc_output = Conv2D(1, (3,3), padding="valid")(disc_input)
-    print(f"discriminator output shape: {disc_output.shape}")
-    disc_output = GlobalAveragePooling2D()(disc_output)
+    ##discriminator output
+    disc_output = GlobalAveragePooling2D()(disc_input)
     print(f"discriminator output shape after pooling: {disc_output.shape}")
-    disc_output = Flatten(dtype=tf.dtypes.float32, name="disc_output")(disc_output)
+    disc_output = Dense(64, activation='relu')(disc_output)
+    print(f"discriminator output shape: {disc_output.shape}")
+    disc_output = Dense(1, name="disc_output")(disc_output)
     print(f"discriminator output shape: {disc_output.shape}")
 
     disc = Model(inputs=[generator_input, const_input, generator_output], outputs=disc_output, name='disc')

@@ -70,14 +70,9 @@ def train_gan(wgan, batch_gen_train, batch_gen_valid, noise_shapes,
     del sample
     noise_gen = noise.NoiseGenerator(noise_shapes(img_shape),
         batch_size=batch_size)
-    
-    epoch_print = 1
-    for epoch in range(num_epochs):
-        print("Epoch {}/{}".format(epoch_print, num_epochs))
-        epoch_print += 1
-        loss_log = wgan.train(batch_gen_train, noise_gen,
+    loss_log = wgan.train(batch_gen_train, noise_gen,
                               steps_per_epoch, training_ratio=5)
-        plots.plot_sequences(wgan.gen, batch_gen_valid, noise_gen, 
+    plots.plot_sequences(wgan.gen, batch_gen_valid, noise_gen,
             num_samples=plot_samples, out_fn=plot_fn)
 
     return loss_log
@@ -92,7 +87,6 @@ def setup_deterministic(train_years=None, val_years=None,
                         lr=1e-4, optimizer=Adam):
 
     gen_det = models.generator_deterministic(filters=filters)
-    #gen_det.compile(loss=loss, optimizer=Adam(lr=lr))
     det_model = deterministic.Deterministic(gen_det, lr, loss, optimizer)
     
     (batch_gen_train, batch_gen_valid, batch_gen_test) = setup_batch_gen(
@@ -109,14 +103,6 @@ def setup_deterministic(train_years=None, val_years=None,
 
 def train_deterministic(det_model, batch_gen_train, batch_gen_valid,
                         steps_per_epoch, num_epochs, plot_samples=8, plot_fn="../figures/progress.pdf"):
-    
-    #callback = EarlyStopping(monitor='val_loss', patience=5,restore_best_weights=True)
-
-
-    # gen_det.fit(batch_gen_train, epochs=num_epochs,
-    #         steps_per_epoch=steps_per_epoch,
-    #         validation_data=batch_gen_valid, validation_steps=32,
-    #         callbacks=[callback])
     
     loss_log = det_model.train_det(batch_gen_train, steps_per_epoch)
     plots.plot_sequences_deterministic(det_model.gen_det, batch_gen_valid, num_samples=plot_samples, out_fn=plot_fn)
