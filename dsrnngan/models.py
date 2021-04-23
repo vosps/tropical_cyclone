@@ -129,7 +129,7 @@ def generator_deterministic(era_dim=(10,10,9), const_dim=(250,250,2), filters=64
     print(f"Shape after third residual block: {generator_output.shape}")
     
     ## Output layer
-    generator_output = Conv2D(filters=1, kernel_size=(1,1), activation='sigmoid', name="generator_output")(generator_output)
+    generator_output = Conv2D(filters=1, kernel_size=(1,1), activation='relu', name="generator_output")(generator_output)
     print(f"Output shape: {generator_output.shape}")
     
     gen = Model(inputs=[generator_input, const_input], outputs=generator_output, name='gen')
