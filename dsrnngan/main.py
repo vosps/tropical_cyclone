@@ -213,7 +213,7 @@ if __name__ == "__main__":
         eval_fn = "{}/eval-{}.txt".format(log_path, application) if log_path \
             else path+"/../figures/eval.txt"
         
-        qual_fn = "{}/quall-{}.txt".format(log_path, application) if log_path \
+        qual_fn = "{}/qual-{}.txt".format(log_path, application) if log_path \
             else path+"/../figures/eval.txt"
 
         while (training_samples < num_samples): # main training loop
