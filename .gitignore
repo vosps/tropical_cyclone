@@ -1,3 +1,9 @@
+jupyter/
+logs/
+test-det/
+test-logs/
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

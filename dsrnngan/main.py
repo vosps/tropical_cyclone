@@ -150,7 +150,7 @@ if __name__ == "__main__":
         #evaluate model performance        
         eval.rank_metrics_by_time(mode, train_years, val_years, application, out_fn=eval_fn, 
                                   weights_dir=log_path, check_every=1, N_range=None, 
-                                  batch_size=batch_size, num_batches=num_batches, filters=filters)
+                                  batch_size=batch_size, num_batches=num_batches, filters=filters, rank_samples=100)
     
         eval.quality_metrics_by_time(mode, train_years, val_years, application, out_fn=qual_fn,
                                      weights_dir=log_path, check_every=1, batch_size=batch_size,
@@ -251,7 +251,7 @@ if __name__ == "__main__":
         #evaluate model performance              
         eval.rank_metrics_by_time(mode, train_years, val_years, application, out_fn=eval_fn,
                                   weights_dir=log_path, check_every=1, N_range=None,
-                                  batch_size=batch_size, num_batches=num_batches, filters=filters)
+                                  batch_size=batch_size, num_batches=num_batches, filters=filters, rank_samples=1)
         
         eval.quality_metrics_by_time(mode, train_years, val_years, application, out_fn=qual_fn, 
                                      weights_dir=log_path, check_every=1, batch_size=batch_size, 

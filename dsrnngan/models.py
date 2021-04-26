@@ -136,7 +136,7 @@ def generator_deterministic(era_dim=(10,10,9), const_dim=(250,250,2), filters=64
     
     return gen
 
-def discriminator(era_dim=(10,10,9), const_dim=(250,250,2), nimrod_dim=(250,250,1), filters=filters, conv_size=(3,3), stride=1, relu_alpha=0.2, norm=None, dropout_rate=None):
+def discriminator(era_dim=(10,10,9), const_dim=(250,250,2), nimrod_dim=(250,250,1), filters=64, conv_size=(3,3), stride=1, relu_alpha=0.2, norm=None, dropout_rate=None):
     
     # Network inputs 
     ##rainfall image                                                                                                                                                                                         

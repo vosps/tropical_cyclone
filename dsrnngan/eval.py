@@ -130,7 +130,7 @@ def rank_OP(norm_ranks, num_ranks=100):
 
 
 def rank_metrics_by_time(mode, train_years, val_years, application, out_fn,
-                         weights_dir, check_every=1, N_range=None, batch_size=16, num_batches=64, filters=64):
+                         weights_dir, check_every=1, N_range=None, batch_size=16, num_batches=64, filters=64, rank_samples=100):
 
     if mode == "train":
         (wgan, _, batch_gen_valid, _, noise_shapes, _) = train.setup_gan(train_years=train_years, val_years=val_years, val_size=batch_size*num_batches, batch_size=batch_size, filters=filters)
@@ -162,10 +162,10 @@ def rank_metrics_by_time(mode, train_years, val_years, application, out_fn,
 
         if mode == "train":
             gen.load_weights(weights_dir + "/" + fn)
-            (ranks, crps_scores) = ensemble_ranks(mode, gen, batch_gen_valid, noise_gen, num_batches=num_batches)
+            (ranks, crps_scores) = ensemble_ranks(mode, gen, batch_gen_valid, noise_gen, num_batches=num_batches, rank_samples=rank_samples)
         elif mode == "deterministic":
             gen_det.load_weights(weights_dir + "/" + fn)
-            (ranks, crps_scores) = ensemble_ranks(mode, gen_det, batch_gen_valid, noise_gen=[], num_batches=num_batches)
+            (ranks, crps_scores) = ensemble_ranks(mode, gen_det, batch_gen_valid, noise_gen=[], num_batches=num_batches, rank_samples=rank_samples)
         else:
             print("rank_metrics_by_time not implemented for mode type")
 
