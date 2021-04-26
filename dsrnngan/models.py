@@ -57,7 +57,7 @@ def generator(era_dim=(10,10,9), const_dim=(250,250,2), noise_dim=(10,10,8), fil
     print(f"Shape after third residual block: {generator_output.shape}")
     
     ## Output layer
-    generator_output = Conv2D(filters=1, kernel_size=(1,1), activation='relu', name="generator_output")(generator_output)
+    generator_output = Conv2D(filters=1, kernel_size=(1,1), activation='softplus', name="generator_output")(generator_output)
     print(f"Output shape: {generator_output.shape}")
     
     model = Model(inputs=[generator_input, const_input, noise_input], outputs=generator_output, name='gen')
@@ -129,14 +129,14 @@ def generator_deterministic(era_dim=(10,10,9), const_dim=(250,250,2), filters=64
     print(f"Shape after third residual block: {generator_output.shape}")
     
     ## Output layer
-    generator_output = Conv2D(filters=1, kernel_size=(1,1), activation='relu', name="generator_output")(generator_output)
+    generator_output = Conv2D(filters=1, kernel_size=(1,1), activation='softplus', name="generator_output")(generator_output)
     print(f"Output shape: {generator_output.shape}")
     
     gen = Model(inputs=[generator_input, const_input], outputs=generator_output, name='gen')
     
     return gen
 
-def discriminator(era_dim=(10,10,9), const_dim=(250,250,2), nimrod_dim=(250,250,1), filters=64, conv_size=(3,3), stride=1, relu_alpha=0.2, norm=None, dropout_rate=None):
+def discriminator(era_dim=(10,10,9), const_dim=(250,250,2), nimrod_dim=(250,250,1), filters=filters, conv_size=(3,3), stride=1, relu_alpha=0.2, norm=None, dropout_rate=None):
     
     # Network inputs 
     ##rainfall image                                                                                                                                                                                         
