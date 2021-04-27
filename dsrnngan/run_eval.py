@@ -25,3 +25,8 @@ weights_dir = log_path
 
 eval.rank_metrics_by_time(mode, train_years, val_years, application, out_fn, weights_dir, check_every=1, 
                           N_range=None, batch_size=batch_size, num_batches=num_batches, filters=filters, rank_samples=rank_samples)
+
+#log_path = "/ppdata/lucy-cGAN/jupyter"
+#filename="gen_weights-ERA-0012800.h5"
+
+#eval.rank_metrics_by_noise(filename, mode, train_years, val_years, application, out_fn, weights_dir, batch_size=batch_size, num_batches=num_batches)

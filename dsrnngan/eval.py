@@ -180,21 +180,21 @@ def rank_metrics_by_time(mode, train_years, val_years, application, out_fn,
         log_line("{} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}".format(N_samples, KS, CvM, DKL, OP, CRPS, mean, std))
 
 
-def rank_metrics_by_noise(application, run_id, data_file,
-    weights_fn):
-    (wgan, batch_gen_train, batch_gen_valid, _,
-        noise_shapes, steps_per_epoch) = train.setup_gan(data_file,
-        application=application)
+def rank_metrics_by_noise(filename, mode, train_years, val_years, application, out_fn, weights_dir, batch_size=16, num_batches=64):
+  
+    (wgan, _, batch_gen_valid, _, noise_shapes, _) = train.setup_gan(train_years=2015, val_years=2019, val_size=batch_size*num_batches, batch_size=batch_size)
     gen = wgan.gen
-    noise_gen = noise.NoiseGenerator(noise_shapes(),
-        batch_size=batch_gen_valid.batch_size)
-
-    for m in list(range(0.5,2.51,0.1))+[3.0,3.5]:
-        N_samples = int(fn.split("-")[-1].split(".")[0])
-        gen.load_weights(weights_dir+"/"+fn)
-        (ranks, crps_scores) = ensemble_ranks(gen, batch_gen_valid,
-            noise_gen, num_batches=32, noise_mul=m)
-        
+    noise_gen = noise.NoiseGenerator(noise_shapes(), batch_size=batch_size)
+    print("loaded gan model")
+    
+    noise_mu_values = list([round(x * 0.01, 1) for x in range(50, 250, 10)])+[3.0,3.5]
+    
+    for m in noise_mu_values:
+        N_samples = int(filename.split("-")[-1].split(".")[0])
+        gen.load_weights(weights_dir + "/" + filename)
+        print("loaded gan weights")
+        (ranks, crps_scores) = ensemble_ranks(mode, gen, batch_gen_valid, noise_gen, noise_mul=m, num_batches=num_batches)
+          
         KS = rank_KS(ranks)
         CvM = rank_CvM(ranks) 
         DKL = rank_DKL(ranks)
