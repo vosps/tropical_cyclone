@@ -1,7 +1,7 @@
 import eval
 
-#mode = "train"
-mode = "deterministic"
+mode = "train"
+#mode = "deterministic"
 #train_years = 2015
 train_years = [2015, 2016, 2017, 2018]
 val_years = 2019
@@ -11,7 +11,7 @@ num_batches = 64
 filters = 128
 
 if mode == "train":
-    log_path = "/ppdata/lucy-cGAN/logs/test-gan"
+    log_path = "/ppdata/lucy-cGAN/logs/filters_128/gan_softplus/"
 elif mode == "deterministic":
     log_path = "/ppdata/lucy-cGAN/logs/filters_128/det"
     
