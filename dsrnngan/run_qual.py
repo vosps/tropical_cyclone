@@ -21,3 +21,8 @@ weights_dir = log_path
 
 
 eval.quality_metrics_by_time(mode, train_years, val_years, application, out_fn, weights_dir, check_every=1, batch_size=batch_size, num_batches=num_batches, filters=filters)
+
+#log_path = "/ppdata/lucy-cGAN/jupyter"
+#weights_fn="gen_weights-ERA-0012800.h5"
+
+#eval.quality_metrics_table(mode, weights_fn, train_years, val_years, application, batch_size=batch_size, num_batches=num_batches, filters=filters)  

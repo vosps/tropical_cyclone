@@ -27,6 +27,12 @@ eval.rank_metrics_by_time(mode, train_years, val_years, application, out_fn, wei
                           N_range=None, batch_size=batch_size, num_batches=num_batches, filters=filters, rank_samples=rank_samples)
 
 #log_path = "/ppdata/lucy-cGAN/jupyter"
-#filename="gen_weights-ERA-0012800.h5"
+#weights_fn="gen_weights-ERA-0012800.h5"
 
-#eval.rank_metrics_by_noise(filename, mode, train_years, val_years, application, out_fn, weights_dir, batch_size=batch_size, num_batches=num_batches)
+## note -- rank_metrics_by_noise will only run with GAN weights
+#eval.rank_metrics_by_noise(weights_fn, mode, train_years, val_years, application, weights_dir, batch_size=batch_size, num_batches=num_batches, filters=filters)
+
+#log_path = "/ppdata/lucy-cGAN/jupyter
+#filename = "gen_weights-ERA-0012800.h5"
+#weights_fn = "{}/{}".format(log_path, filename)
+#eval.rank_metrics_table(weights_fn, mode, train_years, val_years, application, batch_size=batch_size, num_batches=num_batches, filters=filters)                        
