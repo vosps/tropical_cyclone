@@ -44,6 +44,8 @@ def setup_gan(train_years=None, val_years=None,
               batch_size=16, filters=64,
               lr_disc=0.0001, lr_gen=0.0001):
 
+    print(f"disc learning rate is: {lr_disc}") 
+    print(f"gen learning rate is: {lr_gen}")
     (gen, noise_shapes) = models.generator(filters=filters)
     disc = models.discriminator(filters=filters)
     wgan = gan.WGANGP(gen, disc, lr_disc=lr_disc, lr_gen=lr_gen)
@@ -86,6 +88,7 @@ def setup_deterministic(train_years=None, val_years=None,
                         loss='mse', 
                         lr=1e-4, optimizer=Adam):
 
+    print(f"learning rate is: {lr}")
     gen_det = models.generator_deterministic(filters=filters)
     det_model = deterministic.Deterministic(gen_det, lr, loss, optimizer)
     

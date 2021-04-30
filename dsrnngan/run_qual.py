@@ -1,19 +1,19 @@
 import eval
 
-mode = "train"
-#mode = "deterministic"
+#mode = "train"
+mode = "deterministic"
 #train_years = 2015
 train_years = [2015, 2016, 2017, 2018]
 val_years = 2019
 application = "ERA"
 batch_size = 16
 num_batches = 64
-filters = 128
+filters = 64
 
 if mode == "train":
     log_path = "/ppdata/lucy-cGAN/logs/filters_128/gan_softplus/"
 elif mode == "deterministic":
-    log_path = "/ppdata/lucy-cGAN/logs/filters_128/det"
+    log_path = "/ppdata/lucy-cGAN/logs/filters_64/det_softplus/"
     
 out_fn = "{}/qual-{}.txt".format(log_path, application)
 #out_fn = "{}/eval-{}.txt".format(log_path, application)

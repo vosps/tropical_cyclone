@@ -86,7 +86,7 @@ def plot_sequences(gen, batch_gen, noise_gen,
         plt.close()
 
 def plot_sequences_deterministic(gen_det, batch_gen,
-    num_samples=8, num_instances=4, out_fn=None,
+    num_samples=8, num_instances=1, out_fn=None,
     plot_stride=1):
     
     for cond, const, seq_real in batch_gen:
