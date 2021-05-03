@@ -24,15 +24,16 @@ weights_dir = log_path
 
 
 eval.rank_metrics_by_time(mode, train_years, val_years, application, out_fn, weights_dir, check_every=1, 
-                          N_range=None, batch_size=batch_size, num_batches=num_batches, filters=filters, rank_samples=rank_samples)
+                          N_range=None, batch_size=batch_size, num_batches=num_batches, filters=filters, rank_samples=rank_samples, 
+                          lr_disc=lr_disc, lr_gen=lr_gen, lr=lr)
 
 #log_path = "/ppdata/lucy-cGAN/jupyter"
 #weights_fn="gen_weights-ERA-0012800.h5"
 
 ## note -- rank_metrics_by_noise will only run with GAN weights
-#eval.rank_metrics_by_noise(weights_fn, mode, train_years, val_years, application, weights_dir, batch_size=batch_size, num_batches=num_batches, filters=filters)
+#eval.rank_metrics_by_noise(weights_fn, mode, train_years, val_years, application, weights_dir, batch_size=batch_size, num_batches=num_batches, filters=filters, lr_disc=lr_disc, lr_gen=lr_gen)
 
 #log_path = "/ppdata/lucy-cGAN/jupyter
 #filename = "gen_weights-ERA-0012800.h5"
 #weights_fn = "{}/{}".format(log_path, filename)
-#eval.rank_metrics_table(weights_fn, mode, train_years, val_years, application, batch_size=batch_size, num_batches=num_batches, filters=filters)                        
+#eval.rank_metrics_table(weights_fn, mode, train_years, val_years, application, batch_size=batch_size, num_batches=num_batches, filters=filters, lr_disc=lr_disc, lr_gen=lr_gen, lr=lr)                        

@@ -40,7 +40,7 @@ if __name__ == "__main__":
         help="Number of batches for eval metrics")
     parser.add_argument('--filters', type=int, default=64,
         help="Number of filters used in model architecture")
-    parser.add_argument('--learning_rate', type=int, default=1e-4,
+    parser.add_argument('--learning_rate', type=float, default=1e-4,
         help="Learning rate used for optimizer")
     parser.add_argument('--opt_switch_point', type=int, default=3500000,
         help="The num. of samples at which the optimizer is switched to SGD")
@@ -72,10 +72,12 @@ if __name__ == "__main__":
             save_weights_root = path + "/../models"
 
         # initialize GAN
+        lr_disc = learning_rate
+        lr_gen = learning_rate
         (wgan, batch_gen_train, batch_gen_valid, _, noise_shapes, _) = \
             train.setup_gan(train_years, val_years, val_size = val_size,
                             batch_size=batch_size, filters=filters, 
-                            lr_disc=learning_rate, lr_gen=learning_rate)
+                            lr_disc=lr_disc, lr_gen=lr_gen)
 
         if load_weights_root: # load weights and run status
             wgan.load(wgan.filenames_from_root(load_weights_root))
@@ -154,11 +156,12 @@ if __name__ == "__main__":
         #evaluate model performance        
         eval.rank_metrics_by_time(mode, train_years, val_years, application, out_fn=eval_fn, 
                                   weights_dir=log_path, check_every=1, N_range=None, 
-                                  batch_size=batch_size, num_batches=num_batches, filters=filters, rank_samples=100)
+                                  batch_size=batch_size, num_batches=num_batches, filters=filters, 
+                                  rank_samples=100, lr_disc=lr_disc, lr_gen=lr_gen)
     
         eval.quality_metrics_by_time(mode, train_years, val_years, application, out_fn=qual_fn,
                                      weights_dir=log_path, check_every=1, batch_size=batch_size,
-                                     num_batches=num_batches, filters=filters)
+                                     num_batches=num_batches, filters=filters, lr_disc=lr_disc, lr_gen=lr_gen)
 
     elif mode == "plot":
         mchrzc_data_fn = args.mchrzc_data_file
@@ -179,7 +182,7 @@ if __name__ == "__main__":
         application = args.application
         num_batches = args.num_batches
         filters = args.filters
-        learning_rate =args.learning_rate
+        learning_rate = args.learning_rate
 
         num_epochs = int(num_samples/(steps_per_epoch * batch_size))
         epoch = 1
@@ -257,8 +260,9 @@ if __name__ == "__main__":
         #evaluate model performance              
         eval.rank_metrics_by_time(mode, train_years, val_years, application, out_fn=eval_fn,
                                   weights_dir=log_path, check_every=1, N_range=None,
-                                  batch_size=batch_size, num_batches=num_batches, filters=filters, rank_samples=1)
+                                  batch_size=batch_size, num_batches=num_batches, filters=filters, 
+                                  rank_samples=1, lr=learning_rate)
         
         eval.quality_metrics_by_time(mode, train_years, val_years, application, out_fn=qual_fn, 
                                      weights_dir=log_path, check_every=1, batch_size=batch_size, 
-                                     num_batches=num_batches, filters=filters)
+                                     num_batches=num_batches, filters=filters, lr=learning_rate)
