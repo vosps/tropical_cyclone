@@ -20,7 +20,7 @@ if __name__ == "__main__":
     parser.add_argument('--application', type=str, default='ERA')
     parser.add_argument('--train_years', type=int, nargs='+', default=[2015],
                         help="Training years")
-    parser.add_argument('--val_years', type=int, nargs='+', default=[2019],
+    parser.add_argument('--val_years', type=int, nargs='+', default=[2016],
                         help="Validation years")
     parser.add_argument('--val_size', type=int, default=8,
                         help='Num val examples')
@@ -72,7 +72,7 @@ if __name__ == "__main__":
             save_weights_root = path + "/../models"
 
         # initialize GAN
-        lr_disc = learning_rate
+        lr_disc = 1e-6
         lr_gen = learning_rate
         (wgan, batch_gen_train, batch_gen_valid, _, noise_shapes, _) = \
             train.setup_gan(train_years, val_years, val_size = val_size,
