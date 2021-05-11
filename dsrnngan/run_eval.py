@@ -2,17 +2,20 @@ import eval
 
 mode = "train"                                                                                                                                                      
 #mode = "deterministic"
-#train_years = 2015                                                                                                                                                  
-train_years = [2015, 2016, 2017, 2018]
-val_years = 2019
+train_years = 2015                                                                                                                                                  
+#train_years = [2015, 2016, 2017, 2018]
+val_years = 2016
 application = "ERA"
 batch_size = 16
 num_batches = 64
 #filters = 64
 filters = 128
+lr_disc = 1e-4
+lr_gen=1e-5
+lr=1e-4
 
 if mode == "train":
-    log_path = "/ppdata/lucy-cGAN/logs/filters_128/gan_softplus"
+    log_path = "/ppdata/lucy-cGAN/logs/filters_128/disc_lr_1e-4/softplus/lr_minus5/"
     rank_samples = 100
 elif mode == "deterministic":
     log_path = "/ppdata/lucy-cGAN/logs/filters_128/det"

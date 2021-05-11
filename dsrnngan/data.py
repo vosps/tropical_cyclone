@@ -6,12 +6,15 @@ import os
 import numpy as np
 import xarray as xr
 from dask.array.chunk import coarsen
+from datetime import datetime,timedelta
 
 ERA_PATH = '/ppdata/ERA5/'
 NIMROD_PATH = '/ppdata/NIMROD/'
+IFS_PATH = '/ppdata/IFS/'
 
-era_fields = ['pr','prc','prl','tcrw','lwp','prw','cape','tosr','psl','u700','v700']
-
+all_era_fields = ['pr','prc','prl','tcrw','lwp' ,'prw' ,'cape','tosr','psl','u700','v700']
+all_ifs_fields = ['tp','cp' ,'sp' ,'tisr','cape','tclw','tcwv','u700','v700']
+ifs_hours = np.array([i for i in range(5)] + [i for i in range(6,17)] + [i for i in range(18,24)])
 # Global constants
 UK_LAT_LIMIT = (50, 60)
 UK_LON_LIMIT = (-2, 12)
@@ -226,6 +229,27 @@ def load_era_nimrod_batch(batch_dates, era_fields,log_precip=False,
     else:
         return [np.array(batch_x),load_hires_constants(len(batch_dates))],np.array(batch_y)
 
+def load_ifs_nimrod_batch(batch_dates, ifs_fields=all_ifs_fields,log_precip=False,
+                          constants=False,hour=0,ifs_norm=False,ifs_crop=0):
+    batch_x = [] 
+    batch_y = []
+    if hour=='random':
+        hours = ifs_hours[np.random.randint(22,size=[len(batch_dates)])]
+    elif np.issubdtype(type(hour),np.integer):
+        hours = len(batch_dates)*[hour]
+    else:
+        print(type(hour))
+
+    for i,date in enumerate(batch_dates):
+        h = hours[i]
+        batch_x.append(load_ifsstack(ifs_fields,date,h,log_precip=log_precip,norm=era_norm))
+        batch_y.append(load_nimrod(date,h,log_precip=log_precip))
+    
+    if (not constants):
+        return np.array(batch_x), np.array(batch_y)
+    else:
+        return [np.array(batch_x),load_hires_constants(len(batch_dates))],np.array(batch_y)
+
 def load_nimrod_nimrod_batch(batch_dates, log_precip=False,
                              constants=False,hour=0,aggregate=1):
     batch_x = [] 
@@ -247,6 +271,71 @@ def load_nimrod_nimrod_batch(batch_dates, log_precip=False,
     else:
         return [np.array(batch_x),load_hires_constants(len(batch_dates))],np.array(batch_y)
 
+
+def load_ifs(ifield,date,hour,log_precip=False,norm=False,crop=0):
+    #Get the time required (compensating for IFS saving precip at the end of the timestep)
+    time = datetime(year=int(date[:4]),month=int(date[4:6]),day=int(date[6:8]),hour=hour) + timedelta(hours=1)
+    #Get the correct forecast starttime
+    
+    if time.hour < 6:
+        tmpdate = time - timedelta(days = 1)
+        loaddate = datetime(year=tmpdate.year,month=tmpdate.month,day=tmpdate.day,hour=18)
+        loadtime = '12'
+    elif 6<= time.hour < 18:
+        tmpdate = time
+        loaddate = datetime(year=tmpdate.year,month=tmpdate.month,day=tmpdate.day,hour=6)
+        loadtime = '00'
+    elif 18<= time.hour < 24:
+        tmpdate = time
+        loaddate = datetime(year=tmpdate.year,month=tmpdate.month,day=tmpdate.day,hour=18)
+        loadtime = '12'
+    else:
+        assert False, "Not acceptable time"
+    dt = time - loaddate 
+    time_index = int(dt.total_seconds()//3600)
+    assert time_index >= 1, "Cannot use first hour of retrival"
+    loaddata_str = loaddate.strftime("%Y%m%d")+ '_'+loadtime
+
+    field = ifield
+    if field in ['u700','v700']:
+        fleheader = 'winds'
+        field = field[:1]
+    else:
+        fleheader = 'sfc'
+    
+    ds = xr.open_dataset(f"{IFS_PATH}/{fleheader}_{loaddata_str}.nc")
+    data = ds[field]
+    field = ifield
+    if field in ['tp','cp']:
+        data = data[time_index,:,:] - data[time_index-1,:,:]
+    else:
+        data = data[time_index,:,:]
+
+    if crop is None or crop == 0:
+        y = np.array(data[::-1,:])
+    else:
+        assert False, "Not completed this section, need to reverse indicies"
+        y = np.array(data[-crop:crop:-1,-crop:crop:-1])
+    data.close()
+    if field in ['tp','cp','pr','prl','prc']:
+        #print('pass')
+        y[y < 0] = 0.
+    if log_precip and field in ['tp','cp','pr','prc','prl']:
+        # ERA precip is measure in meters, so multiple up
+        return np.log10(1+y*1000)
+    elif norm:
+        return (y-ifs_norm[field][0])/ifs_norm[field][1]
+    else:
+        return y
+
+def load_ifsstack(fields,date,hour,log_precip=False,norm=False,crop=0.
+                  ):
+    field_arrays = []
+    for f in fields:
+        field_arrays.append(load_ifs(f,date,hour,log_precip=log_precip,norm=norm,crop=crop))
+    return np.stack(field_arrays,-1)
+
+
 def getstats(field,year=2016):
     # Get various stats of the ERA field
     ds=xr.load_dataarray(f'/ppdata/ERA5/original/{field}{year}.nc')
@@ -256,11 +345,46 @@ def getstats(field,year=2016):
     sd = ds.std().data
     return mi,mx,mn,sd
 
+def getifsstats(field,year=2018):
+    import datetime
+
+    # create date objects
+    begin_year = datetime.date(year, 1, 1)
+    end_year = datetime.date(year, 12, 31)
+    one_day = datetime.timedelta(days=1)
+    next_day = begin_year
+
+    mi = 0
+    mx = 0
+    mn = 0
+    sd = 0
+    nsamples = 0
+    for day in range(0, 366):  # includes potential leap year
+        if next_day > end_year:
+            break
+        for hour in range(24):
+            if hour in [5,17]:
+                pass
+            else:
+                try:
+                    dta = load_ifs(field,next_day.strftime("%Y%m%d"),hour)
+                    mi = min(mi,dta.min())
+                    mx = max(mx,dta.max())
+                    mn += dta.mean()
+                    sd += dta.std()**2
+                    nsamples +=1
+                except:
+                    print(f"Problem loading {next_day.strftime('%Y%m%d')}, {hour}")
+        next_day += one_day
+    mn /= nsamples
+    sd = (sd / nsamples)**0.5
+    return mi,mx,mn,sd
+
 def gen_norm(year=2016):
     # Save stats for specific year
     import pickle
     stats_dic = {}
-    for f in era_fields:
+    for f in all_era_fields:
         stats=getstats(f,year)
         if f == 'psl':
             stats_dic[f] = [stats[2],stats[3]]
@@ -271,10 +395,38 @@ def gen_norm(year=2016):
     with open(f'/ppdata/constants/ERANorm{year}.pkl', 'wb') as f:
         pickle.dump(stats_dic, f, 0)
     return
-        
+
+def gen_ifs_norm(year=2018):
+    import pickle
+    stats_dic = {}
+    for f in all_ifs_fields:
+        stats=getifsstats(f,year)
+        if f == 'sp':
+            stats_dic[f] = [stats[2],stats[3]]
+        elif f == "u700" or f == "v700":
+            stats_dic[f] = [0,max(-stats[0],stats[1])]
+        else:
+            stats_dic[f] = [0,stats[1]]
+    with open(f'/ppdata/constants/IFSNorm{year}.pkl', 'wb') as f:
+        pickle.dump(stats_dic, f, 0)
+    return
+
+
 def load_norm(year=2016):
     import pickle
     with open(f'/ppdata/constants/ERANorm{year}.pkl', 'rb') as f:
         return pickle.load(f)
 
-era_norm = load_norm()
+def load_ifs_norm(year=2016):
+    import pickle
+    with open(f'/ppdata/constants/IFSNorm{year}.pkl', 'rb') as f:
+        return pickle.load(f)
+
+try:
+    era_norm = load_norm()
+except:
+    era_norm = None
+try:
+    ifs_norm = load_ifs_norm(2019)
+except:
+    ifs_norm = None
