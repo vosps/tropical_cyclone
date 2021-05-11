@@ -10,8 +10,8 @@ from tensorflow.keras.optimizers import Adam
 
 import gan
 import deterministic
-import tfrecords_generator
-from tfrecords_generator import DataGenerator
+import tfrecords_generator_ifs
+from tfrecords_generator_ifs import DataGenerator
 import models
 import noise
 import plots
@@ -22,7 +22,7 @@ path = os.path.dirname(os.path.abspath(__file__))
 def setup_batch_gen(train_years,val_years,batch_size=64,
                     val_size = None, val_fixed=True):# ,
                     # train_images=5,val_images=5):
-    tfrecords_generator.return_dic = False
+    tfrecords_generator_ifs.return_dic = False
     train = DataGenerator(train_years,batch_size=batch_size)
     if val_size is not None:
         if val_size <= batch_size:

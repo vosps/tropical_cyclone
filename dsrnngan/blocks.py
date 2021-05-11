@@ -49,3 +49,10 @@ def const_upscale_block(const_input, filters):
 
     return const_output
 
+def const_upscale_block_100(const_input, filters):
+    
+    ## Map (n x 100 x 100 x 2) to (n x 10 x 10 x f)
+    const_output = Conv2D(filters=filters, kernel_size=(5,5), strides=5, padding="valid", activation="relu")(const_input)
+    const_output = Conv2D(filters=filters, kernel_size=(2,2), strides=2, padding="valid", activation="relu")(const_output)
+   
+    return const_output
