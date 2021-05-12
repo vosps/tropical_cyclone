@@ -130,7 +130,7 @@ def rank_OP(norm_ranks, num_ranks=100):
 
 
 def rank_metrics_by_time(mode, train_years, val_years, application, out_fn, weights_dir, check_every=1, N_range=None, batch_size=16, num_batches=64, 
-                         filters=64, rank_samples=100, lr_disc=0.0001, lr_gen=0.0001, lr=0.0001):
+                         filters=64, rank_samples=100, lr_disc=0.0001, lr_gen=0.0001):
 
     if mode == "train":
         (wgan, _, batch_gen_valid, _, noise_shapes, _) = train.setup_gan(train_years, val_years, val_size=batch_size*num_batches, 
@@ -140,7 +140,7 @@ def rank_metrics_by_time(mode, train_years, val_years, application, out_fn, weig
         print("loaded gan model")
     elif mode == "deterministic":
         (det_model, _, batch_gen_valid, _, _) = train.setup_deterministic(train_years, val_years, val_size=batch_size*num_batches, 
-                                                                          batch_size=batch_size, filters=filters, lr=lr)
+                                                                          batch_size=batch_size, filters=filters, lr=lr_gen)
         gen_det = det_model.gen_det
         noise_gen=[]
         print("loaded deterministic model")
@@ -210,7 +210,7 @@ def rank_metrics_by_noise(filename, mode, train_years, val_years, application, w
         print(N_samples, KS, CvM, DKL, CRPS, mean, std)
         epoch += 1
 
-def rank_metrics_table(weights_fn, mode, train_years, val_years, application, batch_size, num_batches, filters, lr_disc=0.0001, lr_gen=0.0001, lr=0.0001):
+def rank_metrics_table(weights_fn, mode, train_years, val_years, application, batch_size, num_batches, filters, lr_disc=0.0001, lr_gen=0.0001):
     
     if mode == "train":
         (wgan, _, batch_gen_valid, _, noise_shapes, _) = train.setup_gan(train_years, val_years, val_size=batch_size*num_batches, 
@@ -222,7 +222,7 @@ def rank_metrics_table(weights_fn, mode, train_years, val_years, application, ba
         (ranks, crps_scores) = ensemble_ranks(mode, gen, batch_gen_valid, noise_gen, num_batches=num_batches)
     elif mode == "deterministic":
         (det_model, _, batch_gen_valid, _, _) = train.setup_deterministic(train_years, val_years, val_size=batch_size*num_batches, 
-                                                                          batch_size=batch_size, filters=filters, lr=lr)
+                                                                          batch_size=batch_size, filters=filters, lr_gen=lr_gen)
         gen_det = det_model.gen_det
         gen_det.load_weights(weights_fn)
         noise_gen = []
@@ -230,7 +230,7 @@ def rank_metrics_table(weights_fn, mode, train_years, val_years, application, ba
         (ranks, crps_scores) = ensemble_ranks(mode, gen_det, batch_gen_valid, noise_gen, num_batches=num_batches)
     elif mode=="rainfarm":
         (gen_det, _, batch_gen_valid, _, _) = train.setup_deterministic(train_years, val_years, val_size=batch_size*num_batches, 
-                                                                        batch_size=batch_size, filters=filters, lr=lr)
+                                                                        batch_size=batch_size, filters=filters, lr_gen=lr_gen)
         gen = GeneratorRainFARM(16, batch_gen_test.decoder)
         noise_shapes = lambda: []
         noise_gen = noise.NoiseGenerator(noise_shapes(), batch_size=batch_size)
@@ -480,7 +480,7 @@ def image_quality(mode, gen, batch_gen, noise_gen, num_instances=1, num_batches=
 
 
 def quality_metrics_by_time(mode, train_years, val_years, application, out_fn, weights_dir, check_every=1, batch_size=16, 
-                            num_batches=100, filters=64, lr_disc=0.0001, lr_gen=0.0001, lr=0.0001):
+                            num_batches=100, filters=64, lr_disc=0.0001, lr_gen=0.0001):
     if mode == "train":
         (wgan, _, batch_gen_valid, _, noise_shapes, _) = train.setup_gan(train_years, val_years, val_size=batch_size*num_batches, 
                                                                          batch_size=batch_size, filters=filters, lr_disc=lr_disc, lr_gen=lr_gen)
@@ -489,7 +489,7 @@ def quality_metrics_by_time(mode, train_years, val_years, application, out_fn, w
         print("loaded gan model")
     elif mode == "deterministic":
         (det_model, _, batch_gen_valid, _, _) = train.setup_deterministic(train_years, val_years, val_size=batch_size*num_batches, 
-                                                                          batch_size=batch_size, filters=filters, lr=lr)
+                                                                          batch_size=batch_size, filters=filters, lr=lr_gen)
         gen = det_model.gen_det
         noise_gen = []
         print("loaded deterministic model")
@@ -515,7 +515,7 @@ def quality_metrics_by_time(mode, train_years, val_years, application, out_fn, w
         log_line("{} {:.6f} {:.6f} {:.6f}".format(N_samples, rmse.mean(), ssim.mean(), np.nanmean(lsd)))
 
 def quality_metrics_table(mode, weights_fn, train_years, val_years, application, batch_size=16, num_batches=100, 
-                          filters=64, lr_disc=0.0001, lr_gen=0.0001, lr=0.0001):
+                          filters=64, lr_disc=0.0001, lr_gen=0.0001):
     if mode == "train":
         (wgan, _, batch_gen_valid, _, noise_shapes, _) = train.setup_gan(train_years, val_years, val_size=batch_size*num_batches, 
                                                                          batch_size=batch_size, filters=filters, lr_disc=lr_disc, lr_gen=lr_gen)
@@ -525,7 +525,7 @@ def quality_metrics_table(mode, weights_fn, train_years, val_years, application,
         print("loaded gan model")
     elif mode == "deterministic":
         (det_model, _, batch_gen_valid, _, _) = train.setup_deterministic(train_years, val_years, val_size=batch_size*num_batches, 
-                                                                          batch_size=batch_size, filters=filters, lr=lr)
+                                                                          batch_size=batch_size, filters=filters, lr=lr_gen)
         gen = det_model.gen_det
         gen.load_weights(weights_fn)
         noise_gen = []
