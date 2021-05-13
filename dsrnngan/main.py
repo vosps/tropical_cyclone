@@ -123,7 +123,7 @@ if __name__ == "__main__":
 
             # train for some number of batches
             loss_log = train.train_gan(wgan, batch_gen_train,
-                                       batch_gen_valid, noise_shapes,
+                                       batch_gen_valid, noise_shapes, epoch,
                                        steps_per_epoch, num_epochs=1, plot_samples=val_size,
                                        plot_fn=plot_fn)
 
@@ -232,7 +232,7 @@ if __name__ == "__main__":
             epoch += 1
             
             # train for some number of batches
-            loss_log = train.train_deterministic(det_model, batch_gen_train,
+            loss_log = train.train_deterministic(det_model, batch_gen_train, epoch,
                                                  batch_gen_valid, steps_per_epoch, 1, plot_samples=val_size,
                                                  plot_fn=plot_fn)
             loss_log = np.mean(loss_log)

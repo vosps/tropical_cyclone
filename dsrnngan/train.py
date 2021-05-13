@@ -62,7 +62,7 @@ def setup_gan(train_years=None, val_years=None,
         noise_shapes, steps_per_epoch)
 
 
-def train_gan(wgan, batch_gen_train, batch_gen_valid, noise_shapes,
+def train_gan(wgan, batch_gen_train, batch_gen_valid, noise_shapes, epoch,
     steps_per_epoch, num_epochs,
     plot_samples=8, plot_fn="../figures/progress.pdf"):
     
@@ -74,7 +74,7 @@ def train_gan(wgan, batch_gen_train, batch_gen_valid, noise_shapes,
         batch_size=batch_size)
     loss_log = wgan.train(batch_gen_train, noise_gen,
                               steps_per_epoch, training_ratio=5)
-    plots.plot_sequences(wgan.gen, batch_gen_valid, noise_gen,
+    plots.plot_sequences(wgan.gen, batch_gen_valid, noise_gen, epoch,
             num_samples=plot_samples, out_fn=plot_fn)
 
     return loss_log
@@ -104,10 +104,10 @@ def setup_deterministic(train_years=None, val_years=None,
         steps_per_epoch)
 
 
-def train_deterministic(det_model, batch_gen_train, batch_gen_valid,
+def train_deterministic(det_model, batch_gen_train, batch_gen_valid, epoch,
                         steps_per_epoch, num_epochs, plot_samples=8, plot_fn="../figures/progress.pdf"):
     
     loss_log = det_model.train_det(batch_gen_train, steps_per_epoch)
-    plots.plot_sequences_deterministic(det_model.gen_det, batch_gen_valid, num_samples=plot_samples, out_fn=plot_fn)
+    plots.plot_sequences_deterministic(det_model.gen_det, batch_gen_valid, epoch, num_samples=plot_samples, out_fn=plot_fn)
 
     return loss_log

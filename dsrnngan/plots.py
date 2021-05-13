@@ -31,7 +31,7 @@ def plot_img(img, value_range=(np.log10(0.1), np.log10(100)), extent=None):
         labelleft=False, labelbottom=False)
 
 
-def plot_sequences(gen, batch_gen, noise_gen, 
+def plot_sequences(gen, batch_gen, noise_gen, epoch,
     num_samples=8, num_instances=4, out_fn=None,
     plot_stride=1):
 
@@ -80,12 +80,14 @@ def plot_sequences(gen, batch_gen, noise_gen,
             j = 2+k
             plt.subplot(gs[i,j])
             plot_img(seq_gen[k][s,:,:,0], value_range=value_range) 
-            
+
+    plt.suptitle('Epoch ' + str(epoch))
+
     if out_fn is not None:
         plt.savefig(out_fn, bbox_inches='tight')
         plt.close()
 
-def plot_sequences_deterministic(gen_det, batch_gen,
+def plot_sequences_deterministic(gen_det, batch_gen, epoch,
     num_samples=8, num_instances=1, out_fn=None,
     plot_stride=1):
     
@@ -127,7 +129,9 @@ def plot_sequences_deterministic(gen_det, batch_gen,
             j = 2+k
             plt.subplot(gs[i,j])
             plot_img(seq_gen[k][s,:,:,0], value_range=value_range) 
-            
+    
+    plt.suptitle('Epoch ' + str(epoch))
+    
     if out_fn is not None:
         plt.savefig(out_fn, bbox_inches='tight')
         plt.close()
