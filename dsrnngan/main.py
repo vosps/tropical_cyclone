@@ -112,7 +112,6 @@ if __name__ == "__main__":
 
         while (training_samples < num_samples): # main training loop
             print("Epoch {}/{}".format(epoch, num_epochs))
-            epoch += 1
 
             # check if we should switch optimizers
             if (training_samples >= opt_switch_point) and not switched_opt:
@@ -129,6 +128,7 @@ if __name__ == "__main__":
 
             loss_log = np.mean(loss_log, axis=0)
             training_samples += steps_per_epoch * batch_size
+            epoch += 1
 
             # save results
             wgan.save(save_weights_root)
