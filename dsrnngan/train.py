@@ -41,12 +41,12 @@ def setup_batch_gen(train_years,val_years,batch_size=64,
 def setup_gan(train_years=None, val_years=None,
               val_size = None,
               steps_per_epoch=50,
-              batch_size=16, filters=64,
+              batch_size=16, filters=64, noise_dim=(10,10,8),
               lr_disc=0.0001, lr_gen=0.0001):
 
     print(f"disc learning rate is: {lr_disc}") 
     print(f"gen learning rate is: {lr_gen}")
-    (gen, noise_shapes) = models.generator(filters=filters)
+    (gen, noise_shapes) = models.generator(noise_dim=noise_dim, filters=filters)
     disc = models.discriminator(filters=filters)
     wgan = gan.WGANGP(gen, disc, lr_disc=lr_disc, lr_gen=lr_gen)
 
