@@ -63,15 +63,17 @@ def setup_gan(train_years=None, val_years=None,
 
 
 def train_gan(wgan, batch_gen_train, batch_gen_valid, noise_shapes, epoch,
-    steps_per_epoch, num_epochs,
+    steps_per_epoch, noise_dim, num_epochs,
     plot_samples=8, plot_fn="../figures/progress.pdf"):
     
     for _, _, sample in batch_gen_train.take(1).as_numpy_iterator():
         img_shape = sample.shape[1:-1]
         batch_size = sample.shape[0]
     del sample
-    noise_gen = noise.NoiseGenerator(noise_shapes(img_shape),
-        batch_size=batch_size)
+    #print(f"noise_dim is {noise_shapes(img_shape)}")
+    #noise_gen = noise.NoiseGenerator(noise_shapes(img_shape), batch_size=batch_size)
+    print(f"noise_dim is {noise_dim}")
+    noise_gen = noise.NoiseGenerator(noise_dim, batch_size=batch_size) 
     loss_log = wgan.train(batch_gen_train, noise_gen,
                               steps_per_epoch, training_ratio=5)
     plots.plot_sequences(wgan.gen, batch_gen_valid, noise_gen, epoch,

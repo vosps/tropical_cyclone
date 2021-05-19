@@ -40,7 +40,7 @@ if __name__ == "__main__":
         help="Number of batches for eval metrics")
     parser.add_argument('--filters', type=int, default=64,
         help="Number of filters used in model architecture")
-    parser.add_argument('--noise_dim', type=int, default=(10,10,8),
+    parser.add_argument('--noise_channels', type=int, default=8,
         help="Dimensions of noise passed to generator")
     parser.add_argument('--learning_rate_disc', type=float, default=1e-4,
         help="Learning rate used for discriminator optimizer")
@@ -69,10 +69,11 @@ if __name__ == "__main__":
         filters = args.filters
         lr_disc = args.learning_rate_disc
         lr_gen = args.learning_rate_gen
-        noise_dim = args.noise_dim
+        noise_channels = args.noise_channels
         
         num_epochs = int(num_samples/(steps_per_epoch * batch_size))
         epoch = 1
+        noise_dim = (10,10) + (noise_channels,)
 
         if not save_weights_root:
             save_weights_root = path + "/../models"
@@ -80,7 +81,7 @@ if __name__ == "__main__":
         # initialize GAN
         (wgan, batch_gen_train, batch_gen_valid, _, noise_shapes, _) = \
             train.setup_gan(train_years, val_years, val_size = val_size,
-                            batch_size=batch_size, filters=filters, noise_dim=noise_dim 
+                            batch_size=batch_size, filters=filters, noise_dim=noise_dim, 
                             lr_disc=lr_disc, lr_gen=lr_gen)
 
         if load_weights_root: # load weights and run status
@@ -124,9 +125,9 @@ if __name__ == "__main__":
                 switched_opt = True
 
             # train for some number of batches
-            loss_log = train.train_gan(wgan, batch_gen_train,
-                                       batch_gen_valid, noise_shapes, epoch,
-                                       steps_per_epoch, num_epochs=1, plot_samples=val_size,
+            loss_log = train.train_gan(wgan, batch_gen_train, batch_gen_valid, 
+                                       noise_shapes, epoch, steps_per_epoch, 
+                                       noise_dim, num_epochs=1, plot_samples=val_size,
                                        plot_fn=plot_fn)
 
             loss_log = np.mean(loss_log, axis=0)
@@ -165,7 +166,7 @@ if __name__ == "__main__":
     
         eval.quality_metrics_by_time(mode, train_years, val_years, application, out_fn=qual_fn,
                                      weights_dir=log_path, check_every=1, batch_size=batch_size,
-                                     num_batches=num_batches, filters=filters, noise_dim=npoise_dim, 
+                                     num_batches=num_batches, filters=filters, noise_dim=noise_dim, 
                                      lr_disc=lr_disc, lr_gen=lr_gen)
 
     elif mode == "plot":

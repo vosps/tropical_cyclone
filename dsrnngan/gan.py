@@ -165,7 +165,7 @@ class WGANGP(object):
 
             with Nontrainable(self.disc):
                 (cond, const, sample) = batch_gen_iter.get_next()
-                # cond['noise_input']=noise_gen()
+                noise = noise_gen()
                 gen_loss = self.gen_trainer.train_on_batch(
                     [cond,const,noise], gen_target)
                 del sample, cond, const
