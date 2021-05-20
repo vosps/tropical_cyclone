@@ -126,9 +126,8 @@ if __name__ == "__main__":
 
             # train for some number of batches
             loss_log = train.train_gan(wgan, batch_gen_train, batch_gen_valid, 
-                                       noise_shapes, epoch, steps_per_epoch, 
-                                       noise_dim, num_epochs=1, plot_samples=val_size,
-                                       plot_fn=plot_fn)
+                                       noise_shapes, epoch, steps_per_epoch, num_epochs=1, 
+                                       plot_samples=val_size, plot_fn=plot_fn)
 
             loss_log = np.mean(loss_log, axis=0)
             training_samples += steps_per_epoch * batch_size
@@ -162,11 +161,11 @@ if __name__ == "__main__":
         eval.rank_metrics_by_time(mode, train_years, val_years, application, out_fn=eval_fn, 
                                   weights_dir=log_path, check_every=1, N_range=None, 
                                   batch_size=batch_size, num_batches=num_batches, filters=filters, 
-                                  noise_dim=noise_dim, rank_samples=100, lr_disc=lr_disc, lr_gen=lr_gen)
+                                  rank_samples=100, lr_disc=lr_disc, lr_gen=lr_gen)
     
         eval.quality_metrics_by_time(mode, train_years, val_years, application, out_fn=qual_fn,
-                                     weights_dir=log_path, check_every=1, batch_size=batch_size,
-                                     num_batches=num_batches, filters=filters, noise_dim=noise_dim, 
+                                     weights_dir=log_path, check_every=1, batch_size=batch_size, 
+                                     num_batches=num_batches, filters=filters, 
                                      lr_disc=lr_disc, lr_gen=lr_gen)
 
     elif mode == "plot":

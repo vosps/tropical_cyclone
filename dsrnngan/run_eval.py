@@ -1,20 +1,20 @@
 import eval
 
-#mode = "train"                                                                                                                                                      
-mode = "deterministic"
+mode = "train"                                                                                                                                                      
+#mode = "deterministic"
 train_years = 2018                                                                                                                                                  
 val_years = 2019
-application = "ERA"
+application = "IFS"
 batch_size = 16
 num_batches = 64
 #filters = 64
 filters = 128
-lr_disc = 1e-4
-lr_gen = 1e-4
-noise_dim = (10,10,8)
+lr_disc = 4e-6
+lr_gen = 2e-6
+noise_dim = (10,10,12)
 
 if mode == "train":
-    log_path = "/ppdata/lucy-cGAN/logs/filters_128/disc_lr_1e-4/softplus/lr_minus5/"
+    log_path = "/ppdata/lucy-cGAN/logs/IFS/filters_128/softplus/gan/noise_channels_12/g_2e-6_d_4e-6"
     rank_samples = 100
 elif mode == "deterministic":
     log_path = "/ppdata/lucy-cGAN/logs/IFS/filters_128/softplus/det/lr_1e-4/"
@@ -25,9 +25,8 @@ out_fn = "{}/eval-{}.txt".format(log_path, application)
 weights_dir = log_path
 
 
-eval.rank_metrics_by_time(mode, train_years, val_years, application, out_fn, weights_dir, check_every=1, 
-                          N_range=None, batch_size=batch_size, num_batches=num_batches, filters=filters, rank_samples=rank_samples, 
-                          noise_dim=noise_dim, lr_disc=lr_disc, lr_gen=lr_gen)
+eval.rank_metrics_by_time(mode, train_years, val_years, application, out_fn, weights_dir, noise_dim, check_every=1, 
+                          N_range=None, batch_size=batch_size, num_batches=num_batches, filters=filters, rank_samples=rank_samples, lr_disc=lr_disc, lr_gen=lr_gen)
 
 #log_path = "/ppdata/lucy-cGAN/jupyter"
 #weights_fn="gen_weights-ERA-0012800.h5"

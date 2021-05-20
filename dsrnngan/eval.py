@@ -130,8 +130,7 @@ def rank_OP(norm_ranks, num_ranks=100):
 
 
 def rank_metrics_by_time(mode, train_years, val_years, application, out_fn, weights_dir, check_every=1, N_range=None, batch_size=16, num_batches=64, 
-                         filters=64, noise_dim=(10,10,8), rank_samples=100, lr_disc=0.0001, lr_gen=0.0001):
-
+                         filters=64, rank_samples=100, lr_disc=0.0001, lr_gen=0.0001):
     if mode == "train":
         (wgan, _, batch_gen_valid, _, noise_shapes, _) = train.setup_gan(train_years, val_years, val_size=batch_size*num_batches, 
                                                                          batch_size=batch_size, filters=filters, noise_dim=noise_dim, lr_disc=lr_disc, lr_gen=lr_gen)
@@ -480,7 +479,9 @@ def image_quality(mode, gen, batch_gen, noise_gen, num_instances=1, num_batches=
 
 
 def quality_metrics_by_time(mode, train_years, val_years, application, out_fn, weights_dir, check_every=1, batch_size=16, 
-                            num_batches=100, filters=64, noise_dim=(10,10,8), lr_disc=0.0001, lr_gen=0.0001):
+                            num_batches=100, filters=64, lr_disc=0.0001, lr_gen=0.0001):
+ 
+    print(f"noise_dim is {noise_dim}")
     if mode == "train":
         (wgan, _, batch_gen_valid, _, noise_shapes, _) = train.setup_gan(train_years, val_years, val_size=batch_size*num_batches, 
                                                                          batch_size=batch_size, filters=filters, noise_dim=noise_dim, lr_disc=lr_disc, lr_gen=lr_gen)
