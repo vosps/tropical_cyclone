@@ -171,6 +171,13 @@ def rank_metrics_by_time(mode, train_years, val_years, application, out_fn, weig
         else:
             print("rank_metrics_by_time not implemented for mode type")
 
+        ## quasi-random selection to avoid geenerating loads of data
+        ranks_to_save = ['9600', '124800', '240000', '313600']
+        if any(num in fn for num in ranks_to_save):
+            np.savez('{}/ranks-{}-{}.npz'.format(weights_dir, application, N_samples), ranks)
+        else:
+            continue
+
         KS = rank_KS(ranks)
         CvM = rank_CvM(ranks) 
         DKL = rank_DKL(ranks)

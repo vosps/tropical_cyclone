@@ -168,6 +168,20 @@ if __name__ == "__main__":
                                      num_batches=num_batches, filters=filters, 
                                      lr_disc=lr_disc, lr_gen=lr_gen)
 
+        rank_metrics_files_1 = ["{}/ranks-IFS-9600.npz".format(log_path), "{}/ranks-IFS-124800.npz".format(log_path)]
+        rank_metrics_files_2 = ["{}/ranks-IFS-240000.npz".format(log_path), "{}/ranks-IFS-313600.npz".format(log_path)]
+        labels_1 = ['9600', '124800']
+        labels_2 = ['240000', '313600']
+        linestyles = ["-","--"]
+        colours = ["C0", "C1"]
+
+        plot_rank_histogram_all(rank_metrics_files_1, labels_1)
+        plt.savefig("{}/rank-distribution-{}.pdf".format(log_path,'early'), bbox_inches='tight')
+        plt.close()
+        plot_rank_histogram_all(rank_metrics_files_2, labels_2)
+        plt.savefig("{}/rank-distribution-{}.pdf".format(log_path, 'late'), bbox_inches='tight')
+        plt.close()
+
     elif mode == "plot":
         mchrzc_data_fn = args.mchrzc_data_file
         goescod_data_fn = args.goescod_data_file
@@ -271,3 +285,17 @@ if __name__ == "__main__":
         eval.quality_metrics_by_time(mode, train_years, val_years, application, out_fn=qual_fn, 
                                      weights_dir=log_path, check_every=1, batch_size=batch_size, 
                                      num_batches=num_batches, filters=filters, lr_gen=learning_rate)
+
+        rank_metrics_files_1 = ["{}/ranks-IFS-9600.npz".format(log_path), "{}/ranks-IFS-124800.npz".format(log_path)]
+        rank_metrics_files_2 = ["{}/ranks-IFS-240000.npz".format(log_path), "{}/ranks-IFS-313600.npz".format(log_path)]
+        labels_1 = ['9600', '124800']
+        labels_2 = ['240000', '313600']
+        linestyles = ["-","--"]
+        colours = ["C0", "C1"]
+        
+        plot_rank_histogram_all(rank_metrics_files_1, labels)
+        plt.savefig("{}/rank-distribution-{}.pdf".format(log_path, 'early'), bbox_inches='tight')
+        plt.close()
+        plot_rank_histogram_all(rank_metrics_files_2, labels_2)
+        plt.savefig("{}/rank-distribution-{}.pdf".format(log_path, 'late'), bbox_inches='tight')
+        plt.close()
