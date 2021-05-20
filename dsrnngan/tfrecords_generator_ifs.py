@@ -5,8 +5,8 @@ from data import all_ifs_fields,ifs_hours
 
 return_dic = True
 
-def DataGenerator(year,batch_size,repeat=True):
-    return create_mixed_dataset(year,batch_size,repeat=repeat)
+def DataGenerator(year,batch_size,repeat=True,downsample = False):
+    return create_mixed_dataset(year,batch_size,repeat=repeat, downsample = downsample)
 
 def create_random_dataset(year,batch_size,era_shape=(10,10,9),con_shape=(100,100,2),
                          out_shape=(100,100,1),repeat=True,
@@ -17,7 +17,7 @@ def create_random_dataset(year,batch_size,era_shape=(10,10,9),con_shape=(100,100
     return dataset.batch(batch_size).prefetch(2)
 
 def create_mixed_dataset(year,batch_size,era_shape=(10,10,9),con_shape=(100,100,2),
-                         out_shape=(100,100,1),repeat=True,
+                         out_shape=(100,100,1),repeat=True,downsample = False,
                          folder='/ppdata/tfrecordsIFS/', shuffle_size = 1024):
 
     classes = 4
@@ -27,12 +27,24 @@ def create_mixed_dataset(year,batch_size,era_shape=(10,10,9),con_shape=(100,100,
                                shuffle_size = shuffle_size,repeat=repeat)
                 for i in range(classes)]
     sampled_ds=tf.data.experimental.sample_from_datasets(datasets,
-                weights=[1./classes]*classes).batch(batch_size).prefetch(2)
+                weights=[1./classes]*classes).batch(batch_size)
+    if downsample:
+        sampled_ds=sampled_ds.map(_dataset_downsampler)
+    sampled_ds=sampled_ds.prefetch(2)
     return sampled_ds
 
 # Note, if we wanted fewer classes, we can use glob syntax to grab multiple classes as once
 # e.g. create_dataset(2015,"[67]")
 # will take classes 6 & 7 together
+
+def _dataset_downsampler(inputs,outputs):
+    image = outputs['generator_output']
+    kernel_tf = tf.constant(0.01,shape=(10,10,1,1), dtype=tf.float32)
+    image = tf.nn.conv2d(image, filters=kernel_tf, strides=[1, 10, 10, 1], padding='VALID',
+                         name='conv_debug',data_format='NHWC')
+    inputs['generator_input'] = image
+    return inputs,outputs
+
 
 def _parse_batch(record_batch,insize=(10,10,9),consize=(100,100,2),
                  outsize=(100,100,1)):
