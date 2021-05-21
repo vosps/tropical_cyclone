@@ -10,6 +10,7 @@ num_batches = 64
 filters = 128
 lr_disc = 4e-6
 lr_gen = 2e-6
+noise_dim = (10,10,12)
 
 if mode == "train":
     log_path = "/ppdata/lucy-cGAN/logs/IFS/filters_128/softplus/gan/noise_channels_12/g_2e-6_d_4e-6"
@@ -21,7 +22,7 @@ weights_dir = log_path
 
 
 eval.quality_metrics_by_time(mode, train_years, val_years, application, out_fn, weights_dir, check_every=1, batch_size=batch_size, num_batches=num_batches, 
-                             filters=filters, lr_disc=lr_disc, lr_gen=lr_gen)
+                             filters=filters, noise_dim=noise_dim, lr_disc=lr_disc, lr_gen=lr_gen)
 
 #log_path = "/ppdata/lucy-cGAN/jupyter"
 #weights_fn="gen_weights-ERA-0012800.h5"
