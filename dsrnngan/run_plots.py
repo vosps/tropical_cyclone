@@ -3,12 +3,15 @@ import netCDF4
 import numpy as np
 import pandas as pd
 
-log_path = "/ppdata/lucy-cGAN/jupyter"
-application = 'ERA'
-eval_fn = "{}/eval-{}.txt".format(log_path, application)
-qual_fn = "{}/qual-{}.txt".format(log_path, application)
+log_path = "/ppdata/lucy-cGAN/logs/IFS/filters_256"
+application = 'IFS'
 
-metrics_fn = eval_fn
-print(metrics_fn)
+rank_metrics_files_1 = ["{}/{}-ranks-9600.npz".format(log_path, application), "{}/{}-ranks-124800.npz".format(log_path, application)]
+rank_metrics_files_2 = ["{}/{}-ranks-240000.npz".format(log_path, application), "{}/{}-ranks-313600.npz".format(log_path, application)]
+labels_1 = ['9600', '124800']
+labels_2 = ['240000', '313600']
+name_1 = 'early'
+name_2 = 'late'
 
-plots.plot_rank_metrics_by_samples(metrics_fn)
+plots.plot_rank_histogram_all(rank_metrics_files_1, labels_1, log_path, name_1)
+plots.plot_rank_histogram_all(rank_metrics_files_2, labels_2, log_path, name_2)

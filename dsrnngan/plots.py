@@ -576,22 +576,29 @@ def plot_rank_cdf(ax, ranks, N_ranks=101, **plot_params):
     ax.plot(bc,h,**plot_params)
 
 
-def plot_rank_histogram_all(rank_files, labels, N_ranks=101):
+def plot_rank_histogram_all(rank_files, labels, log_path, name, N_ranks=101):
     (fig,axes) = plt.subplots(2,1,sharex=True,figsize=(6,3))
     plt.subplots_adjust(hspace=0.15)
 
     linestyles = ["-","--"]
     colors = ["C0", "C1"]
 
-    for ((fn_valid,fn_test),label,ls,c) in zip(rank_files,labels,linestyles,colors):
-        with np.load(fn_test, allow_pickle=True) as f:
-            ranks = f['arr_0'].item()['ranks']
-        plot_rank_histogram(axes[0], ranks, N_ranks=N_ranks,
-            label=label, linestyle=ls, linewidth=2, c=c, alpha=0.7, zorder=1)
+    for (fn_valid, label, ls, c) in zip (rank_files, labels, linestyles, colors):
+        print(fn_valid)
         with np.load(fn_valid) as f:
             ranks = f['arr_0']
-        plot_rank_histogram(axes[0], ranks, N_ranks=N_ranks,
-            label=None, linestyle=ls, linewidth=0.75, c=c, zorder=2)
+        plot_rank_histogram(axes[0], ranks, N_ranks=N_ranks,label=label, linestyle=ls, linewidth=0.75, c=c, zorder=2)
+
+#    for ((fn_valid,fn_test),label,ls,c) in zip(rank_files,labels,linestyles,colors):
+#        with np.load(fn_test, allow_pickle=True) as f:
+#            ranks = f['arr_0'].item()['ranks']
+#        plot_rank_histogram(axes[0], ranks, N_ranks=N_ranks,
+#            label=label, linestyle=ls, linewidth=2, c=c, alpha=0.7, zorder=1)
+#        with np.load(fn_valid) as f:
+#            ranks = f['arr_0']
+#        plot_rank_histogram(axes[0], ranks, N_ranks=N_ranks,
+#            label=None, linestyle=ls, linewidth=0.75, c=c, zorder=2)
+ 
     bc = np.linspace(0,1,N_ranks)
     axes[0].plot(bc, [1./N_ranks]*len(bc), linestyle=':', label="Uniform", c='C2', zorder=0)
     axes[0].set_ylabel("Norm. occurrence")
@@ -602,25 +609,34 @@ def plot_rank_histogram_all(rank_files, labels, N_ranks=101):
         horizontalalignment='left', verticalalignment='top',
         transform=axes[0].transAxes)
 
-    for ((fn_valid,fn_test),label,ls,c) in zip(rank_files,labels,linestyles,colors):
-        with np.load(fn_test, allow_pickle=True) as f:
-            ranks = f['arr_0'].item()['ranks']
-        plot_rank_cdf(axes[1], ranks, N_ranks=N_ranks,
-            label=label, linestyle=ls, linewidth=2, c=c, alpha=0.7, zorder=1)
+    for (fn_valid, label, ls, c) in zip (rank_files, labels, linestyles, colors):
+        print(fn_valid)
         with np.load(fn_valid) as f:
             ranks = f['arr_0']
-        plot_rank_cdf(axes[1], ranks, N_ranks=N_ranks,
-            label=None, linestyle=ls, linewidth=0.75, c=c, zorder=2)
+        plot_rank_cdf(axes[1], ranks, N_ranks=N_ranks, label=label, linestyle=ls, linewidth=0.75, c=c, zorder=2)
+
+#    for ((fn_valid,fn_test),label,ls,c) in zip(rank_files,labels,linestyles,colors):
+#        with np.load(fn_test, allow_pickle=True) as f:
+#            ranks = f['arr_0'].item()['ranks']
+#        plot_rank_cdf(axes[1], ranks, N_ranks=N_ranks,
+#            label=label, linestyle=ls, linewidth=2, c=c, alpha=0.7, zorder=1)
+#        with np.load(fn_valid) as f:
+#            ranks = f['arr_0']
+#        plot_rank_cdf(axes[1], ranks, N_ranks=N_ranks,
+#            label=None, linestyle=ls, linewidth=0.75, c=c, zorder=2)
+
     axes[1].plot(bc,bc,linestyle=':', label="Uniform", c='C2', zorder=0)
     axes[1].set_ylabel("CDF")
     axes[1].set_xlabel("Normalized rank")
-    axes[1].set_ylim(0,1)
+    axes[1].set_ylim(0,1.1)
     axes[1].set_xlim((0,1))
     axes[1].text(0.01, 0.97, "(b)",
         horizontalalignment='left', verticalalignment='top',
         transform=axes[1].transAxes)
     axes[1].legend(loc='lower right')
-
+    
+    plt.savefig("{}/rank-distribution-{}.pdf".format(log_path, name), bbox_inches='tight')
+    plt.close()
 
 def plot_all(
         mchrzc_data_fn,

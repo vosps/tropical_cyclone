@@ -6,9 +6,9 @@ import numpy as np
 import pandas as pd
 from tensorflow.keras.optimizers import SGD
 
-import plots
 import train
 import eval
+import plots
 
 path = os.path.dirname(os.path.abspath(__file__))
 
@@ -172,15 +172,9 @@ if __name__ == "__main__":
         rank_metrics_files_2 = ["{}/ranks-IFS-240000.npz".format(log_path), "{}/ranks-IFS-313600.npz".format(log_path)]
         labels_1 = ['9600', '124800']
         labels_2 = ['240000', '313600']
-        linestyles = ["-","--"]
-        colours = ["C0", "C1"]
 
-        plot_rank_histogram_all(rank_metrics_files_1, labels_1)
-        plt.savefig("{}/rank-distribution-{}.pdf".format(log_path,'early'), bbox_inches='tight')
-        plt.close()
-        plot_rank_histogram_all(rank_metrics_files_2, labels_2)
-        plt.savefig("{}/rank-distribution-{}.pdf".format(log_path, 'late'), bbox_inches='tight')
-        plt.close()
+        plot_rank_histogram_all(rank_metrics_files_1, labels_1, log_path)
+        plot_rank_histogram_all(rank_metrics_files_2, labels_2, log_path)
 
     elif mode == "plot":
         mchrzc_data_fn = args.mchrzc_data_file
@@ -290,12 +284,6 @@ if __name__ == "__main__":
         rank_metrics_files_2 = ["{}/ranks-IFS-240000.npz".format(log_path), "{}/ranks-IFS-313600.npz".format(log_path)]
         labels_1 = ['9600', '124800']
         labels_2 = ['240000', '313600']
-        linestyles = ["-","--"]
-        colours = ["C0", "C1"]
         
-        plot_rank_histogram_all(rank_metrics_files_1, labels)
-        plt.savefig("{}/rank-distribution-{}.pdf".format(log_path, 'early'), bbox_inches='tight')
-        plt.close()
-        plot_rank_histogram_all(rank_metrics_files_2, labels_2)
-        plt.savefig("{}/rank-distribution-{}.pdf".format(log_path, 'late'), bbox_inches='tight')
-        plt.close()
+        plot_rank_histogram_all(rank_metrics_files_1, labels_1, log_path)
+        plot_rank_histogram_all(rank_metrics_files_2, labels_2, log_path)
