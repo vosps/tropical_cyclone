@@ -60,15 +60,17 @@ def ensemble_ranks(mode, gen, batch_gen, noise_gen, num_batches,
                     nn *= noise_mul
                     nn -= noise_offset
                 sample_gen = gen.predict([cond,const,n])
+                if denormalise_data:
+                    sample_gen = data.denormalise(sample_gen)
+                samples_gen.append(sample_gen)
         
         elif mode == "deterministic":
             sample_gen = gen.predict([cond,const])            
+            if denormalise_data:
+                sample_gen = data.denormalise(sample_gen)
+            samples_gen.append(sample_gen)
         else:
             print("mode type not implemented in ensemble_ranks")
-
-        if denormalise_data:
-            sample_gen = data.denormalise(sample_gen)
-        samples_gen.append(sample_gen)
 
         samples_gen = np.stack(samples_gen, axis=-1)
 
