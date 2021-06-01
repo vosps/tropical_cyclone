@@ -173,8 +173,8 @@ if __name__ == "__main__":
         labels_1 = ['9600', '124800']
         labels_2 = ['240000', '313600']
 
-        plot_rank_histogram_all(rank_metrics_files_1, labels_1, log_path)
-        plot_rank_histogram_all(rank_metrics_files_2, labels_2, log_path)
+        plots.plot_rank_histogram_all(rank_metrics_files_1, labels_1, log_path)
+        plots.plot_rank_histogram_all(rank_metrics_files_2, labels_2, log_path)
 
     elif mode == "plot":
         mchrzc_data_fn = args.mchrzc_data_file
@@ -285,5 +285,5 @@ if __name__ == "__main__":
         labels_1 = ['9600', '124800']
         labels_2 = ['240000', '313600']
         
-        plot_rank_histogram_all(rank_metrics_files_1, labels_1, log_path)
-        plot_rank_histogram_all(rank_metrics_files_2, labels_2, log_path)
+        plots.plot_rank_histogram_all(rank_metrics_files_1, labels_1, log_path)
+        plots.plot_rank_histogram_all(rank_metrics_files_2, labels_2, log_path)
