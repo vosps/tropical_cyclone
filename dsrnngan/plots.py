@@ -600,7 +600,7 @@ def plot_rank_histogram_all(rank_files, labels, log_path, name, N_ranks=101):
 #            label=None, linestyle=ls, linewidth=0.75, c=c, zorder=2)
  
     bc = np.linspace(0,1,N_ranks)
-    axes[0].plot(bc, [1./N_ranks]*len(bc), linestyle=':', label="Uniform", c='C2', zorder=0)
+    axes[0].plot(bc, [1./N_ranks]*len(bc), linestyle=':', label="Uniform", c='dimgrey', zorder=0)
     axes[0].set_ylabel("Norm. occurrence")
     ylim = axes[0].get_ylim()
     axes[0].set_ylim((0,ylim[1]))
@@ -625,7 +625,7 @@ def plot_rank_histogram_all(rank_files, labels, log_path, name, N_ranks=101):
 #        plot_rank_cdf(axes[1], ranks, N_ranks=N_ranks,
 #            label=None, linestyle=ls, linewidth=0.75, c=c, zorder=2)
 
-    axes[1].plot(bc,bc,linestyle=':', label="Uniform", c='C2', zorder=0)
+    axes[1].plot(bc,bc,linestyle=':', label="Uniform", c='dimgrey', zorder=0)
     axes[1].set_ylabel("CDF")
     axes[1].set_xlabel("Normalized rank")
     axes[1].set_ylim(0,1.1)

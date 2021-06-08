@@ -172,9 +172,11 @@ if __name__ == "__main__":
         rank_metrics_files_2 = ["{}/ranks-IFS-240000.npz".format(log_path), "{}/ranks-IFS-313600.npz".format(log_path)]
         labels_1 = ['9600', '124800']
         labels_2 = ['240000', '313600']
+        name_1 = 'early'
+        name_2 = 'late'
 
-        plots.plot_rank_histogram_all(rank_metrics_files_1, labels_1, log_path)
-        plots.plot_rank_histogram_all(rank_metrics_files_2, labels_2, log_path)
+        plots.plot_rank_histogram_all(rank_metrics_files_1, labels_1, log_path, name_1)
+        plots.plot_rank_histogram_all(rank_metrics_files_2, labels_2, log_path, name_2)
 
     elif mode == "plot":
         mchrzc_data_fn = args.mchrzc_data_file
@@ -284,6 +286,8 @@ if __name__ == "__main__":
         rank_metrics_files_2 = ["{}/ranks-IFS-240000.npz".format(log_path), "{}/ranks-IFS-313600.npz".format(log_path)]
         labels_1 = ['9600', '124800']
         labels_2 = ['240000', '313600']
+        name_1 = 'early'
+        name_2 = 'late'
         
-        plots.plot_rank_histogram_all(rank_metrics_files_1, labels_1, log_path)
-        plots.plot_rank_histogram_all(rank_metrics_files_2, labels_2, log_path)
+        plots.plot_rank_histogram_all(rank_metrics_files_1, labels_1, log_path, name_1)
+        plots.plot_rank_histogram_all(rank_metrics_files_2, labels_2, log_path, name_2)
