@@ -15,7 +15,9 @@ import msssim
 import noise
 import plots
 import rainfarm
+import warnings
 
+warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 path = os.path.dirname(os.path.abspath(__file__))
 
@@ -37,6 +39,9 @@ def ensemble_ranks(mode, gen, batch_gen, noise_gen, num_batches,
     crps_scores = []
     batch_gen_iter = iter(batch_gen)
 
+    if mode == "deterministic":
+        rank_samples = 1
+
     if show_progress:
         # Initialize progbar and batch counter
         progbar = generic_utils.Progbar(
@@ -49,9 +54,7 @@ def ensemble_ranks(mode, gen, batch_gen, noise_gen, num_batches,
             sample = data.denormalise(sample)
         sample_crps = sample            
         sample = sample.ravel()
-
         samples_gen = []
-        crps_scores = []
 
         if mode == "train":
             for i in range(rank_samples):
@@ -72,6 +75,7 @@ def ensemble_ranks(mode, gen, batch_gen, noise_gen, num_batches,
         else:
             print("mode type not implemented in ensemble_ranks")
 
+            
         samples_gen = np.stack(samples_gen, axis=-1)
 
         crps_score = crps.crps_ensemble(sample_crps, samples_gen)
@@ -84,14 +88,12 @@ def ensemble_ranks(mode, gen, batch_gen, noise_gen, num_batches,
         ranks.append(rank)
         
         if show_progress:
-            crps_mean = np.mean(crps_score)
+            crps_mean = np.mean(crps_scores)
             losses = [("CRPS",crps_mean)]
             progbar.add(1, values=losses)
 
-
     ranks = np.concatenate(ranks)
     crps_scores = np.concatenate(crps_scores)
-    
     if normalize_ranks:
         ranks = ranks / rank_samples
 
@@ -133,6 +135,7 @@ def rank_OP(norm_ranks, num_ranks=100):
 
 def rank_metrics_by_time(mode, train_years, val_years, application, out_fn, weights_dir, check_every=1, N_range=None, batch_size=16, num_batches=64, 
                          filters=64, noise_dim=(10,10,8), rank_samples=100, lr_disc=0.0001, lr_gen=0.0001):
+    train_years = None
     if mode == "train":
         (wgan, _, batch_gen_valid, _, noise_shapes, _) = train.setup_gan(train_years, val_years, val_size=batch_size*num_batches, 
                                                                          batch_size=batch_size, filters=filters, noise_dim=noise_dim, lr_disc=lr_disc, lr_gen=lr_gen)
@@ -215,8 +218,9 @@ def rank_metrics_by_noise(filename, mode, train_years, val_years, application, w
         print(N_samples, KS, CvM, DKL, CRPS, mean, std)
         epoch += 1
 
-def rank_metrics_table(weights_fn, mode, train_years, val_years, application, batch_size, num_batches, filters, lr_disc=0.0001, lr_gen=0.0001):
-    
+def rank_metrics_table(weights_fn, mode, val_years, batch_size=16, num_batches=100, 
+                       filters=64, lr_disc=0.0001, lr_gen=0.0001):
+    train_years = None
     if mode == "train":
         (wgan, _, batch_gen_valid, _, noise_shapes, _) = train.setup_gan(train_years, val_years, val_size=batch_size*num_batches, 
                                                                          batch_size=batch_size, filters=filters, lr_disc=lr_disc, lr_gen=lr_gen)
@@ -227,19 +231,33 @@ def rank_metrics_table(weights_fn, mode, train_years, val_years, application, ba
         (ranks, crps_scores) = ensemble_ranks(mode, gen, batch_gen_valid, noise_gen, num_batches=num_batches)
     elif mode == "deterministic":
         (det_model, _, batch_gen_valid, _, _) = train.setup_deterministic(train_years, val_years, val_size=batch_size*num_batches, 
-                                                                          batch_size=batch_size, filters=filters, lr_gen=lr_gen)
+                                                                          batch_size=batch_size, filters=filters, lr=lr_gen)
         gen_det = det_model.gen_det
         gen_det.load_weights(weights_fn)
         noise_gen = []
         print("loaded deterministic model")
         (ranks, crps_scores) = ensemble_ranks(mode, gen_det, batch_gen_valid, noise_gen, num_batches=num_batches)
     elif mode=="rainfarm":
-        (gen_det, _, batch_gen_valid, _, _) = train.setup_deterministic(train_years, val_years, val_size=batch_size*num_batches, 
-                                                                        batch_size=batch_size, filters=filters, lr_gen=lr_gen)
-        gen = GeneratorRainFARM(16, batch_gen_test.decoder)
-        noise_shapes = lambda: []
-        noise_gen = noise.NoiseGenerator(noise_shapes(), batch_size=batch_size)
-        (ranks, crps_scores) = ensemble_ranks(mode, gen, batch_gen_valid, noise_gen, num_batches=num_batches)
+        (_, _, batch_gen_valid, _, noise_shapes, _) = train.setup_data(train_years, val_years, 
+                                                                       val_size=batch_size*num_batches, 
+                                                                       batch_size=batch_size)
+        gen = GeneratorRainFARM(10, data.denormalise)
+        noise_gen = noise.NoiseGenerator(noise_shapes, batch_size=batch_size)
+        (ranks, crps_scores) = ensemble_ranks("train", gen, batch_gen_valid, noise_gen, num_batches=num_batches)
+    elif mode=="lanczos":
+        (_, _, batch_gen_valid, _, noise_shapes, _) = train.setup_data(train_years, val_years, 
+                                                                       val_size=batch_size*num_batches, 
+                                                                       batch_size=batch_size)
+        gen = GeneratorLanczos((100,100))
+        noise_gen = noise.NoiseGenerator(noise_shapes, batch_size=batch_size)
+        (ranks, crps_scores) = ensemble_ranks("deterministic", gen, batch_gen_valid, noise_gen, num_batches=num_batches)
+    elif mode=="constant":
+        (_, _, batch_gen_valid, _, noise_shapes, _) = train.setup_data(train_years, val_years, 
+                                                                       val_size=batch_size*num_batches, 
+                                                                       batch_size=batch_size)
+        gen = GeneratorConstantUp(10)
+        noise_gen = noise.NoiseGenerator(noise_shapes, batch_size=batch_size)
+        (ranks, crps_scores) = ensemble_ranks("deterministic", gen, batch_gen_valid, noise_gen, num_batches=num_batches)
     else:
         print("rank_metrics_table not implemented for mode type")
     
@@ -259,156 +277,156 @@ def rank_metrics_table(weights_fn, mode, train_years, val_years, application, ba
     print("mean: {:.3f}".format(mean))
     print("std: {:.3f}".format(std))
 
-def reconstruct_time_series_partial(images_fn, gen, noise_shapes,
-    init_model, out_fn,
-    time_range, h=None, last_t=None, application="mchrzc", ds_factor=16, n_ensemble=4,
-    scaling_fn=path+"/../data/scale_rzc.npy", relax_lam=0.0):
-    assert False, "Not yet updated"
-    if application == "mchrzc":
-        dec = data.RainRateDecoder(scaling_fn, below_val=np.log10(0.025))
-    else:
-        raise ValueError("Unknown application.")
-    downsampler = data.LogDownsampler(min_val=dec.below_val,
-        threshold_val=dec.value_range[0])
+# def reconstruct_time_series_partial(images_fn, gen, noise_shapes,
+#     init_model, out_fn,
+#     time_range, h=None, last_t=None, ds_factor=16, n_ensemble=4,
+#     scaling_fn=path+"/../data/scale_rzc.npy", relax_lam=0.0):
+#     assert False, "Not yet updated"
+#     if application == "mchrzc":
+#         dec = data.RainRateDecoder(scaling_fn, below_val=np.log10(0.025))
+#     else:
+#         raise ValueError("Unknown application.")
+#     downsampler = data.LogDownsampler(min_val=dec.below_val,
+#         threshold_val=dec.value_range[0])
 
-    with netCDF4.Dataset(images_fn) as ds_img:
-        time = np.array(ds_img["time"][:], copy=False)
-        time_dt = [datetime(1970,1,1)+timedelta(seconds=t) for t in time]
-        t0 = bisect_left(time_dt, time_range[0])
-        t1 = bisect_left(time_dt, time_range[1])
-        images = np.array(ds_img["images"][t0:t1,...], copy=False)
-        time = time[t0:t1]
+#     with netCDF4.Dataset(images_fn) as ds_img:
+#         time = np.array(ds_img["time"][:], copy=False)
+#         time_dt = [datetime(1970,1,1)+timedelta(seconds=t) for t in time]
+#         t0 = bisect_left(time_dt, time_range[0])
+#         t1 = bisect_left(time_dt, time_range[1])
+#         images = np.array(ds_img["images"][t0:t1,...], copy=False)
+#         time = time[t0:t1]
 
-    img_shape = images.shape[1:3]
-    img_shape = (
-        img_shape[0] - img_shape[0]%ds_factor,
-        img_shape[1] - img_shape[1]%ds_factor,
-    )
-    noise_gen = noise.NoiseGenerator(noise_shapes(img_shape),
-        batch_size=n_ensemble)
+#     img_shape = images.shape[1:3]
+#     img_shape = (
+#         img_shape[0] - img_shape[0]%ds_factor,
+#         img_shape[1] - img_shape[1]%ds_factor,
+#     )
+#     noise_gen = noise.NoiseGenerator(noise_shapes(img_shape),
+#         batch_size=n_ensemble)
 
-    images_ds = np.zeros(
-        (images.shape[0],img_shape[0]//ds_factor,img_shape[1]//ds_factor,1),
-        dtype=np.uint8
-    )
-    images_gen = np.zeros(
-        (images.shape[0],)+img_shape+(1,n_ensemble),
-        dtype=np.uint8
-    )
+#     images_ds = np.zeros(
+#         (images.shape[0],img_shape[0]//ds_factor,img_shape[1]//ds_factor,1),
+#         dtype=np.uint8
+#     )
+#     images_gen = np.zeros(
+#         (images.shape[0],)+img_shape+(1,n_ensemble),
+#         dtype=np.uint8
+#     )
 
-    # this finds the nearest index in the R encoding
-    def encoder():
-        lR = dec.logR
-        ind = np.arange(len(lR))
-        ip = interp1d(lR,ind)
-        def f(x):
-            y = np.zeros(x.shape, dtype=np.uint8)
-            valid = (x >= dec.value_range[0])
-            y[valid] = ip(x[valid]).round().astype(np.uint8)
-            return y
-        return f
-    encode = encoder()
+#     # this finds the nearest index in the R encoding
+#     def encoder():
+#         lR = dec.logR
+#         ind = np.arange(len(lR))
+#         ip = interp1d(lR,ind)
+#         def f(x):
+#             y = np.zeros(x.shape, dtype=np.uint8)
+#             valid = (x >= dec.value_range[0])
+#             y[valid] = ip(x[valid]).round().astype(np.uint8)
+#             return y
+#         return f
+#     encode = encoder()
 
-    for k in range(images.shape[0]):
-        print("{}/{}".format(k+1,images.shape[0]))
-        img_real = images[k:k+1,:img_shape[0],:img_shape[1],:]
-        img_real = dec(img_real)
-        img_real = img_real.reshape(
-            (1,1)+img_real.shape[1:])
-        img_real[np.isnan(img_real)] = dec.below_val
-        img_ds = downsampler(img_real)
-        img_ds = dec.normalize(img_ds)
-        img_ds_denorm = dec.denormalize(img_ds)
-        img_ds = np.tile(img_ds, (n_ensemble,1,1,1,1))
+#     for k in range(images.shape[0]):
+#         print("{}/{}".format(k+1,images.shape[0]))
+#         img_real = images[k:k+1,:img_shape[0],:img_shape[1],:]
+#         img_real = dec(img_real)
+#         img_real = img_real.reshape(
+#             (1,1)+img_real.shape[1:])
+#         img_real[np.isnan(img_real)] = dec.below_val
+#         img_ds = downsampler(img_real)
+#         img_ds = dec.normalize(img_ds)
+#         img_ds_denorm = dec.denormalize(img_ds)
+#         img_ds = np.tile(img_ds, (n_ensemble,1,1,1,1))
 
-        (n_init, n_update) = noise_gen()
+#         (n_init, n_update) = noise_gen()
             
-        if (h is None) or (time[k]-last_t != 600):
-            h = init_model.predict([img_ds[:,0,...], n_init])
+#         if (h is None) or (time[k]-last_t != 600):
+#             h = init_model.predict([img_ds[:,0,...], n_init])
             
-        (img_gen,h) = gen.predict([img_ds, h, n_update])
-        if relax_lam > 0.0:
-            # nudge h towards null
-            h_null = init_model.predict([
-                np.zeros_like(img_ds[:,0,...]), n_init
-            ])
-            h = h_null + (1.0-relax_lam)*(h-h_null)
-        img_gen = dec.denormalize(img_gen)
-        img_gen = img_gen.transpose((1,2,3,4,0))
+#         (img_gen,h) = gen.predict([img_ds, h, n_update])
+#         if relax_lam > 0.0:
+#             # nudge h towards null
+#             h_null = init_model.predict([
+#                 np.zeros_like(img_ds[:,0,...]), n_init
+#             ])
+#             h = h_null + (1.0-relax_lam)*(h-h_null)
+#         img_gen = dec.denormalize(img_gen)
+#         img_gen = img_gen.transpose((1,2,3,4,0))
 
-        images_ds[k,...] = encode(img_ds_denorm[0,...])
-        images_gen[k,...] = encode(img_gen[0,...])
-        last_t = time[k]
+#         images_ds[k,...] = encode(img_ds_denorm[0,...])
+#         images_gen[k,...] = encode(img_gen[0,...])
+#         last_t = time[k]
 
-    with netCDF4.Dataset(out_fn, 'w') as ds:
-        dim_height = ds.createDimension("dim_height", img_shape[0])
-        dim_width = ds.createDimension("dim_width", img_shape[1])
-        dim_height_ds = ds.createDimension("dim_height_ds",
-            img_shape[0]/ds_factor)
-        dim_width_ds = ds.createDimension("dim_width_ds",
-            img_shape[1]/ds_factor)
-        dim_samples = ds.createDimension("dim_samples", images.shape[0])
-        dim_ensemble = ds.createDimension("dim_ensemble", n_ensemble)
-        dim_channels = ds.createDimension("dim_channels", 1)
+#     with netCDF4.Dataset(out_fn, 'w') as ds:
+#         dim_height = ds.createDimension("dim_height", img_shape[0])
+#         dim_width = ds.createDimension("dim_width", img_shape[1])
+#         dim_height_ds = ds.createDimension("dim_height_ds",
+#             img_shape[0]/ds_factor)
+#         dim_width_ds = ds.createDimension("dim_width_ds",
+#             img_shape[1]/ds_factor)
+#         dim_samples = ds.createDimension("dim_samples", images.shape[0])
+#         dim_ensemble = ds.createDimension("dim_ensemble", n_ensemble)
+#         dim_channels = ds.createDimension("dim_channels", 1)
 
-        var_params = {"zlib": True, "complevel": 9}
+#         var_params = {"zlib": True, "complevel": 9}
 
-        def create_var(name, dims, **params):
-            dtype = params.pop("dtype", np.float32)
-            var = ds.createVariable(name, dtype, dims, **params)
-            return var
+#         def create_var(name, dims, **params):
+#             dtype = params.pop("dtype", np.float32)
+#             var = ds.createVariable(name, dtype, dims, **params)
+#             return var
 
-        var_img = create_var("images",
-            ("dim_samples","dim_height","dim_width","dim_channels",
-                "dim_ensemble"),
-            chunksizes=(1,64,64,1,1), dtype=np.uint8, **var_params)
-        var_img.units = "Encoded R"
-        var_img_ds = create_var("images_ds",
-            ("dim_samples","dim_height_ds","dim_width_ds","dim_channels"),
-            dtype=np.uint8, **var_params)
-        var_img_ds.units = "Encoded R"
-        var_time = create_var("time", ("dim_samples",), 
-            chunksizes=(1,), dtype=np.float64, **var_params)
-        var_time.units = "Seconds since 1970-01-01 00:00"
+#         var_img = create_var("images",
+#             ("dim_samples","dim_height","dim_width","dim_channels",
+#                 "dim_ensemble"),
+#             chunksizes=(1,64,64,1,1), dtype=np.uint8, **var_params)
+#         var_img.units = "Encoded R"
+#         var_img_ds = create_var("images_ds",
+#             ("dim_samples","dim_height_ds","dim_width_ds","dim_channels"),
+#             dtype=np.uint8, **var_params)
+#         var_img_ds.units = "Encoded R"
+#         var_time = create_var("time", ("dim_samples",), 
+#             chunksizes=(1,), dtype=np.float64, **var_params)
+#         var_time.units = "Seconds since 1970-01-01 00:00"
 
-        var_img_ds[:] = images_ds
-        var_img[:] = images_gen
-        var_time[:] = time
+#         var_img_ds[:] = images_ds
+#         var_img[:] = images_gen
+#         var_time[:] = time
 
-    return (h, last_t)
+#     return (h, last_t)
 
 
-def reconstruct_time_series_monthly(images_fn, weights_fn, out_dir,
-    time_range, application="mchrzc", ds_factor=16, n_ensemble=4,
-    relax_lam=0.0):
+# def reconstruct_time_series_monthly(images_fn, weights_fn, out_dir,
+#     time_range, application="mchrzc", ds_factor=16, n_ensemble=4,
+#     relax_lam=0.0):
 
-    (gen,_) = models.generator(num_timesteps=1)
-    init_model = models.initial_state_model()
-    (gen_init, noise_shapes) = models.generator_initialized(gen, init_model,
-        num_timesteps=1)
-    gen_init.load_weights(weights_fn)
+#     (gen,_) = models.generator(num_timesteps=1)
+#     init_model = models.initial_state_model()
+#     (gen_init, noise_shapes) = models.generator_initialized(gen, init_model,
+#         num_timesteps=1)
+#     gen_init.load_weights(weights_fn)
 
-    t0 = time_range[0]
-    months = []
-    while t0 < time_range[1]:
-        (y,m) = (t0.year, t0.month)
-        m += 1
-        if m > 12:
-            m = 1
-            y += 1
-        t1 = datetime(y,m,1)
-        months.append((t0,t1))
-        t0 = t1
+#     t0 = time_range[0]
+#     months = []
+#     while t0 < time_range[1]:
+#         (y,m) = (t0.year, t0.month)
+#         m += 1
+#         if m > 12:
+#             m = 1
+#             y += 1
+#         t1 = datetime(y,m,1)
+#         months.append((t0,t1))
+#         t0 = t1
 
-    (h, last_t) = (None, None)
-    for month in months:
-        out_fn = out_dir + "/timeseries-{}-{}{:02d}.nc".format(
-            application,month[0].year,month[0].month)
-        (h, last_t) = reconstruct_time_series_partial(images_fn, gen,
-            noise_shapes, init_model, out_fn, month, h=h, last_t=last_t,
-            application=application, ds_factor=ds_factor, n_ensemble=n_ensemble,
-            relax_lam=relax_lam
-        )
+#     (h, last_t) = (None, None)
+#     for month in months:
+#         out_fn = out_dir + "/timeseries-{}-{}{:02d}.nc".format(
+#             application,month[0].year,month[0].month)
+#         (h, last_t) = reconstruct_time_series_partial(images_fn, gen,
+#             noise_shapes, init_model, out_fn, month, h=h, last_t=last_t,
+#             application=application, ds_factor=ds_factor, n_ensemble=n_ensemble,
+#             relax_lam=relax_lam
+#         )
 
 
 def log_spectral_distance(img1, img2):
@@ -437,7 +455,8 @@ def log_spectral_distance_batch(batch1, batch2):
 def image_quality(mode, gen, batch_gen, noise_gen, num_instances=1, num_batches=100, denormalise_data=True, show_progress=True):
 
     batch_gen_iter = iter(batch_gen)
-    
+
+    mae_all = []
     rmse_all = []
     ssim_all = []
     lsd_all = []
@@ -460,14 +479,19 @@ def image_quality(mode, gen, batch_gen, noise_gen, num_instances=1, num_batches=
             elif mode == "deterministic":
                 img_gen = gen.predict([cond,const])
             else:
-                print('image quality metrics not implemented for mode type')
+                try:
+                    img_gen = gen.predict([cond,const])
+                except:
+                    assert False, 'image quality metrics not implemented for mode type'
 
             if denormalise_data:
                 img_gen = data.denormalise(img_gen)
-
+                
+            mae = ((np.abs(img_real - img_gen)).mean(axis=(1,2)))
             rmse = np.sqrt(((img_real - img_gen)**2).mean(axis=(1,2)))
             ssim = msssim.MultiScaleSSIM(img_real, img_gen, 1.0)
             lsd = log_spectral_distance_batch(img_real, img_gen)
+            mae_all.append(mae.flatten())
             rmse_all.append(rmse.flatten())
             ssim_all.append(ssim.flatten())
             lsd_all.append(lsd.flatten())
@@ -477,16 +501,17 @@ def image_quality(mode, gen, batch_gen, noise_gen, num_instances=1, num_batches=
                 losses = [("RMSE",rmse_mean)]
                 progbar.add(1, values=losses)
 
+    mae_all = np.concatenate(mae_all)
     rmse_all = np.concatenate(rmse_all)
     ssim_all = np.concatenate(ssim_all)
     lsd_all = np.concatenate(lsd_all)
 
-    return (rmse_all, ssim_all, lsd_all)
+    return (mae_all,rmse_all, ssim_all, lsd_all)
 
 
 def quality_metrics_by_time(mode, train_years, val_years, application, out_fn, weights_dir, check_every=1, batch_size=16, 
                             num_batches=100, filters=64, noise_dim=(10,10,8), lr_disc=0.0001, lr_gen=0.0001):
- 
+    
     if mode == "train":
         (wgan, _, batch_gen_valid, _, noise_shapes, _) = train.setup_gan(train_years, val_years, val_size=batch_size*num_batches, 
                                                                          batch_size=batch_size, filters=filters, noise_dim=noise_dim, lr_disc=lr_disc, lr_gen=lr_gen)
@@ -510,49 +535,60 @@ def quality_metrics_by_time(mode, train_years, val_years, application, out_fn, w
     def log_line(line):
         with open(out_fn, 'a') as f:
             print(line, file=f)
-    log_line("N RMSE MSSSIM LSD")
+    log_line("N RMSE MSSSIM LSD MAE")
 
     for fn in files[::check_every]:
         N_samples = int(fn.split("-")[-1].split(".")[0])
         print(N_samples)
         gen.load_weights(weights_dir+"/"+fn)
 
-        (rmse, ssim, lsd) = image_quality(mode, gen, batch_gen_valid, noise_gen, num_instances=1, num_batches=num_batches)
-        log_line("{} {:.6f} {:.6f} {:.6f}".format(N_samples, rmse.mean(), ssim.mean(), np.nanmean(lsd)))
+        (mae, rmse, ssim, lsd) = image_quality(mode, gen, batch_gen_valid, noise_gen, num_instances=1, num_batches=num_batches)
+        log_line("{} {:.6f} {:.6f} {:.6f} {:.6f}".format(N_samples, rmse.mean(), ssim.mean(), np.nanmean(lsd), mae))
 
-def quality_metrics_table(mode, weights_fn, train_years, val_years, application, batch_size=16, num_batches=100, 
+def quality_metrics_table(weights_fn, mode, val_years,batch_size=16, num_batches=100, 
                           filters=64, lr_disc=0.0001, lr_gen=0.0001):
+    train_years = None
     if mode == "train":
-        (wgan, _, batch_gen_valid, _, noise_shapes, _) = train.setup_gan(train_years, val_years, val_size=batch_size*num_batches, 
+        (wgan, _, batch_gen_valid, _, noise_shapes, _) = train.setup_gan(None, val_years, val_size=batch_size*num_batches, 
                                                                          batch_size=batch_size, filters=filters, lr_disc=lr_disc, lr_gen=lr_gen)
         gen = wgan.gen
         gen.load_weights(weights_fn)
         noise_gen = noise.NoiseGenerator(noise_shapes(), batch_size=batch_size)
         print("loaded gan model")
     elif mode == "deterministic":
-        (det_model, _, batch_gen_valid, _, _) = train.setup_deterministic(train_years, val_years, val_size=batch_size*num_batches, 
+        (det_model, _, batch_gen_valid, _, _) = train.setup_deterministic(None, val_years, val_size=batch_size*num_batches, 
                                                                           batch_size=batch_size, filters=filters, lr=lr_gen)
         gen = det_model.gen_det
         gen.load_weights(weights_fn)
         noise_gen = []
         print("loaded deterministic model")
     elif mode == "lanczos":
-        (_, _, batch_gen_valid, _, _) = train.setup_deterministic(train_years, val_years, val_size=batch_size*num_batches, 
-                                                                  batch_size=batch_size, filters=filters)
-        gen = GeneratorLanczos((128,128), lr=lr)
+        (_, _, batch_gen_valid, _, noise_shapes, _) = train.setup_data(train_years, val_years, 
+                                                                       val_size=batch_size*num_batches, 
+                                                                       batch_size=batch_size)
+        gen = GeneratorLanczos((100,100))
         noise_gen = []
         print("loaded lanczos model")
     elif mode == "rainfarm":
-        (_, _, batch_gen_valid, _, _) = train.setup_deterministic(train_years, val_years, val_size=batch_size*num_batches, 
-                                                                  batch_size=batch_size, filters=filters)
-        gen = GeneratorRainFARM(16, batch_gen_test.decoder, lr=lr)
+        (_, _, batch_gen_valid, _, noise_shapes, _) = train.setup_data(train_years, val_years, 
+                                                                       val_size=batch_size*num_batches, 
+                                                                       batch_size=batch_size)
+        gen = GeneratorRainFARM(10, data.denormalise)
         noise_gen = []
         print("loaded rainfarm model")
+    elif mode == "constant":
+        (_, _, batch_gen_valid, _, noise_shapes, _) = train.setup_data(train_years, val_years, 
+                                                                       val_size=batch_size*num_batches, 
+                                                                       batch_size=batch_size)
+        gen = GeneratorConstantUp(10)
+        noise_gen = []
+        print("loaded constant model")
     else:
         print("quality_metrics_table not implemented for mode type")
 
-    (rmse, ssim, lsd) = image_quality(mode, gen, batch_gen_valid, noise_gen, num_instances=1, num_batches=num_batches)
+    (mae,rmse, ssim, lsd) = image_quality(mode, gen, batch_gen_valid, noise_gen, num_instances=1, num_batches=num_batches)
     
+    print("MAE: {:.3f}".format(mae.mean()))
     print("RMSE: {:.3f}".format(rmse.mean()))
     print("MSSSIM: {:.3f}".format(ssim.mean()))
     print("LSD: {:.3f}".format(np.nanmean(lsd)))
@@ -565,14 +601,24 @@ class GeneratorLanczos:
         self.out_size = out_size
 
     def predict(self, *args):
-        y = args[0][0]
-        out_shape = y.shape[:2] + self.out_size + y.shape[4:]
+        y = np.array(args[0][0][...,:1])
+        out_shape = y.shape[:1] + self.out_size + y.shape[3:]
         x = np.zeros(out_shape, dtype=y.dtype)
         for i in range(x.shape[0]):
-            for k in range(x.shape[1]):
-                x[i,k,:,:,0] = plots.resize_lanczos(y[i,k,:,:,0],
-                    self.out_size)
+            x[i,:,:,0] = plots.resize_lanczos(y[i,:,:,0],
+                                                self.out_size)
         return x
+
+
+class GeneratorConstantUp:
+    # class that can be used in place of a generator for evaluation purposes,
+    # using constant upsampling
+    def __init__(self, out_size):
+        self.out_size = out_size
+
+    def predict(self, *args):
+        y = args[0][0][...,:1]
+        return np.repeat(np.repeat(y,self.out_size,axis=1),self.out_size,axis=2)
 
 
 class GeneratorDeterministicPlaceholder:
@@ -580,7 +626,7 @@ class GeneratorDeterministicPlaceholder:
         self.gen_det = gen_det
 
     def predict(self, *args):
-        y = args[0]
+        y = args[0][:2]
         return self.gen_det.predict(y)
 
 
@@ -588,29 +634,23 @@ class GeneratorRainFARM:
     def __init__(self, ds_factor, decoder):
         self.ds_factor = ds_factor
         self.decoder = decoder
-        self.batches = 0
+        self.batch = 0
 
     def predict(self, *args):
-        print(self.batches)
-        self.batches += 1
-        y = args[0][0]
-        y = self.decoder.denormalize(y)
-        P = 10**y
+        self.batch+=1
+        y = np.array(args[0][0][...,:1])
+        P = self.decoder(y)
+        # P = 10**y
         P[~np.isfinite(P)] = 0
 
-        out_size = (y.shape[2]*self.ds_factor, y.shape[3]*self.ds_factor)
-        out_shape = y.shape[:2] + out_size + y.shape[4:]
+        out_size = (y.shape[1]*self.ds_factor, y.shape[2]*self.ds_factor)
+        out_shape = y.shape[:1] + out_size + y.shape[3:]
         x = np.zeros(out_shape, dtype=y.dtype)
-
         for i in range(y.shape[0]):
-            alpha = rainfarm.get_alpha_seq(P[i,...,0])
-            r = [rainfarm.rainfarm_downscale(p, alpha=alpha, threshold=0.1, 
-                ds_factor=self.ds_factor) for p in P[0,...,0]]
-            log_r = np.log10(r)
-            log_r[~np.isfinite(log_r)] = np.nan
-            log_r = self.decoder.normalize(log_r)
+            r = rainfarm.rainfarm_downscale(P[i,...,0], threshold=0., 
+                                            ds_factor=self.ds_factor)
+            log_r = np.log10(1 + r)
             log_r[~np.isfinite(log_r)] = 0.0
             x[i,...,0] = log_r
-            x = x.clip(0,1)
 
         return x

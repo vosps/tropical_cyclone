@@ -2,6 +2,9 @@ import argparse
 import json
 import os
 
+import matplotlib
+matplotlib.use("Agg")
+
 import numpy as np
 import pandas as pd
 from tensorflow.keras.optimizers import SGD
@@ -9,6 +12,7 @@ from tensorflow.keras.optimizers import SGD
 import train
 import eval
 import plots
+
 
 path = os.path.dirname(os.path.abspath(__file__))
 

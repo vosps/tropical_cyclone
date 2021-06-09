@@ -63,7 +63,10 @@ def rainfarm_downscale(P, alpha=None, ds_factor=16, threshold=None):
         fp_abs = abs(fp)
         log_power_spectrum = np.log(fp_abs**2)
         valid = (k!=0) & np.isfinite(log_power_spectrum)
-        alpha = log_slope(np.log(k[valid]), log_power_spectrum[valid])
+        if valid.sum() == 0:
+            alpha = 0
+        else:
+            alpha = log_slope(np.log(k[valid]), log_power_spectrum[valid])
 
     fg = np.exp(complex(0,1)*2*np.pi*np.random.rand(*k_ds.shape))
     with warnings.catch_warnings():

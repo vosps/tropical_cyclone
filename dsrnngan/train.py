@@ -23,7 +23,10 @@ def setup_batch_gen(train_years,val_years,batch_size=64,
                     val_size = None, val_fixed=True):# ,
                     # train_images=5,val_images=5):
     tfrecords_generator_ifs.return_dic = False
-    train = DataGenerator(train_years,batch_size=batch_size)
+    if train_years is not None:
+        train = DataGenerator(train_years,batch_size=batch_size)
+    else:
+        train = None
     if val_size is not None:
         if val_size <= batch_size:
             val = DataGenerator(val_years,batch_size=val_size,repeat=False)
@@ -60,6 +63,23 @@ def setup_gan(train_years=None, val_years=None,
 
     return (wgan, batch_gen_train, batch_gen_valid, batch_gen_test,
         noise_shapes, steps_per_epoch)
+
+
+def setup_data(train_years=None, val_years=None,
+              val_size = None,
+              steps_per_epoch=50,
+              batch_size=16, noise_dim=(10,10,8)):
+    
+    (batch_gen_train, batch_gen_valid, batch_gen_test) = setup_batch_gen(
+        train_years = train_years, val_years = val_years, 
+        val_size = val_size,
+        batch_size=batch_size
+    )
+
+    gc.collect()
+
+    return (None, batch_gen_train, batch_gen_valid, batch_gen_test,
+        noise_dim, steps_per_epoch)
 
 
 def train_gan(wgan, batch_gen_train, batch_gen_valid, noise_shapes, epoch,

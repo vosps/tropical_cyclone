@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use("Agg")
 import plots
 import netCDF4
 import numpy as np

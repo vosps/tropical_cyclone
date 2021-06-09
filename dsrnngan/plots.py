@@ -3,9 +3,7 @@ from datetime import datetime, timedelta
 import gc
 import os
 from string import ascii_lowercase
-
 import matplotlib
-matplotlib.use("Agg")
 from matplotlib import pyplot as plt
 from matplotlib import colorbar, colors, gridspec
 import netCDF4
@@ -13,6 +11,10 @@ import numpy as np
 import pandas as pd
 try:
     from PIL import Image
+except ImportError:
+    pass # to allow loading on setups witout PIL
+try:
+    import cv2
 except ImportError:
     pass # to allow loading on setups witout PIL
 
@@ -712,7 +714,8 @@ def plot_all(
 
 
 def resize_lanczos(img, size):
-    return np.array(Image.fromarray(img).resize(size, resample=Image.LANCZOS))
+    return np.array(cv2.resize(img,dsize=size,interpolation=cv2.INTER_LANCZOS4))
+    # return np.array(Image.fromarray(img).resize(size, resample=Image.LANCZOS))
 
 
 def plot_comparison(test_data_file, gen_gan_weights, gen_det_mse_weights,
