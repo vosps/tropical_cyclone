@@ -543,8 +543,6 @@ def quality_metrics_by_time(mode, train_years, val_years, application, out_fn, w
         gen.load_weights(weights_dir+"/"+fn)
 
         (mae, rmse, ssim, lsd) = image_quality(mode, gen, batch_gen_valid, noise_gen, num_instances=1, num_batches=num_batches)
-        print(f"type of MAE is {type(mae)}")
-        print(f"type of rmse is {type(rmse)}")
         log_line("{} {:.6f} {:.6f} {:.6f} {:.6f}".format(N_samples, rmse.mean(), ssim.mean(), np.nanmean(lsd), mae.mean()))
 
 def quality_metrics_table(weights_fn, mode, val_years,batch_size=16, num_batches=100, 
