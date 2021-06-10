@@ -169,8 +169,8 @@ if __name__ == "__main__":
     
         eval.quality_metrics_by_time(mode, train_years, val_years, application, out_fn=qual_fn,
                                      weights_dir=log_path, check_every=1, batch_size=batch_size, 
-                                     num_batches=num_batches, filters=filters, noise_dim=noise_dim, 
-                                     lr_disc=lr_disc, lr_gen=lr_gen)
+                                     num_batches=num_batches, filters=filters, 
+                                     noise_dim=noise_dim, lr_disc=lr_disc, lr_gen=lr_gen)
 
         rank_metrics_files_1 = ["{}/ranks-IFS-9600.npz".format(log_path), "{}/ranks-IFS-124800.npz".format(log_path)]
         rank_metrics_files_2 = ["{}/ranks-IFS-240000.npz".format(log_path), "{}/ranks-IFS-313600.npz".format(log_path)]

@@ -1,21 +1,18 @@
-import matplotlib
-matplotlib.use("Agg")
 import eval
 
 mode = "train"
-#train_years = [2016, 2017, 2018]
 train_years = 2018
 val_years = 2019
 application = "IFS"
 batch_size = 16
 num_batches = 64
-filters = 256
-lr_disc = 2e-5
+filters = 128
+lr_disc = 4e-5
 lr_gen = 2e-5
-noise_dim = (10, 10, 6)
+noise_dim = (10,10,8)
 
 if mode == "train":
-    log_path = "/ppdata/lucy-cGAN/logs/IFS/filters_256/noise_6/lr2e-5"
+    log_path = "/ppdata/lucy-cGAN/logs/IFS/filters_128/softplus/gan/noise_8/g_2e-5_d_4e-5"
     rank_samples = 100
 elif mode == "deterministic":
     log_path = "/ppdata/lucy-cGAN/logs/IFS/filters_128/softplus/det/lr_1e-4/"
