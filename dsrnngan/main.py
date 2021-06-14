@@ -172,10 +172,10 @@ if __name__ == "__main__":
                                      num_batches=num_batches, filters=filters, 
                                      noise_dim=noise_dim, lr_disc=lr_disc, lr_gen=lr_gen)
 
-        rank_metrics_files_1 = ["{}/ranks-IFS-9600.npz".format(log_path), "{}/ranks-IFS-124800.npz".format(log_path)]
-        rank_metrics_files_2 = ["{}/ranks-IFS-240000.npz".format(log_path), "{}/ranks-IFS-313600.npz".format(log_path)]
-        labels_1 = ['9600', '124800']
-        labels_2 = ['240000', '313600']
+        rank_metrics_files_1 = ["{}/ranks-IFS-124800.npz".format(log_path), "{}/ranks-IFS-198400.npz".format(log_path)]
+        rank_metrics_files_2 = ["{}/ranks-IFS-240000.npz".format(log_path), "{}/ranks-IFS-384000.npz".format(log_path)]
+        labels_1 = ['124800', '198400']
+        labels_2 = ['240000', '384000']
         name_1 = 'early'
         name_2 = 'late'
 
@@ -250,8 +250,9 @@ if __name__ == "__main__":
             epoch += 1
             
             # train for some number of batches
-            loss_log = train.train_deterministic(det_model, batch_gen_train, epoch,
-                                                 batch_gen_valid, steps_per_epoch, 1, plot_samples=val_size,
+            loss_log = train.train_deterministic(det_model, batch_gen_train, 
+                                                 batch_gen_valid, epoch, 
+                                                 steps_per_epoch, 1, plot_samples=val_size,
                                                  plot_fn=plot_fn)
             loss_log = np.mean(loss_log)
             training_samples += steps_per_epoch * batch_size
@@ -286,10 +287,10 @@ if __name__ == "__main__":
                                      weights_dir=log_path, check_every=1, batch_size=batch_size, 
                                      num_batches=num_batches, filters=filters, lr_gen=learning_rate)
 
-        rank_metrics_files_1 = ["{}/ranks-IFS-9600.npz".format(log_path), "{}/ranks-IFS-124800.npz".format(log_path)]
-        rank_metrics_files_2 = ["{}/ranks-IFS-240000.npz".format(log_path), "{}/ranks-IFS-313600.npz".format(log_path)]
-        labels_1 = ['9600', '124800']
-        labels_2 = ['240000', '313600']
+        rank_metrics_files_1 = ["{}/ranks-IFS-124800.npz".format(log_path), "{}/ranks-IFS-198400.npz".format(log_path)]
+        rank_metrics_files_2 = ["{}/ranks-IFS-240000.npz".format(log_path), "{}/ranks-IFS-384000.npz".format(log_path)]
+        labels_1 = ['124800', '198400']
+        labels_2 = ['240000', '384000']
         name_1 = 'early'
         name_2 = 'late'
         

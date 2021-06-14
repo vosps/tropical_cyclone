@@ -187,9 +187,9 @@ def rank_metrics_by_time(mode, train_years, val_years, application, out_fn, weig
         log_line("{} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}".format(N_samples, KS, CvM, DKL, OP, CRPS, mean, std))
 
         ## quasi-random selection to avoid geenerating loads of data
-        ranks_to_save = ['009600', '124800', '240000', '313600']
+        ranks_to_save = ['124800', '198400', '240000', '384000']
         if any(num in fn for num in ranks_to_save):
-            np.savez('{}/ranks-{}-{}.npz'.format(weights_dir, application, N_samples), ranks)
+            np.savez('{}/ranks-{}.npz'.format(weights_dir, N_samples), ranks)
 
 def rank_metrics_by_noise(filename, mode, train_years, val_years, application, weights_dir, batch_size=16, num_batches=64, filters=64, noise_dim=(10,10,8), lr_disc=0.0001, lr_gen=0.0001):
   
