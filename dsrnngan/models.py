@@ -5,7 +5,7 @@ from tensorflow.keras.layers import GlobalAveragePooling2D, Dense
 
 from blocks import residual_block, const_upscale_block_100
 
-def generator(era_dim=(10,10,9), const_dim=(100,100,2), noise_dim=(10,10,8), filters=64, conv_size=(3,3), stride=1, relu_alpha=0.2, norm=None, dropout_rate=None):
+def generator(era_dim=(10,10,9), const_dim=(100,100,2), noise_dim=(10,10,8), filters_gen=64, conv_size=(3,3), stride=1, relu_alpha=0.2, norm=None, dropout_rate=None):
     
     # Network inputs 
     ##rainfall image                                                                                                                                                                                           
@@ -19,7 +19,7 @@ def generator(era_dim=(10,10,9), const_dim=(100,100,2), noise_dim=(10,10,8), fil
     print(f"noise_input shape: {noise_input.shape}")
 
     ## Convolve constant fields down to match other input dimensions
-    upscaled_const_input = const_upscale_block_100(const_input, filters=filters)
+    upscaled_const_input = const_upscale_block_100(const_input, filters=filters_gen)
     print(f"upscaled constants shape: {upscaled_const_input.shape}")
     
     ## Concatenate all inputs together
@@ -28,13 +28,13 @@ def generator(era_dim=(10,10,9), const_dim=(100,100,2), noise_dim=(10,10,8), fil
 
     ## Pass through 3 residual blocks
     for i in range(3):
-        generator_output = residual_block(generator_output, filters=filters, conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate)
+        generator_output = residual_block(generator_output, filters=filters_gen, conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate)
     print('End of first residual block')
     print(f"Shape after first residual block: {generator_output.shape}")
     
     print(f"Shape before upsampling: {generator_output.shape}")
     ## Upsampling from (10,10) to (100,100) with residual blocks
-    block_channels = [2*filters, filters]
+    block_channels = [2*filters_gen, filters_gen]
     print(f"Shape before upsampling: {generator_output.shape}")
     generator_output = UpSampling2D(size=(5,5), interpolation='bilinear')(generator_output)
     print(f"Shape after upsampling step 1: {generator_output.shape}")
@@ -51,7 +51,7 @@ def generator(era_dim=(10,10,9), const_dim=(100,100,2), noise_dim=(10,10,8), fil
     
      ## Pass through 3 residual blocks
     for i in range(3):
-        generator_output = residual_block(generator_output, filters=filters, conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate)
+        generator_output = residual_block(generator_output, filters=filters_gen, conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate)
     print('End of third residual block')
     print(f"Shape after third residual block: {generator_output.shape}")
     
@@ -86,7 +86,7 @@ def generator_initialized(gen, num_channels=1):
 
     return (model, noise_shapes)
 
-def generator_deterministic(era_dim=(10,10,9), const_dim=(100,100,2), filters=64, conv_size=(3,3), stride=1, relu_alpha=0.2, norm=None, dropout_rate=None):
+def generator_deterministic(era_dim=(10,10,9), const_dim=(100,100,2), filters_gen=64, conv_size=(3,3), stride=1, relu_alpha=0.2, norm=None, dropout_rate=None):
     # Network inputs 
     ##rainfall image                                                                                                                                                 
     generator_input = Input(shape=era_dim, name="generator_input")
@@ -94,19 +94,19 @@ def generator_deterministic(era_dim=(10,10,9), const_dim=(100,100,2), filters=64
     const_input = Input(shape=const_dim, name="constants")
 
     ## Convolve constant fields down to match other input dimensions
-    upscaled_const_input = const_upscale_block_100(const_input, filters=filters)
+    upscaled_const_input = const_upscale_block_100(const_input, filters=filters_gen)
     ## Concatenate all inputs together
     generator_output = concatenate([generator_input, upscaled_const_input])
 
     ## Pass through 3 residual blocks
     for i in range(3):
-        generator_output = residual_block(generator_output, filters=filters, conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate)
+        generator_output = residual_block(generator_output, filters=filters_gen, conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate)
     print('End of first residual block')
     print(f"Shape after first residual block: {generator_output.shape}")
     
     print(f"Shape before upsampling: {generator_output.shape}")
     ## Upsampling residual blocks 
-    block_channels = [2*filters, filters]
+    block_channels = [2*filters_gen, filters_gen]
     print(f"Shape before upsampling: {generator_output.shape}")
     generator_output = UpSampling2D(size=(5,5), interpolation='bilinear')(generator_output)
     print(f"Shape after upsampling step 1: {generator_output.shape}")
@@ -123,7 +123,7 @@ def generator_deterministic(era_dim=(10,10,9), const_dim=(100,100,2), filters=64
     
      ## Pass through 3 residual blocks
     for i in range(3):
-        generator_output = residual_block(generator_output, filters=filters, conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate)
+        generator_output = residual_block(generator_output, filters=filters_gen, conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate)
     print('End of third residual block')
     print(f"Shape after third residual block: {generator_output.shape}")
     
@@ -135,7 +135,7 @@ def generator_deterministic(era_dim=(10,10,9), const_dim=(100,100,2), filters=64
     
     return gen
 
-def discriminator(era_dim=(10,10,9), const_dim=(100,100,2), ifs_dim=(100,100,1), filters=64, conv_size=(3,3), stride=1, relu_alpha=0.2, norm=None, dropout_rate=None):
+def discriminator(era_dim=(10,10,9), const_dim=(100,100,2), ifs_dim=(100,100,1), filters_disc=64, conv_size=(3,3), stride=1, relu_alpha=0.2, norm=None, dropout_rate=None):
     
     # Network inputs 
     generator_input = Input(shape=era_dim, name="generator_input")
@@ -148,7 +148,7 @@ def discriminator(era_dim=(10,10,9), const_dim=(100,100,2), ifs_dim=(100,100,1),
     print(f"generator_output shape: {generator_output.shape}")
     
     ##convolve down constant fields to match ERA
-    lo_res_const_input = const_upscale_block_100(const_input, filters=filters)
+    lo_res_const_input = const_upscale_block_100(const_input, filters=filters_disc)
     print(f"upscaled constants shape: {lo_res_const_input.shape}")
     
     ##concatenate constants to lo-res input
@@ -160,7 +160,7 @@ def discriminator(era_dim=(10,10,9), const_dim=(100,100,2), ifs_dim=(100,100,1),
     print(f"Shape after hi-res concatenate: {hi_res_input.shape}")
     
     ##encode inputs using residual blocks
-    block_channels = [filters, 2*filters]
+    block_channels = [filters_disc, 2*filters_disc]
     ##run through one set of RBs
     lo_res_input = residual_block(lo_res_input, filters=block_channels[0], conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate)
     print(f"Shape of lo-res input after residual block: {lo_res_input.shape}")
@@ -182,8 +182,8 @@ def discriminator(era_dim=(10,10,9), const_dim=(100,100,2), ifs_dim=(100,100,1),
     print(f"Shape after concatenate: {disc_input.shape}")
     
     ##encode in residual blocks
-    disc_input = residual_block(disc_input, filters=filters, conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate)
-    disc_input = residual_block(disc_input, filters=filters, conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate)
+    disc_input = residual_block(disc_input, filters=filters_disc, conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate)
+    disc_input = residual_block(disc_input, filters=filters_disc, conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate)
     print(f"Shape after residual block: {disc_input.shape}")
     print('End of second residual block')
 

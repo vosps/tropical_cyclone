@@ -42,15 +42,13 @@ def setup_batch_gen(train_years,val_years,batch_size=64,
 
 
 def setup_gan(train_years=None, val_years=None,
-              val_size = None,
-              steps_per_epoch=50,
-              batch_size=16, filters=64, noise_dim=(10,10,8),
-              lr_disc=0.0001, lr_gen=0.0001):
-
-    print(f"disc learning rate is: {lr_disc}") 
-    print(f"gen learning rate is: {lr_gen}")
-    (gen, noise_shapes) = models.generator(noise_dim=noise_dim, filters=filters)
-    disc = models.discriminator(filters=filters)
+              val_size = None, steps_per_epoch=50,
+              batch_size=16, filters_gen=64, filters_disc=64,
+              noise_dim=(10,10,8), lr_disc=0.0001, lr_gen=0.0001):
+    print(f"Gen filters is {filters_gen}")
+    print(f"Disc filter is {filters_disc}")
+    (gen, noise_shapes) = models.generator(noise_dim=noise_dim, filters_gen=filters_gen)
+    disc = models.discriminator(filters_disc=filters_disc)
     wgan = gan.WGANGP(gen, disc, lr_disc=lr_disc, lr_gen=lr_gen)
 
     (batch_gen_train, batch_gen_valid, batch_gen_test) = setup_batch_gen(
@@ -102,12 +100,12 @@ def setup_deterministic(train_years=None, val_years=None,
                         val_size = None, 
                         steps_per_epoch=50,
                         batch_size=64,
-                        filters=64,
+                        filters_gen=64,
                         loss='mse', 
                         lr=1e-4, optimizer=Adam):
 
     print(f"learning rate is: {lr}")
-    gen_det = models.generator_deterministic(filters=filters)
+    gen_det = models.generator_deterministic(filters_gen=filters_gen)
     det_model = deterministic.Deterministic(gen_det, lr, loss, optimizer)
     
     (batch_gen_train, batch_gen_valid, batch_gen_test) = setup_batch_gen(
