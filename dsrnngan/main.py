@@ -20,7 +20,7 @@ path = os.path.dirname(os.path.abspath(__file__))
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('mode', type=str, help="train, plot, deterministic")
+    parser.add_argument('mode', type=str, help="ensemble, plot, deterministic")
     parser.add_argument('--application', type=str, default='IFS')
     parser.add_argument('--train_years', type=int, nargs='+', default=[2018],
                         help="Training years")
@@ -58,7 +58,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     mode = args.mode
 
-    if mode=="train":
+    if mode=="ensemble":
 
         load_weights_root = args.load_weights_root
         save_weights_root = args.save_weights_root

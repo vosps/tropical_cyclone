@@ -5,7 +5,7 @@ import netCDF4
 import numpy as np
 import pandas as pd
 
-log_path = "/ppdata/lucy-cGAN/logs/IFS/filters_128/softplus/gan/noise_8/g_1e-5_d_2e-5"
+log_path = "/ppdata/lucy-cGAN/logs/IFS/filters_128/softplus/gan/noise_8/g_2e-5_d_4e-5"
 application = 'IFS'
 
 rank_metrics_files_1 = ["{}/ranks-{}-9600.npz".format(log_path, application), "{}/ranks-{}-124800.npz".format(log_path, application)]

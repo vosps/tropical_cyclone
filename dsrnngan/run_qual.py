@@ -2,20 +2,21 @@ import matplotlib
 matplotlib.use("Agg")
 import eval
 
-mode = "train"
+mode = "ensemble"
 #mode = "deterministic"
-train_years = [2016, 2017, 2018]
+#train_years = [2016, 2017, 2018]
+train_years = 2018
 val_years = 2019
 application = "IFS"
 batch_size = 16
 num_batches = 64
-filters = 256
-lr_disc = 2e-5
+filters = 512
+lr_disc = 4e-5
 lr_gen = 2e-5
-noise_dim = (10,10,6)
+noise_dim = (10,10,4)
 
 if mode == "train":
-    log_path = "/ppdata/lucy-cGAN/logs/IFS/filters_256/noise_6/lr2e-5"
+    log_path = "/ppdata/lucy-cGAN/logs/IFS/filters_512/noise_4"
 elif mode == "deterministic":
     log_path = "/ppdata/lucy-cGAN/logs/IFS/filters_128/softplus/det/lr_1e-4"
     

@@ -56,7 +56,7 @@ def ensemble_ranks(mode, gen, batch_gen, noise_gen, num_batches,
         sample = sample.ravel()
         samples_gen = []
 
-        if mode == "train":
+        if mode == "ensemble":
             for i in range(rank_samples):
                 n = noise_gen()
                 for nn in n:
@@ -136,7 +136,7 @@ def rank_OP(norm_ranks, num_ranks=100):
 def rank_metrics_by_time(mode, train_years, val_years, application, out_fn, weights_dir, check_every=1, N_range=None, batch_size=16, num_batches=64, 
                          filters_gen=64, filters_disc=64, noise_dim=(10,10,8), rank_samples=100, lr_disc=0.0001, lr_gen=0.0001):
     train_years = None
-    if mode == "train":
+    if mode == "ensemble":
         (wgan, _, batch_gen_valid, _, noise_shapes, _) = train.setup_gan(train_years, val_years, val_size=batch_size*num_batches, 
                                                                          batch_size=batch_size, filters_gen=filters_gen, filters_disc=filters_disc,
                                                                          noise_dim=noise_dim, lr_disc=lr_disc, lr_gen=lr_gen)
@@ -168,7 +168,7 @@ def rank_metrics_by_time(mode, train_years, val_years, application, out_fn, weig
             continue
         print(weights_dir + "/" + fn)
 
-        if mode == "train":
+        if mode == "ensemble":
             gen.load_weights(weights_dir + "/" + fn)
             (ranks, crps_scores) = ensemble_ranks(mode, gen, batch_gen_valid, noise_gen, num_batches=num_batches, rank_samples=rank_samples)
         elif mode == "deterministic":
@@ -226,7 +226,7 @@ def rank_metrics_table(weights_fn, mode, val_years, batch_size=16, num_batches=1
                        filters_gen=64, filters_disc=64, noise_dim=(10,10,8), 
                        lr_disc=0.0001, lr_gen=0.0001):
     train_years = None
-    if mode == "train":
+    if mode == "ensemble":
         (wgan, _, batch_gen_valid, _, noise_shapes, _) = train.setup_gan(train_years, val_years, val_size=batch_size*num_batches, 
                                                                          batch_size=batch_size, filters_gen=filters_gen, 
                                                                          filters_disc=filters_disc, noise_dim=noise_dim, 
@@ -250,7 +250,7 @@ def rank_metrics_table(weights_fn, mode, val_years, batch_size=16, num_batches=1
                                                                        batch_size=batch_size)
         gen = GeneratorRainFARM(10, data.denormalise)
         noise_gen = noise.NoiseGenerator(noise_shapes, batch_size=batch_size)
-        (ranks, crps_scores) = ensemble_ranks("train", gen, batch_gen_valid, noise_gen, num_batches=num_batches)
+        (ranks, crps_scores) = ensemble_ranks("ensemble", gen, batch_gen_valid, noise_gen, num_batches=num_batches)
     elif mode=="lanczos":
         (_, _, batch_gen_valid, _, noise_shapes, _) = train.setup_data(train_years, val_years, 
                                                                        val_size=batch_size*num_batches, 
@@ -519,7 +519,7 @@ def image_quality(mode, gen, batch_gen, noise_gen, num_instances=1, num_batches=
 def quality_metrics_by_time(mode, train_years, val_years, application, out_fn, weights_dir, check_every=1, batch_size=16, 
                             num_batches=100, filters_gen=64, filters_disc=64, noise_dim=(10,10,8), lr_disc=0.0001, lr_gen=0.0001):
     
-    if mode == "train":
+    if mode == "ensemble":
         (wgan, _, batch_gen_valid, _, noise_shapes, _) = train.setup_gan(train_years, val_years, val_size=batch_size*num_batches, 
                                                                          batch_size=batch_size, filters_gen=filters_gen, 
                                                                          filters_disc=filters_disc, noise_dim=noise_dim, 
@@ -558,7 +558,7 @@ def quality_metrics_table(weights_fn, mode, val_years,batch_size=16, num_batches
                           filters_gen=64, filters_disc=64, noise_dim=(10,10,8), 
                           lr_disc=0.0001, lr_gen=0.0001):
     train_years = None
-    if mode == "train":
+    if mode == "ensemble":
         (wgan, _, batch_gen_valid, _, noise_shapes, _) = train.setup_gan(None, val_years, val_size=batch_size*num_batches, 
                                                                          batch_size=batch_size, filters_gen=filters_gen, 
                                                                          filters_disc=filters_disc, noise_dim=noise_dim,
