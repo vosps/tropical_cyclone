@@ -10,13 +10,14 @@ val_years = 2019
 application = "IFS"
 batch_size = 16
 num_batches = 64
-filters = 512
-lr_disc = 4e-5
-lr_gen = 2e-5
-noise_dim = (10,10,4)
+filters_gen = 256
+filters_disc = 512
+lr_disc = 1e-5
+lr_gen = 1e-5
+noise_dim = (10,10,8)
 
-if mode == "train":
-    log_path = "/ppdata/lucy-cGAN/logs/IFS/filters_512/noise_4"
+if mode == "ensemble":
+    log_path = "/ppdata/lucy-cGAN/logs/IFS/gen_256_disc_512/noise_8/lr1e-5"
 elif mode == "deterministic":
     log_path = "/ppdata/lucy-cGAN/logs/IFS/filters_128/softplus/det/lr_1e-4"
     
@@ -25,7 +26,7 @@ weights_dir = log_path
 
 
 eval.quality_metrics_by_time(mode, train_years, val_years, application, out_fn, weights_dir, check_every=1, batch_size=batch_size, num_batches=num_batches, 
-                             filters=filters, noise_dim=noise_dim, lr_disc=lr_disc, lr_gen=lr_gen)
+                             filters_gen=filters_gen, filters_disc=filters_disc, noise_dim=noise_dim, lr_disc=lr_disc, lr_gen=lr_gen)
 
 #log_path = "/ppdata/lucy-cGAN/jupyter"
 #weights_fn="gen_weights-ERA-0012800.h5"

@@ -480,7 +480,7 @@ def image_quality(mode, gen, batch_gen, noise_gen, num_instances=1, num_batches=
         
 
         for i in range(num_instances):
-            if mode == "train":
+            if mode == "ensemble":
                 n = noise_gen()
                 img_gen = gen.predict([cond,const,n])
             elif mode == "deterministic":

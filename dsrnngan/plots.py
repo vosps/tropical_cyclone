@@ -586,21 +586,10 @@ def plot_rank_histogram_all(rank_files, labels, log_path, name, N_ranks=101):
     colors = ["C0", "C1"]
 
     for (fn_valid, label, ls, c) in zip (rank_files, labels, linestyles, colors):
-        print(fn_valid)
         with np.load(fn_valid) as f:
             ranks = f['arr_0']
         plot_rank_histogram(axes[0], ranks, N_ranks=N_ranks,label=label, linestyle=ls, linewidth=0.75, c=c, zorder=2)
 
-#    for ((fn_valid,fn_test),label,ls,c) in zip(rank_files,labels,linestyles,colors):
-#        with np.load(fn_test, allow_pickle=True) as f:
-#            ranks = f['arr_0'].item()['ranks']
-#        plot_rank_histogram(axes[0], ranks, N_ranks=N_ranks,
-#            label=label, linestyle=ls, linewidth=2, c=c, alpha=0.7, zorder=1)
-#        with np.load(fn_valid) as f:
-#            ranks = f['arr_0']
-#        plot_rank_histogram(axes[0], ranks, N_ranks=N_ranks,
-#            label=None, linestyle=ls, linewidth=0.75, c=c, zorder=2)
- 
     bc = np.linspace(0,1,N_ranks)
     axes[0].plot(bc, [1./N_ranks]*len(bc), linestyle=':', label="Uniform", c='dimgrey', zorder=0)
     axes[0].set_ylabel("Norm. occurrence")
@@ -612,20 +601,9 @@ def plot_rank_histogram_all(rank_files, labels, log_path, name, N_ranks=101):
         transform=axes[0].transAxes)
 
     for (fn_valid, label, ls, c) in zip (rank_files, labels, linestyles, colors):
-        print(fn_valid)
         with np.load(fn_valid) as f:
             ranks = f['arr_0']
         plot_rank_cdf(axes[1], ranks, N_ranks=N_ranks, label=label, linestyle=ls, linewidth=0.75, c=c, zorder=2)
-
-#    for ((fn_valid,fn_test),label,ls,c) in zip(rank_files,labels,linestyles,colors):
-#        with np.load(fn_test, allow_pickle=True) as f:
-#            ranks = f['arr_0'].item()['ranks']
-#        plot_rank_cdf(axes[1], ranks, N_ranks=N_ranks,
-#            label=label, linestyle=ls, linewidth=2, c=c, alpha=0.7, zorder=1)
-#        with np.load(fn_valid) as f:
-#            ranks = f['arr_0']
-#        plot_rank_cdf(axes[1], ranks, N_ranks=N_ranks,
-#            label=None, linestyle=ls, linewidth=0.75, c=c, zorder=2)
 
     axes[1].plot(bc,bc,linestyle=':', label="Uniform", c='dimgrey', zorder=0)
     axes[1].set_ylabel("CDF")
