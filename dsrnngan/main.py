@@ -21,6 +21,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('mode', type=str, help="ensemble, plot, deterministic")
+    parser.add_argument('--problem_type', type=str, help="normal (IFS>NIMROD), easy (NIMROD>NIMROD)", default="normal")
     parser.add_argument('--application', type=str, default='IFS')
     parser.add_argument('--train_years', type=int, nargs='+', default=[2018],
                         help="Training years")
@@ -67,7 +68,7 @@ if __name__ == "__main__":
         batch_size = args.batch_size
         val_size = args.val_size
         num_samples = args.num_samples
-        opt_switch_point = args.opt_switch_point
+        #opt_switch_point = args.opt_switch_point
         train_years = args.train_years
         val_years = args.val_years
         application = args.application
@@ -77,20 +78,33 @@ if __name__ == "__main__":
         lr_disc = args.learning_rate_disc
         lr_gen = args.learning_rate_gen
         noise_channels = args.noise_channels
-        
         num_epochs = int(num_samples/(steps_per_epoch * batch_size))
         epoch = 1
         noise_dim = (10,10) + (noise_channels,)
+        problem_type = args.problem_type
 
         if not save_weights_root:
             save_weights_root = path + "/../models"
 
+        if problem_type == "normal":
+            downsample = False
+        elif problem_type == "easy":
+            downsample = True
+        else:
+            raise Exception("no such problem type, try again!")
+
         # initialize GAN
         (wgan, batch_gen_train, batch_gen_valid, _, noise_shapes, _) = \
-            train.setup_gan(train_years, val_years, val_size = val_size,
-                            batch_size=batch_size, filters_gen=filters_gen, 
-                            filters_disc=filters_disc, noise_dim=noise_dim, 
-                            lr_disc=lr_disc, lr_gen=lr_gen)
+            train.setup_gan(train_years, 
+                            val_years, 
+                            val_size=val_size, 
+                            downsample=downsample, 
+                            batch_size=batch_size, 
+                            filters_gen=filters_gen, 
+                            filters_disc=filters_disc, 
+                            noise_dim=noise_dim, 
+                            lr_disc=lr_disc, 
+                            lr_gen=lr_gen)
 
         if load_weights_root: # load weights and run status
             wgan.load(wgan.filenames_from_root(load_weights_root))
@@ -120,22 +134,28 @@ if __name__ == "__main__":
         qual_fn = "{}/qual-{}.txt".format(log_path, application) if log_path \
             else path+"/../figures/eval.txt"
 
-        switched_opt = (training_samples >= opt_switch_point)
+        #switched_opt = (training_samples >= opt_switch_point)
 
         while (training_samples < num_samples): # main training loop
             print("Epoch {}/{}".format(epoch, num_epochs))
 
             # check if we should switch optimizers
-            if (training_samples >= opt_switch_point) and not switched_opt:
-                opt_disc = SGD(1e-5)
-                opt_gen = SGD(1e-5)
-                wgan.compile(opt_disc=opt_disc, opt_gen=opt_gen)
-                switched_opt = True
+            #if (training_samples >= opt_switch_point) and not switched_opt:
+                #opt_disc = SGD(1e-5)
+                #opt_gen = SGD(1e-5)
+                #wgan.compile(opt_disc=opt_disc, opt_gen=opt_gen)
+                #switched_opt = True
 
             # train for some number of batches
-            loss_log = train.train_gan(wgan, batch_gen_train, batch_gen_valid, 
-                                       noise_shapes, epoch, steps_per_epoch, num_epochs=1, 
-                                       plot_samples=val_size, plot_fn=plot_fn)
+            loss_log = train.train_gan(wgan, 
+                                       batch_gen_train, 
+                                       batch_gen_valid, 
+                                       noise_shapes, 
+                                       epoch, 
+                                       steps_per_epoch, 
+                                       num_epochs=1, 
+                                       plot_samples=val_size, 
+                                       plot_fn=plot_fn)
 
             loss_log = np.mean(loss_log, axis=0)
             training_samples += steps_per_epoch * batch_size
@@ -166,16 +186,39 @@ if __name__ == "__main__":
                 wgan.gen.save_weights(gen_weights_file)
        
         #evaluate model performance        
-        eval.rank_metrics_by_time(mode, train_years, val_years, application, out_fn=eval_fn, 
-                                  weights_dir=log_path, check_every=1, N_range=None, 
-                                  batch_size=batch_size, num_batches=num_batches, 
-                                  filters_gen=filters_gen, filters_disc=filters_disc, 
-                                  noise_dim=noise_dim, rank_samples=100, lr_disc=lr_disc, lr_gen=lr_gen)
+        eval.rank_metrics_by_time(mode, 
+                                  train_years, 
+                                  val_years, 
+                                  application, 
+                                  out_fn=eval_fn, 
+                                  weights_dir=log_path, 
+                                  check_every=1, 
+                                  N_range=None, 
+                                  downsample=downsample,
+                                  batch_size=batch_size, 
+                                  num_batches=num_batches, 
+                                  filters_gen=filters_gen, 
+                                  filters_disc=filters_disc, 
+                                  noise_dim=noise_dim, 
+                                  rank_samples=100, 
+                                  lr_disc=lr_disc, 
+                                  lr_gen=lr_gen)
     
-        eval.quality_metrics_by_time(mode, train_years, val_years, application, out_fn=qual_fn,
-                                     weights_dir=log_path, check_every=1, batch_size=batch_size, 
-                                     num_batches=num_batches, filters_gen=filters_gen, filters_disc=filters_disc,
-                                     noise_dim=noise_dim, lr_disc=lr_disc, lr_gen=lr_gen)
+        eval.quality_metrics_by_time(mode, 
+                                     train_years, 
+                                     val_years, 
+                                     application, 
+                                     out_fn=qual_fn,
+                                     weights_dir=log_path, 
+                                     check_every=1, 
+                                     downsample=downsample,
+                                     batch_size=batch_size, 
+                                     num_batches=num_batches, 
+                                     filters_gen=filters_gen, 
+                                     filters_disc=filters_disc,
+                                     noise_dim=noise_dim, 
+                                     lr_disc=lr_disc, 
+                                     lr_gen=lr_gen)
 
         rank_metrics_files_1 = ["{}/ranks-IFS-124800.npz".format(log_path), "{}/ranks-IFS-198400.npz".format(log_path)]
         rank_metrics_files_2 = ["{}/ranks-IFS-240000.npz".format(log_path), "{}/ranks-IFS-384000.npz".format(log_path)]
@@ -207,17 +250,26 @@ if __name__ == "__main__":
         num_batches = args.num_batches
         filters_gen = args.filters_gen
         learning_rate = args.learning_rate_gen
-
+        problem_type = args.problem_type
         num_epochs = int(num_samples/(steps_per_epoch * batch_size))
         epoch = 1
 
         if not save_weights_root:
             save_weights_root = path + "/../models"
+        
+        if problem_type == "normal":
+            downsample = False
+        elif problem_type == "easy":
+            downsample = True
+        else:
+            raise Exception("no such problem type, try again!")
 
         # initialize deterministic model
         (det_model, batch_gen_train, batch_gen_valid, _, _) = \
-            train.setup_deterministic(train_years, val_years, 
+            train.setup_deterministic(train_years, 
+                                      val_years, 
                                       val_size=val_size,
+                                      downsample=downsample,
                                       steps_per_epoch=steps_per_epoch, 
                                       batch_size=batch_size, 
                                       filters_gen=filters_gen, 
@@ -256,9 +308,13 @@ if __name__ == "__main__":
             epoch += 1
             
             # train for some number of batches
-            loss_log = train.train_deterministic(det_model, batch_gen_train, 
-                                                 batch_gen_valid, epoch, 
-                                                 steps_per_epoch, 1, plot_samples=val_size,
+            loss_log = train.train_deterministic(det_model, 
+                                                 batch_gen_train, 
+                                                 batch_gen_valid, 
+                                                 epoch, 
+                                                 steps_per_epoch, 
+                                                 1, 
+                                                 plot_samples=val_size,
                                                  plot_fn=plot_fn)
             loss_log = np.mean(loss_log)
             training_samples += steps_per_epoch * batch_size
@@ -284,14 +340,33 @@ if __name__ == "__main__":
                 det_model.gen_det.save_weights(gen_det_weights_file)
 
         #evaluate model performance              
-        eval.rank_metrics_by_time(mode, train_years, val_years, application, out_fn=eval_fn,
-                                  weights_dir=log_path, check_every=1, N_range=None,
-                                  batch_size=batch_size, num_batches=num_batches, filters_gen=filters_gen, 
-                                  rank_samples=1, lr_gen=learning_rate)
+        eval.rank_metrics_by_time(mode, 
+                                  train_years, 
+                                  val_years, 
+                                  application, 
+                                  out_fn=eval_fn,
+                                  weights_dir=log_path, 
+                                  check_every=1, 
+                                  N_range=None,
+                                  downsample=downsample,
+                                  batch_size=batch_size, 
+                                  num_batches=num_batches, 
+                                  filters_gen=filters_gen, 
+                                  rank_samples=1, 
+                                  lr_gen=learning_rate)
         
-        eval.quality_metrics_by_time(mode, train_years, val_years, application, out_fn=qual_fn, 
-                                     weights_dir=log_path, check_every=1, batch_size=batch_size, 
-                                     num_batches=num_batches, filters_gen=filters_gen, lr_gen=learning_rate)
+        eval.quality_metrics_by_time(mode, 
+                                     train_years, 
+                                     val_years, 
+                                     application, 
+                                     out_fn=qual_fn, 
+                                     weights_dir=log_path, 
+                                     check_every=1, 
+                                     downsample=downsample,
+                                     batch_size=batch_size, 
+                                     num_batches=num_batches, 
+                                     filters_gen=filters_gen, 
+                                     lr_gen=learning_rate)
 
         rank_metrics_files_1 = ["{}/ranks-IFS-124800.npz".format(log_path), "{}/ranks-IFS-198400.npz".format(log_path)]
         rank_metrics_files_2 = ["{}/ranks-IFS-240000.npz".format(log_path), "{}/ranks-IFS-384000.npz".format(log_path)]

@@ -6,6 +6,7 @@ mode = "ensemble"
 #mode = "deterministic"
 #train_years = [2016, 2017, 2018]
 train_years = 2018
+#val_years = [2016, 2017, 2018]
 val_years = 2019
 application = "IFS"
 batch_size = 16
@@ -15,6 +16,8 @@ filters_disc = 512
 lr_disc = 1e-5
 lr_gen = 1e-5
 noise_dim = (10,10,8)
+#downsample = True
+downsample = False
 
 if mode == "ensemble":
     log_path = "/ppdata/lucy-cGAN/logs/IFS/gen_256_disc_512/noise_8/lr1e-5"
@@ -25,8 +28,20 @@ out_fn = "{}/qual-{}.txt".format(log_path, application)
 weights_dir = log_path
 
 
-eval.quality_metrics_by_time(mode, train_years, val_years, application, out_fn, weights_dir, check_every=1, batch_size=batch_size, num_batches=num_batches, 
-                             filters_gen=filters_gen, filters_disc=filters_disc, noise_dim=noise_dim, lr_disc=lr_disc, lr_gen=lr_gen)
+eval.quality_metrics_by_time(mode, 
+                             train_years, 
+                             val_years, 
+                             application, 
+                             out_fn, 
+                             weights_dir, 
+                             check_every=1, 
+                             batch_size=batch_size, 
+                             num_batches=num_batches, 
+                             filters_gen=filters_gen, 
+                             filters_disc=filters_disc, 
+                             noise_dim=noise_dim, 
+                             lr_disc=lr_disc, 
+                             lr_gen=lr_gen)
 
 #log_path = "/ppdata/lucy-cGAN/jupyter"
 #weights_fn="gen_weights-ERA-0012800.h5"
