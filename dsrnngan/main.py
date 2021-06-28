@@ -220,8 +220,8 @@ if __name__ == "__main__":
                                      lr_disc=lr_disc, 
                                      lr_gen=lr_gen)
 
-        rank_metrics_files_1 = ["{}/ranks-IFS-124800.npz".format(log_path), "{}/ranks-IFS-198400.npz".format(log_path)]
-        rank_metrics_files_2 = ["{}/ranks-IFS-240000.npz".format(log_path), "{}/ranks-IFS-384000.npz".format(log_path)]
+        rank_metrics_files_1 = ["{}/ranks-124800.npz".format(log_path), "{}/ranks-198400.npz".format(log_path)]
+        rank_metrics_files_2 = ["{}/ranks-240000.npz".format(log_path), "{}/ranks-384000.npz".format(log_path)]
         labels_1 = ['124800', '198400']
         labels_2 = ['240000', '384000']
         name_1 = 'early'
@@ -368,8 +368,8 @@ if __name__ == "__main__":
                                      filters_gen=filters_gen, 
                                      lr_gen=learning_rate)
 
-        rank_metrics_files_1 = ["{}/ranks-IFS-124800.npz".format(log_path), "{}/ranks-IFS-198400.npz".format(log_path)]
-        rank_metrics_files_2 = ["{}/ranks-IFS-240000.npz".format(log_path), "{}/ranks-IFS-384000.npz".format(log_path)]
+        rank_metrics_files_1 = ["{}/ranks-124800.npz".format(log_path), "{}/ranks-198400.npz".format(log_path)]
+        rank_metrics_files_2 = ["{}/ranks-240000.npz".format(log_path), "{}/ranks-384000.npz".format(log_path)]
         labels_1 = ['124800', '198400']
         labels_2 = ['240000', '384000']
         name_1 = 'early'
