@@ -5,11 +5,11 @@ from tensorflow.keras.layers import GlobalAveragePooling2D, Dense
 
 from blocks import residual_block, const_upscale_block_100
 
-def generator(era_dim=(10,10,9), const_dim=(100,100,2), noise_dim=(10,10,8), filters_gen=64, conv_size=(3,3), stride=1, relu_alpha=0.2, norm=None, dropout_rate=None):
+def generator(input_dim=(10,10,9), const_dim=(100,100,2), noise_dim=(10,10,8), filters_gen=64, conv_size=(3,3), stride=1, relu_alpha=0.2, norm=None, dropout_rate=None):
     
     # Network inputs 
     ##rainfall image                                                                                                                                                                                           
-    generator_input = Input(shape=era_dim, name="generator_input")
+    generator_input = Input(shape=input_dim, name="generator_input")
     print(f"generator_input shape: {generator_input.shape}")
     ##constant fields
     const_input = Input(shape=const_dim, name="constants")
@@ -86,10 +86,10 @@ def generator_initialized(gen, num_channels=1):
 
     return (model, noise_shapes)
 
-def generator_deterministic(era_dim=(10,10,9), const_dim=(100,100,2), filters_gen=64, conv_size=(3,3), stride=1, relu_alpha=0.2, norm=None, dropout_rate=None):
+def generator_deterministic(input_dim=(10,10,9), const_dim=(100,100,2), filters_gen=64, conv_size=(3,3), stride=1, relu_alpha=0.2, norm=None, dropout_rate=None):
     # Network inputs 
     ##rainfall image                                                                                                                                                 
-    generator_input = Input(shape=era_dim, name="generator_input")
+    generator_input = Input(shape=input_dim, name="generator_input")
     ##constant fields
     const_input = Input(shape=const_dim, name="constants")
 
@@ -135,16 +135,16 @@ def generator_deterministic(era_dim=(10,10,9), const_dim=(100,100,2), filters_ge
     
     return gen
 
-def discriminator(era_dim=(10,10,9), const_dim=(100,100,2), ifs_dim=(100,100,1), filters_disc=64, conv_size=(3,3), stride=1, relu_alpha=0.2, norm=None, dropout_rate=None):
+def discriminator(input_dim=(10,10,9), const_dim=(100,100,2), output_dim=(100,100,1), filters_disc=64, conv_size=(3,3), stride=1, relu_alpha=0.2, norm=None, dropout_rate=None):
     
     # Network inputs 
-    generator_input = Input(shape=era_dim, name="generator_input")
+    generator_input = Input(shape=input_dim, name="generator_input")
     print(f"generator_input shape: {generator_input.shape}")
     ##constant fields
     const_input = Input(shape=const_dim,name="constants")
     print(f"constants shape: {const_input.shape}")
     ##generator output
-    generator_output = Input(shape=ifs_dim, name="generator_output")
+    generator_output = Input(shape=output_dim, name="generator_output")
     print(f"generator_output shape: {generator_output.shape}")
     
     ##convolve down constant fields to match ERA
