@@ -60,9 +60,16 @@ def setup_gan(train_years=None,
 
     print(f"# gen filters is {filters_gen}")
     print(f"# disc filters is {filters_disc}")
-    
-    (gen, noise_shapes) = models.generator(noise_dim=noise_dim, filters_gen=filters_gen)
-    disc = models.discriminator(filters_disc=filters_disc)
+
+    if downsample == True:
+        input_dim = (10,10,1)
+        print(f"input_dim is {input_dim}")
+    elif downsample == False:
+        input_dim = (10,10,9)
+        print(f"input_dim is {input_dim}")
+
+    (gen, noise_shapes) = models.generator(input_dim=input_dim, noise_dim=noise_dim, filters_gen=filters_gen)
+    disc = models.discriminator(input_dim=input_dim, filters_disc=filters_disc)
     wgan = gan.WGANGP(gen, disc, lr_disc=lr_disc, lr_gen=lr_gen)
 
     (batch_gen_train, batch_gen_valid, batch_gen_test) = setup_batch_gen(
@@ -129,7 +136,15 @@ def setup_deterministic(train_years=None,
 
     print(f"downsample flag is {downsample}")
     print(f"learning rate is: {lr}")
-    gen_det = models.generator_deterministic(filters_gen=filters_gen)
+    
+    if downsample == True:
+        input_dim = (10,10,1)
+        print(f"input_dim is {input_dim}")
+    elif downsample == False:
+        input_dim = (10,10,9)
+        print(f"input_dim is {input_dim}")
+
+    gen_det = models.generator_deterministic(input_dim=input_dim, filters_gen=filters_gen)
     det_model = deterministic.Deterministic(gen_det, lr, loss, optimizer)
     
     (batch_gen_train, batch_gen_valid, batch_gen_test) = setup_batch_gen(
