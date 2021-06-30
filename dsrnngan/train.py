@@ -27,22 +27,22 @@ def setup_batch_gen(train_years,
                     val_fixed=True):
    
     tfrecords_generator_ifs.return_dic = False
-    
+    print(f"downsample flag is {downsample}")
     if train_years is not None:
-        train = DataGenerator(train_years, batch_size=batch_size, downsample=False)
+        train = DataGenerator(train_years, batch_size=batch_size, downsample=downsample)
     else:
         train = None
     if val_size is not None:
         if val_size <= batch_size:
-            val = DataGenerator(val_years, batch_size=val_size, repeat=False, downsample=False)
+            val = DataGenerator(val_years, batch_size=val_size, repeat=False, downsample=downsample)
             val = val.take(1)
         else:
-            val = DataGenerator(val_years, batch_size=batch_size, repeat=False, downsample=False)
+            val = DataGenerator(val_years, batch_size=batch_size, repeat=False, downsample=downsample)
             val = val.take(val_size//batch_size)
         if val_fixed:
             val = val.cache()
     else:
-        val = DataGenerator(val_years, batch_size=batch_size, downsample=False)
+        val = DataGenerator(val_years, batch_size=batch_size, downsample=downsample)
     return train,val,None
 
 
@@ -58,7 +58,6 @@ def setup_gan(train_years=None,
               lr_disc=0.0001, 
               lr_gen=0.0001):
 
-    print(f"downsample flag is {downsample}")
     print(f"# gen filters is {filters_gen}")
     print(f"# disc filters is {filters_disc}")
     
@@ -68,7 +67,7 @@ def setup_gan(train_years=None,
 
     (batch_gen_train, batch_gen_valid, batch_gen_test) = setup_batch_gen(
         train_years=train_years, val_years=val_years, batch_size=batch_size,
-        val_size=val_size, downsample=False)
+        val_size=val_size, downsample=downsample)
 
     gc.collect()
 
@@ -135,7 +134,7 @@ def setup_deterministic(train_years=None,
     
     (batch_gen_train, batch_gen_valid, batch_gen_test) = setup_batch_gen(
         train_years=train_years, val_years=val_years, batch_size=batch_size, 
-        val_size=val_size, downsample=False)
+        val_size=val_size, downsample=downsample)
 
     gc.collect()
 
