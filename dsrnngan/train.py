@@ -85,7 +85,7 @@ def setup_data(train_years=None,
     
     (batch_gen_train, batch_gen_valid, batch_gen_test) = setup_batch_gen(
         train_years = train_years, val_years = val_years, 
-        batch_size=batch_size, val_size=val_size, downsample=False)
+        batch_size=batch_size, val_size=val_size, downsample=downsample)
 
     gc.collect()
 
