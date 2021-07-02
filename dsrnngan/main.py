@@ -125,7 +125,7 @@ if __name__ == "__main__":
                     "disc_loss", "disc_loss_real", "disc_loss_fake",
                     "disc_loss_gp", "gen_loss"])
 
-        plot_fn = "{}/progress-{}.pdf".format(log_path,application) if log_path \
+        plot_fn = "{}/progress-{}-{}.pdf".format(log_path,application,mode) if log_path \
             else path+"/../figures/progress.pdf"
 
         eval_fn = "{}/eval-{}.txt".format(log_path, application) if log_path \
@@ -293,7 +293,7 @@ if __name__ == "__main__":
                 log_file = "{}/log-{}.txt".format(log_path,application)
                 log = pd.DataFrame(columns=["training_samples", "loss"])
 
-        plot_fn = "{}/progress-{}.pdf".format(log_path,application) if log_path \
+        plot_fn = "{}/progress-{}-{}.pdf".format(log_path,application,mode) if log_path \
             else path+"/../figures/progress.pdf"
 
         eval_fn = "{}/eval-{}.txt".format(log_path, application) if log_path \
@@ -305,7 +305,6 @@ if __name__ == "__main__":
         while (training_samples < num_samples): # main training loop
             
             print("Epoch {}/{}".format(epoch, num_epochs))
-            epoch += 1
             
             # train for some number of batches
             loss_log = train.train_deterministic(det_model, 
@@ -318,6 +317,7 @@ if __name__ == "__main__":
                                                  plot_fn=plot_fn)
             loss_log = np.mean(loss_log)
             training_samples += steps_per_epoch * batch_size
+            epoch += 1
 
             # save results
             det_model.save(save_weights_root)
