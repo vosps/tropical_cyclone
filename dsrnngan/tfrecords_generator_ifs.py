@@ -3,6 +3,7 @@ import tensorflow as tf
 import glob
 from data import all_ifs_fields,ifs_hours
 
+records_folder = '/ppdata/tfrecordsIFS/'
 return_dic = True
 
 def DataGenerator(year,batch_size,repeat=True,downsample = False):
@@ -10,7 +11,7 @@ def DataGenerator(year,batch_size,repeat=True,downsample = False):
 
 def create_random_dataset(year,batch_size,era_shape=(10,10,9),con_shape=(100,100,2),
                          out_shape=(100,100,1),repeat=True,
-                         folder='/ppdata/tfrecordsIFS/', shuffle_size = 1024):
+                         folder=records_folder, shuffle_size = 1024):
     dataset = create_dataset(year, '*', era_shape=era_shape,con_shape=con_shape,
                                out_shape=out_shape,folder=folder,repeat=repeat,
                                shuffle_size = shuffle_size)
@@ -18,7 +19,7 @@ def create_random_dataset(year,batch_size,era_shape=(10,10,9),con_shape=(100,100
 
 def create_mixed_dataset(year,batch_size,era_shape=(10,10,9),con_shape=(100,100,2),
                          out_shape=(100,100,1),repeat=True,downsample = False,
-                         folder='/ppdata/tfrecordsIFS/', shuffle_size = 1024):
+                         folder=records_folder, shuffle_size = 1024):
 
     classes = 4
     datasets = [create_dataset(year, i, era_shape=era_shape,
@@ -74,7 +75,7 @@ def _parse_batch(record_batch,insize=(10,10,9),consize=(100,100,2),
 
 
 def create_dataset(year,clss,era_shape=(10,10,9),con_shape=(100,100,2),out_shape=(100,100,1),
-                   folder='/ppdata/tfrecordsIFS/', shuffle_size = 1024, repeat=True):
+                   folder=records_folder, shuffle_size = 1024, repeat=True):
     AUTOTUNE = tf.data.experimental.AUTOTUNE
     if type(year)==str or type(year) == int:
         fl = glob.glob(f"{folder}/{year}_*.{clss}.tfrecords")
@@ -95,6 +96,24 @@ def create_dataset(year,clss,era_shape=(10,10,9),con_shape=(100,100,2),out_shape
     else:
         return ds
 
+def create_fixed_dataset(year=None,mode='validation',batch_size=16,
+                         era_shape=(10,10,9),con_shape=(100,100,2),out_shape=(100,100,1),
+                         name=None,folder=records_folder):
+    assert year is not None or Name is not None, "Must specify year or file name"
+    if folder[-1] != '/':
+        folder = folder + '/'
+    if name is None:
+        name = f"{folder}{mode}{year}.tfrecords"
+    fl = glob.glob(name)
+    print(fl)
+    files_ds = tf.data.Dataset.list_files(fl)
+    ds = tf.data.TFRecordDataset(files_ds,
+                                 num_parallel_reads=1)
+    ds = ds.map(lambda x: _parse_batch(x, insize=era_shape,consize=con_shape,
+                                       outsize=out_shape))
+    return ds.batch(batch_size)
+        
+
 def _float_feature(list_of_floats):  # float32
     return tf.train.Feature(float_list=tf.train.FloatList(value=list_of_floats))
 
@@ -109,6 +128,7 @@ def write_data(year,
 ):
     from data import get_dates
     from data_generator_ifs import DataGenerator
+
     dates=get_dates(year)
 
     nim_size = 951
@@ -160,3 +180,24 @@ def write_data(year,
                         fle_hdles[clss].write(example_to_string)
         for fh in fle_hdles:
             fh.close()
+
+
+
+def save_dataset(tfrecords_dataset,flename):
+
+    assert return_dic, "Only works with return_dic=True"
+    flename=f"/ppdata/tfrecordsIFS/{flename}"
+    fle_hdle =  tf.io.TFRecordWriter(flename)            
+    for sample in tfrecords_dataset:
+        for k in range(sample[1]['generator_output'].shape[0]):
+            feature = {
+                'generator_input': _float_feature(sample[0]['generator_input'][k,...].numpy().flatten()),
+                'constants': _float_feature(sample[0]['constants'][k,...].numpy().flatten()),
+                'generator_output': _float_feature(sample[1]['generator_output'][k,...].numpy().flatten())
+            }
+            features = tf.train.Features(feature=feature)
+            example = tf.train.Example(features=features)
+            example_to_string = example.SerializeToString()
+            fle_hdle.write(example_to_string)
+    fle_hdle.close()
+    return
