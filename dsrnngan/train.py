@@ -32,17 +32,22 @@ def setup_batch_gen(train_years,
         train = DataGenerator(train_years, batch_size=batch_size, downsample=downsample)
     else:
         train = None
+    ## note -- using create_fixed_dataset with a batch size not divisible by 16 will cause problems
+    ## create_fixed_dataset will not take a list
     if val_size is not None:
         if val_size <= batch_size:
-            val = DataGenerator(val_years, batch_size=val_size, repeat=False, downsample=downsample)
+            #val = DataGenerator(val_years, batch_size=val_size, repeat=False, downsample=downsample)
+            val = tfrecords_generator_ifs.create_fixed_dataset(val_years, batch_size=val_size, downsample=downsample)
             val = val.take(1)
         else:
-            val = DataGenerator(val_years, batch_size=batch_size, repeat=False, downsample=downsample)
+            #val = DataGenerator(val_years, batch_size=batch_size, repeat=False, downsample=downsample)
+            val = tfrecords_generator_ifs.create_fixed_dataset(val_years, batch_size=batch_size, downsample=downsample)
             val = val.take(val_size//batch_size)
         if val_fixed:
             val = val.cache()
     else:
-        val = DataGenerator(val_years, batch_size=batch_size, downsample=downsample)
+        # val = DataGenerator(val_years, batch_size=batch_size, downsample=downsample)
+        val = tfrecords_generator_ifs.create_fixed_dataset(val_years, batch_size=batch_size, downsample=downsample)
     return train,val,None
 
 

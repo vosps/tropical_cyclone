@@ -25,8 +25,8 @@ if __name__ == "__main__":
     parser.add_argument('--application', type=str, default='IFS')
     parser.add_argument('--train_years', type=int, nargs='+', default=[2018],
                         help="Training years")
-    parser.add_argument('--val_years', type=int, nargs='+', default=[2019],
-                        help="Validation years")
+    parser.add_argument('--val_years', type=int, nargs='+', default=2019,
+                        help="Validation years -- cannot pass a list if using create_fixed_dataset")
     parser.add_argument('--val_size', type=int, default=8,
                         help='Num val examples')
     parser.add_argument('--load_weights_root', type=str, default="",
@@ -94,6 +94,7 @@ if __name__ == "__main__":
             raise Exception("no such problem type, try again!")
 
         # initialize GAN
+        print(f"val years is {val_years}")
         (wgan, batch_gen_train, batch_gen_valid, _, noise_shapes, _) = \
             train.setup_gan(train_years, 
                             val_years, 
