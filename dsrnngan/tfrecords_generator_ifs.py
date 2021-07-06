@@ -97,21 +97,29 @@ def create_dataset(year,clss,era_shape=(10,10,9),con_shape=(100,100,2),out_shape
         return ds
 
 def create_fixed_dataset(year=None,mode='validation',batch_size=16,
+                         downsample=False,
                          era_shape=(10,10,9),con_shape=(100,100,2),out_shape=(100,100,1),
                          name=None,folder=records_folder):
-    assert year is not None or Name is not None, "Must specify year or file name"
+    assert year is not None or name is not None, "Must specify year or file name"
     if folder[-1] != '/':
         folder = folder + '/'
     if name is None:
         name = f"{folder}{mode}{year}.tfrecords"
+    else:
+        if name[0] != '/':
+            name = folder + name
     fl = glob.glob(name)
-    print(fl)
     files_ds = tf.data.Dataset.list_files(fl)
     ds = tf.data.TFRecordDataset(files_ds,
                                  num_parallel_reads=1)
     ds = ds.map(lambda x: _parse_batch(x, insize=era_shape,consize=con_shape,
                                        outsize=out_shape))
-    return ds.batch(batch_size)
+    ds = ds.batch(batch_size)
+    if downsample and return_dic:
+        ds=ds.map(_dataset_downsampler)
+    elif downsample and not return_dic:
+        ds=ds.map(_dataset_downsampler_list)
+    return ds
         
 
 def _float_feature(list_of_floats):  # float32
