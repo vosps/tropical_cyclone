@@ -32,7 +32,6 @@ def generator(input_dim=(10,10,9), const_dim=(100,100,2), noise_dim=(10,10,8), f
     print('End of first residual block')
     print(f"Shape after first residual block: {generator_output.shape}")
     
-    print(f"Shape before upsampling: {generator_output.shape}")
     ## Upsampling from (10,10) to (100,100) with residual blocks
     block_channels = [2*filters_gen, filters_gen]
     print(f"Shape before upsampling: {generator_output.shape}")
@@ -137,13 +136,13 @@ def generator_deterministic(input_dim=(10,10,9), const_dim=(100,100,2), filters_
 
 def discriminator(input_dim=(10,10,9), const_dim=(100,100,2), output_dim=(100,100,1), filters_disc=64, conv_size=(3,3), stride=1, relu_alpha=0.2, norm=None, dropout_rate=None):
     
-    # Network inputs 
+    ## Conditional input image 
     generator_input = Input(shape=input_dim, name="generator_input")
     print(f"generator_input shape: {generator_input.shape}")
     ##constant fields
     const_input = Input(shape=const_dim,name="constants")
     print(f"constants shape: {const_input.shape}")
-    ##generator output
+    ##target
     generator_output = Input(shape=output_dim, name="generator_output")
     print(f"generator_output shape: {generator_output.shape}")
     
@@ -167,7 +166,7 @@ def discriminator(input_dim=(10,10,9), const_dim=(100,100,2), output_dim=(100,10
     hi_res_input = Conv2D(filters=block_channels[0], kernel_size=(5,5), strides=5, padding="valid", activation="relu")(hi_res_input)
     print(f"Shape of hi_res_input after upsampling step 1: {hi_res_input.shape}")
     hi_res_input = residual_block(hi_res_input, filters=block_channels[0], conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate)
-    print(f"Shape after residual block: {hi_res_input.shape}")
+    print(f"Shape of hi-res input after residual block: {hi_res_input.shape}")
     ##run through second set of RBs
     lo_res_input = residual_block(lo_res_input, filters=block_channels[1], conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate)
     print(f"Shape of lo-res input after residual block: {lo_res_input.shape}")
@@ -179,7 +178,7 @@ def discriminator(input_dim=(10,10,9), const_dim=(100,100,2), output_dim=(100,10
     
     ##concatenate hi- and lo-res inputs channel-wise before passing through discriminator 
     disc_input = concatenate([lo_res_input, hi_res_input])
-    print(f"Shape after concatenate: {disc_input.shape}")
+    print(f"Shape after concatenating lo-res input and hi-res input: {disc_input.shape}")
     
     ##encode in residual blocks
     disc_input = residual_block(disc_input, filters=filters_disc, conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate)

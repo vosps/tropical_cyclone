@@ -32,6 +32,7 @@ def randomize_nans(x, rnd_mean, rnd_range):
 def ensemble_ranks(mode, gen, batch_gen, noise_gen, num_batches,
                    noise_offset=0.0, noise_mul=1.0,
                    denormalise_data = True,
+                   add_noise = True,
                    rank_samples=100, normalize_ranks=True,
                    show_progress=True):
 
@@ -47,11 +48,15 @@ def ensemble_ranks(mode, gen, batch_gen, noise_gen, num_batches,
         progbar = generic_utils.Progbar(
             num_batches)
 
+    print(f"add_noise flag in ensemble_ranks is {add_noise}")
     for k in range(num_batches):
         (cond,const,sample) = next(batch_gen_iter)
         sample = sample.numpy()
         if denormalise_data:
             sample = data.denormalise(sample)
+        if add_noise:
+            noise = np.random.rand(16, 100, 100, 1)*1e-6
+            sample += noise
         sample_crps = sample            
         sample = sample.ravel()
         samples_gen = []
@@ -142,6 +147,7 @@ def rank_metrics_by_time(mode,
                          check_every=1, 
                          N_range=None, 
                          downsample=False,
+                         add_noise=True,
                          batch_size=16, 
                          num_batches=64, 
                          filters_gen=64, 
@@ -181,6 +187,7 @@ def rank_metrics_by_time(mode,
 
     files = os.listdir(weights_dir)
     def get_id(fn):
+        print(fn)
         return fn.split("-")[1]
     files = sorted(fn for fn in files if get_id(fn)==application)
 
@@ -197,10 +204,10 @@ def rank_metrics_by_time(mode,
 
         if mode == "ensemble":
             gen.load_weights(weights_dir + "/" + fn)
-            (ranks, crps_scores) = ensemble_ranks(mode, gen, batch_gen_valid, noise_gen, num_batches=num_batches, rank_samples=rank_samples)
+            (ranks, crps_scores) = ensemble_ranks(mode, gen, batch_gen_valid, noise_gen, num_batches=num_batches, rank_samples=rank_samples, add_noise=add_noise)
         elif mode == "deterministic":
             gen_det.load_weights(weights_dir + "/" + fn)
-            (ranks, crps_scores) = ensemble_ranks(mode, gen_det, batch_gen_valid, noise_gen, num_batches=num_batches, rank_samples=rank_samples)
+            (ranks, crps_scores) = ensemble_ranks(mode, gen_det, batch_gen_valid, noise_gen, num_batches=num_batches, rank_samples=rank_samples, add_noise=add_noise)
         else:
             print("rank_metrics_by_time not implemented for mode type")
 
@@ -216,8 +223,11 @@ def rank_metrics_by_time(mode,
 
         ## quasi-random selection to avoid geenerating loads of data
         ranks_to_save = ['124800', '198400', '240000', '384000']
-        if any(num in fn for num in ranks_to_save):
+        #ranks_to_save = ['16000','32000','48000','64000','80000','96000','112000','128000','144000','160000','176000','192000','208000','224000','240000','256000','272000','288000','304000','320000','336000','352000','368000','384000','400000']
+        if any(num in fn for num in ranks_to_save) and add_noise == False:
             np.savez('{}/ranks-{}.npz'.format(weights_dir, N_samples), ranks)
+        elif any(num in fn for num in ranks_to_save) and add_noise == True:
+            np.savez('{}/ranks-noise-{}.npz'.format(weights_dir, N_samples), ranks)
 
 def rank_metrics_by_noise(filename, 
                           mode, 
