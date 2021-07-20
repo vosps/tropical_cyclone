@@ -34,7 +34,6 @@ def generator(input_dim=(10,10,9), const_dim=(100,100,2), noise_dim=(10,10,8), f
     
     ## Upsampling from (10,10) to (100,100) with residual blocks
     block_channels = [2*filters_gen, filters_gen]
-    print(f"Shape before upsampling: {generator_output.shape}")
     generator_output = UpSampling2D(size=(5,5), interpolation='bilinear')(generator_output)
     print(f"Shape after upsampling step 1: {generator_output.shape}")
     generator_output = residual_block(generator_output, filters=block_channels[0], conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate)
@@ -51,7 +50,6 @@ def generator(input_dim=(10,10,9), const_dim=(100,100,2), noise_dim=(10,10,8), f
      ## Pass through 3 residual blocks
     for i in range(3):
         generator_output = residual_block(generator_output, filters=filters_gen, conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate)
-    print('End of third residual block')
     print(f"Shape after third residual block: {generator_output.shape}")
     
     ## Output layer
