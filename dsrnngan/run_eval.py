@@ -1,31 +1,34 @@
 import matplotlib
 matplotlib.use("Agg")
 import eval
+import plots
 
 mode = "ensemble"
 train_years = [2016, 2017, 2018]
-val_years = [2016, 2017, 2018]
+#val_years = [2016, 2017, 2018]
 #train_years = 2018
-#val_years = 2019
+val_years = 2019
 application = "IFS"
 batch_size = 16
 num_batches = 64
-filters_gen = 256
+filters_gen = 128
 filters_disc = 512
 lr_disc = 1e-5
 lr_gen = 1e-5
-noise_dim = (10, 10, 8)
+noise_dim = (10, 10, 4)
 #downsample = True
 downsample = False
+add_noise = False
 
 if mode == "ensemble":
-    log_path = "/ppdata/lucy-cGAN/logs/IFS/gen_256_disc_512/noise_8/lr1e-5"
+    log_path = "/ppdata/lucy-cGAN/logs/IFS/gen_128_disc_512/noise_4/lr1e-5"
     rank_samples = 100
 elif mode == "deterministic":
     log_path = "/ppdata/lucy-cGAN/logs/IFS/filters_128/softplus/det/lr_1e-4/"
     rank_samples = 1
 
-out_fn = "{}/eval-{}_161718.txt".format(log_path, application)                                                                                                               
+## check this is the correct file name!!
+out_fn = "{}/eval-{}_no_noise_2.txt".format(log_path, application)                                                                                                               
 weights_dir = log_path
 
 
@@ -38,6 +41,7 @@ eval.rank_metrics_by_time(mode,
                           check_every=1, 
                           N_range=None, 
                           downsample=downsample,
+                          add_noise=add_noise,
                           batch_size=batch_size, 
                           num_batches=num_batches, 
                           filters_gen=filters_gen, 
@@ -46,6 +50,18 @@ eval.rank_metrics_by_time(mode,
                           rank_samples=rank_samples, 
                           lr_disc=lr_disc, 
                           lr_gen=lr_gen)
+
+## plot rank histograms
+
+rank_metrics_files_1 = ["{}/ranks-124800.npz".format(log_path), "{}/ranks-198400.npz".format(log_path)]
+rank_metrics_files_2 = ["{}/ranks-240000.npz".format(log_path), "{}/ranks-384000.npz".format(log_path)]
+labels_1 = ['124800', '198400']
+labels_2 = ['240000', '384000']
+name_1 = 'no-noise-early-2'
+name_2 = 'no-noise-late-2'
+
+plots.plot_rank_histogram_all(rank_metrics_files_1, labels_1, log_path, name_1)
+plots.plot_rank_histogram_all(rank_metrics_files_2, labels_2, log_path, name_2)
 
 #log_path = "/ppdata/lucy-cGAN/jupyter"
 #weights_fn="gen_weights-ERA-0012800.h5"
