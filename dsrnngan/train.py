@@ -54,27 +54,29 @@ def setup_batch_gen(train_years,
 def setup_gan(train_years=None, 
               val_years=None, 
               val_size=None, 
-              downsample=False, 
+              downsample=False,
+              input_channels = 9,
+              constant_fields = 2,
               steps_per_epoch=50, 
               batch_size=16, 
               filters_gen=64, 
               filters_disc=64, 
-              noise_dim=(10,10,8), 
+              noise_channels=8, 
               lr_disc=0.0001, 
               lr_gen=0.0001):
 
     print(f"# gen filters is {filters_gen}")
     print(f"# disc filters is {filters_disc}")
+    print(f"input_channels is {input_channels}")
 
-    if downsample == True:
-        input_dim = (10,10,1)
-        print(f"input_dim is {input_dim}")
-    elif downsample == False:
-        input_dim = (10,10,9)
-        print(f"input_dim is {input_dim}")
 
-    (gen, noise_shapes) = models.generator(input_dim=input_dim, noise_dim=noise_dim, filters_gen=filters_gen)
-    disc = models.discriminator(input_dim=input_dim, filters_disc=filters_disc)
+    (gen, noise_shapes) = models.generator(input_channels=input_channels, 
+                                           constant_fields=constant_fields, 
+                                           noise_channels=noise_channels, 
+                                           filters_gen=filters_gen)
+    disc = models.discriminator(input_channels=input_channels, 
+                                constant_fields=constant_fields, 
+                                filters_disc=filters_disc)
     wgan = gan.WGANGP(gen, disc, lr_disc=lr_disc, lr_gen=lr_gen)
 
     (batch_gen_train, batch_gen_valid, batch_gen_test) = setup_batch_gen(
@@ -132,6 +134,8 @@ def setup_deterministic(train_years=None,
                         val_years=None,
                         val_size=None, 
                         downsample=False,
+                        input_channels = 9,
+                        constant_fields = 2,
                         steps_per_epoch=50,
                         batch_size=64,
                         filters_gen=64,
@@ -141,15 +145,11 @@ def setup_deterministic(train_years=None,
 
     print(f"downsample flag is {downsample}")
     print(f"learning rate is: {lr}")
+    print(f"input_channels is {input_channels}")
     
-    if downsample == True:
-        input_dim = (10,10,1)
-        print(f"input_dim is {input_dim}")
-    elif downsample == False:
-        input_dim = (10,10,9)
-        print(f"input_dim is {input_dim}")
-
-    gen_det = models.generator_deterministic(input_dim=input_dim, filters_gen=filters_gen)
+    gen_det = models.generator_deterministic(input_channels=input_channels,
+                                             constant_fields=constant_fields,
+                                             filters_gen=filters_gen)
     det_model = deterministic.Deterministic(gen_det, lr, loss, optimizer)
     
     (batch_gen_train, batch_gen_valid, batch_gen_test) = setup_batch_gen(

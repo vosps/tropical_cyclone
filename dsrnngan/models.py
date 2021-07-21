@@ -5,19 +5,19 @@ from tensorflow.keras.layers import GlobalAveragePooling2D, Dense
 
 from blocks import residual_block, const_upscale_block_100
 
-def generator(input_dim=(10,10,9), const_dim=(100,100,2), noise_dim=(10,10,8), filters_gen=64, conv_size=(3,3), stride=1, relu_alpha=0.2, norm=None, dropout_rate=None):
+def generator(input_channels=9, constant_fields=2, noise_channels=8, filters_gen=64, img_shape=(100,100), conv_size=(3,3), stride=1, relu_alpha=0.2, norm=None, dropout_rate=None):
     
     # Network inputs 
-    ##rainfall image                                                                                                                                                                                           
-    generator_input = Input(shape=input_dim, name="generator_input")
+    ##low resolution condition                                                                                                                                                                                         
+    generator_input = Input(shape=(None,None,input_channels), name="generator_input")
     print(f"generator_input shape: {generator_input.shape}")
     ##constant fields
-    const_input = Input(shape=const_dim, name="constants")
+    const_input = Input(shape=(None,None,constant_fields), name="constants")
     print(f"constants_input shape: {const_input.shape}")
     ##noise
-    noise_input = Input(shape=noise_dim, name="noise_input")
+    noise_input = Input(shape=(None,None,noise_channels), name="noise_input")
     print(f"noise_input shape: {noise_input.shape}")
-
+    
     ## Convolve constant fields down to match other input dimensions
     upscaled_const_input = const_upscale_block_100(const_input, filters=filters_gen)
     print(f"upscaled constants shape: {upscaled_const_input.shape}")
@@ -32,7 +32,7 @@ def generator(input_dim=(10,10,9), const_dim=(100,100,2), noise_dim=(10,10,8), f
     print('End of first residual block')
     print(f"Shape after first residual block: {generator_output.shape}")
     
-    ## Upsampling from (10,10) to (100,100) with residual blocks
+    ## Upsampling from (10,10) to (100,100) with alternating residual blocks
     block_channels = [2*filters_gen, filters_gen]
     generator_output = UpSampling2D(size=(5,5), interpolation='bilinear')(generator_output)
     print(f"Shape after upsampling step 1: {generator_output.shape}")
@@ -59,36 +59,20 @@ def generator(input_dim=(10,10,9), const_dim=(100,100,2), noise_dim=(10,10,8), f
     model = Model(inputs=[generator_input, const_input, noise_input], outputs=generator_output, name='gen')
     
     def noise_shapes(img_shape=(100,100)):
-        noise_channels = noise_dim[2]
         noise_shape = (img_shape[0]//10, img_shape[1]//10, noise_channels)
         return noise_shape
     
     return (model, noise_shapes)
 
-def generator_initialized(gen, num_channels=1):
-    noise_in = Input(shape=(None,None,8),
-        name="noise_input")
-    lores_in = Input(shape=(None,None,num_channels),
-        name="generator_input")
-    const_in = Input(shape=(), name = "constants")
-    inputs = [lores_in, const_in, noise_in]
-
-    (img_out,h) = gen(inputs)
-
-    model = Model(inputs=inputs, outputs=img_out)
-
-    def noise_shapes(img_shape=(100,100)):
-        noise_shape = (img_shape[0]//10, img_shape[1]//10, 8)
-        return noise_shape
-
-    return (model, noise_shapes)
-
-def generator_deterministic(input_dim=(10,10,9), const_dim=(100,100,2), filters_gen=64, conv_size=(3,3), stride=1, relu_alpha=0.2, norm=None, dropout_rate=None):
+def generator_deterministic(input_channels=9, constant_fields=2, filters_gen=64, conv_size=(3,3), stride=1, relu_alpha=0.2, norm=None, dropout_rate=None):
+    
     # Network inputs 
-    ##rainfall image                                                                                                                                                 
-    generator_input = Input(shape=input_dim, name="generator_input")
+    ##low resolution condition                                                                                                                                                                                         
+    generator_input = Input(shape=(None,None,input_channels), name="generator_input")
+    print(f"generator_input shape: {generator_input.shape}")
     ##constant fields
-    const_input = Input(shape=const_dim, name="constants")
+    const_input = Input(shape=(None,None,constant_fields), name="constants")
+    print(f"constants_input shape: {const_input.shape}")
 
     ## Convolve constant fields down to match other input dimensions
     upscaled_const_input = const_upscale_block_100(const_input, filters=filters_gen)
@@ -132,16 +116,17 @@ def generator_deterministic(input_dim=(10,10,9), const_dim=(100,100,2), filters_
     
     return gen
 
-def discriminator(input_dim=(10,10,9), const_dim=(100,100,2), output_dim=(100,100,1), filters_disc=64, conv_size=(3,3), stride=1, relu_alpha=0.2, norm=None, dropout_rate=None):
+def discriminator(input_channels=9, constant_fields=2, filters_disc=64, conv_size=(3,3), stride=1, relu_alpha=0.2, norm=None, dropout_rate=None):
     
-    ## Conditional input image 
-    generator_input = Input(shape=input_dim, name="generator_input")
+    # Network inputs 
+    ##low resolution condition                                                                                                                                                                                         
+    generator_input = Input(shape=(None,None,input_channels), name="generator_input")
     print(f"generator_input shape: {generator_input.shape}")
     ##constant fields
-    const_input = Input(shape=const_dim,name="constants")
-    print(f"constants shape: {const_input.shape}")
-    ##target
-    generator_output = Input(shape=output_dim, name="generator_output")
+    const_input = Input(shape=(None,None,constant_fields), name="constants")
+    print(f"constants_input shape: {const_input.shape}")
+    ##target image
+    generator_output = Input(shape=(None,None,1), name="generator_output")
     print(f"generator_output shape: {generator_output.shape}")
     
     ##convolve down constant fields to match ERA

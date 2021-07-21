@@ -53,8 +53,6 @@ if __name__ == "__main__":
         help="Learning rate used for discriminator optimizer")
     parser.add_argument('--learning_rate_gen', type=float, default=1e-4,
         help="Learning rate used for generator optimizer")
-    parser.add_argument('--opt_switch_point', type=int, default=3500000,
-        help="The num. of samples at which the optimizer is switched to SGD")
         
     args = parser.parse_args()
     mode = args.mode
@@ -68,7 +66,6 @@ if __name__ == "__main__":
         batch_size = args.batch_size
         val_size = args.val_size
         num_samples = args.num_samples
-        #opt_switch_point = args.opt_switch_point
         train_years = args.train_years
         val_years = args.val_years
         application = args.application
@@ -78,21 +75,27 @@ if __name__ == "__main__":
         lr_disc = args.learning_rate_disc
         lr_gen = args.learning_rate_gen
         noise_channels = args.noise_channels
+        problem_type = args.problem_type
+        
         num_epochs = int(num_samples/(steps_per_epoch * batch_size))
         epoch = 1
-        noise_dim = (10,10) + (noise_channels,)
-        problem_type = args.problem_type
+        #noise_dim = (10,10) + (noise_channels,)
+        
+        ##number of constant fields
+        constant_fields = 2
 
         if not save_weights_root:
             save_weights_root = path + "/../models"
 
         if problem_type == "normal":
             downsample = False
+            input_channels = 9
         elif problem_type == "easy":
             downsample = True
+            input_channels = 1
         else:
             raise Exception("no such problem type, try again!")
-
+    
         # initialize GAN
         print(f"val years is {val_years}")
         (wgan, batch_gen_train, batch_gen_valid, _, noise_shapes, _) = \
@@ -100,10 +103,12 @@ if __name__ == "__main__":
                             val_years, 
                             val_size=val_size, 
                             downsample=downsample, 
+                            input_channels=input_channels,
+                            constant_fields=constant_fields,
                             batch_size=batch_size, 
                             filters_gen=filters_gen, 
                             filters_disc=filters_disc, 
-                            noise_dim=noise_dim, 
+                            noise_channels=noise_channels, 
                             lr_disc=lr_disc, 
                             lr_gen=lr_gen)
 
@@ -135,17 +140,9 @@ if __name__ == "__main__":
         qual_fn = "{}/qual-{}.txt".format(log_path, application) if log_path \
             else path+"/../figures/eval.txt"
 
-        #switched_opt = (training_samples >= opt_switch_point)
 
         while (training_samples < num_samples): # main training loop
             print("Epoch {}/{}".format(epoch, num_epochs))
-
-            # check if we should switch optimizers
-            #if (training_samples >= opt_switch_point) and not switched_opt:
-                #opt_disc = SGD(1e-5)
-                #opt_gen = SGD(1e-5)
-                #wgan.compile(opt_disc=opt_disc, opt_gen=opt_gen)
-                #switched_opt = True
 
             # train for some number of batches
             loss_log = train.train_gan(wgan, 
@@ -200,7 +197,9 @@ if __name__ == "__main__":
                                   num_batches=num_batches, 
                                   filters_gen=filters_gen, 
                                   filters_disc=filters_disc, 
-                                  noise_dim=noise_dim, 
+                                  input_channels=input_channels,
+                                  constant_fields=constant_fields,
+                                  noise_channels=noise_channels, 
                                   rank_samples=100, 
                                   lr_disc=lr_disc, 
                                   lr_gen=lr_gen)
@@ -217,7 +216,9 @@ if __name__ == "__main__":
                                      num_batches=num_batches, 
                                      filters_gen=filters_gen, 
                                      filters_disc=filters_disc,
-                                     noise_dim=noise_dim, 
+                                     input_channels=input_channels,
+                                     constant_fields=constant_fields,
+                                     noise_channels=noise_channels,  
                                      lr_disc=lr_disc, 
                                      lr_gen=lr_gen)
 
@@ -254,14 +255,19 @@ if __name__ == "__main__":
         problem_type = args.problem_type
         num_epochs = int(num_samples/(steps_per_epoch * batch_size))
         epoch = 1
+        
+        ##number of constant fields
+        constant_fields = 2
 
         if not save_weights_root:
             save_weights_root = path + "/../models"
         
         if problem_type == "normal":
             downsample = False
+            input_channels = 9
         elif problem_type == "easy":
             downsample = True
+            input_channels = 1
         else:
             raise Exception("no such problem type, try again!")
 
@@ -271,6 +277,8 @@ if __name__ == "__main__":
                                       val_years, 
                                       val_size=val_size,
                                       downsample=downsample,
+                                      input_channels=input_channels,
+                                      constant_fields=constant_fields,
                                       steps_per_epoch=steps_per_epoch, 
                                       batch_size=batch_size, 
                                       filters_gen=filters_gen, 
@@ -352,7 +360,9 @@ if __name__ == "__main__":
                                   downsample=downsample,
                                   batch_size=batch_size, 
                                   num_batches=num_batches, 
-                                  filters_gen=filters_gen, 
+                                  filters_gen=filters_gen,
+                                  input_channels=input_channels,
+                                  constant_fields=constant_fields,
                                   rank_samples=1, 
                                   lr_gen=learning_rate)
         
@@ -366,7 +376,9 @@ if __name__ == "__main__":
                                      downsample=downsample,
                                      batch_size=batch_size, 
                                      num_batches=num_batches, 
-                                     filters_gen=filters_gen, 
+                                     filters_gen=filters_gen,
+                                     input_channels=input_channels,
+                                     constant_fields=constant_fields,
                                      lr_gen=learning_rate)
 
         rank_metrics_files_1 = ["{}/ranks-124800.npz".format(log_path), "{}/ranks-198400.npz".format(log_path)]

@@ -152,7 +152,9 @@ def rank_metrics_by_time(mode,
                          num_batches=64, 
                          filters_gen=64, 
                          filters_disc=64, 
-                         noise_dim=(10,10,8), 
+                         input_channels=9,
+                         constant_fields=2,
+                         noise_channels=8, 
                          rank_samples=100, 
                          lr_disc=0.0001, 
                          lr_gen=0.0001):
@@ -162,10 +164,12 @@ def rank_metrics_by_time(mode,
                                                                          val_years, 
                                                                          val_size=batch_size*num_batches, 
                                                                          downsample=downsample,
+                                                                         input_channels=input_channels,
+                                                                         constant_fields=constant_fields,
                                                                          batch_size=batch_size, 
                                                                          filters_gen=filters_gen, 
                                                                          filters_disc=filters_disc,
-                                                                         noise_dim=noise_dim, 
+                                                                         noise_channels=noise_channels, 
                                                                          lr_disc=lr_disc, 
                                                                          lr_gen=lr_gen)
         gen = wgan.gen
@@ -176,6 +180,8 @@ def rank_metrics_by_time(mode,
                                                                           val_years, 
                                                                           val_size=batch_size*num_batches, 
                                                                           downsample=downsample,
+                                                                          input_channels=input_channels,
+                                                                          constant_fields=constant_fields,
                                                                           batch_size=batch_size, 
                                                                           filters_gen=filters_gen, 
                                                                           lr=lr_gen)
@@ -240,7 +246,9 @@ def rank_metrics_by_noise(filename,
                           num_batches=64, 
                           filters_gen=64, 
                           filters_disc=64, 
-                          noise_dim=(10,10,8), 
+                          input_channels=9,
+                          constant_fields=2,
+                          noise_channels=8, 
                           lr_disc=0.0001, 
                           lr_gen=0.0001):
   
@@ -248,10 +256,12 @@ def rank_metrics_by_noise(filename,
                                                                      val_years, 
                                                                      val_size=batch_size*num_batches, 
                                                                      downsample=downsample,
+                                                                     input_channels=input_channels,
+                                                                     constant_fields=constant_fields,
                                                                      batch_size=batch_size, 
                                                                      filters_gen=filters_gen, 
                                                                      filters_disc=filters_disc, 
-                                                                     noise_dim=noise_dim, 
+                                                                     noise_channels=noise_channels, 
                                                                      lr_disc=lr_disc, 
                                                                      lr_gen=lr_gen)
     gen = wgan.gen
@@ -290,7 +300,9 @@ def rank_metrics_table(weights_fn,
                        num_batches=100, 
                        filters_gen=64, 
                        filters_disc=64, 
-                       noise_dim=(10,10,8), 
+                       input_channels=9,
+                       constant_fields=2,
+                       noise_channels=8, 
                        lr_disc=0.0001, 
                        lr_gen=0.0001):
     train_years = None
@@ -299,10 +311,12 @@ def rank_metrics_table(weights_fn,
                                                                          val_years, 
                                                                          val_size=batch_size*num_batches, 
                                                                          downsample=downsample,
+                                                                         input_channels=input_channels,
+                                                                         constant_fields=constant_fields,
                                                                          batch_size=batch_size, 
                                                                          filters_gen=filters_gen, 
                                                                          filters_disc=filters_disc, 
-                                                                         noise_dim=noise_dim, 
+                                                                         noise_channels=noise_channels, 
                                                                          lr_disc=lr_disc, 
                                                                          lr_gen=lr_gen)
         gen = wgan.gen
@@ -315,6 +329,8 @@ def rank_metrics_table(weights_fn,
                                                                           val_years, 
                                                                           val_size=batch_size*num_batches, 
                                                                           downsample=downsample,
+                                                                          input_channels=input_channels,
+                                                                          constant_fields=constant_fields,
                                                                           batch_size=batch_size, 
                                                                           filters_gen=filters_gen, 
                                                                           lr=lr_gen)
@@ -368,158 +384,6 @@ def rank_metrics_table(weights_fn,
     print("CRPS: {:.3f}".format(CRPS))
     print("mean: {:.3f}".format(mean))
     print("std: {:.3f}".format(std))
-
-# def reconstruct_time_series_partial(images_fn, gen, noise_shapes,
-#     init_model, out_fn,
-#     time_range, h=None, last_t=None, ds_factor=16, n_ensemble=4,
-#     scaling_fn=path+"/../data/scale_rzc.npy", relax_lam=0.0):
-#     assert False, "Not yet updated"
-#     if application == "mchrzc":
-#         dec = data.RainRateDecoder(scaling_fn, below_val=np.log10(0.025))
-#     else:
-#         raise ValueError("Unknown application.")
-#     downsampler = data.LogDownsampler(min_val=dec.below_val,
-#         threshold_val=dec.value_range[0])
-
-#     with netCDF4.Dataset(images_fn) as ds_img:
-#         time = np.array(ds_img["time"][:], copy=False)
-#         time_dt = [datetime(1970,1,1)+timedelta(seconds=t) for t in time]
-#         t0 = bisect_left(time_dt, time_range[0])
-#         t1 = bisect_left(time_dt, time_range[1])
-#         images = np.array(ds_img["images"][t0:t1,...], copy=False)
-#         time = time[t0:t1]
-
-#     img_shape = images.shape[1:3]
-#     img_shape = (
-#         img_shape[0] - img_shape[0]%ds_factor,
-#         img_shape[1] - img_shape[1]%ds_factor,
-#     )
-#     noise_gen = noise.NoiseGenerator(noise_shapes(img_shape),
-#         batch_size=n_ensemble)
-
-#     images_ds = np.zeros(
-#         (images.shape[0],img_shape[0]//ds_factor,img_shape[1]//ds_factor,1),
-#         dtype=np.uint8
-#     )
-#     images_gen = np.zeros(
-#         (images.shape[0],)+img_shape+(1,n_ensemble),
-#         dtype=np.uint8
-#     )
-
-#     # this finds the nearest index in the R encoding
-#     def encoder():
-#         lR = dec.logR
-#         ind = np.arange(len(lR))
-#         ip = interp1d(lR,ind)
-#         def f(x):
-#             y = np.zeros(x.shape, dtype=np.uint8)
-#             valid = (x >= dec.value_range[0])
-#             y[valid] = ip(x[valid]).round().astype(np.uint8)
-#             return y
-#         return f
-#     encode = encoder()
-
-#     for k in range(images.shape[0]):
-#         print("{}/{}".format(k+1,images.shape[0]))
-#         img_real = images[k:k+1,:img_shape[0],:img_shape[1],:]
-#         img_real = dec(img_real)
-#         img_real = img_real.reshape(
-#             (1,1)+img_real.shape[1:])
-#         img_real[np.isnan(img_real)] = dec.below_val
-#         img_ds = downsampler(img_real)
-#         img_ds = dec.normalize(img_ds)
-#         img_ds_denorm = dec.denormalize(img_ds)
-#         img_ds = np.tile(img_ds, (n_ensemble,1,1,1,1))
-
-#         (n_init, n_update) = noise_gen()
-            
-#         if (h is None) or (time[k]-last_t != 600):
-#             h = init_model.predict([img_ds[:,0,...], n_init])
-            
-#         (img_gen,h) = gen.predict([img_ds, h, n_update])
-#         if relax_lam > 0.0:
-#             # nudge h towards null
-#             h_null = init_model.predict([
-#                 np.zeros_like(img_ds[:,0,...]), n_init
-#             ])
-#             h = h_null + (1.0-relax_lam)*(h-h_null)
-#         img_gen = dec.denormalize(img_gen)
-#         img_gen = img_gen.transpose((1,2,3,4,0))
-
-#         images_ds[k,...] = encode(img_ds_denorm[0,...])
-#         images_gen[k,...] = encode(img_gen[0,...])
-#         last_t = time[k]
-
-#     with netCDF4.Dataset(out_fn, 'w') as ds:
-#         dim_height = ds.createDimension("dim_height", img_shape[0])
-#         dim_width = ds.createDimension("dim_width", img_shape[1])
-#         dim_height_ds = ds.createDimension("dim_height_ds",
-#             img_shape[0]/ds_factor)
-#         dim_width_ds = ds.createDimension("dim_width_ds",
-#             img_shape[1]/ds_factor)
-#         dim_samples = ds.createDimension("dim_samples", images.shape[0])
-#         dim_ensemble = ds.createDimension("dim_ensemble", n_ensemble)
-#         dim_channels = ds.createDimension("dim_channels", 1)
-
-#         var_params = {"zlib": True, "complevel": 9}
-
-#         def create_var(name, dims, **params):
-#             dtype = params.pop("dtype", np.float32)
-#             var = ds.createVariable(name, dtype, dims, **params)
-#             return var
-
-#         var_img = create_var("images",
-#             ("dim_samples","dim_height","dim_width","dim_channels",
-#                 "dim_ensemble"),
-#             chunksizes=(1,64,64,1,1), dtype=np.uint8, **var_params)
-#         var_img.units = "Encoded R"
-#         var_img_ds = create_var("images_ds",
-#             ("dim_samples","dim_height_ds","dim_width_ds","dim_channels"),
-#             dtype=np.uint8, **var_params)
-#         var_img_ds.units = "Encoded R"
-#         var_time = create_var("time", ("dim_samples",), 
-#             chunksizes=(1,), dtype=np.float64, **var_params)
-#         var_time.units = "Seconds since 1970-01-01 00:00"
-
-#         var_img_ds[:] = images_ds
-#         var_img[:] = images_gen
-#         var_time[:] = time
-
-#     return (h, last_t)
-
-
-# def reconstruct_time_series_monthly(images_fn, weights_fn, out_dir,
-#     time_range, application="mchrzc", ds_factor=16, n_ensemble=4,
-#     relax_lam=0.0):
-
-#     (gen,_) = models.generator(num_timesteps=1)
-#     init_model = models.initial_state_model()
-#     (gen_init, noise_shapes) = models.generator_initialized(gen, init_model,
-#         num_timesteps=1)
-#     gen_init.load_weights(weights_fn)
-
-#     t0 = time_range[0]
-#     months = []
-#     while t0 < time_range[1]:
-#         (y,m) = (t0.year, t0.month)
-#         m += 1
-#         if m > 12:
-#             m = 1
-#             y += 1
-#         t1 = datetime(y,m,1)
-#         months.append((t0,t1))
-#         t0 = t1
-
-#     (h, last_t) = (None, None)
-#     for month in months:
-#         out_fn = out_dir + "/timeseries-{}-{}{:02d}.nc".format(
-#             application,month[0].year,month[0].month)
-#         (h, last_t) = reconstruct_time_series_partial(images_fn, gen,
-#             noise_shapes, init_model, out_fn, month, h=h, last_t=last_t,
-#             application=application, ds_factor=ds_factor, n_ensemble=n_ensemble,
-#             relax_lam=relax_lam
-#         )
-
 
 def log_spectral_distance(img1, img2):
     def power_spectrum_dB(img):
@@ -620,7 +484,9 @@ def quality_metrics_by_time(mode,
                             num_batches=100, 
                             filters_gen=64, 
                             filters_disc=64, 
-                            noise_dim=(10,10,8), 
+                            input_channels=9,
+                            constant_fields=2,
+                            noise_channels=8,
                             lr_disc=0.0001, 
                             lr_gen=0.0001):
     
@@ -629,10 +495,12 @@ def quality_metrics_by_time(mode,
                                                                          val_years, 
                                                                          val_size=batch_size*num_batches, 
                                                                          downsample=downsample,
+                                                                         input_channels=input_channels,
+                                                                         constant_fields=constant_fields,
                                                                          batch_size=batch_size, 
                                                                          filters_gen=filters_gen, 
                                                                          filters_disc=filters_disc, 
-                                                                         noise_dim=noise_dim, 
+                                                                         noise_channels=noise_channels,
                                                                          lr_disc=lr_disc, 
                                                                          lr_gen=lr_gen)
         gen = wgan.gen
@@ -643,6 +511,8 @@ def quality_metrics_by_time(mode,
                                                                           val_years, 
                                                                           val_size=batch_size*num_batches, 
                                                                           downsample=downsample,
+                                                                          input_channels=input_channels,
+                                                                          constant_fields=constant_fields,
                                                                           batch_size=batch_size, 
                                                                           filters_gen=filters_gen, 
                                                                           lr=lr_gen)
@@ -650,7 +520,7 @@ def quality_metrics_by_time(mode,
         noise_gen = []
         print("loaded deterministic model")
     else:
-        print("rank_metrics_by_time not implemented for mode type")
+        print("quality_metrics_by_time not implemented for mode type")
 
     files = os.listdir(weights_dir)
     def get_app(fn):
@@ -678,7 +548,9 @@ def quality_metrics_table(weights_fn,
                           num_batches=100, 
                           filters_gen=64, 
                           filters_disc=64, 
-                          noise_dim=(10,10,8), 
+                          input_channels=9,
+                          constant_fields=2,
+                          noise_channels=8, 
                           lr_disc=0.0001, 
                           lr_gen=0.0001):
     train_years = None
@@ -687,10 +559,12 @@ def quality_metrics_table(weights_fn,
                                                                          val_years, 
                                                                          val_size=batch_size*num_batches, 
                                                                          downsample=downsample,
+                                                                         input_channels=input_channels,
+                                                                         constant_fields=constant_fields,
                                                                          batch_size=batch_size, 
                                                                          filters_gen=filters_gen, 
                                                                          filters_disc=filters_disc, 
-                                                                         noise_dim=noise_dim,
+                                                                         noise_channels=noise_channels,
                                                                          lr_disc=lr_disc, 
                                                                          lr_gen=lr_gen)
         gen = wgan.gen
