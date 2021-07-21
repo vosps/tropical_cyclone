@@ -15,9 +15,16 @@ filters_gen = 256
 filters_disc = 512
 lr_disc = 1e-5
 lr_gen = 1e-5
-noise_dim = (10,10,8)
+#noise_dim = (10,10,8)
 #downsample = True
 downsample = False
+constant_fields = 2
+noise_channels = 4
+
+if downsample == True:
+    input_channels = 1 
+elif  downsample == False:
+    input_channels = 9
 
 if mode == "ensemble":
     log_path = "/ppdata/lucy-cGAN/logs/IFS/gen_256_disc_512/noise_8/lr1e-5"
@@ -39,7 +46,9 @@ eval.quality_metrics_by_time(mode,
                              num_batches=num_batches, 
                              filters_gen=filters_gen, 
                              filters_disc=filters_disc, 
-                             noise_dim=noise_dim, 
+                             input_channels=input_channels,
+                             constant_fields=constant_fields,
+                             noise_channels=noise_channels, 
                              lr_disc=lr_disc, 
                              lr_gen=lr_gen)
 

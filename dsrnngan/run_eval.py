@@ -16,9 +16,15 @@ filters_disc = 512
 lr_disc = 1e-5
 lr_gen = 1e-5
 noise_dim = (10, 10, 4)
-#downsample = True
 downsample = False
+constant_fields = 2
+noise_channels = 4
 add_noise = False
+
+if downsample == True:
+    input_channels = 1 
+elif  downsample == False:
+    input_channels = 9
 
 if mode == "ensemble":
     log_path = "/ppdata/lucy-cGAN/logs/IFS/gen_128_disc_512/noise_4/lr1e-5"
@@ -46,7 +52,9 @@ eval.rank_metrics_by_time(mode,
                           num_batches=num_batches, 
                           filters_gen=filters_gen, 
                           filters_disc=filters_disc, 
-                          noise_dim=noise_dim, 
+                          input_channels=input_channels,
+                          constant_fields=constant_fields,
+                          noise_channels=noise_channels,  
                           rank_samples=rank_samples, 
                           lr_disc=lr_disc, 
                           lr_gen=lr_gen)
@@ -62,14 +70,3 @@ name_2 = 'no-noise-late-2'
 
 plots.plot_rank_histogram_all(rank_metrics_files_1, labels_1, log_path, name_1)
 plots.plot_rank_histogram_all(rank_metrics_files_2, labels_2, log_path, name_2)
-
-#log_path = "/ppdata/lucy-cGAN/jupyter"
-#weights_fn="gen_weights-ERA-0012800.h5"
-
-## note -- rank_metrics_by_noise will only run with GAN weights
-#eval.rank_metrics_by_noise(weights_fn, mode, train_years, val_years, application, weights_dir, batch_size=batch_size, num_batches=num_batches, filters=filters, lr_disc=lr_disc, lr_gen=lr_gen)
-
-#log_path = "/ppdata/lucy-cGAN/jupyter
-#filename = "gen_weights-ERA-0012800.h5"
-#weights_fn = "{}/{}".format(log_path, filename)
-#eval.rank_metrics_table(weights_fn, mode, train_years, val_years, application, batch_size=batch_size, num_batches=num_batches, filters=filters, lr_disc=lr_disc, lr_gen=lr_gen, lr=lr)                        
