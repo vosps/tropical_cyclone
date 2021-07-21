@@ -19,16 +19,19 @@ def create_random_dataset(year,batch_size,era_shape=(10,10,9),con_shape=(100,100
 
 def create_mixed_dataset(year,batch_size,era_shape=(10,10,9),con_shape=(100,100,2),
                          out_shape=(100,100,1),repeat=True,downsample = False,
-                         folder=records_folder, shuffle_size = 1024):
+                         folder=records_folder, shuffle_size = 1024,
+                         weights = None):
 
     classes = 4
+    if weights is None:
+        weights = [1./classes]*classes
     datasets = [create_dataset(year, i, era_shape=era_shape,
                                con_shape=con_shape,
                                out_shape=out_shape,folder=folder,
                                shuffle_size = shuffle_size,repeat=repeat)
                 for i in range(classes)]
     sampled_ds=tf.data.experimental.sample_from_datasets(datasets,
-                weights=[1./classes]*classes).batch(batch_size)
+                                                         weights=weights).batch(batch_size)
     
     if downsample and return_dic:
         sampled_ds=sampled_ds.map(_dataset_downsampler)
