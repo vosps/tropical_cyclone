@@ -6,8 +6,8 @@ from data import all_ifs_fields,ifs_hours
 records_folder = '/ppdata/tfrecordsIFS/'
 return_dic = True
 
-def DataGenerator(year,batch_size,repeat=True,downsample = False):
-    return create_mixed_dataset(year,batch_size,repeat=repeat, downsample = downsample)
+def DataGenerator(year,batch_size,repeat=True,downsample = False, weights = None):
+    return create_mixed_dataset(year,batch_size,repeat=repeat, downsample = downsample, weights = weights)
 
 def create_random_dataset(year,batch_size,era_shape=(10,10,9),con_shape=(100,100,2),
                          out_shape=(100,100,1),repeat=True,
