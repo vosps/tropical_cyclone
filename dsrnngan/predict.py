@@ -17,7 +17,11 @@ parser.add_argument('--val_years', type=int, nargs='+', default=2019,
 parser.add_argument('--val_size', type=int, default=8,
                         help='Num val examples')
 parser.add_argument('--noise_channels', type=int,
-                    help="Dimensions of noise passed to generator", default=4)
+                    help="Number of channels of noise passed to generator", default=4)
+parser.add_argument('--constant_fields', type=int,
+                    help="Number of constant fields passed to generator and discriminator", default=2)
+parser.add_argument('--input_channels', type=int,
+                    help="Dimensions of input condition passed to generator and discriminator", default=9)
 parser.add_argument('--problem_type', type=str, 
                     help="normal (IFS>NIMROD), easy (NIMROD>NIMROD)", default="normal")
 parser.add_argument('--predict_year', type=int,
@@ -38,6 +42,8 @@ args = parser.parse_args()
 load_weights_root = args.load_weights_root
 model_number = args.model_number
 noise_channels = args.noise_channels
+input_channels = args.input_channels
+constant_fields = args.constant_fields
 problem_type = args.problem_type
 batch_size = args.batch_size
 predict_year = args.predict_year
@@ -56,9 +62,11 @@ print(weights_fn)
 if problem_type == "normal":
     downsample = False
     plot_input_title = 'IFS'
+    input_channels = input_channels
 elif problem_type == "easy":
     downsample = True
     plot_input_title = 'NIMROD - downscaled'
+    input_channels = 1
 else:
     raise Exception("no such problem type, try again!")
 
@@ -67,10 +75,12 @@ else:
                                         val_years, 
                                         val_size=val_size, 
                                         downsample=downsample, 
+                                        input_channels=input_channels,
+                                        constant_fields=constant_fields,
                                         batch_size=batch_size, 
                                         filters_gen=filters_gen, 
                                         filters_disc=filters_disc,
-                                        noise_dim=noise_dim, 
+                                        noise_channels=noise_channels, 
                                         lr_disc=lr_disc, 
                                         lr_gen=lr_gen)
 
