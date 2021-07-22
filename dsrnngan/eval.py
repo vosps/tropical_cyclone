@@ -193,7 +193,6 @@ def rank_metrics_by_time(mode,
 
     files = os.listdir(weights_dir)
     def get_id(fn):
-        print(fn)
         return fn.split("-")[1]
     files = sorted(fn for fn in files if get_id(fn)==application)
 
