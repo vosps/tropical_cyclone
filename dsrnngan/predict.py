@@ -146,9 +146,9 @@ pred_2_50 = np.squeeze(pred[49][2], axis = -1)
 ## batch 3                                                                                                                       
 IFS_3 = input_img[2][:,:,0]
 NIMROD_3 = np.squeeze(gt[2], axis=-1)
-pred_3_1 = np.squeeze(pred[0][2], axis = -1)
-pred_3_10 = np.squeeze(pred[9][2], axis = -1)
-pred_3_50 = np.squeeze(pred[49][2], axis = -1)
+pred_3_1 = np.squeeze(pred[0][3], axis = -1)
+pred_3_10 = np.squeeze(pred[9][3], axis = -1)
+pred_3_50 = np.squeeze(pred[49][3], axis = -1)
 
 fig, axs = plt.subplots(4, 5, figsize=(12,7), subplot_kw=dict(sharex=True, sharey=True))
 axs[0, 0].set_title(plot_input_title)
