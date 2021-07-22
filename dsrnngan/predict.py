@@ -144,8 +144,8 @@ pred_2_10 = np.squeeze(pred[9][2], axis = -1)
 pred_2_50 = np.squeeze(pred[49][2], axis = -1)
 
 ## batch 3                                                                                                                       
-IFS_3 = input_img[2][:,:,0]
-NIMROD_3 = np.squeeze(gt[2], axis=-1)
+IFS_3 = input_img[3][:,:,0]
+NIMROD_3 = np.squeeze(gt[3], axis=-1)
 pred_3_1 = np.squeeze(pred[0][3], axis = -1)
 pred_3_10 = np.squeeze(pred[9][3], axis = -1)
 pred_3_50 = np.squeeze(pred[49][3], axis = -1)
