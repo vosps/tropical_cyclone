@@ -695,6 +695,15 @@ def resize_lanczos(img, size):
     return np.array(cv2.resize(img,dsize=size,interpolation=cv2.INTER_LANCZOS4))
     # return np.array(Image.fromarray(img).resize(size, resample=Image.LANCZOS))
 
+def noise_generator(shape, batch_size, random_seed=None, mean=0.0, std=1.0):
+    rng = np.random.RandomState(seed=random_seed)
+    shape = (batch_size, ) + shape
+    n = rng.randn(*shape).astype(np.float32)
+    if std != 1.0:
+        n *= std
+    if mean != 0.0:
+        n += mean
+    return n
 
 def plot_comparison(test_years, filters_gen, noise_channels, gen_gan_weights, gen_det_mse_weights, 
                     downsample=False, batch_size=16, application="IFS", num_instances=6):
