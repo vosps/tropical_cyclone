@@ -696,77 +696,90 @@ def resize_lanczos(img, size):
     # return np.array(Image.fromarray(img).resize(size, resample=Image.LANCZOS))
 
 
-def plot_comparison(test_data_file, gen_gan_weights, gen_det_mse_weights,
-    application="mchrzc", random_seed=None):
+def plot_comparison(test_years, filters_gen, noise_channels, gen_gan_weights, gen_det_mse_weights, 
+                    downsample=False, batch_size=16, application="IFS", num_instances=6):
 
-    (_, _, batch_gen) = train.setup_batch_gen(
-        test_data_file, test_data_file=test_data_file,
-        application=application, random_seed=random_seed,
-        batch_size=1
-    )
-    assert False, "Not yet ready"
-    old_batch_size = batch_gen.batch_size
-    try:
-        batch_gen.batch_size = 1
-        (seq_real, cond) = next(batch_gen)
-    finally:
-        batch_gen.batch_size = old_batch_size
-
-    size = tuple(seq_real.shape[2:4])
-    seq_lanczos = np.array([resize_lanczos(x, size) for x in cond[0,...,0]])
-
-    (gen, _) = models.generator()
-    init_model = models.initial_state_model()
-    (gen_gan, noise_shapes) = models.generator_initialized(
-        gen, init_model)
-    gen_det = models.generator_deterministic(gen_gan)
-
-    noise = [np.random.randn(*((1,)+s)) for s in noise_shapes(size)]
+    ## set up batched data generator
+    (_,batch_gen,_) = train.setup_batch_gen(train_years=test_years, 
+                                            val_years=test_years, 
+                                            batch_size=batch_size,
+                                            downsample=downsample)
+    ## call models and load weights in
+    (gen_gan, _) = models.generator(noise_channels=noise_channels, filters_gen=filters_gen)
     gen_gan.load_weights(gen_gan_weights)
-    seq_gan = gen_gan.predict([cond]+noise)
+    gen_det = models.generator_deterministic(filters_gen=filters_gen)
     gen_det.load_weights(gen_det_mse_weights)
-    seq_mse = gen_det.predict(cond)
 
-    seq_real = batch_gen.decoder.denormalize(seq_real)
-    cond = batch_gen.decoder.denormalize(cond)
-    seq_lanczos = batch_gen.decoder.denormalize(seq_lanczos)
-    seq_mse = batch_gen.decoder.denormalize(seq_mse)
-    seq_gan = batch_gen.decoder.denormalize(seq_gan)
-
+    ## prepare noise for GAN predictions
+    noise_dim = (10,10) + (noise_channels,)
+    noise = noise_generator(noise_dim, batch_size)
+    
+    seq_gan=[]
+    seq_real=[]
+    seq_cond=[]
+    seq_mse = []
+    seq_lanczos = []
+    seq_rainfarm = []
+   
     import rainfarm
-    P = 10**cond
-    P[~np.isfinite(P)] = 0
-    alpha = rainfarm.get_alpha_seq(P[0,...,0])
-    print(alpha)
-    r = [rainfarm.rainfarm_downscale(p, alpha=alpha, threshold=0.1)
-        for p in P[0,...,0]]
-    log_r = np.log10(r)
-    log_r[~np.isfinite(log_r)] = np.nan
+    ## iterate through data instances and predict 
+    ## store input conditions, ground truth image and predictions
+    batch_gen_iter = iter(batch_gen)
+    for i in range(num_instances):
+        (cond, const, img_real) = next(batch_gen_iter)
+        seq_cond.append(cond)
+        seq_real.append(img_real)
+        ## GAN prediction
+        seq_gan.append(gen_gan.predict([cond,const,noise]))
+        ## Deterministic prediction
+        seq_mse.append(gen_det.predict([cond,const]))
+        ## define size of image to be upscaled using Lanczos filtering
+        size = tuple(img_real.shape[1:3])
+        ## convert conditioning image to float32
+        cond_lanczos = np.float32(cond)
+        ## resize using Lanczos filtering
+        upscaled_lanczos = np.array(resize_lanczos(cond_lanczos[0,...,0], size))
+        seq_lanczos.append(upscaled_lanczos)
+        ## convert conditioning image to numpy array
+        P = np.array(10**cond)
+        ## set all non-finite values in condition to 0
+        P[~np.isfinite(P)] = 0
+        ## calculate rainFARM alpha coefficient (NB. passing in whole batch)
+        alpha = rainfarm.get_alpha_seq(P[...,0])
+        ## resize using rainFARM
+        r = rainfarm.rainfarm_downscale(P[0,...,0], alpha=alpha, threshold=0.1)
+        ## take log of result
+        log_r = np.log10(r)
+        ## set all non-finite values in log_r to NaN
+        log_r[~np.isfinite(log_r)] = np.nan
+        seq_rainfarm.append(log_r)
 
-    sequences = [
-        seq_real[0,...,0],
-        cond[0,...,0],
-        seq_lanczos,
-        seq_mse[0,...,0],
-        log_r,
-        seq_gan[0,...,0]
-    ]
-    labels = [
-        "Real", "Downsampled", "Lanczos", "Det. RCNN", "RainFARM", "GAN"
-    ]
+    sequences = []
+    for i in range(num_instances):
+        sequences.append([
+            seq_real[i][0,...,0],
+            seq_cond[i][0,...,0],
+            seq_lanczos[i],
+            seq_mse[i][0,...,0],
+            seq_rainfarm[i],
+            seq_gan[i][0,...,0]
+        ])
+    labels = ["Real", "Downsampled", "Lanczos", "Det. CNN", "RainFARM", "GAN"]
 
-    num_cols = seq_real.shape[1]
+    num_cols = num_instances
     num_rows = len(sequences)
+    value_range = (0,1)
     plt.figure(figsize=(1.5*num_cols,1.5*num_rows))
 
     gs = gridspec.GridSpec(num_rows,num_cols,wspace=0.05,hspace=0.05)
     
-    for k in range(seq_real.shape[1]):
+    for k in range(num_instances):
         for i in range(num_rows):
             plt.subplot(gs[i,k])
-            plot_img(sequences[i][k,:,:])
+            plot_img(sequences[k][i], value_range=value_range)
             if k==0:
                 plt.ylabel(labels[i])
+        plt.suptitle('Example results for different downscaling methods')
 
     gc.collect()
 
