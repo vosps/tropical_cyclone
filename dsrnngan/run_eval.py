@@ -34,7 +34,7 @@ elif mode == "deterministic":
     rank_samples = 1
 
 ## check this is the correct file name!!
-out_fn = "{}/eval-{}_no_noise_2.txt".format(log_path, application)                                                                                                               
+out_fn = "{}/eval-{}_no_noise.txt".format(log_path, application)                                                                                                               
 weights_dir = log_path
 
 
@@ -65,8 +65,8 @@ rank_metrics_files_1 = ["{}/ranks-124800.npz".format(log_path), "{}/ranks-198400
 rank_metrics_files_2 = ["{}/ranks-240000.npz".format(log_path), "{}/ranks-384000.npz".format(log_path)]
 labels_1 = ['124800', '198400']
 labels_2 = ['240000', '384000']
-name_1 = 'no-noise-early-2'
-name_2 = 'no-noise-late-2'
+name_1 = 'no-noise-early'
+name_2 = 'no-noise-late'
 
 plots.plot_rank_histogram_all(rank_metrics_files_1, labels_1, log_path, name_1)
 plots.plot_rank_histogram_all(rank_metrics_files_2, labels_2, log_path, name_2)

@@ -13,25 +13,25 @@ filters_gen = 128
 filters_disc = 512
 lr_disc = 1e-5
 lr_gen = 1e-5
-noise_channels = 2
+noise_channels = 1
 constant_fields = 2
 input_channels = 1
 
 ## set up flags
 downsample = True
 #downsample = False
-add_noise = True
-#add_noise = False
+#add_noise = True
+add_noise = False
 
 if mode == "ensemble":
-    log_path = "/ppdata/lucy-cGAN/logs/EASY/GAN/noise_2/g128_d512"
+    log_path = "/ppdata/lucy-cGAN/logs/EASY/GAN/noise_1/g128_d512"
     rank_samples = 100
 elif mode == "deterministic":
     log_path = "/ppdata/lucy-cGAN/logs/IFS/filters_128/softplus/det/lr_1e-4/"
     rank_samples = 1
 
 ## check this is the correct file name!!
-out_fn = "{}/eval-{}_noise.txt".format(log_path, application)                                                                                                               
+out_fn = "{}/eval-{}_no-noise.txt".format(log_path, application)                                                                                                               
 weights_dir = log_path
 
 
@@ -61,8 +61,8 @@ rank_metrics_files_1 = ["{}/ranks-124800.npz".format(log_path), "{}/ranks-198400
 rank_metrics_files_2 = ["{}/ranks-240000.npz".format(log_path), "{}/ranks-384000.npz".format(log_path)]
 labels_1 = ['124800', '198400']
 labels_2 = ['240000', '384000']
-name_1 = 'noise-early'
-name_2 = 'noise-late'
+name_1 = 'no-noise-early'
+name_2 = 'no-noise-late'
 
 plots.plot_rank_histogram_all(rank_metrics_files_1, labels_1, log_path, name_1)
 plots.plot_rank_histogram_all(rank_metrics_files_2, labels_2, log_path, name_2)

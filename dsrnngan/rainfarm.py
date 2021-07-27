@@ -44,10 +44,11 @@ def get_alpha_seq(P):
     fp_abs = abs(fp)
     log_power_spectrum = np.log(fp_abs**2)
     valid = (k!=0) & np.isfinite(log_power_spectrum)
+
     return log_slope(np.log(k[valid]), log_power_spectrum[valid])
 
 
-def rainfarm_downscale(P, alpha=None, ds_factor=16, threshold=None):
+def rainfarm_downscale(P, alpha=None, ds_factor=10, threshold=None):
     ki = np.fft.fftfreq(P.shape[0])
     kj = np.fft.fftfreq(P.shape[1])
     k_sqr = ki[:,None]**2 + kj[None,:]**2
