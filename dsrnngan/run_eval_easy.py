@@ -16,6 +16,7 @@ lr_gen = 1e-5
 noise_channels = 1
 constant_fields = 2
 input_channels = 1
+weights = None
 
 ## set up flags
 downsample = True
@@ -44,6 +45,7 @@ eval.rank_metrics_by_time(mode,
                           check_every=1, 
                           N_range=None, 
                           downsample=downsample,
+                          weights=weights,
                           add_noise=add_noise,
                           batch_size=batch_size, 
                           num_batches=num_batches, 

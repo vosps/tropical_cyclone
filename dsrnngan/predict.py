@@ -59,6 +59,10 @@ noise_dim = (10,10) + (noise_channels,)
 weights_fn = load_weights_root + '/' + 'gen_weights-IFS-{}.h5'.format(model_number)
 print(weights_fn)
 
+#weights = np.arange(6,2,-1)                                                                                                
+#weights = weights / weights.sum() 
+weights = None
+
 if problem_type == "normal":
     downsample = False
     plot_input_title = 'IFS'
@@ -75,6 +79,7 @@ else:
                                         val_years, 
                                         val_size=val_size, 
                                         downsample=downsample, 
+                                        weights=weights,
                                         input_channels=input_channels,
                                         constant_fields=constant_fields,
                                         batch_size=batch_size, 

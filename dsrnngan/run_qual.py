@@ -20,6 +20,7 @@ lr_gen = 1e-5
 downsample = False
 constant_fields = 2
 noise_channels = 4
+weights = None
 
 if downsample == True:
     input_channels = 1 
@@ -42,6 +43,8 @@ eval.quality_metrics_by_time(mode,
                              out_fn, 
                              weights_dir, 
                              check_every=1, 
+                             downsample=downsample,
+                             weights=weights,
                              batch_size=batch_size, 
                              num_batches=num_batches, 
                              filters_gen=filters_gen, 

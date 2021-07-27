@@ -20,6 +20,7 @@ downsample = False
 constant_fields = 2
 noise_channels = 4
 add_noise = False
+weights = None
 
 if downsample == True:
     input_channels = 1 
@@ -47,6 +48,7 @@ eval.rank_metrics_by_time(mode,
                           check_every=1, 
                           N_range=None, 
                           downsample=downsample,
+                          weights=weights,
                           add_noise=add_noise,
                           batch_size=batch_size, 
                           num_batches=num_batches, 

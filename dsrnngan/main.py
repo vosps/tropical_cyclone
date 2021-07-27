@@ -56,6 +56,10 @@ if __name__ == "__main__":
         
     args = parser.parse_args()
     mode = args.mode
+    
+    #weights = np.arange(6,2,-1)
+    #weights = weights / weights.sum()
+    weights = None
 
     if mode=="ensemble":
 
@@ -103,6 +107,7 @@ if __name__ == "__main__":
                             val_years, 
                             val_size=val_size, 
                             downsample=downsample, 
+                            weights=weights,
                             input_channels=input_channels,
                             constant_fields=constant_fields,
                             batch_size=batch_size, 
@@ -193,6 +198,7 @@ if __name__ == "__main__":
                                   check_every=1, 
                                   N_range=None, 
                                   downsample=downsample,
+                                  weights=weights,
                                   batch_size=batch_size, 
                                   num_batches=num_batches, 
                                   filters_gen=filters_gen, 
@@ -212,6 +218,7 @@ if __name__ == "__main__":
                                      weights_dir=log_path, 
                                      check_every=1, 
                                      downsample=downsample,
+                                     weights=weights,
                                      batch_size=batch_size, 
                                      num_batches=num_batches, 
                                      filters_gen=filters_gen, 
@@ -277,6 +284,7 @@ if __name__ == "__main__":
                                       val_years, 
                                       val_size=val_size,
                                       downsample=downsample,
+                                      weights=weights,
                                       input_channels=input_channels,
                                       constant_fields=constant_fields,
                                       steps_per_epoch=steps_per_epoch, 
@@ -358,6 +366,7 @@ if __name__ == "__main__":
                                   check_every=1, 
                                   N_range=None,
                                   downsample=downsample,
+                                  weights=weights,
                                   batch_size=batch_size, 
                                   num_batches=num_batches, 
                                   filters_gen=filters_gen,
@@ -374,6 +383,7 @@ if __name__ == "__main__":
                                      weights_dir=log_path, 
                                      check_every=1, 
                                      downsample=downsample,
+                                     weights=weights,
                                      batch_size=batch_size, 
                                      num_batches=num_batches, 
                                      filters_gen=filters_gen,

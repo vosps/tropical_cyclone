@@ -705,14 +705,23 @@ def noise_generator(shape, batch_size, random_seed=None, mean=0.0, std=1.0):
         n += mean
     return n
 
-def plot_comparison(test_years, filters_gen, noise_channels, gen_gan_weights, gen_det_mse_weights, 
-                    downsample=False, batch_size=16, application="IFS", num_instances=6):
+def plot_comparison(test_years, 
+                    filters_gen, 
+                    noise_channels, 
+                    gen_gan_weights, 
+                    gen_det_mse_weights, 
+                    downsample=False, 
+                    weights=weights,
+                    batch_size=16, 
+                    application="IFS", 
+                    num_instances=6):
 
     ## set up batched data generator
     (_,batch_gen,_) = train.setup_batch_gen(train_years=test_years, 
                                             val_years=test_years, 
                                             batch_size=batch_size,
-                                            downsample=downsample)
+                                            downsample=downsample,
+                                            weights=weights)
     ## call models and load weights in
     (gen_gan, _) = models.generator(noise_channels=noise_channels, filters_gen=filters_gen)
     gen_gan.load_weights(gen_gan_weights)

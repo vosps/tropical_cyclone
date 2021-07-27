@@ -23,13 +23,14 @@ def setup_batch_gen(train_years,
                     val_years, 
                     batch_size=64, 
                     val_size=None, 
-                    downsample=False, 
+                    downsample=False,
+                    weights=None,
                     val_fixed=True):
    
     tfrecords_generator_ifs.return_dic = False
     print(f"downsample flag is {downsample}")
     if train_years is not None:
-        train = DataGenerator(train_years, batch_size=batch_size, downsample=downsample)
+        train = DataGenerator(train_years, batch_size=batch_size, downsample=downsample, weights=weights)
     else:
         train = None
     ## note -- using create_fixed_dataset with a batch size not divisible by 16 will cause problems
@@ -55,6 +56,7 @@ def setup_gan(train_years=None,
               val_years=None, 
               val_size=None, 
               downsample=False,
+              weights=None,
               input_channels = 9,
               constant_fields = 2,
               steps_per_epoch=50, 
@@ -80,8 +82,12 @@ def setup_gan(train_years=None,
     wgan = gan.WGANGP(gen, disc, lr_disc=lr_disc, lr_gen=lr_gen)
 
     (batch_gen_train, batch_gen_valid, batch_gen_test) = setup_batch_gen(
-        train_years=train_years, val_years=val_years, batch_size=batch_size,
-        val_size=val_size, downsample=downsample)
+        train_years=train_years, 
+        val_years=val_years, 
+        batch_size=batch_size,
+        val_size=val_size, 
+        downsample=downsample,
+        weights=weights)
 
     gc.collect()
 
@@ -93,13 +99,18 @@ def setup_data(train_years=None,
                val_years=None,
                val_size = None, 
                downsample=False,
+               weights=None,
                steps_per_epoch=50,
                batch_size=16, 
                noise_dim=(10,10,8)):
     
     (batch_gen_train, batch_gen_valid, batch_gen_test) = setup_batch_gen(
-        train_years = train_years, val_years = val_years, 
-        batch_size=batch_size, val_size=val_size, downsample=downsample)
+        train_years=train_years, 
+        val_years=val_years, 
+        batch_size=batch_size, 
+        val_size=val_size, 
+        downsample=downsample,
+        weights=weights)
 
     gc.collect()
 
@@ -134,6 +145,7 @@ def setup_deterministic(train_years=None,
                         val_years=None,
                         val_size=None, 
                         downsample=False,
+                        weights=None,
                         input_channels = 9,
                         constant_fields = 2,
                         steps_per_epoch=50,
@@ -153,8 +165,12 @@ def setup_deterministic(train_years=None,
     det_model = deterministic.Deterministic(gen_det, lr, loss, optimizer)
     
     (batch_gen_train, batch_gen_valid, batch_gen_test) = setup_batch_gen(
-        train_years=train_years, val_years=val_years, batch_size=batch_size, 
-        val_size=val_size, downsample=downsample)
+        train_years=train_years, 
+        val_years=val_years, 
+        batch_size=batch_size, 
+        val_size=val_size, 
+        downsample=downsample,
+        weights=weights)
 
     gc.collect()
 
