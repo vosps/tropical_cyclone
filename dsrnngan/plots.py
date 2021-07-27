@@ -711,7 +711,7 @@ def plot_comparison(test_years,
                     gen_gan_weights, 
                     gen_det_mse_weights, 
                     downsample=False, 
-                    weights=weights,
+                    weights=None,
                     batch_size=16, 
                     application="IFS", 
                     num_instances=6):
