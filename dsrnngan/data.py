@@ -135,7 +135,7 @@ def get_dates(year):
         dates.append(f[:-3].split('_')[-1])
     return dates
 
-def load_nimrod(date,hour,log_precip=False,aggregate=1):
+def load_nimrod(date,hour,log_precip=False,aggregate=1,crop=None):
     year = date[:4]
     data = xr.open_dataset(f"{NIMROD_PATH}{year}/metoffice-c-band-rain-radar_uk_{date}.nc")
     assert hour+aggregate < 25
@@ -144,6 +144,11 @@ def load_nimrod(date,hour,log_precip=False,aggregate=1):
     # The remapping of NIMROD left a few negative numbers
     # So remove those
     y[y<0]=0
+    if crop is not None:
+        if type(crop) == tuple:
+            y = y[crop[0]:crop[1],crop[0]:crop[1]]
+        elif type(crop) == int:
+            y = y[crop:-crop,crop:-crop]
     if log_precip:
         return np.log10(1+y)
     else:            
@@ -194,13 +199,13 @@ def load_erastack(fields,date,hour,log_precip=False,norm=False,crop=2,
     return np.stack(field_arrays,-1)
 
 def load_era_nimrod(nimrodfile=None,date=None,era_fields=['pr','prc'],hour=0,
-                    log_precip=False,era_norm=False,era_crop=2):
+                    log_precip=False,norm=False,era_crop=2):
     if nimrodfile is not None:
         date=nimrodfile[:-3].split('_')[-1]
-    return load_erastack(era_fields,date,hour,log_precip=log_precip,norm=era_norm,crop=era_crop),\
+    return load_erastack(era_fields,date,hour,log_precip=log_precip,norm=norm,crop=era_crop),\
         load_nimrod(date,hour,log_precip=log_precip)
 
-def load_hires_constants(batch_size=1):
+def load_hires_constants(batch_size=1,crop=False):
     df = xr.load_dataset('/ppdata/constants/hgj2_constants_0.01_degree.nc')
     # Should rewrite this file to have increasing latitudes
     z = np.array(df['Z'])[:,::-1,:]
@@ -208,10 +213,13 @@ def load_hires_constants(batch_size=1):
     z = z/z.max()
     # LSM is already 0:1
     lsm = np.array(df['LSM'])[:,::-1,:]
+    if crop:
+        lsm = lsm[...,5:-6,5:-6]
+        z = z[...,5:-6,5:-6]
     return np.repeat(np.stack([z,lsm],-1),batch_size,axis=0)
 
 def load_era_nimrod_batch(batch_dates, era_fields,log_precip=False,
-                          constants=False,hour=0,era_norm=False,era_crop=2):
+                          constants=False,hour=0,norm=False,era_crop=2):
     batch_x = [] 
     batch_y = []
     if hour=='random':
@@ -221,7 +229,7 @@ def load_era_nimrod_batch(batch_dates, era_fields,log_precip=False,
     
     for i,date in enumerate(batch_dates):
         h = hours[i]
-        batch_x.append(load_erastack(era_fields,date,h,log_precip=log_precip,norm=era_norm))
+        batch_x.append(load_erastack(era_fields,date,h,log_precip=log_precip,norm=norm))
         batch_y.append(load_nimrod(date,h,log_precip=log_precip))
     
     if (not constants):
@@ -230,20 +238,27 @@ def load_era_nimrod_batch(batch_dates, era_fields,log_precip=False,
         return [np.array(batch_x),load_hires_constants(len(batch_dates))],np.array(batch_y)
 
 def load_ifs_nimrod_batch(batch_dates, ifs_fields=all_ifs_fields,log_precip=False,
-                          constants=False,hour=0,ifs_norm=False,ifs_crop=0):
+                          constants=False,hour=0,norm=False,
+                          crop = False,
+                          nim_crop=0,
+                          ifs_crop=0):
     batch_x = [] 
     batch_y = []
+    if crop:
+        ifs_crop = (1,-1)
+        nim_crop = (5,-6)
     if hour=='random':
         hours = ifs_hours[np.random.randint(22,size=[len(batch_dates)])]
     elif np.issubdtype(type(hour),np.integer):
         hours = len(batch_dates)*[hour]
     else:
         print(type(hour))
+        hours=hour
 
     for i,date in enumerate(batch_dates):
         h = hours[i]
-        batch_x.append(load_ifsstack(ifs_fields,date,h,log_precip=log_precip,norm=era_norm))
-        batch_y.append(load_nimrod(date,h,log_precip=log_precip))
+        batch_x.append(load_ifsstack(ifs_fields,date,h,log_precip=log_precip,norm=norm,crop=ifs_crop))
+        batch_y.append(load_nimrod(date,h,log_precip=log_precip,crop=nim_crop))
     
     if (not constants):
         return np.array(batch_x), np.array(batch_y)
@@ -300,13 +315,15 @@ def load_ifs(ifield,date,hour,log_precip=False,norm=False,crop=0):
     if field in ['u700','v700']:
         fleheader = 'winds'
         field = field[:1]
+    elif field in ['cdir','tcrw']:
+        fleheader = 'missing'
     else:
         fleheader = 'sfc'
     
     ds = xr.open_dataset(f"{IFS_PATH}/{fleheader}_{loaddata_str}.nc")
     data = ds[field]
     field = ifield
-    if field in ['tp','cp']:
+    if field in ['tp','cp','cdir']:
         data = data[time_index,:,:] - data[time_index-1,:,:]
     else:
         data = data[time_index,:,:]
@@ -314,8 +331,13 @@ def load_ifs(ifield,date,hour,log_precip=False,norm=False,crop=0):
     if crop is None or crop == 0:
         y = np.array(data[::-1,:])
     else:
-        assert False, "Not completed this section, need to reverse indicies"
-        y = np.array(data[-crop:crop:-1,-crop:crop:-1])
+        y = np.array(data[::-1,:])
+        if type(crop) == tuple:
+            y = y[crop[0]:crop[1],crop[0]:crop[1]]
+        elif type(crop) == int:
+            y = y[crop:-crop,crop:-crop]
+        else:
+            assert False, "Not accepted cropping type"
     data.close()
     if field in ['tp','cp','pr','prl','prc']:
         #print('pass')

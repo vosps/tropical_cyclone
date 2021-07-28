@@ -8,6 +8,7 @@ return_dic = True
 
 class DataGenerator(Sequence):
     def __init__(self, dates, ifs_fields,batch_size, log_precip=True,
+                 crop = False,
                  shuffle=True,constants=None,hour='random',ifs_norm=True):
         self.dates=dates
         self.batch_size=batch_size
@@ -16,10 +17,11 @@ class DataGenerator(Sequence):
         self.shuffle=shuffle
         self.hour=hour
         self.ifs_norm=ifs_norm
+        self.crop = crop
         if constants is None:
             self.constants=constants
         elif constants == True:
-            self.constants=load_hires_constants(self.batch_size)
+            self.constants=load_hires_constants(self.batch_size,crop=self.crop)
         else:
             self.constants=np.repeat(constants,self.batch_size,axis=0)
          
@@ -35,8 +37,8 @@ class DataGenerator(Sequence):
         data_x_batch, data_y_batch=load_ifs_nimrod_batch(dates_batch,
                                                          ifs_fields=self.ifs_fields,
                                                          log_precip=self.log_precip,
-                                                         hour=self.hour,
-                                                         ifs_norm=self.ifs_norm)
+                                                         hour=self.hour,crop=self.crop,
+                                                         norm=self.ifs_norm)
         
         if self.constants is None:
             if return_dic:
