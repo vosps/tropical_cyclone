@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import train
 import argparse
 from tfrecords_generator_ifs import create_fixed_dataset
+from data_generator_ifs import DataGenerator as DataGeneratorFull
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--load_weights_root', type=str, 
@@ -24,6 +25,8 @@ parser.add_argument('--input_channels', type=int,
                     help="Dimensions of input condition passed to generator and discriminator", default=9)
 parser.add_argument('--problem_type', type=str, 
                     help="normal (IFS>NIMROD), easy (NIMROD>NIMROD)", default="normal")
+parser.add_argument('--predict_image', type=str,
+                    help="small (small images used for training), large (full image)", default="small")
 parser.add_argument('--predict_year', type=int,
                     help="year to predict on", default=2019)
 parser.add_argument('--batch_size', type=int,
@@ -45,8 +48,9 @@ noise_channels = args.noise_channels
 input_channels = args.input_channels
 constant_fields = args.constant_fields
 problem_type = args.problem_type
-batch_size = args.batch_size
+predict_image = args.predict_image
 predict_year = args.predict_year
+batch_size = args.batch_size
 train_years = args.train_years
 val_years = args.val_years
 val_size = args.val_size
@@ -95,7 +99,22 @@ gen.load_weights(weights_fn)
 
 
 ## load dataset
-data_predict = create_fixed_dataset(predict_year, batch_size=batch_size, downsample=downsample)
+if predict_image == "small":
+    data_predict = create_fixed_dataset(predict_year, 
+                                        batch_size=batch_size, 
+                                        downsample=downsample)
+elif predict_image == "large":
+    all_ifs_fields = ['tp','cp' ,'sp' ,'tisr','cape','tclw','tcwv','u700','v700']
+    data_predict = DataGeneratorFull(dates=[predict_year], 
+                                     ifs_fields=all_ifs_fields,
+                                     batch_size=batch_size, 
+                                     log_precip=True, 
+                                     shuffle=False,
+                                     constants=True,
+                                     hour='random',
+                                     ifs_norm=True)
+else:
+    raise Exception("no such prediction type, try again!")
 
 ## create noise
 def noise_generator(shape, batch_size, random_seed=None, mean=0.0, std=1.0):
@@ -114,6 +133,9 @@ inputs = {}
 for i,batch in enumerate(data_predict):
     if i == 50:
         break
+    print(len(batch))
+    print(type(batch))
+    print(batch.keys)
     inputs['generator_input'] = batch[0]
     inputs['constants'] = batch[1]
     outputs = batch[2]

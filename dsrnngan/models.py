@@ -5,10 +5,19 @@ from tensorflow.keras.layers import GlobalAveragePooling2D, Dense
 
 from blocks import residual_block, const_upscale_block_100
 
-def generator(input_channels=9, constant_fields=2, noise_channels=8, filters_gen=64, img_shape=(100,100), conv_size=(3,3), stride=1, relu_alpha=0.2, norm=None, dropout_rate=None):
+def generator(input_channels=9, 
+              constant_fields=2, 
+              noise_channels=8, 
+              filters_gen=64, 
+              img_shape=(100,100), 
+              conv_size=(3,3), 
+              stride=1, 
+              relu_alpha=0.2, 
+              norm=None, 
+              dropout_rate=None):
     
     # Network inputs 
-    ##low resolution condition                                                                                                                                                                                         
+    ##low resolution condition                                                                                      
     generator_input = Input(shape=(None,None,input_channels), name="generator_input")
     print(f"generator_input shape: {generator_input.shape}")
     ##constant fields
@@ -21,7 +30,7 @@ def generator(input_channels=9, constant_fields=2, noise_channels=8, filters_gen
     ## Convolve constant fields down to match other input dimensions
     upscaled_const_input = const_upscale_block_100(const_input, filters=filters_gen)
     print(f"upscaled constants shape: {upscaled_const_input.shape}")
-    
+
     ## Concatenate all inputs together
     generator_output = concatenate([generator_input, upscaled_const_input, noise_input])
     print(f"Shape after first concatenate: {generator_output.shape}")
@@ -43,7 +52,7 @@ def generator(input_channels=9, constant_fields=2, noise_channels=8, filters_gen
     generator_output = residual_block(generator_output, filters=block_channels[1], conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate)
     print(f"Shape after residual block: {generator_output.shape}")
     
-    ## Concatenate with resized constants field
+    ## Concatenate with original size constants field
     generator_output = concatenate([generator_output, const_input])
     print(f"Shape after second concatenate: {generator_output.shape}")
     

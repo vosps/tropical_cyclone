@@ -24,7 +24,7 @@ plots.plot_comparison(test_years,
                 noise_channels, 
                 gen_gan_weights, 
                 gen_det_mse_weights, 
-                downsample,
+                downsample=downsample,
                 weights=weights,
                 batch_size, 
                 application)

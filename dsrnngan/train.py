@@ -76,6 +76,7 @@ def setup_gan(train_years=None,
                                            constant_fields=constant_fields, 
                                            noise_channels=noise_channels, 
                                            filters_gen=filters_gen)
+
     disc = models.discriminator(input_channels=input_channels, 
                                 constant_fields=constant_fields, 
                                 filters_disc=filters_disc)
