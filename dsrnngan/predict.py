@@ -1,5 +1,7 @@
+import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
+import noise
 import train
 import argparse
 from tfrecords_generator_ifs import create_fixed_dataset
@@ -29,6 +31,8 @@ parser.add_argument('--predict_image', type=str,
                     help="small (small images used for training), large (full image)", default="small")
 parser.add_argument('--predict_year', type=int,
                     help="year to predict on", default=2019)
+parser.add_argument('--num_predictions', type=int,
+                    help="size of prediction ensemble", default=3)
 parser.add_argument('--batch_size', type=int,
                     help="Batch size", default=16)
 parser.add_argument('--filters_gen', type=int, default=128,
@@ -50,6 +54,7 @@ constant_fields = args.constant_fields
 problem_type = args.problem_type
 predict_image = args.predict_image
 predict_year = args.predict_year
+num_predictions = args.num_predictions
 batch_size = args.batch_size
 train_years = args.train_years
 val_years = args.val_years
@@ -59,7 +64,6 @@ filters_gen = args.filters_gen
 lr_disc = args.learning_rate_disc
 lr_gen = args.learning_rate_gen
 
-noise_dim = (10,10) + (noise_channels,)
 weights_fn = load_weights_root + '/' + 'gen_weights-IFS-{}.h5'.format(model_number)
 print(weights_fn)
 
@@ -97,12 +101,28 @@ else:
 gen = wgan.gen
 gen.load_weights(weights_fn)
 
-
+pred = []
 ## load dataset
 if predict_image == "small":
     data_predict = create_fixed_dataset(predict_year, 
                                         batch_size=batch_size, 
                                         downsample=downsample)
+  
+    data_predict_iter = iter(data_predict)
+    
+    for i in range(num_predictions):
+        (cond, const, img_real) = next(data_predict_iter)
+        ## retrieve noise dimensions from input condition
+        noise_dim = cond[0,...,0].shape + (noise_channels,)
+        noise = noise.noise_generator(noise_dim, batch_size=batch_size)
+        ## GAN prediction
+        pred.append(gen.predict([cond, const, noise]))
+   
+    ## turn results into arrays
+    input_img = np.array(cond)
+    const = np.array(const)
+    gt = np.array(img_real)
+
 elif predict_image == "large":
     all_ifs_fields = ['tp','cp' ,'sp' ,'tisr','cape','tclw','tcwv','u700','v700']
     data_predict = DataGeneratorFull(dates=[predict_year], 
@@ -113,39 +133,26 @@ elif predict_image == "large":
                                      constants=True,
                                      hour='random',
                                      ifs_norm=True)
+    
+    data_predict_iter = iter(data_predict)
+    
+    for i in range(num_predictions):
+        (inputs,outputs) = next(data_predict_iter)
+        ## retrieve noise dimensions from input condition
+        noise_dim = inputs['generator_input'][0,...,0].shape + (noise_channels,)
+        inputs['noise_input'] = noise.noise_generator(noise_dim, batch_size=batch_size)
+        inputs['constants'] = tf.image.resize(inputs['constants'], (960,960))
+        print(inputs['generator_input'].shape)
+        print(inputs['constants'].shape)
+        print(inputs['noise_input'].shape)
+        pred.append(gen.predict(inputs))
+    
+    ## turn results into arrays
+    input_img = np.array(inputs['generator_input'])
+    const = np.array(inputs['constants'])
+    gt = np.array(outputs)
 else:
     raise Exception("no such prediction type, try again!")
-
-## create noise
-def noise_generator(shape, batch_size, random_seed=None, mean=0.0, std=1.0):
-    rng = np.random.RandomState(seed=random_seed)
-    shape = (batch_size, ) + shape
-    n = rng.randn(*shape).astype(np.float32)
-    if std != 1.0:
-        n *= std
-    if mean != 0.0:
-        n += mean
-    return n
-
-## make 50 sets of predictions
-pred = {}
-inputs = {}
-for i,batch in enumerate(data_predict):
-    if i == 50:
-        break
-    print(len(batch))
-    print(type(batch))
-    print(batch.keys)
-    inputs['generator_input'] = batch[0]
-    inputs['constants'] = batch[1]
-    outputs = batch[2]
-    inputs['noise_input'] = noise_generator(noise_dim, batch_size=batch_size)
-    pred[i] = np.array(gen.predict_on_batch(inputs))
-
-## turn results into arrays
-input_img = np.array(inputs['generator_input'])
-const = np.array(inputs['constants'])
-gt = np.array(outputs)
 
 
 ## plot results 
@@ -153,60 +160,51 @@ gt = np.array(outputs)
 IFS_0 = input_img[0][:,:,0]
 NIMROD_0 = np.squeeze(gt[0], axis=-1)
 pred_0_1 = np.squeeze(pred[0][0], axis = -1)
-pred_0_10 = np.squeeze(pred[9][0], axis = -1)
-pred_0_50 = np.squeeze(pred[49][0], axis = -1)
+pred_0_2 = np.squeeze(pred[1][0], axis = -1)
+pred_0_3 = np.squeeze(pred[2][0], axis = -1)
 
 ## batch 1
 IFS_1 = input_img[1][:,:,0]
 NIMROD_1 = np.squeeze(gt[1], axis=-1)
 pred_1_1 = np.squeeze(pred[0][1], axis = -1)
-pred_1_10 = np.squeeze(pred[9][1], axis = -1)
-pred_1_50 = np.squeeze(pred[49][1], axis = -1)
+pred_1_2 = np.squeeze(pred[1][1], axis = -1)
+pred_1_3 = np.squeeze(pred[2][1], axis = -1)
 
 ## batch 2
 IFS_2 = input_img[2][:,:,0]
 NIMROD_2 = np.squeeze(gt[2], axis=-1)
 pred_2_1 = np.squeeze(pred[0][2], axis = -1)
-pred_2_10 = np.squeeze(pred[9][2], axis = -1)
-pred_2_50 = np.squeeze(pred[49][2], axis = -1)
+pred_2_2 = np.squeeze(pred[1][2], axis = -1)
+pred_2_3 = np.squeeze(pred[2][2], axis = -1)
 
-## batch 3                                                                                                                       
-IFS_3 = input_img[3][:,:,0]
-NIMROD_3 = np.squeeze(gt[3], axis=-1)
-pred_3_1 = np.squeeze(pred[0][3], axis = -1)
-pred_3_10 = np.squeeze(pred[9][3], axis = -1)
-pred_3_50 = np.squeeze(pred[49][3], axis = -1)
-
-fig, axs = plt.subplots(4, 5, figsize=(12,7), subplot_kw=dict(sharex=True, sharey=True))
-axs[0, 0].set_title(plot_input_title)
+fig, axs = plt.subplots(3, 5, figsize=(12,7), subplot_kw=dict(sharex=True, sharey=True))
+axs[0, 0].set_title('IFS')
 axs[0, 0].set_ylabel('batch 0')
 axs[0, 0].imshow(IFS_0)
 axs[0, 1].set_title('NIMROD')
 axs[0, 1].imshow(NIMROD_0)
 axs[0, 2].set_title('Pred 1')
 axs[0, 2].imshow(pred_0_1)
-axs[0, 3].set_title('Pred 10')
-axs[0, 3].imshow(pred_0_10)
-axs[0, 4].set_title('Pred 50')
-axs[0, 4].imshow(pred_0_50)
+axs[0, 3].set_title('Pred 2')
+axs[0, 3].imshow(pred_0_2)
+axs[0, 4].set_title('Pred 3')
+axs[0, 4].imshow(pred_0_3)
 axs[1, 0].set_ylabel('batch 1')
 axs[1, 0].imshow(IFS_1)
 axs[1, 1].imshow(NIMROD_1)
 axs[1, 2].imshow(pred_1_1)
-axs[1, 3].imshow(pred_1_10)
-axs[1, 4].imshow(pred_1_50)
+axs[1, 3].imshow(pred_1_2)
+axs[1, 4].imshow(pred_1_3)
 axs[2, 0].set_ylabel('batch 2')
 axs[2, 0].imshow(IFS_2)
 axs[2, 1].imshow(NIMROD_2)
 axs[2, 2].imshow(pred_2_1) 
-axs[2, 3].imshow(pred_2_10)
-axs[2, 4].imshow(pred_2_50)
-axs[3, 0].set_ylabel('batch 3')
-axs[3, 0].imshow(IFS_3)
-axs[3, 1].imshow(NIMROD_3)
-axs[3, 2].imshow(pred_3_1)
-axs[3, 3].imshow(pred_3_10)
-axs[3, 4].imshow(pred_3_50)
+axs[2, 3].imshow(pred_2_2)
+axs[2, 4].imshow(pred_2_3)
+
+# Hide x labels and tick labels for top plots and y ticks for right plots.
+for ax in axs.flat:
+    ax.label_outer()
 
 # Hide x labels and tick labels for top plots and y ticks for right plots.
 for ax in axs.flat:
