@@ -20,6 +20,7 @@ downsample = False
 constant_fields = 2
 noise_channels = 4
 add_noise = False
+load_full_image = True
 weights = None
 
 if downsample == True:
@@ -50,6 +51,7 @@ eval.rank_metrics_by_time(mode,
                           downsample=downsample,
                           weights=weights,
                           add_noise=add_noise,
+                          load_full_image=load_full_image,
                           batch_size=batch_size, 
                           num_batches=num_batches, 
                           filters_gen=filters_gen, 

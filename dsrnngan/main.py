@@ -53,6 +53,10 @@ if __name__ == "__main__":
         help="Learning rate used for discriminator optimizer")
     parser.add_argument('--learning_rate_gen', type=float, default=1e-4,
         help="Learning rate used for generator optimizer")
+    parser.add_argument('--add_postprocessing_noise', type=bool, default=True,
+        help="Flag for adding postprocessing noise in rank statistics eval")
+    parser.add_argument('--load_full_image', type=bool, default=False,
+        help="Flag for evaluating and predicting on full-size image")
         
     args = parser.parse_args()
     mode = args.mode
@@ -80,6 +84,8 @@ if __name__ == "__main__":
         lr_gen = args.learning_rate_gen
         noise_channels = args.noise_channels
         problem_type = args.problem_type
+        add_noise = args.add_postprocessing_noise
+        load_full_image = args.load_full_image
         
         num_epochs = int(num_samples/(steps_per_epoch * batch_size))
         epoch = 1
@@ -199,6 +205,8 @@ if __name__ == "__main__":
                                   N_range=None, 
                                   downsample=downsample,
                                   weights=weights,
+                                  add_noise=add_noise,
+                                  load_full_image=load_full_image,
                                   batch_size=batch_size, 
                                   num_batches=num_batches, 
                                   filters_gen=filters_gen, 
@@ -260,6 +268,8 @@ if __name__ == "__main__":
         filters_gen = args.filters_gen
         learning_rate = args.learning_rate_gen
         problem_type = args.problem_type
+        add_noise = args.add_postprocessing_noise
+        load_full_image = args.load_full_image
         num_epochs = int(num_samples/(steps_per_epoch * batch_size))
         epoch = 1
         
@@ -367,6 +377,8 @@ if __name__ == "__main__":
                                   N_range=None,
                                   downsample=downsample,
                                   weights=weights,
+                                  add_noise=add_noise,
+                                  load_full_image=load_full_image,
                                   batch_size=batch_size, 
                                   num_batches=num_batches, 
                                   filters_gen=filters_gen,

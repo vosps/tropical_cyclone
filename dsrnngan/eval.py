@@ -149,6 +149,7 @@ def rank_metrics_by_time(mode,
                          downsample=False,
                          weights=None,
                          add_noise=True,
+                         load_full_image=False,
                          batch_size=16, 
                          num_batches=64, 
                          filters_gen=64, 
@@ -193,6 +194,13 @@ def rank_metrics_by_time(mode,
         print("loaded deterministic model")
     else:
         print("rank_metrics_by_time not implemented for mode type")
+
+    if load_full_image == True:
+        print('Loading full sized image dataset')
+        ## load full size image -- note batch_size is small to avoid memory issues
+        batch_gen_valid = train.load_full_image(val_years, batch_size=1)
+    elif load_full_image == False:
+        print('Evaluating with smaller image dataset')
 
     files = os.listdir(weights_dir)
     def get_id(fn):

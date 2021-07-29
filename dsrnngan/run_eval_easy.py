@@ -17,6 +17,7 @@ noise_channels = 1
 constant_fields = 2
 input_channels = 1
 weights = None
+load_full_image = False
 
 ## set up flags
 downsample = True
@@ -47,6 +48,7 @@ eval.rank_metrics_by_time(mode,
                           downsample=downsample,
                           weights=weights,
                           add_noise=add_noise,
+                          load_full_image=load_full_image,
                           batch_size=batch_size, 
                           num_batches=num_batches, 
                           filters_gen=filters_gen, 
