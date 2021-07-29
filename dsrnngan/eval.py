@@ -13,6 +13,7 @@ import data
 import models
 import msssim
 import noise
+from noise import noise_generator
 import plots
 import rainfarm
 import warnings
@@ -32,7 +33,8 @@ def randomize_nans(x, rnd_mean, rnd_range):
 def ensemble_ranks(mode, 
                    gen,
                    batch_gen, 
-                   noise_gen, 
+                   noise_channels, 
+                   batch_size,
                    num_batches,
                    noise_offset=0.0, 
                    noise_mul=1.0,
@@ -60,15 +62,16 @@ def ensemble_ranks(mode,
         if load_full_image == False:
             (cond,const,sample) = next(batch_gen_iter)
         elif load_full_image == True:
-            (inputs, outputs) == next(batch_gen_iter)
+            (inputs, outputs) = next(batch_gen_iter)
             cond = inputs['generator_input']
             const = inputs['constants']
             sample = outputs['generator_output']
-        sample = sample.numpy()
+        sample = np.expand_dims(np.array(sample), axis=-1)
         if denormalise_data:
             sample = data.denormalise(sample)
         if add_noise:
-            noise = np.random.rand(16, 100, 100, 1)*1e-6
+            (noise_dim_1, noise_dim_2) = sample[0,...,0].shape
+            noise = np.random.rand(batch_size, noise_dim_1, noise_dim_2, 1)*1e-6
             sample += noise
         sample_crps = sample            
         sample = sample.ravel()
@@ -76,7 +79,8 @@ def ensemble_ranks(mode,
 
         if mode == "ensemble":
             for i in range(rank_samples):
-                n = noise_gen()
+                noise_shape = np.array(cond)[0,...,0].shape + (noise_channels,)
+                n = noise_generator(shape=noise_shape, batch_size=batch_size)
                 for nn in n:
                     nn *= noise_mul
                     nn -= noise_offset
@@ -84,7 +88,7 @@ def ensemble_ranks(mode,
                 if denormalise_data:
                     sample_gen = data.denormalise(sample_gen)
                 samples_gen.append(sample_gen)
-        
+         
         elif mode == "deterministic":
             sample_gen = gen.predict([cond,const])            
             if denormalise_data:
@@ -95,7 +99,6 @@ def ensemble_ranks(mode,
 
             
         samples_gen = np.stack(samples_gen, axis=-1)
-
         crps_score = crps.crps_ensemble(sample_crps, samples_gen)
         crps_scores.append(crps_score.ravel())
 
@@ -174,6 +177,15 @@ def rank_metrics_by_time(mode,
                          lr_disc=0.0001, 
                          lr_gen=0.0001):
     train_years = None
+    if load_full_image == True:
+        ## small batch size to prevent memory issues
+        batch_size=1
+        rank_samples=10
+        num_batches=2
+    else:
+        batch_size=batch_size
+        num_batches=num_batches
+
     if mode == "ensemble":
         (wgan, _, batch_gen_valid, _, noise_shapes, _) = train.setup_gan(train_years, 
                                                                          val_years, 
@@ -210,8 +222,8 @@ def rank_metrics_by_time(mode,
 
     if load_full_image == True:
         print('Loading full sized image dataset')
-        ## load full size image -- note batch_size is small to avoid memory issues
-        batch_gen_valid = train.setup_full_image_dataset(val_years, batch_size=1)
+        ## load full size image
+        batch_gen_valid = train.setup_full_image_dataset(val_years, batch_size=batch_size)
     elif load_full_image == False:
         print('Evaluating with smaller image dataset')
 
@@ -236,7 +248,8 @@ def rank_metrics_by_time(mode,
             (ranks, crps_scores) = ensemble_ranks(mode, 
                                                   gen, 
                                                   batch_gen_valid, 
-                                                  noise_gen, 
+                                                  noise_channels,
+                                                  batch_size=batch_size,
                                                   num_batches=num_batches, 
                                                   rank_samples=rank_samples, 
                                                   add_noise=add_noise,
@@ -246,7 +259,8 @@ def rank_metrics_by_time(mode,
             (ranks, crps_scores) = ensemble_ranks(mode, 
                                                   gen_det, 
                                                   batch_gen_valid, 
-                                                  noise_gen, 
+                                                  noise_channels, 
+                                                  batch_size=batch_size,
                                                   num_batches=num_batches, 
                                                   rank_samples=rank_samples, 
                                                   add_noise=add_noise,
