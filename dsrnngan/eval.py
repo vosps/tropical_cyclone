@@ -29,11 +29,18 @@ def randomize_nans(x, rnd_mean, rnd_range):
         (np.random.rand(*nan_shape)-0.5)*rnd_range
 
 
-def ensemble_ranks(mode, gen, batch_gen, noise_gen, num_batches,
-                   noise_offset=0.0, noise_mul=1.0,
+def ensemble_ranks(mode, 
+                   gen,
+                   batch_gen, 
+                   noise_gen, 
+                   num_batches,
+                   noise_offset=0.0, 
+                   noise_mul=1.0,
                    denormalise_data = True,
                    add_noise = True,
-                   rank_samples=100, normalize_ranks=True,
+                   rank_samples=100, 
+                   normalize_ranks=True,
+                   load_full_image=False,
                    show_progress=True):
 
     ranks = []
@@ -50,7 +57,13 @@ def ensemble_ranks(mode, gen, batch_gen, noise_gen, num_batches,
 
     print(f"add_noise flag in ensemble_ranks is {add_noise}")
     for k in range(num_batches):
-        (cond,const,sample) = next(batch_gen_iter)
+        if load_full_image == False:
+            (cond,const,sample) = next(batch_gen_iter)
+        elif load_full_image == True:
+            (inputs, outputs) == next(batch_gen_iter)
+            cond = inputs['generator_input']
+            const = inputs['constants']
+            sample = outputs['generator_output']
         sample = sample.numpy()
         if denormalise_data:
             sample = data.denormalise(sample)
@@ -220,10 +233,24 @@ def rank_metrics_by_time(mode,
 
         if mode == "ensemble":
             gen.load_weights(weights_dir + "/" + fn)
-            (ranks, crps_scores) = ensemble_ranks(mode, gen, batch_gen_valid, noise_gen, num_batches=num_batches, rank_samples=rank_samples, add_noise=add_noise)
+            (ranks, crps_scores) = ensemble_ranks(mode, 
+                                                  gen, 
+                                                  batch_gen_valid, 
+                                                  noise_gen, 
+                                                  num_batches=num_batches, 
+                                                  rank_samples=rank_samples, 
+                                                  add_noise=add_noise,
+                                                  load_full_image=load_full_image)
         elif mode == "deterministic":
             gen_det.load_weights(weights_dir + "/" + fn)
-            (ranks, crps_scores) = ensemble_ranks(mode, gen_det, batch_gen_valid, noise_gen, num_batches=num_batches, rank_samples=rank_samples, add_noise=add_noise)
+            (ranks, crps_scores) = ensemble_ranks(mode, 
+                                                  gen_det, 
+                                                  batch_gen_valid, 
+                                                  noise_gen, 
+                                                  num_batches=num_batches, 
+                                                  rank_samples=rank_samples, 
+                                                  add_noise=add_noise,
+                                                  load_full_image=load_full_image)
         else:
             print("rank_metrics_by_time not implemented for mode type")
 
