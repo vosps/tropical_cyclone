@@ -7,7 +7,7 @@ matplotlib.use("Agg")
 
 import numpy as np
 import pandas as pd
-from tensorflow.keras.optimizers import SGD
+#from tensorflow.keras.optimizers import SGD
 
 import train
 import eval
@@ -57,9 +57,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
     mode = args.mode
     
-    #weights = np.arange(6,2,-1)
-    #weights = weights / weights.sum()
-    weights = None
+    weights = np.arange(6,2,-1)
+    weights = weights / weights.sum()
+    #weights = None
 
     if mode=="ensemble":
 
@@ -229,8 +229,8 @@ if __name__ == "__main__":
                                      lr_disc=lr_disc, 
                                      lr_gen=lr_gen)
 
-        rank_metrics_files_1 = ["{}/ranks-124800.npz".format(log_path), "{}/ranks-198400.npz".format(log_path)]
-        rank_metrics_files_2 = ["{}/ranks-240000.npz".format(log_path), "{}/ranks-384000.npz".format(log_path)]
+        rank_metrics_files_1 = ["{}/ranks-noise-124800.npz".format(log_path), "{}/ranks-noise-198400.npz".format(log_path)]
+        rank_metrics_files_2 = ["{}/ranks-noise-240000.npz".format(log_path), "{}/ranks-noise-384000.npz".format(log_path)]
         labels_1 = ['124800', '198400']
         labels_2 = ['240000', '384000']
         name_1 = 'early'

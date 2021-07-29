@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
-import noise
+import noise as Noise
 import train
 import argparse
 from tfrecords_generator_ifs import create_fixed_dataset
@@ -114,7 +114,7 @@ if predict_image == "small":
         (cond, const, img_real) = next(data_predict_iter)
         ## retrieve noise dimensions from input condition
         noise_dim = cond[0,...,0].shape + (noise_channels,)
-        noise = noise.noise_generator(noise_dim, batch_size=batch_size)
+        noise = Noise.noise_generator(noise_dim, batch_size=batch_size)
         ## GAN prediction
         pred.append(gen.predict([cond, const, noise]))
    
@@ -124,23 +124,25 @@ if predict_image == "small":
     gt = np.array(img_real)
 
 elif predict_image == "large":
+    ## batch size must be small size image dims ~10x larger
+    batch_size = 2
     all_ifs_fields = ['tp','cp' ,'sp' ,'tisr','cape','tclw','tcwv','u700','v700']
     data_predict = DataGeneratorFull(dates=[predict_year], 
                                      ifs_fields=all_ifs_fields,
                                      batch_size=batch_size, 
                                      log_precip=True, 
+                                     crop=True,
                                      shuffle=False,
                                      constants=True,
                                      hour='random',
                                      ifs_norm=True)
     
     data_predict_iter = iter(data_predict)
-    
     for i in range(num_predictions):
         (inputs,outputs) = next(data_predict_iter)
         ## retrieve noise dimensions from input condition
         noise_dim = inputs['generator_input'][0,...,0].shape + (noise_channels,)
-        inputs['noise_input'] = noise.noise_generator(noise_dim, batch_size=batch_size)
+        inputs['noise_input'] = Noise.noise_generator(noise_dim, batch_size=batch_size)
         inputs['constants'] = tf.image.resize(inputs['constants'], (960,960))
         print(inputs['generator_input'].shape)
         print(inputs['constants'].shape)
@@ -219,7 +221,7 @@ input_condition = input_img[0][:,:,0]
 constant_0 = const[0][:,:,0]
 constant_1 = const[0][:,:,1]
 NIMROD = np.squeeze(gt[0], axis=-1)
-pred_0_0 = np.squeeze(pred[49][0], axis = -1)
+pred_0_1 = np.squeeze(pred[0][1], axis = -1)
 
 fig, ax = plt.subplots(1,5, figsize=(9,3))
 ax[0].imshow(input_condition, vmin=0, vmax=1)
@@ -230,7 +232,7 @@ ax[2].imshow(constant_1, vmin=0, vmax=1)
 ax[2].set_title('constant_1')
 ax[3].imshow(NIMROD, vmin=0, vmax=1)
 ax[3].set_title('NIMROD')
-ax[4].imshow(pred_0_0, vmin=0, vmax=1)
+ax[4].imshow(pred_0_1, vmin=0, vmax=1)
 ax[4].set_title('Prediction')
 for ax in ax.flat:
     ax.label_outer()
