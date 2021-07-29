@@ -198,7 +198,7 @@ def rank_metrics_by_time(mode,
     if load_full_image == True:
         print('Loading full sized image dataset')
         ## load full size image -- note batch_size is small to avoid memory issues
-        batch_gen_valid = train.load_full_image(val_years, batch_size=1)
+        batch_gen_valid = train.setup_full_image_dataset(val_years, batch_size=1)
     elif load_full_image == False:
         print('Evaluating with smaller image dataset')
 
