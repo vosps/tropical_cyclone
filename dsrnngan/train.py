@@ -51,6 +51,24 @@ def setup_batch_gen(train_years,
         val = tfrecords_generator_ifs.create_fixed_dataset(val_years, batch_size=batch_size, downsample=downsample)
     return train,val,None
 
+def setup_full_image_dataset(years,
+                             batch_size=1):
+    
+    from data_generator_ifs import DataGenerator as DataGeneratorFull
+    from data import get_dates
+
+    all_ifs_fields = ['tp','cp' ,'sp' ,'tisr','cape','tclw','tcwv','u700','v700']
+    dates=get_dates(years)
+    data_full = DataGeneratorFull(dates=dates,
+                                  ifs_fields=all_ifs_fields,
+                                  batch_size=batch_size,
+                                  log_precip=True,
+                                  crop=True,
+                                  shuffle=False,
+                                  constants=True,
+                                  hour='random',
+                                  ifs_norm=True)
+    return data_full
 
 def setup_gan(train_years=None, 
               val_years=None, 
