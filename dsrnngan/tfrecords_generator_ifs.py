@@ -3,7 +3,7 @@ import tensorflow as tf
 import glob
 from data import all_ifs_fields,ifs_hours
 
-records_folder = '/ppdata/tfrecordsIFS/'
+records_folder = '/ppdata/tfrecordsIFS_fixed/'
 return_dic = True
 
 def DataGenerator(year,batch_size,repeat=True,downsample = False, weights = None):
@@ -166,7 +166,7 @@ def write_data(year,
                             hour=hour,ifs_norm=ifs_norm)
         fle_hdles = []
         for fh in range(num_class):
-            flename=f"/ppdata/tfrecordsIFS/{year}_{hour}.{fh}.tfrecords"
+            flename=f"{records_folder}{year}_{hour}.{fh}.tfrecords"
             fle_hdles.append( tf.io.TFRecordWriter(flename))
         for batch in range(len(dates)):
             print(batch)
@@ -197,7 +197,7 @@ def write_data(year,
 def save_dataset(tfrecords_dataset,flename):
 
     assert return_dic, "Only works with return_dic=True"
-    flename=f"/ppdata/tfrecordsIFS/{flename}"
+    flename=f"{records_folder}/{flename}"
     fle_hdle =  tf.io.TFRecordWriter(flename)            
     for sample in tfrecords_dataset:
         for k in range(sample[1]['generator_output'].shape[0]):

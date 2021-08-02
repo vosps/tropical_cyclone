@@ -801,7 +801,8 @@ def plot_comparison(test_years,
 
     gc.collect()
 
-def gridplot(models,model_labels=None):
+def gridplot(models,model_labels=None,
+             vmin = 0, vmax = 1):
     nx=models[0].shape[0]
     ny=len(models)
     fig=plt.figure(dpi=200,figsize=(nx,ny))
@@ -812,7 +813,7 @@ def gridplot(models,model_labels=None):
         for j in range(ny):
             # print(i,j)
             ax = plt.subplot(gs1[i+j*nx])# plt.subplot(ny,nx,i+1+j*nx)
-            ax.pcolormesh(models[j][i,:,:],vmin=0,vmax=1.)
+            ax.pcolormesh(models[j][i,:,:],vmin=vmin,vmax=vmax)
             # ax.axis('off')
             ax.set(xticks=[], yticks=[])
             if i == 0 and (model_labels is not None):

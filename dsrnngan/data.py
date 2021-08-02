@@ -144,7 +144,7 @@ def load_nimrod(date,hour,log_precip=False,aggregate=1,crop=None):
     # The remapping of NIMROD left a few negative numbers
     # So remove those
     y[y<0]=0
-    if crop is not None:
+    if crop is not None and crop != 0:
         if type(crop) == tuple:
             y = y[crop[0]:crop[1],crop[0]:crop[1]]
         elif type(crop) == int:
@@ -323,7 +323,7 @@ def load_ifs(ifield,date,hour,log_precip=False,norm=False,crop=0):
     ds = xr.open_dataset(f"{IFS_PATH}/{fleheader}_{loaddata_str}.nc")
     data = ds[field]
     field = ifield
-    if field in ['tp','cp','cdir']:
+    if field in ['tp','cp','cdir','tisr']:
         data = data[time_index,:,:] - data[time_index-1,:,:]
     else:
         data = data[time_index,:,:]
@@ -342,9 +342,10 @@ def load_ifs(ifield,date,hour,log_precip=False,norm=False,crop=0):
     if field in ['tp','cp','pr','prl','prc']:
         #print('pass')
         y[y < 0] = 0.
+        y = 1000*y
     if log_precip and field in ['tp','cp','pr','prc','prl']:
         # ERA precip is measure in meters, so multiple up
-        return np.log10(1+y*1000)
+        return np.log10(1+y)# *1000)
     elif norm:
         return (y-ifs_norm[field][0])/ifs_norm[field][1]
     else:
@@ -384,19 +385,16 @@ def getifsstats(field,year=2018):
     for day in range(0, 366):  # includes potential leap year
         if next_day > end_year:
             break
-        for hour in range(24):
-            if hour in [5,17]:
-                pass
-            else:
-                try:
-                    dta = load_ifs(field,next_day.strftime("%Y%m%d"),hour)
-                    mi = min(mi,dta.min())
-                    mx = max(mx,dta.max())
-                    mn += dta.mean()
-                    sd += dta.std()**2
-                    nsamples +=1
-                except:
-                    print(f"Problem loading {next_day.strftime('%Y%m%d')}, {hour}")
+        for hour in ifs_hours:
+            try:
+                dta = load_ifs(field,next_day.strftime("%Y%m%d"),hour)
+                mi = min(mi,dta.min())
+                mx = max(mx,dta.max())
+                mn += dta.mean()
+                sd += dta.std()**2
+                nsamples +=1
+            except:
+                print(f"Problem loading {next_day.strftime('%Y%m%d')}, {hour}")
         next_day += one_day
     mn /= nsamples
     sd = (sd / nsamples)**0.5
@@ -429,7 +427,7 @@ def gen_ifs_norm(year=2018):
             stats_dic[f] = [0,max(-stats[0],stats[1])]
         else:
             stats_dic[f] = [0,stats[1]]
-    with open(f'/ppdata/constants/IFSNorm{year}.pkl', 'wb') as f:
+    with open(f'/ppdata/constants/IFSNorm{year}F.pkl', 'wb') as f:
         pickle.dump(stats_dic, f, 0)
     return
 
@@ -439,9 +437,9 @@ def load_norm(year=2016):
     with open(f'/ppdata/constants/ERANorm{year}.pkl', 'rb') as f:
         return pickle.load(f)
 
-def load_ifs_norm(year=2016):
+def load_ifs_norm(year=2016,tag=''):
     import pickle
-    with open(f'/ppdata/constants/IFSNorm{year}.pkl', 'rb') as f:
+    with open(f'/ppdata/constants/IFSNorm{year}{tag}.pkl', 'rb') as f:
         return pickle.load(f)
 
 try:
@@ -449,6 +447,6 @@ try:
 except:
     era_norm = None
 try:
-    ifs_norm = load_ifs_norm(2019)
+    ifs_norm = load_ifs_norm(2018,tag='F')
 except:
     ifs_norm = None
