@@ -3,11 +3,12 @@ import matplotlib.pyplot as plt
 from matplotlib import colorbar, colors, gridspec
 from noise import noise_generator
 import train
+import rainfarm
 import argparse
 from tfrecords_generator_ifs import create_fixed_dataset
 from data_generator_ifs import DataGenerator as DataGeneratorFull
 from data import get_dates
-from plots import plot_img
+from plots import plot_img, resize_lanczos
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--load_weights_root', type=str, 
@@ -25,6 +26,12 @@ parser.add_argument('--problem_type', type=str,
                     help="normal (IFS>NIMROD), easy (NIMROD>NIMROD)", default="normal")
 parser.add_argument('--predict_full_image', type=bool,
                     help="False (small images used for training), True (full image)", default="False")
+parser.add_argument('--include_Lanczos', type=bool,
+                    help="True or False)", default="False")
+parser.add_argument('--include_RainFARM', type=bool,
+                    help="True or False)", default="False")
+parser.add_argument('--include_deterministic', type=bool,
+                    help="True or False)", default="False")
 parser.add_argument('--predict_year', type=int,
                     help="year to predict on", default=2019)
 parser.add_argument('--num_predictions', type=int,
@@ -49,6 +56,9 @@ input_channels = args.input_channels
 constant_fields = args.constant_fields
 problem_type = args.problem_type
 predict_full_image = args.predict_full_image
+include_Lanczos = args.include_Lanczos
+include_RainFARM = args.include_RainFARM
+include_deterministic = args.include_deterministic
 predict_year = args.predict_year
 num_predictions = args.num_predictions
 #batch_size default is 1 to avoid issues loading full image data
@@ -93,22 +103,25 @@ else:
                          lr_disc=lr_disc, 
                          lr_gen=lr_gen)
 
-## load model
+## load GAN model
 gen = wgan.gen
 gen.load_weights(weights_fn)
 
-pred = []
-seq_real=[]
-seq_cond=[]
-seq_const=[]
-## load dataset
-if predict_full_image == False:
-    plot_label = 'small'
-    data_predict = create_fixed_dataset(predict_year, 
-                                        batch_size=batch_size, 
-                                        downsample=downsample)
+##optionally load det model
+if include_deterministic:
+    import models
+    ## current best deterministic model
+    if problem_type == 'easy':
+        filters_det = 256
+        gen_det_weights = '/ppdata/lucy-cGAN/logs/EASY/deterministic/filters_256/gen_det_weights-IFS-0400000.h5'
+    elif problem_type == 'normal':
+        filters_det = 128
+        gen_det_weights = '/ppdata/lucy-cGAN/logs/IFS/filters_128/softplus/det/lr_1e-4/gen_det_weights-ERA-0400000.h5'
+    gen_det = models.generator_deterministic(filters_gen=filters_det)
+    gen_det.load_weights(gen_det_weights)
 
-elif predict_full_image == True:
+## load appropriate dataset
+if predict_full_image:
     plot_label = 'large'
     all_ifs_fields = ['tp','cp' ,'sp' ,'tisr','cape','tclw','tcwv','u700','v700']
     dates=get_dates(predict_year)
@@ -121,23 +134,68 @@ elif predict_full_image == True:
                                      constants=True,
                                      hour='random',
                                      ifs_norm=True)
+else:
+    plot_label = 'small'
+    data_predict = create_fixed_dataset(predict_year, 
+                                        batch_size=batch_size, 
+                                        downsample=downsample)
     
 data_predict_iter = iter(data_predict)
+pred = []
+seq_real=[]
+seq_cond=[]
+seq_const=[]
+seq_lanczos = []
+seq_rainfarm = []
+seq_det = []
+    
 for i in range(num_predictions):
     (inputs,outputs) = next(data_predict_iter)
     ## retrieve noise dimensions from input condition
     noise_dim = inputs['generator_input'][0,...,0].shape + (noise_channels,)
     inputs['noise_input'] = noise_generator(noise_dim, batch_size=batch_size)
-    ## store inputs, outputs, prediction
+    ## store inputs, outputs, predictions
     seq_const.append(inputs['constants'])
     seq_cond.append(inputs['generator_input'])
+    ## GAN prediction
     pred.append(gen.predict(inputs))
+    ## make sure ground truth image has correct dimensions
     if predict_full_image == True:
-        sample = outputs['generator_output']
-        sample = np.expand_dims(np.array(sample), axis=-1)
+        sample = np.expand_dims(np.array(outputs['generator_output']), axis=-1)
         seq_real.append(sample)
     elif predict_full_image == False:
         seq_real.append(outputs['generator_output'])
+    if include_Lanczos:
+        ## define size of image to be upscaled using Lanczos filtering
+        size = tuple(outputs['generator_output'].shape[1:3])
+        ## convert conditioning image to float32
+        cond_lanczos = np.float32(inputs['generator_input'])
+        ## resize using Lanczos filtering
+        upscaled_lanczos = np.array(resize_lanczos(cond_lanczos[0,...,0], size))
+        seq_lanczos.append(upscaled_lanczos)
+    if not include_Lanczos: 
+        seq_lanczos.append([])   
+    if include_RainFARM:
+        ## convert conditioning image to numpy array
+        P = np.array(10**inputs['generator_input'])
+        ## set all non-finite values in condition to 0
+        P[~np.isfinite(P)] = 0
+        ## calculate rainFARM alpha coefficient (NB. passing in whole batch)
+        alpha = rainfarm.get_alpha_seq(P[...,0])
+        ## resize using rainFARM
+        r = rainfarm.rainfarm_downscale(P[0,...,0], alpha=alpha, threshold=0.1)
+        ## take log of result
+        log_r = np.log10(r)
+        ## set all non-finite values in log_r to NaN
+        log_r[~np.isfinite(log_r)] = np.nan
+        seq_rainfarm.append(log_r)
+    if not include_RainFARM: 
+        seq_rainfarm.append([])
+    if include_deterministic:
+        ## Deterministic prediction
+        seq_det.append(gen_det.predict(inputs))
+    if not include_deterministic: 
+        seq_det.append([])
 
 ## plot input conditions and prediction example
 ## batch 0
@@ -168,18 +226,29 @@ plt.savefig("{}/prediction-and-input-{}-{}.pdf".format(load_weights_root,
 plt.close()
 
 
-## plot a range of prediction examples for different downscaling methods
-labels = ["Real", plot_input_title, "GAN"]    
+## generate labels for plots
+labels = ["Real", plot_input_title, "GAN"]
+if include_Lanczos:
+    labels.append("Lanczos")
+if include_RainFARM:
+    labels.append("RainFARM")
+if include_deterministic:
+    labels.append("Deterministic")
+    
+## plot a range of prediction examples for different downscaling methods    
 sequences = []
 for i in range(num_predictions):
-    sequences.append([
-    seq_real[i][0,...,0],
-    seq_cond[i][0,...,0],
-    pred[i][0,...,0]
-    ])
+    tmp = {}
+    tmp['Real'] = seq_real[i][0,...,0]
+    tmp['IFS'] = seq_cond[i][0,...,0]
+    tmp['GAN'] = pred[i][0,...,0]
+    tmp['Lanczos'] = seq_lanczos[i]
+    tmp['RainFARM'] = seq_rainfarm[i]
+    tmp['Deterministic'] = seq_det[i][0,...,0]
+    sequences.append(tmp)
     
 num_cols = num_predictions
-num_rows = len(sequences[0])
+num_rows = len(labels)
 plt.figure(figsize=(1.5*num_cols,1.5*num_rows))
 value_range = (0,1)
 gs = gridspec.GridSpec(num_rows,num_cols,wspace=0.05,hspace=0.05)
@@ -187,7 +256,7 @@ gs = gridspec.GridSpec(num_rows,num_cols,wspace=0.05,hspace=0.05)
 for k in range(num_predictions):
     for i in range(num_rows):
         plt.subplot(gs[i,k])
-        plot_img(sequences[k][i], value_range=value_range)
+        plot_img(sequences[k][labels[i]], value_range=value_range)
         if k==0:
             plt.ylabel(labels[i])            
 plt.savefig("{}/predictions-{}-{}.pdf".format(load_weights_root, 
