@@ -61,12 +61,16 @@ def ensemble_ranks(mode,
     for k in range(num_batches):
         if load_full_image == False:
             (cond,const,sample) = next(batch_gen_iter)
+            sample = sample.numpy()
         elif load_full_image == True:
             (inputs, outputs) = next(batch_gen_iter)
             cond = inputs['generator_input']
             const = inputs['constants']
             sample = outputs['generator_output']
-        sample = np.expand_dims(np.array(sample), axis=-1)
+            sample = np.expand_dims((sample.numpy()), axis=-1)
+        else:
+            print("specify if loading full image or smaller images")
+
         if denormalise_data:
             sample = data.denormalise(sample)
         if add_noise:
@@ -97,14 +101,11 @@ def ensemble_ranks(mode,
         else:
             print("mode type not implemented in ensemble_ranks")
 
-            
         samples_gen = np.stack(samples_gen, axis=-1)
         crps_score = crps.crps_ensemble(sample_crps, samples_gen)
         crps_scores.append(crps_score.ravel())
-
         samples_gen = samples_gen.reshape(
             (np.prod(samples_gen.shape[:-1]), samples_gen.shape[-1]))
-
         rank = np.count_nonzero(sample[:,None] >= samples_gen, axis=-1)
         ranks.append(rank)
         
@@ -180,8 +181,6 @@ def rank_metrics_by_time(mode,
     if load_full_image == True:
         ## small batch size to prevent memory issues
         batch_size=1
-        rank_samples=10
-        num_batches=2
     else:
         batch_size=batch_size
         num_batches=num_batches
@@ -251,8 +250,8 @@ def rank_metrics_by_time(mode,
                                                   noise_channels,
                                                   batch_size=batch_size,
                                                   num_batches=num_batches, 
-                                                  rank_samples=rank_samples, 
                                                   add_noise=add_noise,
+                                                  rank_samples=rank_samples,
                                                   load_full_image=load_full_image)
         elif mode == "deterministic":
             gen_det.load_weights(weights_dir + "/" + fn)
@@ -262,8 +261,8 @@ def rank_metrics_by_time(mode,
                                                   noise_channels, 
                                                   batch_size=batch_size,
                                                   num_batches=num_batches, 
-                                                  rank_samples=rank_samples, 
                                                   add_noise=add_noise,
+                                                  rank_samples=rank_samples,
                                                   load_full_image=load_full_image)
         else:
             print("rank_metrics_by_time not implemented for mode type")
@@ -279,12 +278,15 @@ def rank_metrics_by_time(mode,
         log_line("{} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}".format(N_samples, KS, CvM, DKL, OP, CRPS, mean, std))
 
         ## quasi-random selection to avoid geenerating loads of data
-        ranks_to_save = ['124800', '198400', '240000', '384000']
-        #ranks_to_save = ['16000','32000','48000','64000','80000','96000','112000','128000','144000','160000','176000','192000','208000','224000','240000','256000','272000','288000','304000','320000','336000','352000','368000','384000','400000']
-        if any(num in fn for num in ranks_to_save) and add_noise == False:
+        ranks_to_save = ['124800', '198400', '240000', '320000']
+        if any(num in fn for num in ranks_to_save) and add_noise == False and load_full_image == False:
             np.savez('{}/ranks-{}.npz'.format(weights_dir, N_samples), ranks)
-        elif any(num in fn for num in ranks_to_save) and add_noise == True:
+        elif any(num in fn for num in ranks_to_save) and add_noise == True and load_full_image ==  False:
             np.savez('{}/ranks-noise-{}.npz'.format(weights_dir, N_samples), ranks)
+        elif any(num in fn for num in ranks_to_save) and add_noise == False and load_full_image == True:
+            np.savez('{}/ranks-full_image-{}.npz'.format(weights_dir, N_samples), ranks)
+        elif any(num in fn for num in ranks_to_save) and add_noise == True and load_full_image ==  True:
+            np.savez('{}/ranks--full_image-noise-{}.npz'.format(weights_dir, N_samples), ranks)
 
 def rank_metrics_by_noise(filename, 
                           mode, 

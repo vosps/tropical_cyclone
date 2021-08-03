@@ -1,5 +1,6 @@
 import matplotlib
 matplotlib.use("Agg")
+import numpy as np
 import eval
 
 mode = "ensemble"
@@ -11,37 +12,33 @@ val_years = 2019
 application = "IFS"
 batch_size = 16
 num_batches = 64
-filters_gen = 256
+filters_gen = 128
 filters_disc = 512
 lr_disc = 1e-5
 lr_gen = 1e-5
-#noise_dim = (10,10,8)
 #downsample = True
 downsample = False
 constant_fields = 2
 noise_channels = 4
-weights = None
+#weights = None
+
+weights = np.arange(6,2,-1)
+weights = weights / weights.sum()
 
 if downsample == True:
     input_channels = 1 
 elif  downsample == False:
     input_channels = 9
 
-if mode == "ensemble":
-    log_path = "/ppdata/lucy-cGAN/logs/IFS/gen_256_disc_512/noise_8/lr1e-5"
-elif mode == "deterministic":
-    log_path = "/ppdata/lucy-cGAN/logs/IFS/filters_128/softplus/det/lr_1e-4"
-    
+log_path = "/ppdata/lucy-cGAN/logs/IFS/gen_128_disc_512/noise_4/weights_6_2"
 out_fn = "{}/qual-{}.txt".format(log_path, application)
-weights_dir = log_path
-
 
 eval.quality_metrics_by_time(mode, 
                              train_years, 
                              val_years, 
                              application, 
                              out_fn, 
-                             weights_dir, 
+                             weights_dir=log_path, 
                              check_every=1, 
                              downsample=downsample,
                              weights=weights,

@@ -1,5 +1,6 @@
 import matplotlib
 matplotlib.use("Agg")
+import numpy as np
 import eval
 import plots
 
@@ -18,10 +19,14 @@ lr_gen = 1e-5
 noise_dim = (10, 10, 4)
 downsample = False
 constant_fields = 2
+
 noise_channels = 4
-add_noise = False
-load_full_image = True
-weights = None
+add_noise = True
+load_full_image = False
+#weights = None
+
+weights = np.arange(6,2,-1)
+weights = weights / weights.sum()
 
 if downsample == True:
     input_channels = 1 
@@ -29,23 +34,27 @@ elif  downsample == False:
     input_channels = 9
 
 if mode == "ensemble":
-    log_path = "/ppdata/lucy-cGAN/logs/IFS/gen_128_disc_512/noise_4/lr1e-5"
+    log_path = "/ppdata/lucy-cGAN/logs/IFS/gen_128_disc_512/noise_4/weights_6_2"
     rank_samples = 100
 elif mode == "deterministic":
     log_path = "/ppdata/lucy-cGAN/logs/IFS/filters_128/softplus/det/lr_1e-4/"
     rank_samples = 1
 
-## check this is the correct file name!!
-out_fn = "{}/eval-{}_no_noise.txt".format(log_path, application)                                                                                                               
-weights_dir = log_path
-
+if add_noise == False and load_full_image==False:
+    out_fn = "{}/eval-{}_no_noise.txt".format(log_path, application)
+elif add_noise ==True and load_full_image==False:
+    out_fn = "{}/eval-{}_noise.txt".format(log_path, application)
+if add_noise == False and load_full_image==True:
+    out_fn = "{}/eval-{}_no_noise_full_image.txt".format(log_path, application)
+elif add_noise ==True and load_full_image==True:
+    out_fn = "{}/eval-{}_noise_full_image.txt".format(log_path, application)
 
 eval.rank_metrics_by_time(mode, 
                           train_years, 
                           val_years, 
                           application, 
                           out_fn, 
-                          weights_dir, 
+                          weights_dir=log_path, 
                           check_every=1, 
                           N_range=None, 
                           downsample=downsample,
@@ -64,13 +73,31 @@ eval.rank_metrics_by_time(mode,
                           lr_gen=lr_gen)
 
 ## plot rank histograms
-
-rank_metrics_files_1 = ["{}/ranks-124800.npz".format(log_path), "{}/ranks-198400.npz".format(log_path)]
-rank_metrics_files_2 = ["{}/ranks-240000.npz".format(log_path), "{}/ranks-384000.npz".format(log_path)]
 labels_1 = ['124800', '198400']
-labels_2 = ['240000', '384000']
-name_1 = 'no-noise-early'
-name_2 = 'no-noise-late'
+labels_2 = ['240000', '320000']
+if add_noise == True and load_full_image == False:
+    name_1 = 'noise-early'
+    name_2 = 'noise-late'
+    rank_metrics_files_1 = ["{}/ranks-noise-124800.npz".format(log_path), "{}/ranks-noise-198400.npz".format(log_path)]
+    rank_metrics_files_2 = ["{}/ranks-noise-240000.npz".format(log_path), "{}/ranks-noise-320000.npz".format(log_path)]
+
+elif add_noise == False and load_full_image == False:
+    name_1 = 'no-noise-early'
+    name_2 = 'no-noise-late'
+    rank_metrics_files_1 = ["{}/ranks-124800.npz".format(log_path), "{}/ranks-198400.npz".format(log_path)]
+    rank_metrics_files_2 = ["{}/ranks-240000.npz".format(log_path), "{}/ranks-320000.npz".format(log_path)]
+
+elif add_noise == True and load_full_image == True:
+    name_1 = 'full_image-noise-early'
+    name_2 = 'full_image-noise-late'
+    rank_metrics_files_1 = ["{}/ranks-full_image-noise-124800.npz".format(log_path), "{}/ranks-full_image-noise-198400.npz".format(log_path)]
+    rank_metrics_files_2 = ["{}/ranks-full_image-noise-240000.npz".format(log_path), "{}/ranks-full_image-noise-320000.npz".format(log_path)]
+
+elif add_noise == False and load_full_image == True:
+    name_1 = 'full_image-no-noise-early'
+    name_2 = 'full_image-no-noise-late'
+    rank_metrics_files_1 = ["{}/ranks-full_image-124800.npz".format(log_path), "{}/ranks-full_image-198400.npz".format(log_path)]
+    rank_metrics_files_2 = ["{}/ranks-full_image-240000.npz".format(log_path), "{}/ranks-full_image-320000.npz".format(log_path)]
 
 plots.plot_rank_histogram_all(rank_metrics_files_1, labels_1, log_path, name_1)
 plots.plot_rank_histogram_all(rank_metrics_files_2, labels_2, log_path, name_2)

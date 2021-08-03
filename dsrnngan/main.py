@@ -237,22 +237,6 @@ if __name__ == "__main__":
                                      lr_disc=lr_disc, 
                                      lr_gen=lr_gen)
 
-        rank_metrics_files_1 = ["{}/ranks-noise-124800.npz".format(log_path), "{}/ranks-noise-198400.npz".format(log_path)]
-        rank_metrics_files_2 = ["{}/ranks-noise-240000.npz".format(log_path), "{}/ranks-noise-384000.npz".format(log_path)]
-        labels_1 = ['124800', '198400']
-        labels_2 = ['240000', '384000']
-        name_1 = 'early'
-        name_2 = 'late'
-
-        plots.plot_rank_histogram_all(rank_metrics_files_1, labels_1, log_path, name_1)
-        plots.plot_rank_histogram_all(rank_metrics_files_2, labels_2, log_path, name_2)
-
-    elif mode == "plot":
-        mchrzc_data_fn = args.mchrzc_data_file
-        goescod_data_fn = args.goescod_data_file
-
-        plots.plot_all(mchrzc_data_fn, goescod_data_fn)
-        
     elif mode == "deterministic":
         load_weights_root = args.load_weights_root
         save_weights_root = args.save_weights_root
@@ -402,13 +386,3 @@ if __name__ == "__main__":
                                      input_channels=input_channels,
                                      constant_fields=constant_fields,
                                      lr_gen=learning_rate)
-
-        rank_metrics_files_1 = ["{}/ranks-124800.npz".format(log_path), "{}/ranks-198400.npz".format(log_path)]
-        rank_metrics_files_2 = ["{}/ranks-240000.npz".format(log_path), "{}/ranks-384000.npz".format(log_path)]
-        labels_1 = ['124800', '198400']
-        labels_2 = ['240000', '384000']
-        name_1 = 'early'
-        name_2 = 'late'
-        
-        plots.plot_rank_histogram_all(rank_metrics_files_1, labels_1, log_path, name_1)
-        plots.plot_rank_histogram_all(rank_metrics_files_2, labels_2, log_path, name_2)

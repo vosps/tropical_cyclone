@@ -100,7 +100,12 @@ def setup_gan(train_years=None,
                                 filters_disc=filters_disc)
     wgan = gan.WGANGP(gen, disc, lr_disc=lr_disc, lr_gen=lr_gen)
 
-    (batch_gen_train, batch_gen_valid, batch_gen_test) = setup_batch_gen(
+    if train_years is None and val_years is None:
+        print("loading GAN model only")
+        gc.collect()
+        return (wgan)
+    else:
+        (batch_gen_train, batch_gen_valid, batch_gen_test) = setup_batch_gen(
         train_years=train_years, 
         val_years=val_years, 
         batch_size=batch_size,
