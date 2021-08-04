@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib import colorbar, colors, gridspec
 from noise import noise_generator
 import train
-import rainfarm
+import benchmarks
 import argparse
 from tfrecords_generator_ifs import create_fixed_dataset
 from data_generator_ifs import DataGenerator as DataGeneratorFull
@@ -32,6 +32,8 @@ parser.add_argument('--include_RainFARM', type=bool,
                     help="True or False)", default="False")
 parser.add_argument('--include_deterministic', type=bool,
                     help="True or False)", default="False")
+parser.add_argument('--include_ecPoint', type=bool,
+                    help="True or False)", default="False")
 parser.add_argument('--predict_year', type=int,
                     help="year to predict on", default=2019)
 parser.add_argument('--num_predictions', type=int,
@@ -59,6 +61,7 @@ predict_full_image = args.predict_full_image
 include_Lanczos = args.include_Lanczos
 include_RainFARM = args.include_RainFARM
 include_deterministic = args.include_deterministic
+include_ecPoint = args.include_ecPoint
 predict_year = args.predict_year
 num_predictions = args.num_predictions
 #batch_size default is 1 to avoid issues loading full image data
@@ -148,6 +151,7 @@ seq_const=[]
 seq_lanczos = []
 seq_rainfarm = []
 seq_det = []
+seq_ecpoint = []
     
 for i in range(num_predictions):
     (inputs,outputs) = next(data_predict_iter)
@@ -176,19 +180,7 @@ for i in range(num_predictions):
     if not include_Lanczos: 
         seq_lanczos.append([])   
     if include_RainFARM:
-        ## convert conditioning image to numpy array
-        P = np.array(10**inputs['generator_input'])
-        ## set all non-finite values in condition to 0
-        P[~np.isfinite(P)] = 0
-        ## calculate rainFARM alpha coefficient (NB. passing in whole batch)
-        alpha = rainfarm.get_alpha_seq(P[...,0])
-        ## resize using rainFARM
-        r = rainfarm.rainfarm_downscale(P[0,...,0], alpha=alpha, threshold=0.1)
-        ## take log of result
-        log_r = np.log10(r)
-        ## set all non-finite values in log_r to NaN
-        log_r[~np.isfinite(log_r)] = np.nan
-        seq_rainfarm.append(log_r)
+        seq_rainfarm.append(benchmarks.rainfarmmodel(inputs['generator_input'][...,0]))
     if not include_RainFARM: 
         seq_rainfarm.append([])
     if include_deterministic:
@@ -196,6 +188,11 @@ for i in range(num_predictions):
         seq_det.append(gen_det.predict(inputs))
     if not include_deterministic: 
         seq_det.append([])
+    if include_ecPoint:
+        ## ecPoint prediction
+        seq_ecpoint.append(benchmarks.ecpointmodel(inputs['generator_input']))
+    if not include_ecPoint:
+        seq_ecpoint.append([])
 
 ## plot input conditions and prediction example
 ## batch 0
@@ -206,12 +203,12 @@ NIMROD = seq_real[0][0,...,0]
 pred_0_0 = pred[0][0,...,0]
 
 fig, ax = plt.subplots(1,5, figsize=(15,10))
-ax[0].imshow(IFS, vmin=0, vmax=1)
-ax[0].set_title(plot_input_title)
+ax[2].imshow(IFS, vmin=0, vmax=1)
+ax[2].set_title(plot_input_title)
 ax[1].imshow(constant_0, vmin=0, vmax=1)
 ax[1].set_title('Orography')
-ax[2].imshow(constant_1, vmin=0, vmax=1)
-ax[2].set_title('Land-sea mask')
+ax[0].imshow(constant_1, vmin=0, vmax=1)
+ax[0].set_title('Land-sea mask')
 ax[3].imshow(NIMROD, vmin=0, vmax=1)
 ax[3].set_title('NIMROD')
 ax[4].imshow(pred_0_0, vmin=0, vmax=1)
@@ -227,24 +224,28 @@ plt.close()
 
 
 ## generate labels for plots
-labels = ["Real", plot_input_title, "GAN"]
-if include_Lanczos:
-    labels.append("Lanczos")
+labels = [plot_input_title, "NIMROD", "GAN"]
 if include_RainFARM:
     labels.append("RainFARM")
+if include_ecPoint:
+    labels.append("ecPoint")
 if include_deterministic:
     labels.append("Deterministic")
+if include_Lanczos:
+    labels.append("Lanczos")
+
     
 ## plot a range of prediction examples for different downscaling methods    
 sequences = []
 for i in range(num_predictions):
     tmp = {}
-    tmp['Real'] = seq_real[i][0,...,0]
+    tmp['NIMROD'] = seq_real[i][0,...,0]
     tmp['IFS'] = seq_cond[i][0,...,0]
     tmp['GAN'] = pred[i][0,...,0]
     tmp['Lanczos'] = seq_lanczos[i]
-    tmp['RainFARM'] = seq_rainfarm[i]
+    tmp['RainFARM'] = seq_rainfarm[i][0,...]
     tmp['Deterministic'] = seq_det[i][0,...,0]
+    tmp['ecPoint'] = seq_ecpoint[i][0,...]
     sequences.append(tmp)
     
 num_cols = num_predictions
