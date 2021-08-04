@@ -61,7 +61,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     mode = args.mode
     
-    weights = np.arange(6,2,-1)
+    weights = np.arange(5,1,-1)
     weights = weights / weights.sum()
     #weights = None
 

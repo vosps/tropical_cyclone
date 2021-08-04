@@ -717,7 +717,7 @@ def plot_comparison(test_years,
                     num_instances=6):
 
     ## set up batched data generator
-    (_,batch_gen,_) = train.setup_batch_gen(train_years=test_years, 
+    (_,batch_gen,_) = train.setup_batch_gen(train_years=None, 
                                             val_years=test_years, 
                                             batch_size=batch_size,
                                             downsample=downsample,

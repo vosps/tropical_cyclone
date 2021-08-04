@@ -41,13 +41,13 @@ elif mode == "deterministic":
     rank_samples = 1
 
 if add_noise == False and load_full_image==False:
-    out_fn = "{}/eval-{}_no_noise.txt".format(log_path, application)
+    out_fn = "{}/eval-{}_no_noise__{}.txt".format(log_path, application, str(val_years))
 elif add_noise ==True and load_full_image==False:
-    out_fn = "{}/eval-{}_noise.txt".format(log_path, application)
+    out_fn = "{}/eval-{}_noise__{}.txt".format(log_path, application, str(val_years))
 if add_noise == False and load_full_image==True:
-    out_fn = "{}/eval-{}_no_noise_full_image.txt".format(log_path, application)
+    out_fn = "{}/eval-{}_no_noise_full_image__{}.txt".format(log_path, application, str(val_years))
 elif add_noise ==True and load_full_image==True:
-    out_fn = "{}/eval-{}_noise_full_image.txt".format(log_path, application)
+    out_fn = "{}/eval-{}_noise_full_image__{}.txt".format(log_path, application, str(val_years))
 
 eval.rank_metrics_by_time(mode, 
                           train_years, 

@@ -17,7 +17,7 @@ parser.add_argument('--load_weights_root', type=str,
 parser.add_argument('--model_number', type=str, 
                     help="model iteration to load", default='0313600')
 parser.add_argument('--noise_channels', type=int,
-                    help="Number ofnoise channels passed to generator", default=4)
+                    help="Number of noise channels passed to generator", default=4)
 parser.add_argument('--constant_fields', type=int,
                     help="Number of constant fields passed to generator and discriminator", default=2)
 parser.add_argument('--input_channels', type=int,
@@ -25,15 +25,15 @@ parser.add_argument('--input_channels', type=int,
 parser.add_argument('--problem_type', type=str, 
                     help="normal (IFS>NIMROD), easy (NIMROD>NIMROD)", default="normal")
 parser.add_argument('--predict_full_image', type=bool,
-                    help="False (small images used for training), True (full image)", default="False")
+                    help="False (small images used for training), True (full image)", default=False)
 parser.add_argument('--include_Lanczos', type=bool,
-                    help="True or False)", default="False")
+                    help="True or False)", default=False)
 parser.add_argument('--include_RainFARM', type=bool,
-                    help="True or False)", default="False")
+                    help="True or False)", default=False)
 parser.add_argument('--include_deterministic', type=bool,
-                    help="True or False)", default="False")
+                    help="True or False)", default=False)
 parser.add_argument('--include_ecPoint', type=bool,
-                    help="True or False)", default="False")
+                    help="True or False)", default=False)
 parser.add_argument('--predict_year', type=int,
                     help="year to predict on", default=2019)
 parser.add_argument('--num_predictions', type=int,
@@ -84,10 +84,12 @@ if problem_type == "normal":
     input_channels = input_channels
 elif problem_type == "easy":
     downsample = True
-    plot_input_title = 'Downscaled'
+    plot_input_title = 'Downsampled'
     input_channels = 1
-    if predict_full_image == True:
+    if predict_full_image:
         raise Exception("Not yet implemented")
+    else:
+        print("loading small images")
 else:
     raise Exception("no such problem type, try again!")
 
@@ -99,7 +101,7 @@ else:
                          weights=weights,
                          input_channels=input_channels,
                          constant_fields=constant_fields,
-                         batch_size=batch_size, 
+                         batch_size=batch_size,
                          filters_gen=filters_gen, 
                          filters_disc=filters_disc,
                          noise_channels=noise_channels, 
@@ -120,7 +122,7 @@ if include_deterministic:
     elif problem_type == 'normal':
         filters_det = 128
         gen_det_weights = '/ppdata/lucy-cGAN/logs/IFS/filters_128/softplus/det/lr_1e-4/gen_det_weights-ERA-0400000.h5'
-    gen_det = models.generator_deterministic(filters_gen=filters_det)
+    gen_det = models.generator_deterministic(input_channels=input_channels, filters_gen=filters_det)
     gen_det.load_weights(gen_det_weights)
 
 ## load appropriate dataset
@@ -240,7 +242,7 @@ sequences = []
 for i in range(num_predictions):
     tmp = {}
     tmp['NIMROD'] = seq_real[i][0,...,0]
-    tmp['IFS'] = seq_cond[i][0,...,0]
+    tmp[plot_input_title] = seq_cond[i][0,...,0]
     tmp['GAN'] = pred[i][0,...,0]
     tmp['Lanczos'] = seq_lanczos[i]
     tmp['RainFARM'] = seq_rainfarm[i][0,...]
