@@ -67,7 +67,7 @@ def ensemble_ranks(mode,
             cond = inputs['generator_input']
             const = inputs['constants']
             sample = outputs['generator_output']
-            sample = np.expand_dims((sample.numpy()), axis=-1)
+            sample = np.expand_dims(np.array(sample), axis=-1)
         else:
             print("specify if loading full image or smaller images")
 

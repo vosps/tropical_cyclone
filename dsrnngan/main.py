@@ -61,9 +61,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
     mode = args.mode
     
-    weights = np.arange(5,1,-1)
-    weights = weights / weights.sum()
+    #weights = np.arange(6,2,-1)
+    #weights = weights / weights.sum()
     #weights = None
+    weights = [0.87, 0.06, 0.03, 0.03]
 
     if mode=="ensemble":
 

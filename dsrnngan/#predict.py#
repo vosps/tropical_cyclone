@@ -1,4 +1,3 @@
-
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colorbar, colors, gridspec
@@ -197,14 +196,14 @@ for i in range(num_predictions):
     if include_ecPoint:
         ## ecPoint prediction
         seq_ecpoint.append(benchmarks.ecpointmodel(inp['generator_input']))
-    if not include_ecPoint:
+    if not include ecPoint:
         seq_ecpoint.append([])
     if include_RainFARM:
-        seq_rainfarm.append(benchmarks.rainfarmmodel(inp['generator_input'][...,1]))
+    seq_rainfarm_test.append(benchmarks.rainfarmmodel(inp['generator_input'][...,1]))
     if not include_RainFARM:
         seq_rainfarm.append([])
     if include_Lanczos:
-        seq_lanczos.append(benchmarks.lanczosmodel(inp['generator_input'][...,1]))
+        seq_lanczos_test.append(benchmarks.lanczosmodel(inp['generator_input'][...,1]))
     if not include_Lanczos:
         seq_lanczos.append([])
 
@@ -257,7 +256,7 @@ for i in range(num_predictions):
     tmp['NIMROD'] = seq_real[i][0,...,0]
     tmp[plot_input_title] = seq_cond[i][0,...,0]
     tmp['GAN'] = pred[i][0,...,0]
-    tmp['Lanczos'] = seq_lanczos[i][0,...]
+    tmp['Lanczos'] = seq_lanczos[i]
     tmp['RainFARM'] = seq_rainfarm[i][0,...]
     tmp['Deterministic'] = seq_det[i][0,...,0]
     tmp['ecPoint'] = seq_ecpoint[i][0,...]
