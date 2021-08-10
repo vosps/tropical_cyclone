@@ -199,7 +199,6 @@ if __name__ == "__main__":
        
         #evaluate model performance        
         eval.rank_metrics_by_time(mode, 
-                                  train_years, 
                                   val_years, 
                                   application, 
                                   out_fn=eval_fn, 

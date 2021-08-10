@@ -155,8 +155,7 @@ def rank_OP(norm_ranks, num_ranks=100):
     return op
 
 
-def rank_metrics_by_time(mode, 
-                         train_years, 
+def rank_metrics_by_time(mode,
                          val_years, 
                          application, 
                          out_fn, 
@@ -173,11 +172,11 @@ def rank_metrics_by_time(mode,
                          filters_disc=64, 
                          input_channels=9,
                          constant_fields=2,
-                         noise_channels=8, 
+                         noise_channels=4, 
                          rank_samples=100, 
                          lr_disc=0.0001, 
                          lr_gen=0.0001):
-    train_years = None
+
     if load_full_image == True:
         ## small batch size to prevent memory issues
         batch_size=1
@@ -186,45 +185,58 @@ def rank_metrics_by_time(mode,
         num_batches=num_batches
 
     if mode == "ensemble":
-        (wgan, _, batch_gen_valid, _, noise_shapes, _) = train.setup_gan(train_years, 
-                                                                         val_years, 
-                                                                         val_size=batch_size*num_batches, 
-                                                                         downsample=downsample,
-                                                                         weights=weights,
-                                                                         input_channels=input_channels,
-                                                                         constant_fields=constant_fields,
-                                                                         batch_size=batch_size, 
-                                                                         filters_gen=filters_gen, 
-                                                                         filters_disc=filters_disc,
-                                                                         noise_channels=noise_channels, 
-                                                                         lr_disc=lr_disc, 
-                                                                         lr_gen=lr_gen)
+        ## initialise GAN
+        (wgan) = train.setup_gan(train_years=None, 
+                                 val_years=None, 
+                                 val_size=None, 
+                                 downsample=downsample, 
+                                 weights=weights,
+                                 input_channels=input_channels,
+                                 constant_fields=constant_fields,
+                                 batch_size=batch_size,
+                                 filters_gen=filters_gen, 
+                                 filters_disc=filters_disc,
+                                 noise_channels=noise_channels, 
+                                 lr_disc=lr_disc, 
+                                 lr_gen=lr_gen)
+
         gen = wgan.gen
-        noise_gen = noise.NoiseGenerator(noise_shapes(), batch_size=batch_size)
         print("loaded gan model")
     elif mode == "deterministic":
-        (det_model, _, batch_gen_valid, _, _) = train.setup_deterministic(train_years, 
-                                                                          val_years, 
-                                                                          val_size=batch_size*num_batches, 
-                                                                          downsample=downsample,
-                                                                          weights=weights,
-                                                                          input_channels=input_channels,
-                                                                          constant_fields=constant_fields,
-                                                                          batch_size=batch_size, 
-                                                                          filters_gen=filters_gen, 
-                                                                          lr=lr_gen)
+        (det_model) = train.setup_deterministic(train_years=None, 
+                                                val_years=None, 
+                                                val_size=None, 
+                                                downsample=downsample,
+                                                weights=weights,
+                                                input_channels=input_channels,
+                                                constant_fields=constant_fields,
+                                                batch_size=batch_size, 
+                                                filters_gen=filters_gen, 
+                                                lr=lr_gen)
         gen_det = det_model.gen_det
-        noise_gen=[]
         print("loaded deterministic model")
     else:
         print("rank_metrics_by_time not implemented for mode type")
 
-    if load_full_image == True:
+    if load_full_image:
         print('Loading full sized image dataset')
         ## load full size image
         batch_gen_valid = train.setup_full_image_dataset(val_years, batch_size=batch_size)
     elif load_full_image == False:
         print('Evaluating with smaller image dataset')
+        (_, _, batch_gen_valid, _, _, _) = train.setup_gan(train_years=None, 
+                                                           val_years=val_years, 
+                                                           val_size=batch_size*num_batches, 
+                                                           downsample=downsample,
+                                                           weights=weights,
+                                                           input_channels=input_channels,
+                                                           constant_fields=constant_fields,
+                                                           batch_size=batch_size, 
+                                                           filters_gen=filters_gen, 
+                                                           filters_disc=filters_disc,
+                                                           noise_channels=noise_channels, 
+                                                           lr_disc=lr_disc, 
+                                                           lr_gen=lr_gen)
 
     files = os.listdir(weights_dir)
     def get_id(fn):
@@ -472,7 +484,8 @@ def log_spectral_distance_batch(batch1, batch2):
 def image_quality(mode, 
                   gen, 
                   batch_gen, 
-                  noise_gen, 
+                  noise_channels, 
+                  batch_size,
                   num_instances=1, 
                   num_batches=100, 
                   denormalise_data=True, 
@@ -498,7 +511,8 @@ def image_quality(mode,
 
         for i in range(num_instances):
             if mode == "ensemble":
-                n = noise_gen()
+                noise_shape = np.array(cond)[0,...,0].shape + (noise_channels,)
+                n = noise_generator(shape=noise_shape, batch_size=batch_size)
                 img_gen = gen.predict([cond,const,n])
             elif mode == "deterministic":
                 img_gen = gen.predict([cond,const])
@@ -534,7 +548,6 @@ def image_quality(mode,
 
 
 def quality_metrics_by_time(mode, 
-                            train_years, 
                             val_years, 
                             application, 
                             out_fn, 
@@ -542,6 +555,7 @@ def quality_metrics_by_time(mode,
                             check_every=1, 
                             downsample=False,
                             weights=None,
+                            load_full_image=False,
                             batch_size=16, 
                             num_batches=100, 
                             filters_gen=64, 
@@ -552,39 +566,65 @@ def quality_metrics_by_time(mode,
                             lr_disc=0.0001, 
                             lr_gen=0.0001):
     
+    if load_full_image == True:
+        ## small batch size to prevent memory issues
+        batch_size=1
+    else:
+        batch_size=batch_size
+
     if mode == "ensemble":
-        (wgan, _, batch_gen_valid, _, noise_shapes, _) = train.setup_gan(train_years, 
-                                                                         val_years, 
-                                                                         val_size=batch_size*num_batches, 
-                                                                         downsample=downsample,
-                                                                         weights=weights,
-                                                                         input_channels=input_channels,
-                                                                         constant_fields=constant_fields,
-                                                                         batch_size=batch_size, 
-                                                                         filters_gen=filters_gen, 
-                                                                         filters_disc=filters_disc, 
-                                                                         noise_channels=noise_channels,
-                                                                         lr_disc=lr_disc, 
-                                                                         lr_gen=lr_gen)
+        ## initialise GAN
+        (wgan) = train.setup_gan(train_years=None, 
+                                 val_years=None, 
+                                 val_size=None, 
+                                 downsample=downsample, 
+                                 weights=weights,
+                                 input_channels=input_channels,
+                                 constant_fields=constant_fields,
+                                 batch_size=batch_size,
+                                 filters_gen=filters_gen, 
+                                 filters_disc=filters_disc,
+                                 noise_channels=noise_channels, 
+                                 lr_disc=lr_disc, 
+                                 lr_gen=lr_gen)
+
         gen = wgan.gen
-        noise_gen = noise.NoiseGenerator(noise_shapes(), batch_size=batch_size)
         print("loaded gan model")
     elif mode == "deterministic":
-        (det_model, _, batch_gen_valid, _, _) = train.setup_deterministic(train_years, 
-                                                                          val_years, 
-                                                                          val_size=batch_size*num_batches, 
-                                                                          downsample=downsample,
-                                                                          weights=weights,
-                                                                          input_channels=input_channels,
-                                                                          constant_fields=constant_fields,
-                                                                          batch_size=batch_size, 
-                                                                          filters_gen=filters_gen, 
-                                                                          lr=lr_gen)
+        (det_model) = train.setup_deterministic(train_years=None, 
+                                                val_years=None, 
+                                                val_size=None, 
+                                                downsample=downsample,
+                                                weights=weights,
+                                                input_channels=input_channels,
+                                                constant_fields=constant_fields,
+                                                batch_size=batch_size, 
+                                                filters_gen=filters_gen, 
+                                                lr=lr_gen)
         gen = det_model.gen_det
-        noise_gen = []
         print("loaded deterministic model")
     else:
         print("quality_metrics_by_time not implemented for mode type")
+
+    if load_full_image:
+        print('Loading full sized image dataset')
+        ## load full size image
+        batch_gen_valid = train.setup_full_image_dataset(val_years, batch_size=batch_size)
+    elif load_full_image == False:
+        print('Evaluating with smaller image dataset')
+        (_, _, batch_gen_valid, _, _, _) = train.setup_gan(train_years=None, 
+                                                           val_years=val_years, 
+                                                           val_size=batch_size*num_batches, 
+                                                           downsample=downsample,
+                                                           weights=weights,
+                                                           input_channels=input_channels,
+                                                           constant_fields=constant_fields,
+                                                           batch_size=batch_size, 
+                                                           filters_gen=filters_gen, 
+                                                           filters_disc=filters_disc,
+                                                           noise_channels=noise_channels, 
+                                                           lr_disc=lr_disc, 
+                                                           lr_gen=lr_gen)
 
     files = os.listdir(weights_dir)
     def get_app(fn):
@@ -601,7 +641,13 @@ def quality_metrics_by_time(mode,
         print(N_samples)
         gen.load_weights(weights_dir+"/"+fn)
 
-        (mae, rmse, ssim, lsd) = image_quality(mode, gen, batch_gen_valid, noise_gen, num_instances=1, num_batches=num_batches)
+        (mae, rmse, ssim, lsd) = image_quality(mode, 
+                                               gen, 
+                                               batch_gen_valid, 
+                                               noise_channels=noise_channels, 
+                                               batch_size=batch_size,
+                                               num_instances=1, 
+                                               num_batches=num_batches)
         log_line("{} {:.6f} {:.6f} {:.6f} {:.6f}".format(N_samples, rmse.mean(), ssim.mean(), np.nanmean(lsd), mae.mean()))
 
 def quality_metrics_table(weights_fn, 

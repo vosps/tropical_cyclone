@@ -5,7 +5,6 @@ import eval
 import plots
 
 mode = "ensemble"
-train_years = [2016, 2017, 2018]
 val_years = 2019
 application = "IFS"
 batch_size = 16
@@ -46,7 +45,6 @@ elif add_noise ==True and load_full_image==True:
     out_fn = "{}/eval-{}_noise_full_image__{}.txt".format(log_path, application, str(val_years))
 
 eval.rank_metrics_by_time(mode, 
-                          train_years, 
                           val_years, 
                           application, 
                           out_fn, 

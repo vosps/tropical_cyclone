@@ -188,7 +188,12 @@ def setup_deterministic(train_years=None,
                                              filters_gen=filters_gen)
     det_model = deterministic.Deterministic(gen_det, lr, loss, optimizer)
     
-    (batch_gen_train, batch_gen_valid, batch_gen_test) = setup_batch_gen(
+    if train_years is None and val_years is None:
+        print("loading deterministic model only")
+        gc.collect()
+        return (det_model)
+    
+(batch_gen_train, batch_gen_valid, batch_gen_test) = setup_batch_gen(
         train_years=train_years, 
         val_years=val_years, 
         batch_size=batch_size, 
