@@ -66,7 +66,7 @@ def setup_full_image_dataset(years,
                                   crop=True,
                                   shuffle=False,
                                   constants=True,
-                                  hour='random',
+                                  hour=0,
                                   ifs_norm=True)
     return data_full
 
@@ -193,7 +193,7 @@ def setup_deterministic(train_years=None,
         gc.collect()
         return (det_model)
     
-(batch_gen_train, batch_gen_valid, batch_gen_test) = setup_batch_gen(
+    (batch_gen_train, batch_gen_valid, batch_gen_test) = setup_batch_gen(
         train_years=train_years, 
         val_years=val_years, 
         batch_size=batch_size, 

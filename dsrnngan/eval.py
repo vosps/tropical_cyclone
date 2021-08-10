@@ -166,6 +166,7 @@ def rank_metrics_by_time(mode,
                          weights=None,
                          add_noise=True,
                          load_full_image=False,
+                         model_number=None,
                          batch_size=16, 
                          num_batches=64, 
                          filters_gen=64, 
@@ -213,7 +214,7 @@ def rank_metrics_by_time(mode,
                                                 batch_size=batch_size, 
                                                 filters_gen=filters_gen, 
                                                 lr=lr_gen)
-        gen_det = det_model.gen_det
+        gen = det_model.gen_det
         print("loaded deterministic model")
     else:
         print("rank_metrics_by_time not implemented for mode type")
@@ -237,24 +238,23 @@ def rank_metrics_by_time(mode,
                                                            noise_channels=noise_channels, 
                                                            lr_disc=lr_disc, 
                                                            lr_gen=lr_gen)
-
-    files = os.listdir(weights_dir)
-    def get_id(fn):
-        return fn.split("-")[1]
-    files = sorted(fn for fn in files if get_id(fn)==application)
-
     def log_line(line):
         with open(out_fn, 'a') as f:
             print(line, file=f)
     log_line("N KS CvM DKL OP CRPS mean std")
 
-    for fn in files[::check_every]:
-        N_samples = int(fn.split("-")[-1].split(".")[0])
-        if (N_range is not None) and not (N_range[0] <= N_samples < N_range[1]):
-            continue
-        print(weights_dir + "/" + fn)
+    if model_number == None:
+        files = os.listdir(weights_dir)
+        def get_id(fn):
+            return fn.split("-")[1]
+        files = sorted(fn for fn in files if get_id(fn)==application)
 
-        if mode == "ensemble":
+        for fn in files[::check_every]:
+            N_samples = int(fn.split("-")[-1].split(".")[0])
+            if (N_range is not None) and not (N_range[0] <= N_samples < N_range[1]):
+                continue
+            print(weights_dir + "/" + fn)
+
             gen.load_weights(weights_dir + "/" + fn)
             (ranks, crps_scores) = ensemble_ranks(mode, 
                                                   gen, 
@@ -265,40 +265,57 @@ def rank_metrics_by_time(mode,
                                                   add_noise=add_noise,
                                                   rank_samples=rank_samples,
                                                   load_full_image=load_full_image)
-        elif mode == "deterministic":
-            gen_det.load_weights(weights_dir + "/" + fn)
-            (ranks, crps_scores) = ensemble_ranks(mode, 
-                                                  gen_det, 
-                                                  batch_gen_valid, 
-                                                  noise_channels, 
-                                                  batch_size=batch_size,
-                                                  num_batches=num_batches, 
-                                                  add_noise=add_noise,
-                                                  rank_samples=rank_samples,
-                                                  load_full_image=load_full_image)
-        else:
-            print("rank_metrics_by_time not implemented for mode type")
-
+            KS = rank_KS(ranks)
+            CvM = rank_CvM(ranks) 
+            DKL = rank_DKL(ranks)
+            OP = rank_OP(ranks)
+            CRPS = crps_scores.mean() 
+            mean = ranks.mean()
+            std = ranks.std()
+                
+            log_line("{} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}".format(N_samples, KS, CvM, DKL, OP, CRPS, mean, std))
+                
+            ## quasi-random selection to avoid generating loads of data
+            ranks_to_save = ['124800', '198400', '240000', '320000']
+            if any(num in fn for num in ranks_to_save) and add_noise == False and load_full_image == False:
+                np.savez('{}/ranks-{}.npz'.format(weights_dir, N_samples), ranks)
+            elif any(num in fn for num in ranks_to_save) and add_noise == True and load_full_image ==  False:
+                np.savez('{}/ranks-noise-{}.npz'.format(weights_dir, N_samples), ranks)
+            elif any(num in fn for num in ranks_to_save) and add_noise == False and load_full_image == True:
+                np.savez('{}/ranks-full_image-{}.npz'.format(weights_dir, N_samples), ranks)
+            elif any(num in fn for num in ranks_to_save) and add_noise == True and load_full_image ==  True:
+                np.savez('{}/ranks-full_image-noise-{}.npz'.format(weights_dir, N_samples), ranks)
+    else:
+        print(f"loading model number {model_number}")
+        print(weights_dir + "/gen_weights-" + application + "-" +  model_number + ".h5")
+        gen.load_weights(weights_dir + "/gen_weights-" + application + "-" +  model_number + ".h5")
+        (ranks, crps_scores) = ensemble_ranks(mode,
+                                              gen,
+                                              batch_gen_valid,
+                                              noise_channels,
+                                              batch_size=batch_size,
+                                              num_batches=num_batches,
+                                              add_noise=add_noise,
+                                              rank_samples=rank_samples,
+                                              load_full_image=load_full_image)
+            
         KS = rank_KS(ranks)
-        CvM = rank_CvM(ranks) 
+        CvM = rank_CvM(ranks)
         DKL = rank_DKL(ranks)
         OP = rank_OP(ranks)
-        CRPS = crps_scores.mean() 
+        CRPS = crps_scores.mean()
         mean = ranks.mean()
         std = ranks.std()
 
-        log_line("{} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}".format(N_samples, KS, CvM, DKL, OP, CRPS, mean, std))
-
-        ## quasi-random selection to avoid geenerating loads of data
-        ranks_to_save = ['124800', '198400', '240000', '320000']
-        if any(num in fn for num in ranks_to_save) and add_noise == False and load_full_image == False:
-            np.savez('{}/ranks-{}.npz'.format(weights_dir, N_samples), ranks)
-        elif any(num in fn for num in ranks_to_save) and add_noise == True and load_full_image ==  False:
-            np.savez('{}/ranks-noise-{}.npz'.format(weights_dir, N_samples), ranks)
-        elif any(num in fn for num in ranks_to_save) and add_noise == False and load_full_image == True:
-            np.savez('{}/ranks-full_image-{}.npz'.format(weights_dir, N_samples), ranks)
-        elif any(num in fn for num in ranks_to_save) and add_noise == True and load_full_image ==  True:
-            np.savez('{}/ranks-full_image-noise-{}.npz'.format(weights_dir, N_samples), ranks)
+        log_line("{} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}".format(model_number, KS, CvM, DKL, OP, CRPS, mean, std))
+        if add_noise == False and load_full_image == False:
+            np.savez('{}/ranks-{}.npz'.format(weights_dir, model_number), ranks)
+        elif add_noise == True and load_full_image ==  False:
+            np.savez('{}/ranks-noise-{}.npz'.format(weights_dir, model_number), ranks)
+        elif add_noise == False and load_full_image == True:
+            np.savez('{}/ranks-full_image-{}.npz'.format(weights_dir, model_number), ranks)
+        elif add_noise == True and load_full_image ==  True:
+            np.savez('{}/ranks-full_image-noise-{}.npz'.format(weights_dir, model_number), ranks)
 
 def rank_metrics_by_noise(filename, 
                           mode, 
@@ -488,6 +505,7 @@ def image_quality(mode,
                   batch_size,
                   num_instances=1, 
                   num_batches=100, 
+                  load_full_image=False,
                   denormalise_data=True, 
                   show_progress=True):
 
@@ -503,12 +521,21 @@ def image_quality(mode,
         progbar = generic_utils.Progbar(num_batches)
 
     for k in range(num_batches):
-        (cond, const, sample) = next(batch_gen_iter)
+        if load_full_image == False:
+            (cond,const,sample) = next(batch_gen_iter)
+            sample = sample.numpy()
+        elif load_full_image == True:
+            (inputs, outputs) = next(batch_gen_iter)
+            cond = inputs['generator_input']
+            const = inputs['constants']
+            sample = outputs['generator_output']
+            sample = np.expand_dims(np.array(sample), axis=-1)
+        else:
+            print("specify if loading full image or smaller images")
+        
         if denormalise_data:
             sample = data.denormalise(sample)
-        img_real = sample.numpy()
         
-
         for i in range(num_instances):
             if mode == "ensemble":
                 noise_shape = np.array(cond)[0,...,0].shape + (noise_channels,)
@@ -525,10 +552,10 @@ def image_quality(mode,
             if denormalise_data:
                 img_gen = data.denormalise(img_gen)
                 
-            mae = ((np.abs(img_real - img_gen)).mean(axis=(1,2)))
-            rmse = np.sqrt(((img_real - img_gen)**2).mean(axis=(1,2)))
-            ssim = msssim.MultiScaleSSIM(img_real, img_gen, 1.0)
-            lsd = log_spectral_distance_batch(img_real, img_gen)
+            mae = ((np.abs(sample - img_gen)).mean(axis=(1,2)))
+            rmse = np.sqrt(((sample - img_gen)**2).mean(axis=(1,2)))
+            ssim = msssim.MultiScaleSSIM(sample, img_gen, 1.0)
+            lsd = log_spectral_distance_batch(sample, img_gen)
             mae_all.append(mae.flatten())
             rmse_all.append(rmse.flatten())
             ssim_all.append(ssim.flatten())
@@ -647,7 +674,8 @@ def quality_metrics_by_time(mode,
                                                noise_channels=noise_channels, 
                                                batch_size=batch_size,
                                                num_instances=1, 
-                                               num_batches=num_batches)
+                                               num_batches=num_batches,
+                                               load_full_image=load_full_image)
         log_line("{} {:.6f} {:.6f} {:.6f} {:.6f}".format(N_samples, rmse.mean(), ssim.mean(), np.nanmean(lsd), mae.mean()))
 
 def quality_metrics_table(weights_fn, 

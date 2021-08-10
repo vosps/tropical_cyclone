@@ -5,7 +5,7 @@ import eval
 import plots
 
 mode = "ensemble"
-val_years = 2019
+val_years = 2020
 application = "IFS"
 batch_size = 16
 num_batches = 64
@@ -16,11 +16,11 @@ lr_gen = 1e-5
 noise_dim = (10, 10, 4)
 downsample = False
 constant_fields = 2
-
+model_number = '0310400'
 noise_channels = 4
 add_noise = True
 load_full_image = True
-weights = np.arange(6,2,-1)
+weights = np.arange(24,2,-7)
 weights = weights / weights.sum()
 
 if downsample == True:
@@ -55,6 +55,7 @@ eval.rank_metrics_by_time(mode,
                           weights=weights,
                           add_noise=add_noise,
                           load_full_image=load_full_image,
+                          model_number=model_number,
                           batch_size=batch_size, 
                           num_batches=num_batches, 
                           filters_gen=filters_gen, 
