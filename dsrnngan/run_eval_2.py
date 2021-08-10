@@ -6,9 +6,7 @@ import plots
 
 mode = "ensemble"
 train_years = [2016, 2017, 2018]
-#val_years = [2016, 2017, 2018]
-#train_years = 2018
-val_years = 2020
+val_years = 2019
 application = "IFS"
 batch_size = 16
 num_batches = 64
@@ -23,10 +21,8 @@ constant_fields = 2
 noise_channels = 4
 add_noise = True
 load_full_image = True
-#weights = None
-
-weights = np.arange(6,2,-1)
-weights = weights / weights.sum()
+#weights = [0.4, 0.03, 0.02, 0.01]
+weights = None
 
 if downsample == True:
     input_channels = 1 
@@ -34,7 +30,7 @@ elif  downsample == False:
     input_channels = 9
 
 if mode == "ensemble":
-    log_path = "/ppdata/lucy-cGAN/logs/IFS/gen_128_disc_512/noise_4/weights_6_2"
+    log_path = "/ppdata/lucy-cGAN/logs/IFS/gen_128_disc_512/noise_4/lr1e-5"
     rank_samples = 100
 elif mode == "deterministic":
     log_path = "/ppdata/lucy-cGAN/logs/IFS/filters_128/softplus/det/lr_1e-4/"

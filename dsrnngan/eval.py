@@ -286,7 +286,7 @@ def rank_metrics_by_time(mode,
         elif any(num in fn for num in ranks_to_save) and add_noise == False and load_full_image == True:
             np.savez('{}/ranks-full_image-{}.npz'.format(weights_dir, N_samples), ranks)
         elif any(num in fn for num in ranks_to_save) and add_noise == True and load_full_image ==  True:
-            np.savez('{}/ranks--full_image-noise-{}.npz'.format(weights_dir, N_samples), ranks)
+            np.savez('{}/ranks-full_image-noise-{}.npz'.format(weights_dir, N_samples), ranks)
 
 def rank_metrics_by_noise(filename, 
                           mode, 

@@ -1,4 +1,3 @@
-
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colorbar, colors, gridspec
@@ -140,7 +139,7 @@ if predict_full_image:
                                      crop=True,
                                      shuffle=False,
                                      constants=True,
-                                     hour='random',
+                                     hour=1,
                                      ifs_norm=True)
 
 if not predict_full_image:
@@ -156,7 +155,7 @@ data_ecpoint = DataGeneratorFull(dates=dates,
                                  log_precip=False,
                                  crop=True,
                                  shuffle=False,
-                                 hour='random',
+                                 hour=1,
                                  ifs_norm=False)    
 
 pred = []
@@ -266,7 +265,7 @@ for i in range(num_predictions):
 num_cols = num_predictions
 num_rows = len(labels)
 plt.figure(figsize=(1.5*num_cols,1.5*num_rows))
-value_range = (0,1)
+value_range = (0,2)
 gs = gridspec.GridSpec(num_rows,num_cols,wspace=0.05,hspace=0.05)
 
 for k in range(num_predictions):
