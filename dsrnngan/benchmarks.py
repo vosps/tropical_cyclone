@@ -63,10 +63,10 @@ def ecpointmodel(indata,assesslog=False):
         data = indata
 
     if ecpointCDF is None:
-        ecpointCDF = ecpoint.loadcdf(name='CDF2018IFS.txt')
+        ecpointCDF = ecpoint.loadcdf(name='CDF3YIFS.txt')
     return ecpoint.predictupscale(raw_inputs=data,cdf=ecpointCDF,logout=assesslog)
 
-def ecpointCDFmodel(indata,assesslog=False):
+def ecpointPDFmodel(indata,assesslog=False):
     global ecpointCDF
     if type(indata) == dict:
         assert indata['generator_input'].log_precip == False
@@ -74,7 +74,7 @@ def ecpointCDFmodel(indata,assesslog=False):
     else:
         data = indata
     if ecpointCDF is None:
-        ecpointCDF = ecpoint.loadcdf(name='CDF2018IFS.txt')
+        ecpointCDF = ecpoint.loadcdf(name='CDF3YIFS.txt')
     return ecpoint.predictupscalecdf(raw_inputs=data,cdf=ecpointCDF,logout=assesslog)
 
 def constantupscalemodel(data):

@@ -34,7 +34,7 @@ breakpoints_hourly = breakpoints.copy()
 breakpoints_hourly[breakpoints_hourly==9999] = 9999999 # Extend bounds
 breakpoints_hourly[breakpoints_hourly==-9999] = -9999999 # Extend bounds
 breakpoints_hourly[:,[3,4]]=breakpoints_hourly[:,[3,4]]/12 # Rescale Cape & cdir
-breakpoints_hourly[:,[3,4]] = breakpoints_hourly[:,[3,4]] *1000
+breakpoints_hourly[:,[3,4]] = breakpoints_hourly[:,[3,4]]
 
 era_fields=['prc','pr','u700','v700','cape','cdir']
 ifs_fields=[ 'cp','tp','u700','v700','cape','cdir']
@@ -55,7 +55,7 @@ def getALLdata(date,hour,ifs_fields=['cp','tp','u700','v700','cape','cdir'],
     nim = np.reshape(nim_rs2,(nim_rs2.shape[0],nim_rs2.shape[1],
                               nim_rs2.shape[2],nim_rs2.shape[3]*nim_rs2.shape[4]))
     # Find those non-zero and only output these
-    nonzero = (inp[:,:,:,tp_axis]>0.1)
+    nonzero = (inp[:,:,:,tp_axis]>0.01)
     filtered_era = remapERA(inp[nonzero,:])
     nimrod_eragrid_nonzero = nim[nonzero,:]
     return filtered_era,nimrod_eragrid_nonzero
@@ -170,7 +170,7 @@ def getdata(date,era_fields=['prc','pr','u700','v700','cape','cdir']):
     # Long term, this could sample all nearby gridpoints.
     nimrod_eragrid = dt[1][:,::10,::10]
     # Find those non-zero and only output these
-    nonzero = (dt[0][:,:,:,1]>0.1)
+    nonzero = (dt[0][:,:,:,1]>0.01)
     filtered_era = remapERA(dt[0][nonzero,:])
     nimrod_eragrid_nonzero = nimrod_eragrid[nonzero]
     return filtered_era,nimrod_eragrid_nonzero
@@ -290,7 +290,8 @@ def makecdf(error,nBin=100):
         up_val = error_sorted[up]
         w_low, w_up = 1 - abs(val - low), 1 - abs(val - up)
         rep_error[k] = ((low_val * w_low) + (up_val * w_up)) / (w_low + w_up)
-
+    error = None
+    error_sorted = None
     return rep_error
 
 def savecdf(cdf,name):
@@ -339,13 +340,13 @@ def predictcdf(raw_inputs=None,# proc_inputs=None,
     sli[-1] = 1
     sli = tuple(sli)
     output = raw_inputs[sli]
-    non_zero = (output > 0.1)
-    inputs = raw_inputs[non_zero,:]
+    # non_zero = (output > 0.01)
+    inputs = raw_inputs.reshape((-1,raw_inputs.shape[-1]))# [non_zero,:]
     proc_inputs = remapERA(inputs)
     bins= filtbreak(proc_inputs,breakpoints_hourly).astype(int)
-    pred = cdf[bins,:]# .reshape(output.shape+(100,))
+    pred = cdf[bins,:].reshape(output.shape+(100,))
     output = np.repeat(output[...,np.newaxis],100,axis=-1)
-    output[non_zero,:] *= (1 + pred)
+    output *= (1 + pred)
     if logout:
         return np.log10(1+output)
     else:
@@ -361,7 +362,7 @@ def predictupscale(raw_inputs=None,proc_inputs=None,out_shape=None,
         sli = tuple(sli)
         reshaped_inputs = np.repeat(np.repeat(raw_inputs,10,axis=1),10,axis=2)
         # reshaped_inputs = reshaped_inputs[:,4:-5:,4:-5,:]
-        non_zero = (reshaped_inputs[sli] > 0.1)
+        non_zero = (reshaped_inputs[sli] > 0.01)
         proc_inputs = remapERA(reshaped_inputs[non_zero,:])
     bins= filtbreak(proc_inputs,breakpoints_hourly).astype(int)
     selection = np.random.choice(100,
