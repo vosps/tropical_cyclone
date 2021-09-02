@@ -5,12 +5,13 @@ from noise import noise_generator
 import train
 import ecpoint
 import data
+import models
 import benchmarks
 import argparse
 from tfrecords_generator_ifs import create_fixed_dataset
 from data_generator_ifs import DataGenerator as DataGeneratorFull
 from data import get_dates
-from plots import plot_img, resize_lanczos
+from plots import plot_img
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--load_weights_root', type=str, 
@@ -79,6 +80,7 @@ print(weights_fn)
 #weights = np.arange(6,2,-1)                                                                                                
 #weights = weights / weights.sum() 
 weights = None
+dates = get_dates(predict_year)
 
 if problem_type == "normal":
     downsample = False
@@ -88,12 +90,8 @@ elif problem_type == "easy":
     downsample = True
     plot_input_title = 'Downsampled'
     input_channels = 1
-    if predict_full_image:
-        raise Exception("Not yet implemented")
-    else:
-        print("loading small images")
-else:
-    raise Exception("no such problem type, try again!")
+    if include_RainFARM or include_ecPoint or include_Lanczos:
+        raise Exception("Cannot include ecPoint/Lanczos/RainFARM results for downsampled problem")
 
 ## initialise GAN
 (wgan) = train.setup_gan(train_years=None, 
@@ -114,24 +112,21 @@ else:
 gen = wgan.gen
 gen.load_weights(weights_fn)
 
-##optionally load det model
-if include_deterministic:
-    import models
-    ## current best deterministic model
-    if problem_type == 'easy':
-        filters_det = 256
-        gen_det_weights = '/ppdata/lucy-cGAN/logs/EASY/deterministic/filters_256/gen_det_weights-IFS-0400000.h5'
-    elif problem_type == 'normal':
-        filters_det = 128
-        gen_det_weights = '/ppdata/lucy-cGAN/logs/IFS/filters_128/softplus/det/lr_1e-4/gen_det_weights-ERA-0400000.h5'
-    gen_det = models.generator_deterministic(input_channels=input_channels, filters_gen=filters_det)
-    gen_det.load_weights(gen_det_weights)
+##load det model
+## current best deterministic model
+if problem_type == 'easy':
+    filters_det = 256
+    gen_det_weights = '/ppdata/lucy-cGAN/logs/EASY/deterministic/filters_256/gen_det_weights-IFS-0400000.h5'
+elif problem_type == 'normal':
+    filters_det = 128
+    gen_det_weights = '/ppdata/lucy-cGAN/logs/IFS/filters_128/softplus/det/lr_1e-4/gen_det_weights-ERA-0400000.h5'
+gen_det = models.generator_deterministic(input_channels=input_channels, filters_gen=filters_det)
+gen_det.load_weights(gen_det_weights)
 
 ## load appropriate dataset
 if predict_full_image:
     plot_label = 'large'
     all_ifs_fields = ['tp','cp' ,'sp' ,'tisr','cape','tclw','tcwv','u700','v700']
-    dates=get_dates(predict_year)
     data_predict = DataGeneratorFull(dates=dates, 
                                      ifs_fields=all_ifs_fields,
                                      batch_size=batch_size, 
@@ -139,8 +134,9 @@ if predict_full_image:
                                      crop=True,
                                      shuffle=False,
                                      constants=True,
-                                     hour=1,
-                                     ifs_norm=True)
+                                     hour=2,
+                                     ifs_norm=True,
+                                     downsample=downsample)
 
 if not predict_full_image:
     include_ecPoint = False
@@ -155,8 +151,9 @@ data_ecpoint = DataGeneratorFull(dates=dates,
                                  log_precip=False,
                                  crop=True,
                                  shuffle=False,
-                                 hour=1,
-                                 ifs_norm=False)    
+                                 hour=2,
+                                 ifs_norm=False,
+                                 downsample=downsample)    
 
 pred = []
 seq_real=[]
@@ -184,29 +181,25 @@ for i in range(num_predictions):
         seq_real.append(data.denormalise(sample))
     elif predict_full_image == False:
         seq_real.append(data.denormalise(outputs['generator_output']))
-    if include_deterministic:
-        ## Deterministic prediction
-        seq_det.append(data.denormalise(gen_det.predict(inputs)))
-    if not include_deterministic: 
-        seq_det.append([])
-
+    seq_det.append(data.denormalise(gen_det.predict(inputs)))
+    
 data_ecpoint_iter = iter(data_ecpoint)
+dummy = np.zeros((1, 940, 940))
 for i in range(num_predictions):
     (inp,outp) = next(data_ecpoint_iter)        
+    ## ecPoint prediction
     if include_ecPoint:
-        ## ecPoint prediction
-        seq_ecpoint.append(benchmarks.ecpointmodel(inp['generator_input']))
+        seq_ecpoint.append(np.mean(benchmarks.ecpointPDFmodel(inp['generator_input']),axis=-1))
     if not include_ecPoint:
-        seq_ecpoint.append([])
+        seq_ecpoint.append(dummy)
     if include_RainFARM:
         seq_rainfarm.append(benchmarks.rainfarmmodel(inp['generator_input'][...,1]))
     if not include_RainFARM:
-        seq_rainfarm.append([])
+        seq_rainfarm.append(dummy)
     if include_Lanczos:
         seq_lanczos.append(benchmarks.lanczosmodel(inp['generator_input'][...,1]))
     if not include_Lanczos:
-        seq_lanczos.append([])
-
+        seq_lanczos.append(dummy)
 
 ## plot input conditions and prediction example
 ## batch 0
@@ -263,17 +256,29 @@ for i in range(num_predictions):
     sequences.append(tmp)
     
 num_cols = num_predictions
-num_rows = len(labels)
+num_rows = len(labels)+1
 plt.figure(figsize=(1.5*num_cols,1.5*num_rows))
 value_range = (0,2)
-gs = gridspec.GridSpec(num_rows,num_cols,wspace=0.05,hspace=0.05)
+gs = gridspec.GridSpec(num_rows*num_rows,num_rows*num_cols,wspace=0.5,hspace=0.5)
 
 for k in range(num_predictions):
-    for i in range(num_rows):
-        plt.subplot(gs[i,k])
+    for i in range(len(labels)):
+        plt.subplot(gs[(num_rows*i):(num_rows+num_rows*i),(num_rows*k):(num_rows+num_rows*k)])
         plot_img(sequences[k][labels[i]], value_range=value_range)
         if k==0:
-            plt.ylabel(labels[i])            
+            plt.ylabel(labels[i])
+plt.suptitle('Example predictions for different noise inputs')
+##colorbar
+units = "Rain rate [mm h$^{-1}$]"
+cb_tick_loc = np.array([-1, 0, 1, 2])
+cb_tick_labels = [0.1, 1, 10, 100]
+cax = plt.subplot(gs[-1,1:-1]).axes
+cb = colorbar.ColorbarBase(cax, norm=colors.Normalize(*value_range), orientation='horizontal')
+cb.set_ticks(cb_tick_loc)
+cb.set_ticklabels(cb_tick_labels)
+cax.tick_params(labelsize=16)
+cb.set_label(units, size=16)
+            
 plt.savefig("{}/predictions-{}-{}.pdf".format(load_weights_root, 
                                            problem_type,
                                            plot_label), bbox_inches='tight')

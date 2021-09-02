@@ -4,7 +4,6 @@ import numpy as np
 import eval
 
 mode = "ensemble"
-train_years = [2016, 2017, 2018]
 val_years = 2019
 application = "IFS"
 batch_size = 16
@@ -17,11 +16,11 @@ downsample = False
 constant_fields = 2
 noise_channels = 4
 add_noise = True
-load_full_image = True
-weights = [0.87, 0.06, 0.03, 0.03]
+load_full_image = False
+#weights = [0.87, 0.06, 0.03, 0.03]
 #weights = [0.4, 0.3, 0.2, 0.1]
-#weights = np.arange(6,2,-1)
-#weights = weights / weights.sum()
+weights = np.arange(36,2,-11)
+weights = weights / weights.sum()
 #weights  = None
 
 if downsample == True:
@@ -29,7 +28,7 @@ if downsample == True:
 elif  downsample == False:
     input_channels = 9
 
-log_path = "/ppdata/lucy-cGAN/logs/IFS/gen_128_disc_512/noise_4/weights_natural"
+log_path = "/ppdata/lucy-cGAN/logs/IFS/gen_128_disc_512/noise_4/weights_12x"
 
 if add_noise == False and load_full_image==False:
     out_fn = "{}/qual-{}_no_noise__{}.txt".format(log_path, application, str(val_years))

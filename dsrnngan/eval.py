@@ -185,6 +185,9 @@ def rank_metrics_by_time(mode,
         batch_size=batch_size
         num_batches=num_batches
 
+    if model_number is not None:
+        out_fn += model_number
+
     if mode == "ensemble":
         ## initialise GAN
         (wgan) = train.setup_gan(train_years=None, 
@@ -222,7 +225,7 @@ def rank_metrics_by_time(mode,
     if load_full_image:
         print('Loading full sized image dataset')
         ## load full size image
-        batch_gen_valid = train.setup_full_image_dataset(val_years, batch_size=batch_size)
+        batch_gen_valid = train.setup_full_image_dataset(val_years, batch_size=batch_size, downsample=downsample)
     elif load_full_image == False:
         print('Evaluating with smaller image dataset')
         (_, _, batch_gen_valid, _, _, _) = train.setup_gan(train_years=None, 

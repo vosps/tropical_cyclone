@@ -65,8 +65,12 @@ if __name__ == "__main__":
     #weights = weights / weights.sum()
     #weights = None
     #weights = [0.87, 0.06, 0.03, 0.03]
-    weights = np.arange(24,2,-7)
-    weights = weights / weights.sum()
+    #weights = np.arange(24,2,-7)
+    #weights = weights / weights.sum()
+    weights = [0.4, 0.3, 0.2, 0.1]
+    # weights_12x = np.arange(36,2,-11)
+    #weights = weights_12x / weights_12x.sum()
+   
     print(f"weights for data loading are {weights}")
     if mode=="ensemble":
 
@@ -222,7 +226,6 @@ if __name__ == "__main__":
                                   lr_gen=lr_gen)
     
         eval.quality_metrics_by_time(mode, 
-                                     train_years, 
                                      val_years, 
                                      application, 
                                      out_fn=qual_fn,
@@ -376,7 +379,6 @@ if __name__ == "__main__":
                                   lr_gen=learning_rate)
         
         eval.quality_metrics_by_time(mode, 
-                                     train_years, 
                                      val_years, 
                                      application, 
                                      out_fn=qual_fn, 

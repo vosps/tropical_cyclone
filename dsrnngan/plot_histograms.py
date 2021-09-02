@@ -5,7 +5,7 @@ import netCDF4
 import numpy as np
 import pandas as pd
 
-log_path ='/ppdata/lucy-cGAN/logs/IFS/gen_128_disc_512/noise_4/weights_8x'
+log_path ='/ppdata/lucy-cGAN/logs/EASY/GAN/noise_2/weights_4x'
 application = 'IFS'
 added_noise = True
 full_image = False

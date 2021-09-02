@@ -52,7 +52,8 @@ def setup_batch_gen(train_years,
     return train,val,None
 
 def setup_full_image_dataset(years,
-                             batch_size=1):
+                             batch_size=1,
+                             downsample=False):
     
     from data_generator_ifs import DataGenerator as DataGeneratorFull
     from data import get_dates
@@ -67,7 +68,8 @@ def setup_full_image_dataset(years,
                                   shuffle=False,
                                   constants=True,
                                   hour=0,
-                                  ifs_norm=True)
+                                  ifs_norm=True,
+                                  downsample=downsample)
     return data_full
 
 def setup_gan(train_years=None, 
