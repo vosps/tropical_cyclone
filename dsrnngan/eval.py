@@ -1,3 +1,4 @@
+
 from bisect import bisect_left
 from datetime import datetime, timedelta
 from tensorflow.python.keras.utils import generic_utils
@@ -639,7 +640,7 @@ def quality_metrics_by_time(mode,
     if load_full_image:
         print('Loading full sized image dataset')
         ## load full size image
-        batch_gen_valid = train.setup_full_image_dataset(val_years, batch_size=batch_size)
+        batch_gen_valid = train.setup_full_image_dataset(val_years, batch_size=batch_size, downsample=downsample)
     elif load_full_image == False:
         print('Evaluating with smaller image dataset')
         (_, _, batch_gen_valid, _, _, _) = train.setup_gan(train_years=None, 
