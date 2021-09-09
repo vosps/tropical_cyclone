@@ -267,7 +267,7 @@ for k in range(num_predictions):
         plot_img(sequences[k][labels[i]], value_range=value_range)
         if k==0:
             plt.ylabel(labels[i])
-plt.suptitle('Example predictions for different noise inputs')
+plt.suptitle('Example predictions for different input conditions')
 ##colorbar
 units = "Rain rate [mm h$^{-1}$]"
 cb_tick_loc = np.array([-1, 0, 1, 2])
@@ -280,6 +280,6 @@ cax.tick_params(labelsize=16)
 cb.set_label(units, size=16)
             
 plt.savefig("{}/predictions-{}-{}.pdf".format(load_weights_root, 
-                                           problem_type,
-                                           plot_label), bbox_inches='tight')
+                                              problem_type,
+                                              plot_label), bbox_inches='tight')
 plt.close()
