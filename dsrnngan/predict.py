@@ -11,7 +11,7 @@ import argparse
 from tfrecords_generator_ifs import create_fixed_dataset
 from data_generator_ifs import DataGenerator as DataGeneratorFull
 from data import get_dates
-from plots import plot_img
+from plots import plot_img, plot_img_log
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--load_weights_root', type=str, 
@@ -40,7 +40,9 @@ parser.add_argument('--include_ecPoint', type=bool,
 parser.add_argument('--predict_year', type=int,
                     help="year to predict on", default=2019)
 parser.add_argument('--num_predictions', type=int,
-                    help="size of prediction ensemble", default=5)
+                    help="number of images to predict on", default=5)
+parser.add_argument('--num_samples', type=int,
+                    help="size of prediction ensemble", default=3)
 parser.add_argument('--batch_size', type=int,
                     help="Batch size", default=1)
 parser.add_argument('--filters_gen', type=int, default=128,
@@ -67,6 +69,7 @@ include_deterministic = args.include_deterministic
 include_ecPoint = args.include_ecPoint
 predict_year = args.predict_year
 num_predictions = args.num_predictions
+num_samples = args.num_samples
 #batch_size default is 1 to avoid issues loading full image data
 batch_size = args.batch_size
 filters_disc = args.filters_disc
@@ -173,8 +176,6 @@ for i in range(num_predictions):
     ## store denormalised inputs, outputs, predictions
     seq_const.append(data.denormalise(inputs['constants']))
     seq_cond.append(data.denormalise(inputs['generator_input']))    
-    ## GAN prediction
-    pred.append(data.denormalise(gen.predict(inputs)))
     ## make sure ground truth image has correct dimensions
     if predict_full_image == True:
         sample = np.expand_dims(np.array(outputs['generator_output']), axis=-1)
@@ -182,6 +183,15 @@ for i in range(num_predictions):
     elif predict_full_image == False:
         seq_real.append(data.denormalise(outputs['generator_output']))
     seq_det.append(data.denormalise(gen_det.predict(inputs)))
+    ## Generate ensemble members
+    pred_ensemble = []
+    for j in range(num_samples):
+        ## retrieve noise dimensions from input condition
+        noise_dim = inputs['generator_input'][0,...,0].shape + (noise_channels,) 
+        inputs['noise_input'] = noise_generator(noise_dim, batch_size=batch_size)
+        pred_ensemble.append(data.denormalise(gen.predict(inputs)))
+    pred_ensemble = np.array(pred_ensemble)
+    pred.append(pred_ensemble)
     
 data_ecpoint_iter = iter(data_ecpoint)
 dummy = np.zeros((1, 940, 940))
@@ -207,7 +217,7 @@ IFS = seq_cond[0][0,...,0]
 constant_0 = seq_const[0][0,...,0]
 constant_1 = seq_const[0][0,...,1]
 NIMROD = seq_real[0][0,...,0]
-pred_0_0 = pred[0][0,...,0]
+pred_0_0 = pred[0][0][0,...,0]
 (vmin, vmax) = (0,2)
 fig, ax = plt.subplots(1,5, figsize=(15,10))
 ax[2].imshow(IFS, vmin=vmin, vmax=vmax)
@@ -231,11 +241,13 @@ plt.close()
 
 
 ## generate labels for plots
-labels = [plot_input_title, "NIMROD", "GAN"]
+labels = [plot_input_title, "NIMROD"]
+for i in range(num_samples):
+    labels.append(f"GAN pred {i+1}")
 if include_RainFARM:
     labels.append("RainFARM")
 if include_ecPoint:
-    labels.append("ecPoint")
+    labels.append("ecPoint mean")
 if include_deterministic:
     labels.append("Deterministic")
 if include_Lanczos:
@@ -248,32 +260,33 @@ for i in range(num_predictions):
     tmp = {}
     tmp['NIMROD'] = seq_real[i][0,...,0]
     tmp[plot_input_title] = seq_cond[i][0,...,0]
-    tmp['GAN'] = pred[i][0,...,0]
     tmp['Lanczos'] = seq_lanczos[i][0,...]
     tmp['RainFARM'] = seq_rainfarm[i][0,...]
     tmp['Deterministic'] = seq_det[i][0,...,0]
-    tmp['ecPoint'] = seq_ecpoint[i][0,...]
+    tmp['ecPoint mean'] = seq_ecpoint[i][0,...]
+    for j in range(num_samples):
+        tmp[f"GAN pred {j+1}"] = pred[i][j][0,...,0]
     sequences.append(tmp)
     
 num_cols = num_predictions
 num_rows = len(labels)+1
 plt.figure(figsize=(1.5*num_cols,1.5*num_rows))
-value_range = (0,2)
+value_range = (0.1,10)
 gs = gridspec.GridSpec(num_rows*num_rows,num_rows*num_cols,wspace=0.5,hspace=0.5)
 
 for k in range(num_predictions):
     for i in range(len(labels)):
         plt.subplot(gs[(num_rows*i):(num_rows+num_rows*i),(num_rows*k):(num_rows+num_rows*k)])
-        plot_img(sequences[k][labels[i]], value_range=value_range)
+        plot_img_log(sequences[k][labels[i]], value_range=value_range)
         if k==0:
             plt.ylabel(labels[i])
 plt.suptitle('Example predictions for different input conditions')
 ##colorbar
 units = "Rain rate [mm h$^{-1}$]"
-cb_tick_loc = np.array([-1, 0, 1, 2])
-cb_tick_labels = [0.1, 1, 10, 100]
+cb_tick_loc = np.array([0.1, 1, 2, 5, 10])
+cb_tick_labels = [0.1, 1, 2, 5, 10]
 cax = plt.subplot(gs[-1,1:-1]).axes
-cb = colorbar.ColorbarBase(cax, norm=colors.Normalize(*value_range), orientation='horizontal')
+cb = colorbar.ColorbarBase(cax, norm=colors.LogNorm(*value_range), orientation='horizontal')
 cb.set_ticks(cb_tick_loc)
 cb.set_ticklabels(cb_tick_labels)
 cax.tick_params(labelsize=16)

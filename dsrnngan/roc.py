@@ -14,9 +14,9 @@ from noise import noise_generator
 from data import get_dates
 
 # input parameters
-log_path = '/ppdata/lucy-cGAN/logs/IFS/gen_128_disc_512/noise_4/weights_4x/'
+log_path = '/ppdata/lucy-cGAN/logs/IFS/gen_256_disc_512/noise_4/weights_4x/'
 application = 'IFS'
-model_number = '0048000'
+model_number = '0198400'
 weights_fn = log_path + "/gen_weights-" + application + "-" +  model_number + ".h5"
 plot_ecpoint = False
 
@@ -27,7 +27,7 @@ weights = None
 predict_year = 2019
 constant_fields = 2
 filters_disc = 512
-filters_gen = 128
+filters_gen = 256
 lr_disc = 1e-5
 lr_gen = 1e-5
 problem_type = 'normal'
@@ -35,17 +35,22 @@ predict_full_image = True
 ensemble_members = 100
 precip_values = np.array([0.01, 0.1, 1, 2, 5])
 
+if predict_full_image:
+    batch_size = 2
+    num_images = 10
+else:
+    batch_size = 16
+    num_images = 50
+
 if problem_type == "normal":
     downsample = False
     plot_input_title = 'IFS'
     input_channels = 9
-    batch_size = 2
     noise_channels = 4
 elif problem_type == "easy":
     downsample = True
     plot_input_title = 'Downscaled'
     input_channels = 1
-    batch_size = 64
     noise_channels = 2
 else:
     raise Exception("no such problem type, try again!")
@@ -66,8 +71,7 @@ else:
                          lr_disc=lr_disc, 
                          lr_gen=lr_gen)
 # load weights
-gen = wgan.gen
-gen.load_weights(weights_fn)
+wgan.gen.load_weights(weights_fn)
 
 # load appropriate dataset
 if predict_full_image:
@@ -99,24 +103,38 @@ pred = []
 seq_real = []
 
 data_pred_iter = iter(data_predict)
-(inputs,outputs) = next(data_pred_iter)
+for i in range(num_images):
+    print(f"image number {i+1} of {num_images}")
+    (inputs,outputs) = next(data_pred_iter)
     
-## make sure ground truth image has correct dimensions
-if predict_full_image == True:
-    seq_real.append(data.denormalise(np.array(outputs['generator_output'])))
-elif predict_full_image == False:
-     seq_real.append(data.denormalise(outputs['generator_output'])[...,0])
-## generate ensemble members
-for j in range(ensemble_members):
-    ## retrieve noise dimensions from input condition
-    noise_dim = inputs['generator_input'][0,...,0].shape + (noise_channels,)
-    inputs['noise_input'] = noise_generator(noise_dim, batch_size=batch_size)
-    ## store denormalised predictions
-    pred.append(data.denormalise(gen.predict(inputs))[...,0])
-    print(j)
-
-pred = np.array(pred)
+    ## make sure ground truth image has correct dimensions
+    if predict_full_image:
+        im_real = data.denormalise(np.array(outputs['generator_output']))
+    elif predict_full_image:
+        im_real = data.denormalise(outputs['generator_output'])[...,0]
+        
+    ## generate ensemble members
+    pred_ensemble = []
+    for j in range(ensemble_members):
+        ## retrieve noise dimensions from input condition
+        noise_dim = inputs['generator_input'][0,...,0].shape + (noise_channels,)
+        inputs['noise_input'] = noise_generator(noise_dim, batch_size=batch_size)
+        ## store denormalised predictions
+        pred_ensemble.append(data.denormalise(wgan.gen.predict(inputs))[...,0])
+    pred_ensemble = np.array(pred_ensemble)
+    
+    if i == 0:
+        seq_real.append(im_real)
+        pred.append(pred_ensemble)
+        seq_real = np.array(seq_real)
+        pred = np.squeeze(np.array(pred))
+    else:
+        seq_real = np.concatenate((seq_real, np.expand_dims(im_real, axis=0)), axis=1)
+        pred = np.concatenate((pred, pred_ensemble), axis=1)
+    
 seq_real = np.array(seq_real)
+pred = np.array(pred)
+
 
 fpr = []
 tpr = []
@@ -151,7 +169,7 @@ plt.xlim([0.0, 1.0])
 plt.ylim([0.0, 1.05])
 plt.xlabel('False Positive Rate')
 plt.ylabel('True Positive Rate')
-plt.title(f'ROC curve for {plot_input_title} problem, {ensemble_members} ensemble members, batch size {batch_size}')
+plt.title(f'ROC curve for {plot_input_title} problem, {ensemble_members} ensemble members, {batch_size*num_images} images')
 plt.legend(loc="lower right")
 plt.savefig("{}/ROC-{}-{}-{}.pdf".format(log_path,problem_type,plot_label,model_number), bbox_inches='tight')
 plt.close()

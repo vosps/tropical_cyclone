@@ -10,15 +10,15 @@ val_years = 2019
 application = "IFS"
 batch_size = 16
 num_batches = 64
-filters_gen = 128
+filters_gen = 64
 filters_disc = 512
 lr_disc = 1e-5
 lr_gen = 1e-5
-downsample = True
+downsample = False
 constant_fields = 2
-#model_number = '0240000'
+#model_number = '0124800'
 model_number = None
-noise_channels = 2
+noise_channels = 4
 add_noise = True
 load_full_image = True
 #weights = np.arange(36,2,-11)
@@ -32,7 +32,7 @@ elif  downsample == False:
     input_channels = 9
 
 if mode == "ensemble":
-    log_path = "/ppdata/lucy-cGAN/logs/EASY/GAN/noise_2//weights_4x"
+    log_path = "/ppdata/lucy-cGAN/logs/IFS/gen_64_disc_512/noise_4/weights_4x"
     rank_samples = 100
 elif mode == "deterministic":
     log_path = "/ppdata/lucy-cGAN/logs/IFS/filters_128/softplus/det/lr_1e-4/"

@@ -8,7 +8,7 @@ val_years = 2019
 application = "IFS"
 batch_size = 16
 num_batches = 64
-filters_gen = 128
+filters_gen = 256
 filters_disc = 512
 lr_disc = 1e-5
 lr_gen = 1e-5
@@ -16,11 +16,11 @@ downsample = False
 constant_fields = 2
 noise_channels = 4
 add_noise = True
-load_full_image = False
+load_full_image = True
 #weights = [0.87, 0.06, 0.03, 0.03]
-#weights = [0.4, 0.3, 0.2, 0.1]
-weights = np.arange(36,2,-11)
-weights = weights / weights.sum()
+weights = [0.4, 0.3, 0.2, 0.1]
+#weights = np.arange(36,2,-11)
+#weights = weights / weights.sum()
 #weights  = None
 
 if downsample == True:
@@ -28,7 +28,7 @@ if downsample == True:
 elif  downsample == False:
     input_channels = 9
 
-log_path = "/ppdata/lucy-cGAN/logs/IFS/gen_128_disc_512/noise_4/weights_12x"
+log_path = "/ppdata/lucy-cGAN/logs/IFS/gen_256_disc_512/noise_4/weights_4x"
 
 if add_noise == False and load_full_image==False:
     out_fn = "{}/qual-{}_no_noise__{}.txt".format(log_path, application, str(val_years))

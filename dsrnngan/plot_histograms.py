@@ -5,10 +5,10 @@ import netCDF4
 import numpy as np
 import pandas as pd
 
-log_path ='/ppdata/lucy-cGAN/logs/EASY/GAN/noise_2/weights_4x'
+log_path ='/ppdata/lucy-cGAN/logs/IFS/gen_256_disc_512/noise_4/weights_4x'
 application = 'IFS'
 added_noise = True
-full_image = False
+full_image = True
 
 if added_noise and not full_image:
     rank_metrics_files_1 = ["{}/ranks-noise-124800.npz".format(log_path), "{}/ranks-noise-198400.npz".format(log_path)]
