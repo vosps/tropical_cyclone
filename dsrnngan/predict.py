@@ -271,22 +271,22 @@ for i in range(num_predictions):
 num_cols = num_predictions
 num_rows = len(labels)+1
 plt.figure(figsize=(1.5*num_cols,1.5*num_rows))
-value_range = (0.1,10)
+value_range = (1,10)
 gs = gridspec.GridSpec(num_rows*num_rows,num_rows*num_cols,wspace=0.5,hspace=0.5)
 
 for k in range(num_predictions):
     for i in range(len(labels)):
         plt.subplot(gs[(num_rows*i):(num_rows+num_rows*i),(num_rows*k):(num_rows+num_rows*k)])
-        plot_img_log(sequences[k][labels[i]], value_range=value_range)
+        plot_img(sequences[k][labels[i]], value_range=value_range)
         if k==0:
             plt.ylabel(labels[i])
 plt.suptitle('Example predictions for different input conditions')
 ##colorbar
 units = "Rain rate [mm h$^{-1}$]"
-cb_tick_loc = np.array([0.1, 1, 2, 5, 10])
-cb_tick_labels = [0.1, 1, 2, 5, 10]
+cb_tick_loc = np.array([0.5, 1, 2, 5, 10])
+cb_tick_labels = [0.5, 1, 2, 5, 10]
 cax = plt.subplot(gs[-1,1:-1]).axes
-cb = colorbar.ColorbarBase(cax, norm=colors.LogNorm(*value_range), orientation='horizontal')
+cb = colorbar.ColorbarBase(cax, norm=colors.Normalize(*value_range), orientation='horizontal')
 cb.set_ticks(cb_tick_loc)
 cb.set_ticklabels(cb_tick_labels)
 cax.tick_params(labelsize=16)
