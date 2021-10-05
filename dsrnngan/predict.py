@@ -79,6 +79,7 @@ lr_gen = args.learning_rate_gen
 
 weights_fn = load_weights_root + '/' + 'gen_weights-IFS-{}.h5'.format(model_number)
 print(weights_fn)
+print(f"Generator filters: {filters_gen}")
 
 #weights = np.arange(6,2,-1)                                                                                                
 #weights = weights / weights.sum() 
@@ -271,7 +272,7 @@ for i in range(num_predictions):
 num_cols = num_predictions
 num_rows = len(labels)+1
 plt.figure(figsize=(1.5*num_cols,1.5*num_rows))
-value_range = (1,10)
+value_range = (0.1,5)
 gs = gridspec.GridSpec(num_rows*num_rows,num_rows*num_cols,wspace=0.5,hspace=0.5)
 
 for k in range(num_predictions):
@@ -283,8 +284,8 @@ for k in range(num_predictions):
 plt.suptitle('Example predictions for different input conditions')
 ##colorbar
 units = "Rain rate [mm h$^{-1}$]"
-cb_tick_loc = np.array([0.5, 1, 2, 5, 10])
-cb_tick_labels = [0.5, 1, 2, 5, 10]
+cb_tick_loc = np.array([0.1, 0.5, 1, 2, 5, 10])
+cb_tick_labels = [0.1, 0.5, 1, 2, 5, 10]
 cax = plt.subplot(gs[-1,1:-1]).axes
 cb = colorbar.ColorbarBase(cax, norm=colors.Normalize(*value_range), orientation='horizontal')
 cb.set_ticks(cb_tick_loc)
