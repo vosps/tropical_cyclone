@@ -1,15 +1,17 @@
 import tensorflow as tf
 from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Input, concatenate, Flatten, Conv2D, UpSampling2D
-from tensorflow.keras.layers import GlobalAveragePooling2D, Dense
+from tensorflow.keras.layers import Input, concatenate, Conv2D, UpSampling2D
+from tensorflow.keras.layers import GlobalAveragePooling2D, Dense, LeakyReLU
 
 from blocks import residual_block, const_upscale_block_100
 
-def generator(input_channels=9, 
-              constant_fields=2, 
+def generator(mode,
+              input_channels=9, 
+              latent_variables=1, 
               noise_channels=8, 
               filters_gen=64, 
-              img_shape=(100,100), 
+              img_shape=(100,100),
+              constant_fields=2,
               conv_size=(3,3), 
               stride=1, 
               relu_alpha=0.2, 
@@ -23,23 +25,43 @@ def generator(input_channels=9,
     ##constant fields
     const_input = Input(shape=(None,None,constant_fields), name="constants")
     print(f"constants_input shape: {const_input.shape}")
-    ##noise
-    noise_input = Input(shape=(None,None,noise_channels), name="noise_input")
-    print(f"noise_input shape: {noise_input.shape}")
     
     ## Convolve constant fields down to match other input dimensions
     upscaled_const_input = const_upscale_block_100(const_input, filters=filters_gen)
     print(f"upscaled constants shape: {upscaled_const_input.shape}")
-
-    ## Concatenate all inputs together
-    generator_output = concatenate([generator_input, upscaled_const_input, noise_input])
-    print(f"Shape after first concatenate: {generator_output.shape}")
+    
+    if mode == 'detGAN' or 'VAEGAN':
+        # Concatenate all inputs together
+        generator_output = concatenate([generator_input, upscaled_const_input])
+    elif mode == 'GAN':
+        ##noise
+        noise_input = Input(shape=(None,None,noise_channels), name="noise_input")
+        print(f"noise_input shape: {noise_input.shape}")
+        ## Concatenate all inputs together
+        generator_output = concatenate([generator_input, upscaled_const_input, noise_input])
+        print(f"Shape after first concatenate: {generator_output.shape}")
 
     ## Pass through 3 residual blocks
     for i in range(3):
         generator_output = residual_block(generator_output, filters=filters_gen, conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate)
     print('End of first residual block')
     print(f"Shape after first residual block: {generator_output.shape}")
+    
+    if mode == 'VAEGAN':
+        ## encoder model and outputs
+        means = Conv2D(filters=1, kernel_size=1, activation=LeakyReLU(alpha=relu_alpha), padding="valid")(generator_output)
+        logvars = Conv2D(filters=1, kernel_size=1, activation=LeakyReLU(alpha=relu_alpha), padding="valid")(generator_output)
+        encoder_model = Model(inputs=[generator_input, const_input], outputs=[means, logvars], name='encoder')
+        ## decoder model and inputs
+        mean_input = tf.keras.layers.Input(shape=(None, None, latent_variables), name="mean_input")
+        logvar_input = tf.keras.layers.Input(shape=(None, None, latent_variables), name="logvar_input")
+        noise_input = Input(shape=(None, None, latent_variables), name="noise_input")
+        # Generate random variables from mean & logvar
+        generator_output = tf.multiply(noise_input, tf.exp(logvar_input * .5)) + mean_input
+        print(f"Shape of random variables: {generator_output.shape}")
+    else:
+        pass
+    
     
     ## Upsampling from (10,10) to (100,100) with alternating residual blocks
     block_channels = [2*filters_gen, filters_gen]
@@ -65,67 +87,24 @@ def generator(input_channels=9,
     generator_output = Conv2D(filters=1, kernel_size=(1,1), activation='softplus', name="generator_output")(generator_output)
     print(f"Output shape: {generator_output.shape}")
     
-    model = Model(inputs=[generator_input, const_input, noise_input], outputs=generator_output, name='gen')
-    
-    def noise_shapes(img_shape=(100,100)):
-        noise_shape = (img_shape[0]//10, img_shape[1]//10, noise_channels)
-        return noise_shape
-    
-    return (model, noise_shapes)
+    if mode == 'VAEGAN':
+        decoder_model = Model(inputs=[mean_input, logvar_input, noise_input, const_input], outputs=generator_output, name='decoder')
+        return (encoder_model, decoder_model)
+    elif mode == 'GAN': 
+        model = Model(inputs=[generator_input, const_input, noise_input], outputs=generator_output, name='gen')
+        return model
+    elif mode == 'detGAN':
+        model = Model(inputs=[generator_input, const_input], outputs=generator_output, name='gen')
+        return model
 
-def generator_deterministic(input_channels=9, constant_fields=2, filters_gen=64, conv_size=(3,3), stride=1, relu_alpha=0.2, norm=None, dropout_rate=None):
-    
-    # Network inputs 
-    ##low resolution condition                                                                                                                                                                                         
-    generator_input = Input(shape=(None,None,input_channels), name="generator_input")
-    print(f"generator_input shape: {generator_input.shape}")
-    ##constant fields
-    const_input = Input(shape=(None,None,constant_fields), name="constants")
-    print(f"constants_input shape: {const_input.shape}")
-
-    ## Convolve constant fields down to match other input dimensions
-    upscaled_const_input = const_upscale_block_100(const_input, filters=filters_gen)
-    ## Concatenate all inputs together
-    generator_output = concatenate([generator_input, upscaled_const_input])
-
-    ## Pass through 3 residual blocks
-    for i in range(3):
-        generator_output = residual_block(generator_output, filters=filters_gen, conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate)
-    print('End of first residual block')
-    print(f"Shape after first residual block: {generator_output.shape}")
-    
-    print(f"Shape before upsampling: {generator_output.shape}")
-    ## Upsampling residual blocks 
-    block_channels = [2*filters_gen, filters_gen]
-    print(f"Shape before upsampling: {generator_output.shape}")
-    generator_output = UpSampling2D(size=(5,5), interpolation='bilinear')(generator_output)
-    print(f"Shape after upsampling step 1: {generator_output.shape}")
-    generator_output = residual_block(generator_output, filters=block_channels[0], conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate)
-    print(f"Shape after residual block: {generator_output.shape}")
-    generator_output = UpSampling2D(size=(2,2), interpolation='bilinear')(generator_output)
-    print(f"Shape after upsampling step 2: {generator_output.shape}")
-    generator_output = residual_block(generator_output, filters=block_channels[1], conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate)
-    print(f"Shape after residual block: {generator_output.shape}")
-    
-    ## Concatenate with full size constants field
-    generator_output = concatenate([generator_output, const_input])
-    print(f"Shape after second concatenate: {generator_output.shape}")
-    
-     ## Pass through 3 residual blocks
-    for i in range(3):
-        generator_output = residual_block(generator_output, filters=filters_gen, conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate)
-    print('End of third residual block')
-    print(f"Shape after third residual block: {generator_output.shape}")
-    
-    ## Output layer
-    generator_output = Conv2D(filters=1, kernel_size=(1,1), activation='softplus', name="generator_output")(generator_output)
-    print(f"Output shape: {generator_output.shape}")
-    
-    gen = Model(inputs=[generator_input, const_input], outputs=generator_output, name='gen')
-    
-    return gen
-
-def discriminator(input_channels=9, constant_fields=2, filters_disc=64, conv_size=(3,3), stride=1, relu_alpha=0.2, norm=None, dropout_rate=None):
+def discriminator(input_channels=9, 
+                  constant_fields=2, 
+                  filters_disc=64, 
+                  conv_size=(3,3), 
+                  stride=1, 
+                  relu_alpha=0.2, 
+                  norm=None, 
+                  dropout_rate=None):
     
     # Network inputs 
     ##low resolution condition                                                                                                                                                                                         
