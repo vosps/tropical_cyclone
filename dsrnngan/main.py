@@ -10,7 +10,7 @@ import pandas as pd
 #from tensorflow.keras.optimizers import SGD
 
 import train
-import eval
+import evaluation
 import plots
 
 

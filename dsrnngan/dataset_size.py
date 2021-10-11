@@ -1,6 +1,6 @@
 import matplotlib
 matplotlib.use("Agg")
-import eval
+import evaluation
 
 mode = "ensemble"
 train_years = [2016, 2017, 2018]
