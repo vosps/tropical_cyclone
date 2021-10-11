@@ -2,6 +2,8 @@ jupyter/
 logs/
 test-det/
 test-logs/
+*.pdf
+*.sh
 
 
 # Byte-compiled / optimized / DLL files
