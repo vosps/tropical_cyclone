@@ -10,27 +10,26 @@ import pandas as pd
 import train
 import evaluation
 
-
-# TODO: remove application?
-# Add check_every argument
-# Plots
+# TODO: Plots
 
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--mode', type=str,
-                        help="GAN, det, VAEGAN")
+    parser.add_argument('--mode', type=str, required=True,
+                        choices=("GAN", "det", "VAEGAN"),
+                        help="type of model (pure GAN / deterministic / VAEGAN)")
     parser.add_argument('--log_folder', type=str, required=True,
        help="Folder for saving/loading model weights, log files, etc.  Will be created if it doesn't already exist.")  # noqa: E128
     parser.add_argument('--problem_type', type=str, default="normal",
-        help="normal (IFS to NIMROD), superresolution (NIMROD to NIMROD)")  # noqa: E128
+                        choices=("normal", "superresolution"),
+        help="normal: IFS to NIMROD. superresolution: coarsened NIMROD to NIMROD")  # noqa: E128
     parser.add_argument('--train_years', type=int, nargs='+',
                         default=[2016, 2017, 2018],
                         help="Training years")
     parser.add_argument('--val_years', type=int, nargs='+', default=2019,
       help="Validation years -- cannot pass a list if using create_fixed_dataset")  # noqa: E128
     parser.add_argument('--val_size', type=int, default=8,
-                        help='Num val examples')
+                        help='Number of validation examples')
     parser.add_argument('--num_samples', type=int, default=320000,
                         help="Training samples")
     parser.add_argument('--steps_per_epoch', type=int, default=200,
@@ -52,31 +51,39 @@ if __name__ == "__main__":
     parser.add_argument('--learning_rate_gen', type=float, default=1e-5,
                         help="Learning rate used for generator optimizer")
     parser.add_argument('--kl_weight', type=float, default=1e-8,
-                        help="Learning rate used for generator optimizer")
+                        help="Weight of KL term in VAEGAN")
+
+    parser.set_defaults(do_training=True)
     parser.add_argument('--no_train', dest='do_training', action='store_false',
                         help="Do NOT carry out training, only perform eval")
-    parser.add_argument('--eval_small', dest='eval_small', action='store_true',
+    parser.set_defaults(rank_small=False)
+    parser.set_defaults(rank_full=False)
+    parser.set_defaults(qual_small=False)
+    parser.set_defaults(qual_full=False)
+    parser.add_argument('--rank_small', dest='rank_small', action='store_true',
                         help="Include CRPS/rank evaluation on small images")
-    parser.add_argument('--eval_full', dest='eval_full', action='store_true',
+    parser.add_argument('--rank_full', dest='rank_full', action='store_true',
                         help="Include CRPS/rank evaluation on full images")
     parser.add_argument('--qual_small', dest='qual_small', action='store_true',
                         help="Include image quality metrics on small images")
     parser.add_argument('--qual_full', dest='qual_full', action='store_true',
                         help="Include image quality metrics on full images")
-    parser.set_defaults(do_training=True)
-    parser.set_defaults(eval_small=False)
-    parser.set_defaults(eval_full=False)
-    parser.set_defaults(qual_small=False)
-    parser.set_defaults(qual_full=False)
+
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('--eval_full', dest='evalnum', action='store_const', const="full")
+    group.add_argument('--eval_short', dest='evalnum', action='store_const', const="short")
+    group.add_argument('--eval_blitz', dest='evalnum', action='store_const', const="blitz")
+    parser.set_defaults(evalnum=None)
+
     parser.add_argument('--add_postprocessing_noise', type=bool, default=True,
         help="Flag for adding postprocessing noise in rank statistics eval")  # noqa: E128
     parser.add_argument('--postprocessing_noise_factor', type=float, default=1e-6,
         help="Factor for scaling postprocessing noise in rank statistics eval")  # noqa: E128
 
     args = parser.parse_args()
-    mode = args.mode
 
-    assert args.mode in ("GAN", "det", "VAEGAN")
+    if args.evalnum is None and (args.rank_small or args.rank_full or args.qual_small or args.qual_full):
+        raise RuntimeError("You asked for evaluation to occur, but did not pass in '--eval_full', '--eval_short', or '--eval_blitz' to specify length of evaluation")
 
     # training_weights = np.arange(12,2,-3)
     # training_weights = training_weights / training_weights.sum()
@@ -89,6 +96,7 @@ if __name__ == "__main__":
     # training_weights = training_weights_12x / training_weights_12x.sum()
     print(f"training_weights for data loading are {training_weights}")
 
+    mode = args.mode
     log_folder = args.log_folder
     steps_per_epoch = args.steps_per_epoch
     batch_size = args.batch_size
@@ -180,8 +188,8 @@ if __name__ == "__main__":
                 assert False
 
         plot_fname = os.path.join(log_folder, "progress.pdf")
-        eval_small_fname = os.path.join(log_folder, "eval-small.txt")
-        eval_full_fname = os.path.join(log_folder, "eval-full.pdf")
+        rank_small_fname = os.path.join(log_folder, "rank-small.pdf")
+        rank_full_fname = os.path.join(log_folder, "rank-full.pdf")
         qual_small_fname = os.path.join(log_folder, "qual-small.pdf")
         qual_full_fname = os.path.join(log_folder, "qual-full.pdf")
 
@@ -240,19 +248,31 @@ if __name__ == "__main__":
     else:
         print("Training skipped...")
 
+    if args.evalnum == "blitz":
+        model_numbers = [124800, 198400, 240000, 320000]
+    elif args.evalnum == "short":
+        # this assumes 100 'epochs', may want to generalise?!
+        interval = steps_per_epoch * batch_size
+        model_numbers = [37*interval, 38*interval, 39*interval, 40*interval,
+                         59*interval, 60*interval, 61*interval, 62*interval,
+                         75*interval, 76*interval, 77*interval, 78*interval,
+                         97*interval, 98*interval, 99*interval, 100*interval]
+
+    elif args.evalnum == "full":
+        interval = steps_per_epoch * batch_size
+        model_numbers = np.arange(0, num_samples + 1, interval)[1:].tolist()
+
     # evaluate model performance
-    if args.eval_small:
+    if args.rank_small:
         evaluation.rank_metrics_by_time(mode,
                                         val_years,
-                                        out_fn=eval_small_fname,
+                                        out_fn=rank_small_fname,
                                         weights_dir=model_weights_root,
-                                        check_every=1,
-                                        N_range=None,
                                         downsample=downsample,
                                         weights=training_weights,
                                         add_noise=add_noise,
                                         load_full_image=False,
-                                        model_number=None,
+                                        model_numbers=model_numbers,
                                         batch_size=batch_size,
                                         num_batches=num_batches,
                                         filters_gen=filters_gen,
@@ -264,18 +284,16 @@ if __name__ == "__main__":
                                         lr_disc=lr_disc,
                                         lr_gen=lr_gen)
 
-    if args.eval_full:
+    if args.rank_full:
         evaluation.rank_metrics_by_time(mode,
                                         val_years,
-                                        out_fn=eval_full_fname,
+                                        out_fn=rank_full_fname,
                                         weights_dir=model_weights_root,
-                                        check_every=1,
-                                        N_range=None,
                                         downsample=downsample,
                                         weights=training_weights,
                                         add_noise=add_noise,
                                         load_full_image=True,
-                                        model_number=None,
+                                        model_numbers=model_numbers,
                                         batch_size=1,  # memory issues
                                         num_batches=num_batches,
                                         filters_gen=filters_gen,
@@ -292,10 +310,10 @@ if __name__ == "__main__":
                                            val_years,
                                            out_fn=qual_small_fname,
                                            weights_dir=model_weights_root,
-                                           check_every=1,
                                            downsample=downsample,
                                            weights=training_weights,
                                            load_full_image=False,
+                                           model_numbers=model_numbers,
                                            batch_size=batch_size,
                                            num_batches=num_batches,
                                            filters_gen=filters_gen,
@@ -311,10 +329,10 @@ if __name__ == "__main__":
                                            val_years,
                                            out_fn=qual_full_fname,
                                            weights_dir=model_weights_root,
-                                           check_every=1,
                                            downsample=downsample,
                                            weights=training_weights,
                                            load_full_image=True,
+                                           model_numbers=model_numbers,
                                            batch_size=1,  # memory issues
                                            num_batches=num_batches,
                                            filters_gen=filters_gen,
