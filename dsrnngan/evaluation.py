@@ -97,7 +97,7 @@ def ensemble_ranks(mode,
     crps_scores = []
     batch_gen_iter = iter(batch_gen)
 
-    if mode == "deterministic":
+    if mode == "det":
         rank_samples = 1
 
     if show_progress:
@@ -126,7 +126,7 @@ def ensemble_ranks(mode,
         sample = sample.ravel()
         samples_gen = []
 
-        if mode == "ensemble":
+        if mode == "GAN":
             for i in range(rank_samples):
                 img_shape = cond.shape[1:-1]
                 noise_shape = (img_shape[0], img_shape[1], noise_channels)
@@ -139,7 +139,7 @@ def ensemble_ranks(mode,
                     sample_gen = data.denormalise(sample_gen)
                 samples_gen.append(sample_gen)
 
-        elif mode == "deterministic":
+        elif mode == "det":
             sample_gen = gen.predict([cond, const])
             if denormalise_data:
                 sample_gen = data.denormalise(sample_gen)
@@ -398,7 +398,7 @@ def rank_metrics_table(weights_fn,
                        load_full_image=None):
     
     train_years = None
-    if mode == "GAN" or "det" or "VAE-GAN":
+    if mode in ["GAN", "det", "VAE-GAN"]:
         (gen, batch_gen_valid) = setup_inputs(mode=mode,
                                               val_years=val_years,
                                               downsample=downsample,
@@ -420,7 +420,7 @@ def rank_metrics_table(weights_fn,
                                             add_noise=add_noise,
                                             noise_factor=noise_factor)
 
-    elif mode == 'rainfarm' or 'lanczos' or 'constant':
+    elif mode in ['rainfarm', 'lanczos' , 'constant']:
         (_, batch_gen_valid) = train.setup_data(train_years,
                                                 val_years,
                                                 val_size=batch_size*num_batches,
@@ -526,12 +526,12 @@ def image_quality(mode,
             sample = data.denormalise(sample)
 
         for i in range(num_instances):
-            if mode == "ensemble":
+            if mode == "GAN":
                 img_shape = cond.shape[1:-1]
                 noise_shape = (img_shape[0], img_shape[1], noise_channels)
                 n = NoiseGenerator(noise_shape, batch_size=batch_size)
                 img_gen = gen.predict([cond, const, n])
-            elif mode == "deterministic":
+            elif mode == "det":
                 img_gen = gen.predict([cond, const])
             else:
                 try:
@@ -637,13 +637,13 @@ def quality_metrics_table(weights_fn,
                           load_full_image=False):
         
     train_years = None
-    if mode == "GAN" or "det" or "VAE-GAN":
+    if mode in ["GAN", "det", "VAE-GAN"]:
         (gen, batch_gen_valid) = setup_inputs(mode=mode,
                                               val_years=val_years,
                                               downsample=downsample,
                                               weights=weights,
                                               input_channels=input_channels,
-                                              batch_size=batch_size,  
+                                              batch_size=batch_size,
                                               num_batches=num_batches,
                                               filters_gen=filters_gen,
                                               filters_disc=filters_disc,
@@ -652,7 +652,7 @@ def quality_metrics_table(weights_fn,
                                               load_full_image=load_full_image)
         gen.load_weights(weights_fn)
 
-    elif mode == 'rainfarm' or 'lanczos' or 'constant':
+    elif mode in ['rainfarm', 'lanczos', 'constant']:
         (_, batch_gen_valid) = train.setup_data(train_years,
                                                 val_years,
                                                 val_size=batch_size*num_batches,
