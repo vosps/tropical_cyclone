@@ -1,9 +1,9 @@
 import argparse
 import json
 import os
+from pathlib import Path
 
 import matplotlib; matplotlib.use("Agg")  # noqa: E702
-
 import numpy as np
 import pandas as pd
 
@@ -11,18 +11,17 @@ import train
 import evaluation
 
 
-path = os.path.dirname(os.path.abspath(__file__))
-
 # TODO: remove application?
-# Simplify Log path / save weights root?
 # Add check_every argument
 # Plots
 
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('mode', type=str,
-                        help="GAN, detGAN, VAEGAN")
+    parser.add_argument('--mode', type=str,
+                        help="GAN, det, VAEGAN")
+    parser.add_argument('--log_folder', type=str, required=True,
+       help="Folder for saving/loading model weights, log files, etc.  Will be created if it doesn't already exist.")  # noqa: E128
     parser.add_argument('--problem_type', type=str, default="normal",
         help="normal (IFS to NIMROD), superresolution (NIMROD to NIMROD)")  # noqa: E128
     parser.add_argument('--train_years', type=int, nargs='+',
@@ -32,12 +31,6 @@ if __name__ == "__main__":
       help="Validation years -- cannot pass a list if using create_fixed_dataset")  # noqa: E128
     parser.add_argument('--val_size', type=int, default=8,
                         help='Num val examples')
-    parser.add_argument('--load_weights_root', type=str, default="",
-                        help="Network weights file root to load")
-    parser.add_argument('--save_weights_root', type=str, default="",
-                        help="Network weights file root to save")
-    parser.add_argument('--log_path', type=str, default="",
-                        help="Log files path")
     parser.add_argument('--num_samples', type=int, default=320000,
                         help="Training samples")
     parser.add_argument('--steps_per_epoch', type=int, default=200,
@@ -52,9 +45,13 @@ if __name__ == "__main__":
                         help="Number of filters used in discriminator")
     parser.add_argument('--noise_channels', type=int, default=4,
                         help="Dimensions of noise passed to generator")
+    parser.add_argument('--latent_variables', type=int, default=1,
+                        help="Latent variables per 'pixel' in VAEGAN")
     parser.add_argument('--learning_rate_disc', type=float, default=1e-5,
                         help="Learning rate used for discriminator optimizer")
     parser.add_argument('--learning_rate_gen', type=float, default=1e-5,
+                        help="Learning rate used for generator optimizer")
+    parser.add_argument('--kl_weight', type=float, default=1e-8,
                         help="Learning rate used for generator optimizer")
     parser.add_argument('--no_train', dest='do_training', action='store_false',
                         help="Do NOT carry out training, only perform eval")
@@ -79,23 +76,20 @@ if __name__ == "__main__":
     args = parser.parse_args()
     mode = args.mode
 
-    assert args.mode in ("GAN", "detGAN", "VAEGAN")
+    assert args.mode in ("GAN", "det", "VAEGAN")
 
-    # weights = np.arange(12,2,-3)
-    # weights = weights / weights.sum()
-    # weights = None
-    # weights = [0.87, 0.06, 0.03, 0.03]
-    # weights = np.arange(24,2,-7)
-    # weights = weights / weights.sum()
-    weights = [0.4, 0.3, 0.2, 0.1]
-    # weights_12x = np.arange(36,2,-11)
-    # weights = weights_12x / weights_12x.sum()
+    # training_weights = np.arange(12,2,-3)
+    # training_weights = training_weights / training_weights.sum()
+    # training_weights = None
+    # training_weights = [0.87, 0.06, 0.03, 0.03]
+    # training_weights = np.arange(24,2,-7)
+    # training_weights = weights / weights.sum()
+    training_weights = [0.4, 0.3, 0.2, 0.1]
+    # training_weights_12x = np.arange(36,2,-11)
+    # training_weights = training_weights_12x / training_weights_12x.sum()
+    print(f"training_weights for data loading are {training_weights}")
 
-    print(f"weights for data loading are {weights}")
-
-    load_weights_root = args.load_weights_root
-    save_weights_root = args.save_weights_root
-    log_path = args.log_path
+    log_folder = args.log_folder
     steps_per_epoch = args.steps_per_epoch
     batch_size = args.batch_size
     val_size = args.val_size
@@ -105,14 +99,13 @@ if __name__ == "__main__":
     num_batches = args.num_batches
     filters_disc = args.filters_disc
     filters_gen = args.filters_gen
-    if mode in ("GAN", "VAEGAN"):
-        lr_disc = args.learning_rate_disc
-        lr_gen = args.learning_rate_gen
-    elif mode == "detGAN":
-        # FOR NOW re-use same name to simplify eval script calls
-        lr_gen = args.learning_rate_gen
+    lr_disc = args.learning_rate_disc
+    lr_gen = args.learning_rate_gen
+    kl_weight = args.kl_weight
     noise_channels = args.noise_channels
+    latent_variables = args.latent_variables
     add_noise = args.add_postprocessing_noise
+    noise_factor = args.postprocessing_noise_factor
 
     num_epochs = int(num_samples/(steps_per_epoch * batch_size))
     epoch = 1
@@ -122,8 +115,10 @@ if __name__ == "__main__":
     # number of constant fields
     constant_fields = 2
 
-    if not save_weights_root:
-        save_weights_root = path + "/../models"
+    # create log folder and model save/load subfolder if they don't exist
+    Path(log_folder).mkdir(parents=True, exist_ok=True)
+    model_weights_root = os.path.join(log_folder, "models")
+    Path(model_weights_root).mkdir(parents=True, exist_ok=True)
 
     if args.problem_type == "normal":
         downsample = False
@@ -135,155 +130,113 @@ if __name__ == "__main__":
         raise Exception("no such problem type, try again!")
 
     if args.do_training:
-        if mode == "GAN":
-            # initialize GAN
-            print(f"val years is {val_years}")
-            model, batch_gen_train, batch_gen_valid, _, noise_shapes, _ = \
-                train.setup_gan(train_years,
-                                val_years,
-                                val_size=val_size,
-                                downsample=downsample,
-                                weights=weights,
-                                input_channels=input_channels,
-                                constant_fields=constant_fields,
-                                batch_size=batch_size,
-                                filters_gen=filters_gen,
-                                filters_disc=filters_disc,
-                                noise_channels=noise_channels,
-                                lr_disc=lr_disc,
-                                lr_gen=lr_gen)
+        # initialize GAN
+        print(f"val years is {val_years}")
+        model, batch_gen_train, batch_gen_valid, _, _ = \
+            train.setup_model(mode,
+                              train_years,
+                              val_years,
+                              val_size=val_size,
+                              downsample=downsample,
+                              weights=training_weights,
+                              input_channels=input_channels,
+                              latent_variables=latent_variables,
+                              batch_size=batch_size,
+                              filters_gen=filters_gen,
+                              filters_disc=filters_disc,
+                              noise_channels=noise_channels,
+                              lr_disc=lr_disc,
+                              lr_gen=lr_gen,
+                              kl_weight=kl_weight)
 
-        elif mode == "detGAN":
-            # initialize deterministic model
-            model, batch_gen_train, batch_gen_valid, _, _ = \
-                train.setup_deterministic(train_years,
-                                          val_years,
-                                          val_size=val_size,
-                                          downsample=downsample,
-                                          weights=weights,
-                                          input_channels=input_channels,
-                                          constant_fields=constant_fields,
-                                          steps_per_epoch=steps_per_epoch,
-                                          batch_size=batch_size,
-                                          filters_gen=filters_gen,
-                                          lr=lr_gen)
+    # Leaving around for now in case this is useful for e.g. multiple training
+#         if load_weights_root:  # load weights and run status
+#             model.load(model.filenames_from_root(load_weights_root))
+#             with open(load_weights_root + "-run_status.json", 'r') as f:
+#                 run_status = json.load(f)
+#             training_samples = run_status["training_samples"]
 
-        else:
-            assert False, "other modes not implemented yet"
+#             if log_path:
+#                 log_file = "{}/log.txt".format(log_path)
+#                 log = pd.read_csv(log_file)
 
-        if load_weights_root:  # load weights and run status
-            model.load(model.filenames_from_root(load_weights_root))
-            with open(load_weights_root + "-run_status.json", 'r') as f:
-                run_status = json.load(f)
-            training_samples = run_status["training_samples"]
-
-            if log_path:
-                log_file = "{}/log.txt".format(log_path)
-                log = pd.read_csv(log_file)
-
+        if False:
+            pass
         else:  # initialize run status
             training_samples = 0
 
-            if log_path:
-                log_file = "{}/log.txt".format(log_path)
-                # TODO: does VAEGAN need more?
-                if mode == "GAN":
-                    log = pd.DataFrame(
-                        columns=["training_samples",
-                                 "disc_loss", "disc_loss_real",
-                                 "disc_loss_fake", "disc_loss_gp",
-                                 "gen_loss"])
-                elif mode == "detGAN":
-                    log = pd.DataFrame(columns=["training_samples",
-                                                "loss"])
-                else:
-                    assert False
+            log_file = os.path.join(log_folder, "log.txt")
+            # TODO: does VAEGAN need more?
+            if mode == "GAN":
+                log = pd.DataFrame(
+                    columns=["training_samples",
+                             "disc_loss", "disc_loss_real",
+                             "disc_loss_fake", "disc_loss_gp",
+                             "gen_loss"])
+            elif mode == "det":
+                log = pd.DataFrame(columns=["training_samples",
+                                            "loss"])
+            else:
+                assert False
 
-        plot_fn = "{}/progress_{}.pdf".format(log_path, mode) if log_path \
-            else path + "/../figures/progress.pdf"
-
-        eval_fn_small = "{}/eval-small.txt".format(log_path) if log_path \
-            else path + "/../figures/eval-small.txt"
-
-        eval_fn_full = "{}/eval-full.txt".format(log_path) if log_path \
-            else path + "/../figures/eval-full.txt"
-
-        qual_fn_small = "{}/qual-small.txt".format(log_path) if log_path \
-            else path + "/../figures/qual-small.txt"
-
-        qual_fn_full = "{}/qual-full.txt".format(log_path) if log_path \
-            else path + "/../figures/qual-full.txt"
+        plot_fname = os.path.join(log_folder, "progress.pdf")
+        eval_small_fname = os.path.join(log_folder, "eval-small.txt")
+        eval_full_fname = os.path.join(log_folder, "eval-full.pdf")
+        qual_small_fname = os.path.join(log_folder, "qual-small.pdf")
+        qual_full_fname = os.path.join(log_folder, "qual-full.pdf")
 
         while (training_samples < num_samples):  # main training loop
 
             print("Epoch {}/{}".format(epoch, num_epochs))
 
             # train for some number of batches
-            if mode == "GAN":
-                loss_log = train.train_gan(model,
-                                           batch_gen_train,
-                                           batch_gen_valid,
-                                           noise_shapes,
-                                           epoch,
-                                           steps_per_epoch,
-                                           num_epochs=1,
-                                           plot_samples=val_size,
-                                           plot_fn=plot_fn)
-            elif mode == "detGAN":
-                loss_log = train.train_deterministic(model,
-                                                     batch_gen_train,
-                                                     batch_gen_valid,
-                                                     epoch,
-                                                     steps_per_epoch,
-                                                     num_epochs=1,
-                                                     plot_samples=val_size,
-                                                     plot_fn=plot_fn)
-            else:
-                assert False
+            loss_log = train.train_model(model,
+                                         mode,
+                                         batch_gen_train,
+                                         batch_gen_valid,
+                                         epoch,
+                                         steps_per_epoch,
+                                         num_epochs=1,
+                                         plot_samples=val_size,
+                                         plot_fn=plot_fname)
 
             loss_log = np.mean(loss_log, axis=0)
             training_samples += steps_per_epoch * batch_size
             epoch += 1
 
             # save results
-            model.save(save_weights_root)
+            model.save(model_weights_root)
             run_status = {
                 "training_samples": training_samples,
             }
-            with open(save_weights_root+"-run_status.json", 'w') as f:
+            with open(os.path.join(log_folder, "run_status.json"), 'w') as f:
                 json.dump(run_status, f)
 
-            if log_path:  # log losses and generator weights for evaluation
-                if mode == "GAN":
-                    log = log.append(pd.DataFrame(data={
-                        "training_samples": [training_samples],
-                        "disc_loss": [loss_log[0]],
-                        "disc_loss_real": [loss_log[1]],
-                        "disc_loss_fake": [loss_log[2]],
-                        "disc_loss_gp": [loss_log[3]],
-                        "gen_loss": [loss_log[4]]
-                    }))
-                elif mode == "detGAN":
-                    log = log.append(pd.DataFrame(data={
-                        "training_samples": [training_samples],
-                        "loss": [loss_log],
-                    }))
-                else:
-                    assert False
-                log.to_csv(log_file, index=False, float_format="%.6f")
+            if mode == "GAN":
+                log = log.append(pd.DataFrame(data={
+                    "training_samples": [training_samples],
+                    "disc_loss": [loss_log[0]],
+                    "disc_loss_real": [loss_log[1]],
+                    "disc_loss_fake": [loss_log[2]],
+                    "disc_loss_gp": [loss_log[3]],
+                    "gen_loss": [loss_log[4]]
+                }))
+            elif mode == "det":
+                log = log.append(pd.DataFrame(data={
+                    "training_samples": [training_samples],
+                    "loss": [loss_log],
+                }))
+            else:
+                assert False
+            log.to_csv(log_file, index=False, float_format="%.6f")
 
-                if mode == "GAN":
-                    gen_weights_file = "{}/gen_weights-{:07d}.h5".format(
-                        log_path, training_samples)
+            if mode in ("GAN", "det"):
+                gen_weights_file = os.path.join(model_weights_root, "gen_weights-{:07d}.h5".format(training_samples))
 
-                    model.gen.save_weights(gen_weights_file)
-                elif mode == "detGAN":
-                    gen_weights_file = "{}/gen_det_weights-{:07d}.h5".format(
-                        log_path, training_samples)
-
-                    model.gen_det.save_weights(gen_weights_file)
-                else:
-                    assert False
+                model.gen.save_weights(gen_weights_file)
+            else:
+                # might need to do something different to save VAEGAN enc/dec?
+                assert False
     else:
         print("Training skipped...")
 
@@ -291,12 +244,12 @@ if __name__ == "__main__":
     if args.eval_small:
         evaluation.rank_metrics_by_time(mode,
                                         val_years,
-                                        out_fn=eval_fn_small,
-                                        weights_dir=log_path,
+                                        out_fn=eval_small_fname,
+                                        weights_dir=model_weights_root,
                                         check_every=1,
                                         N_range=None,
                                         downsample=downsample,
-                                        weights=weights,
+                                        weights=training_weights,
                                         add_noise=add_noise,
                                         load_full_image=False,
                                         model_number=None,
@@ -314,12 +267,12 @@ if __name__ == "__main__":
     if args.eval_full:
         evaluation.rank_metrics_by_time(mode,
                                         val_years,
-                                        out_fn=eval_fn_full,
-                                        weights_dir=log_path,
+                                        out_fn=eval_full_fname,
+                                        weights_dir=model_weights_root,
                                         check_every=1,
                                         N_range=None,
                                         downsample=downsample,
-                                        weights=weights,
+                                        weights=training_weights,
                                         add_noise=add_noise,
                                         load_full_image=True,
                                         model_number=None,
@@ -337,11 +290,11 @@ if __name__ == "__main__":
     if args.qual_small:
         evaluation.quality_metrics_by_time(mode,
                                            val_years,
-                                           out_fn=qual_fn_small,
-                                           weights_dir=log_path,
+                                           out_fn=qual_small_fname,
+                                           weights_dir=model_weights_root,
                                            check_every=1,
                                            downsample=downsample,
-                                           weights=weights,
+                                           weights=training_weights,
                                            load_full_image=False,
                                            batch_size=batch_size,
                                            num_batches=num_batches,
@@ -356,11 +309,11 @@ if __name__ == "__main__":
     if args.qual_full:
         evaluation.quality_metrics_by_time(mode,
                                            val_years,
-                                           out_fn=qual_fn_full,
-                                           weights_dir=log_path,
+                                           out_fn=qual_full_fname,
+                                           weights_dir=model_weights_root,
                                            check_every=1,
                                            downsample=downsample,
-                                           weights=weights,
+                                           weights=training_weights,
                                            load_full_image=True,
                                            batch_size=1,  # memory issues
                                            num_batches=num_batches,
