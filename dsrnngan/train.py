@@ -186,6 +186,7 @@ def train_model(model,
     plots.plot_sequences(model.gen,
                          mode,
                          batch_gen_valid,
+                         noise_shape,
                          epoch, 
                          num_samples=plot_samples, 
                          out_fn=plot_fn)
