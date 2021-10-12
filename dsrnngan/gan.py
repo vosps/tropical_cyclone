@@ -117,7 +117,7 @@ class WGANGP(object):
             )
             self.disc_trainer.summary()
 
-    def train(self, batch_gen, noise_gen, num_gen_batches=1, 
+    def train(self, batch_gen, noise, num_gen_batches=1, 
         training_ratio=1, show_progress=True):
 
         disc_target_real = None
@@ -147,7 +147,6 @@ class WGANGP(object):
             for rep in range(training_ratio):
                 # generate some real samples
                 (cond,const,sample) = batch_gen_iter.get_next()
-                noise = noise_gen()
                 
                 with Nontrainable(self.gen):   
                     dl = self.disc_trainer.train_on_batch(

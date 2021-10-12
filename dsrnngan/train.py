@@ -1,17 +1,11 @@
 import gc
 import os
-
-import netCDF4
-import numpy as np
-import tensorflow as tf
-# tf.compat.v1.disable_eager_execution()
-from tensorflow.keras.callbacks import EarlyStopping
-from tensorflow.keras.optimizers import Adam
-
 import gan
 import deterministic
 import tfrecords_generator_ifs
 from tfrecords_generator_ifs import DataGenerator
+from vaegantrain import VAE
+from tensorflow.keras.optimizers import Adam
 import models
 import noise
 import plots
@@ -72,40 +66,54 @@ def setup_full_image_dataset(years,
                                   downsample=downsample)
     return data_full
 
-def setup_gan(train_years=None, 
-              val_years=None, 
-              val_size=None, 
-              downsample=False,
-              weights=None,
-              input_channels = 9,
-              constant_fields = 2,
-              steps_per_epoch=50, 
-              batch_size=16, 
-              filters_gen=64, 
-              filters_disc=64, 
-              noise_channels=8, 
-              lr_disc=0.0001, 
-              lr_gen=0.0001):
+def setup_model(mode,
+                train_years=None, 
+                val_years=None, 
+                val_size=None, 
+                downsample=False,
+                weights=None,
+                input_channels=None,
+                steps_per_epoch=None, 
+                batch_size=None, 
+                filters_gen=None, 
+                filters_disc=None, 
+                noise_channels=None, 
+                latent_variables=None,
+                kl_weight=None,
+                lr_disc=None, 
+                lr_gen=None):
 
-    print(f"# gen filters is {filters_gen}")
-    print(f"# disc filters is {filters_disc}")
-    print(f"input_channels is {input_channels}")
-
-
-    (gen, noise_shapes) = models.generator(input_channels=input_channels, 
-                                           constant_fields=constant_fields, 
-                                           noise_channels=noise_channels, 
-                                           filters_gen=filters_gen)
-
-    disc = models.discriminator(input_channels=input_channels, 
-                                constant_fields=constant_fields, 
-                                filters_disc=filters_disc)
-    wgan = gan.WGANGP(gen, disc, lr_disc=lr_disc, lr_gen=lr_gen)
+    if mode == 'GAN':
+        gen = models.generator(mode=mode,
+                               input_channels=input_channels, 
+                               noise_channels=noise_channels, 
+                               filters_gen=filters_gen)
+        disc = models.discriminator(input_channels=input_channels, 
+                                    filters_disc=filters_disc)
+        model = gan.WGANGP(gen, disc, lr_disc=lr_disc, lr_gen=lr_gen)
+    elif mode == 'VAEGAN':
+        (encoder, decoder) = models.generator(mode=mode,
+                                              input_channels=input_channels,
+                                              latent_variables=latent_variables,
+                                              filters_gen=filters_gen)
+        disc = models.discriminator(input_channels=input_channels, 
+                                    filters_disc=filters_disc)
+        gen = VAE(encoder, decoder)
+        model = gan.WGANGP(gen, disc, lr_disc=lr_disc, 
+                                      lr_gen=lr_gen, 
+                                      kl_weight=kl_weight)
+    elif mode == 'det':
+        gen = models.generator(mode=mode,
+                               input_channels=input_channels,
+                               filters_gen=filters_gen)
+        model = deterministic.Deterministic(gen, lr_gen, 
+                                                 loss='mse', 
+                                                 optimizer=Adam)   
 
     if train_years is None and val_years is None:
-        print("loading GAN model only")
+        print("loading model only")
         gc.collect()
-        return (wgan)
+        return model
     else:
         (batch_gen_train, batch_gen_valid, batch_gen_test) = setup_batch_gen(
         train_years=train_years, 
@@ -117,8 +125,7 @@ def setup_gan(train_years=None,
 
     gc.collect()
 
-    return (wgan, batch_gen_train, batch_gen_valid, batch_gen_test,
-        noise_shapes, steps_per_epoch)
+    return (model, batch_gen_train, batch_gen_valid, batch_gen_test, steps_per_epoch)
 
 
 def setup_data(train_years=None, 
@@ -144,81 +151,43 @@ def setup_data(train_years=None,
         noise_dim, steps_per_epoch)
 
 
-def train_gan(wgan, 
-              batch_gen_train, 
-              batch_gen_valid, 
-              noise_shapes, 
-              epoch,
-              steps_per_epoch, 
-              num_epochs, 
-              plot_samples=8, 
-              plot_fn="../figures/progress.pdf"):
+def train_model(model, 
+                mode,
+                batch_gen_train, 
+                batch_gen_valid, 
+                noise_channels,
+                latent_variables,
+                epoch,
+                steps_per_epoch, 
+                num_epochs, 
+                plot_samples=8, 
+                plot_fn="../figures/progress.pdf"):
     
-    for _, _, sample in batch_gen_train.take(1).as_numpy_iterator():
-        img_shape = sample.shape[1:-1]
-        batch_size = sample.shape[0]
-    del sample
-    noise_gen = noise.NoiseGenerator(noise_shapes(img_shape), batch_size=batch_size)
-    loss_log = wgan.train(batch_gen_train, noise_gen,
-                              steps_per_epoch, training_ratio=5)
-    plots.plot_sequences(wgan.gen, batch_gen_valid, noise_gen, epoch,
-            num_samples=plot_samples, out_fn=plot_fn)
-
-    return loss_log
-
-
-def setup_deterministic(train_years=None, 
-                        val_years=None,
-                        val_size=None, 
-                        downsample=False,
-                        weights=None,
-                        input_channels = 9,
-                        constant_fields = 2,
-                        steps_per_epoch=50,
-                        batch_size=64,
-                        filters_gen=64,
-                        loss='mse', 
-                        lr=1e-4, 
-                        optimizer=Adam):
-
-    print(f"downsample flag is {downsample}")
-    print(f"learning rate is: {lr}")
-    print(f"input_channels is {input_channels}")
+    for cond, _, _ in batch_gen_train.take(1).as_numpy_iterator():
+        img_shape = cond.shape[1:-1]
+        batch_size = cond.shape[0]
+    del cond
     
-    gen_det = models.generator_deterministic(input_channels=input_channels,
-                                             constant_fields=constant_fields,
-                                             filters_gen=filters_gen)
-    det_model = deterministic.Deterministic(gen_det, lr, loss, optimizer)
+    if mode == 'GAN':
+        noise_shape = (img_shape[0], img_shape[1], noise_channels)
+        noise_in = noise.NoiseGenerator(noise_shape, batch_size=batch_size)
+        loss_log = model.train(batch_gen_train, noise_in,
+                               steps_per_epoch, training_ratio=5)
+
+    elif mode == 'VAEGAN':
+        noise_shape = (img_shape[0], img_shape[1], latent_variables)
+        noise_in = noise.NoiseGenerator(noise_shape, batch_size=batch_size)
+        loss_log = model.train(batch_gen_train, noise_in,
+                               steps_per_epoch, training_ratio=5)
+
+    elif mode == 'det':
+        loss_log = model.train(batch_gen_train, steps_per_epoch)
     
-    if train_years is None and val_years is None:
-        print("loading deterministic model only")
-        gc.collect()
-        return (det_model)
-    
-    (batch_gen_train, batch_gen_valid, batch_gen_test) = setup_batch_gen(
-        train_years=train_years, 
-        val_years=val_years, 
-        batch_size=batch_size, 
-        val_size=val_size, 
-        downsample=downsample,
-        weights=weights)
-
-    gc.collect()
-
-    return (det_model, batch_gen_train, batch_gen_valid, batch_gen_test,
-        steps_per_epoch)
-
-
-def train_deterministic(det_model, 
-                        batch_gen_train, 
-                        batch_gen_valid, 
-                        epoch,
-                        steps_per_epoch, 
-                        num_epochs, 
-                        plot_samples=8, 
-                        plot_fn="../figures/progress.pdf"):
-    
-    loss_log = det_model.train_det(batch_gen_train, steps_per_epoch)
-    plots.plot_sequences_deterministic(det_model.gen_det, batch_gen_valid, epoch, num_samples=plot_samples, out_fn=plot_fn)
-
+    plots.plot_sequences(model.gen,
+                         mode,
+                         batch_gen_valid,
+                         epoch, 
+                         num_samples=plot_samples, 
+                         out_fn=plot_fn)
+        
     return loss_log

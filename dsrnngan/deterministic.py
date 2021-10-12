@@ -8,9 +8,9 @@ from meta import save_opt_weights, load_opt_weights
 
 class Deterministic(object):
 
-    def __init__(self, gen_det, lr, loss, optimizer):
+    def __init__(self, gen, lr, loss, optimizer):
 
-        self.gen_det = gen_det
+        self.gen = gen
         self.lr = lr
         self.loss = loss
         self.optimizer = optimizer
@@ -18,40 +18,40 @@ class Deterministic(object):
     
     def filenames_from_root(self, root):
         fn = {
-            "gen_det_weights": root+"-gen_det_weights.h5",
-            "gen_det_opt_weights": root+"-gen_det_opt_weights.h5",
+            "gen_weights": root+"-gen_weights.h5",
+            "gen_opt_weights": root+"-gen_opt_weights.h5",
         }
         return fn
     
     def load(self, load_files):
-        self.gen_det.load_weights(load_files["gen_det_weights"])
-        self.gen_det_trainer._make_train_function()
-        load_opt_weights(self.gen_det_trainer, load_files["gen_det_opt_weights"])
+        self.gen.load_weights(load_files["gen_weights"])
+        self.gen_trainer._make_train_function()
+        load_opt_weights(self.gen_trainer, load_files["gen_opt_weights"])
      
     def save(self, save_fn_root):
         paths = self.filenames_from_root(save_fn_root)
-        self.gen_det.save_weights(paths["gen_det_weights"], overwrite=True)
-        save_opt_weights(self.gen_det_trainer, paths["gen_det_opt_weights"])
+        self.gen.save_weights(paths["gen_weights"], overwrite=True)
+        save_opt_weights(self.gen_trainer, paths["gen_opt_weights"])
     
     def build_deterministic(self):
 
         # find shapes for inputs
-        cond_shapes = input_shapes(self.gen_det, "generator_input")
-        const_shapes = input_shapes(self.gen_det, "const")
+        cond_shapes = input_shapes(self.gen, "generator_input")
+        const_shapes = input_shapes(self.gen, "const")
 
         # Create generator training network
         cond_in = [Input(shape=s) for s in cond_shapes]
         const_in = [Input(shape=s) for s in const_shapes]
-        gen_det_in = cond_in + const_in
-        gen_det_out = self.gen_det(gen_det_in)
-        gen_det_out = ensure_list(gen_det_out)
-        self.gen_det_trainer = Model(inputs=gen_det_in, outputs=gen_det_out)
+        gen_in = cond_in + const_in
+        gen_out = self.gen(gen_in)
+        gen_out = ensure_list(gen_out)
+        self.gen_trainer = Model(inputs=gen_in, outputs=gen_out)
 
-        self.gen_det_trainer.compile(loss=self.loss, optimizer=self.optimizer(lr=self.lr))
+        self.gen_trainer.compile(loss=self.loss, optimizer=self.optimizer(lr=self.lr))
         
-        self.gen_det_trainer.summary()
+        self.gen_trainer.summary()
     
-    def train_det(self, batch_gen_train, steps_per_epoch=1, show_progress=True):
+    def train(self, batch_gen_train, steps_per_epoch=1, show_progress=True):
         
         for tmp_batch, _, _ in batch_gen_train.take(1).as_numpy_iterator():
             batch_size = tmp_batch.shape[0]
@@ -67,7 +67,7 @@ class Deterministic(object):
     
         for k in range(steps_per_epoch):
             (cond,const,sample) = batch_gen_iter.get_next()
-            loss = self.gen_det_trainer.train_on_batch([cond, const], sample)
+            loss = self.gen_trainer.train_on_batch([cond, const], sample)
             del sample, cond, const
         
             if show_progress:
