@@ -153,13 +153,11 @@ def rank_metrics_by_time(mode,
                          application,
                          out_fn,
                          weights_dir,
-                         check_every=1,
-                         N_range=None,
                          downsample=False,
                          weights=None,
                          add_noise=True,
                          load_full_image=False,
-                         model_number=None,
+                         model_numbers=None,
                          batch_size=16,
                          num_batches=64,
                          filters_gen=64,
@@ -167,9 +165,7 @@ def rank_metrics_by_time(mode,
                          input_channels=9,
                          constant_fields=2,
                          noise_channels=4,
-                         rank_samples=100,
-                         lr_disc=0.0001,
-                         lr_gen=0.0001):
+                         rank_samples=100):
 
     if load_full_image:
         # small batch size to prevent memory issues
@@ -193,9 +189,7 @@ def rank_metrics_by_time(mode,
                                batch_size=batch_size,
                                filters_gen=filters_gen,
                                filters_disc=filters_disc,
-                               noise_channels=noise_channels,
-                               lr_disc=lr_disc,
-                               lr_gen=lr_gen)
+                               noise_channels=noise_channels)
 
         gen = wgan.gen
         print("loaded gan model")
@@ -208,8 +202,7 @@ def rank_metrics_by_time(mode,
                                               input_channels=input_channels,
                                               constant_fields=constant_fields,
                                               batch_size=batch_size,
-                                              filters_gen=filters_gen,
-                                              lr=lr_gen)
+                                              filters_gen=filters_gen)
         gen = det_model.gen_det
         print("loaded deterministic model")
     else:
@@ -231,9 +224,7 @@ def rank_metrics_by_time(mode,
                                                          batch_size=batch_size,
                                                          filters_gen=filters_gen,
                                                          filters_disc=filters_disc,
-                                                         noise_channels=noise_channels,
-                                                         lr_disc=lr_disc,
-                                                         lr_gen=lr_gen)
+                                                         noise_channels=noise_channels)
 
     def log_line(line):
         with open(out_fn, 'a') as f:
@@ -330,9 +321,7 @@ def rank_metrics_by_noise(filename,
                           filters_disc=64,
                           input_channels=9,
                           constant_fields=2,
-                          noise_channels=8,
-                          lr_disc=0.0001,
-                          lr_gen=0.0001):
+                          noise_channels=8):
 
     wgan, _, batch_gen_valid, _, noise_shapes, _ = train.setup_gan(train_years,
                                                                    val_years,
@@ -344,9 +333,7 @@ def rank_metrics_by_noise(filename,
                                                                    batch_size=batch_size,
                                                                    filters_gen=filters_gen,
                                                                    filters_disc=filters_disc,
-                                                                   noise_channels=noise_channels,
-                                                                   lr_disc=lr_disc,
-                                                                   lr_gen=lr_gen)
+                                                                   noise_channels=noise_channels)
     gen = wgan.gen
     noise_gen = noise.NoiseGenerator(noise_shapes(), batch_size=batch_size)
     print("loaded gan model")
@@ -387,9 +374,7 @@ def rank_metrics_table(weights_fn,
                        filters_disc=64,
                        input_channels=9,
                        constant_fields=2,
-                       noise_channels=8,
-                       lr_disc=0.0001,
-                       lr_gen=0.0001):
+                       noise_channels=8):
     train_years = None
     if mode == "ensemble":
         wgan, _, batch_gen_valid, _, noise_shapes, _ = train.setup_gan(train_years,
@@ -402,9 +387,7 @@ def rank_metrics_table(weights_fn,
                                                                        batch_size=batch_size,
                                                                        filters_gen=filters_gen,
                                                                        filters_disc=filters_disc,
-                                                                       noise_channels=noise_channels,
-                                                                       lr_disc=lr_disc,
-                                                                       lr_gen=lr_gen)
+                                                                       noise_channels=noise_channels)
         gen = wgan.gen
         gen.load_weights(weights_fn)
         noise_gen = noise.NoiseGenerator(noise_shapes(), batch_size=batch_size)
@@ -419,8 +402,7 @@ def rank_metrics_table(weights_fn,
                                                                         input_channels=input_channels,
                                                                         constant_fields=constant_fields,
                                                                         batch_size=batch_size,
-                                                                        filters_gen=filters_gen,
-                                                                        lr=lr_gen)
+                                                                        filters_gen=filters_gen)
         gen_det = det_model.gen_det
         gen_det.load_weights(weights_fn)
         noise_gen = []
@@ -578,19 +560,17 @@ def quality_metrics_by_time(mode,
                             application,
                             out_fn,
                             weights_dir,
-                            check_every=1,
                             downsample=False,
                             weights=None,
                             load_full_image=False,
+                            model_numbers=None,
                             batch_size=16,
                             num_batches=100,
                             filters_gen=64,
                             filters_disc=64,
                             input_channels=9,
                             constant_fields=2,
-                            noise_channels=8,
-                            lr_disc=0.0001,
-                            lr_gen=0.0001):
+                            noise_channels=8):
 
     if load_full_image:
         # small batch size to prevent memory issues
@@ -610,9 +590,7 @@ def quality_metrics_by_time(mode,
                                batch_size=batch_size,
                                filters_gen=filters_gen,
                                filters_disc=filters_disc,
-                               noise_channels=noise_channels,
-                               lr_disc=lr_disc,
-                               lr_gen=lr_gen)
+                               noise_channels=noise_channels)
 
         gen = wgan.gen
         print("loaded gan model")
@@ -625,8 +603,7 @@ def quality_metrics_by_time(mode,
                                               input_channels=input_channels,
                                               constant_fields=constant_fields,
                                               batch_size=batch_size,
-                                              filters_gen=filters_gen,
-                                              lr=lr_gen)
+                                              filters_gen=filters_gen)
         gen = det_model.gen_det
         print("loaded deterministic model")
     else:
@@ -648,9 +625,7 @@ def quality_metrics_by_time(mode,
                                                          batch_size=batch_size,
                                                          filters_gen=filters_gen,
                                                          filters_disc=filters_disc,
-                                                         noise_channels=noise_channels,
-                                                         lr_disc=lr_disc,
-                                                         lr_gen=lr_gen)
+                                                         noise_channels=noise_channels)
 
     files = os.listdir(weights_dir)
 
@@ -690,9 +665,7 @@ def quality_metrics_table(weights_fn,
                           filters_disc=64,
                           input_channels=9,
                           constant_fields=2,
-                          noise_channels=8,
-                          lr_disc=0.0001,
-                          lr_gen=0.0001):
+                          noise_channels=8):
     train_years = None
     if mode == "ensemble":
         wgan, _, batch_gen_valid, _, noise_shapes, _ = train.setup_gan(None,
@@ -705,9 +678,7 @@ def quality_metrics_table(weights_fn,
                                                                        batch_size=batch_size,
                                                                        filters_gen=filters_gen,
                                                                        filters_disc=filters_disc,
-                                                                       noise_channels=noise_channels,
-                                                                       lr_disc=lr_disc,
-                                                                       lr_gen=lr_gen)
+                                                                       noise_channels=noise_channels)
         gen = wgan.gen
         gen.load_weights(weights_fn)
         noise_gen = noise.NoiseGenerator(noise_shapes(), batch_size=batch_size)
@@ -719,8 +690,7 @@ def quality_metrics_table(weights_fn,
                                                                         downsample=downsample,
                                                                         weights=weights,
                                                                         batch_size=batch_size,
-                                                                        filters_gen=filters_gen,
-                                                                        lr=lr_gen)
+                                                                        filters_gen=filters_gen)
         gen = det_model.gen_det
         gen.load_weights(weights_fn)
         noise_gen = []
