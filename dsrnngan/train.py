@@ -133,22 +133,29 @@ def setup_data(train_years=None,
                val_size = None, 
                downsample=False,
                weights=None,
-               steps_per_epoch=50,
-               batch_size=16, 
-               noise_dim=(10,10,8)):
+               batch_size=None, 
+               load_full_image=None):
     
-    (batch_gen_train, batch_gen_valid, batch_gen_test) = setup_batch_gen(
-        train_years=train_years, 
-        val_years=val_years, 
-        batch_size=batch_size, 
-        val_size=val_size, 
-        downsample=downsample,
-        weights=weights)
+    if load_full_image == True:
+        batch_gen_train = setup_full_image_dataset(train_years, 
+                                                   batch_size=batch_size, 
+                                                   downsample=downsample)
+        batch_gen_valid = setup_full_image_dataset(val_years, 
+                                                   batch_size=batch_size, 
+                                                   downsample=downsample)
+        
+    else:    
+        (batch_gen_train, batch_gen_valid, _) = setup_batch_gen(
+            train_years=train_years, 
+            val_years=val_years, 
+            batch_size=batch_size, 
+            val_size=val_size, 
+            downsample=downsample,
+            weights=weights)
 
     gc.collect()
 
-    return (None, batch_gen_train, batch_gen_valid, batch_gen_test,
-        noise_dim, steps_per_epoch)
+    return (batch_gen_train, batch_gen_valid)
 
 
 def train_model(model, 

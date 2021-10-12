@@ -20,15 +20,3 @@ class NoiseGenerator(object):
             return n
 
         return noise(self.noise_shapes)
-
-
-## create noise
-def noise_generator(shape, batch_size, random_seed=None, mean=0.0, std=1.0):
-    rng = np.random.RandomState(seed=random_seed)
-    shape = (batch_size, ) + shape
-    n = rng.randn(*shape).astype(np.float32)
-    if std != 1.0:
-        n *= std
-    if mean != 0.0:
-        n += mean
-    return n
