@@ -1,12 +1,8 @@
 import matplotlib
 matplotlib.use("Agg")
 import plots
-import netCDF4
-import numpy as np
-import pandas as pd
 
 log_path ='/ppdata/lucy-cGAN/logs/IFS/gen_256_disc_512/noise_4/weights_4x'
-application = 'IFS'
 added_noise = True
 full_image = True
 
