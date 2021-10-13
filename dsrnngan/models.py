@@ -24,7 +24,7 @@ def generator(mode,
     generator_input = Input(shape=(None, None, input_channels), name="generator_input")
     print(f"generator_input shape: {generator_input.shape}")
     # constant fields
-    const_input = Input(shape=(None, None, constant_fields), name="constants")
+    const_input = Input(shape=(None, None, constant_fields), name="const_input")
     print(f"constants_input shape: {const_input.shape}")
 
     # Convolve constant fields down to match other input dimensions
@@ -50,8 +50,8 @@ def generator(mode,
 
     if mode == 'VAEGAN':
         # encoder model and outputs
-        means = Conv2D(filters=1, kernel_size=1, activation=LeakyReLU(alpha=relu_alpha), padding="valid")(generator_output)
-        logvars = Conv2D(filters=1, kernel_size=1, activation=LeakyReLU(alpha=relu_alpha), padding="valid")(generator_output)
+        means = Conv2D(filters=latent_variables, kernel_size=1, activation=LeakyReLU(alpha=relu_alpha), padding="valid")(generator_output)
+        logvars = Conv2D(filters=latent_variables, kernel_size=1, activation=LeakyReLU(alpha=relu_alpha), padding="valid")(generator_output)
         encoder_model = Model(inputs=[generator_input, const_input], outputs=[means, logvars], name='encoder')
         # decoder model and inputs
         mean_input = tf.keras.layers.Input(shape=(None, None, latent_variables), name="mean_input")

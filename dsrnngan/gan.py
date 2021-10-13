@@ -62,8 +62,8 @@ class WGANGP(object):
         # find shapes for inputs
         if self.mode == 'GAN':
             cond_shapes = input_shapes(self.gen, "generator_input")
-            const_shapes = input_shapes(self.gen, "const")
-            noise_shapes = input_shapes(self.gen, "noise")
+            const_shapes = input_shapes(self.gen, "const_input")
+            noise_shapes = input_shapes(self.gen, "noise_input")
         elif self.mode == 'VAEGAN':
             cond_shapes = input_shapes(self.gen.encoder, "generator_input")
             const_shapes = input_shapes(self.gen.encoder, "const_input")
@@ -79,7 +79,7 @@ class WGANGP(object):
                 gen_in = cond_in + const_in + noise_in
                 if self.mode == 'GAN':
                     gen_out = self.gen(gen_in)
-                elif self.mode =='VAEGAN':
+                elif self.mode == 'VAEGAN':
                     encoder_in = cond_in + const_in
                     (encoder_mean, encoder_log_var) = self.gen.encoder(encoder_in)
                     decoder_in = [encoder_mean,encoder_log_var,noise_in,const_in]
@@ -89,7 +89,7 @@ class WGANGP(object):
                 disc_out_gen = self.disc(disc_in_gen)
                 self.gen_trainer = Model(inputs=gen_in, 
                                          outputs=disc_out_gen, 
-                                         name = 'gen trainer')
+                                         name='gen trainer')
             elif self.mode == 'VAEGAN':
                 self.gen_trainer = VAE_trainer(self.gen, self.disc, self.kl_weight)
 

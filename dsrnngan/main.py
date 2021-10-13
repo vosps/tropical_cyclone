@@ -175,7 +175,7 @@ if __name__ == "__main__":
 
             log_file = os.path.join(log_folder, "log.txt")
             # TODO: does VAEGAN need more?
-            if mode == "GAN":
+            if mode in ("GAN", "VAEGAN"):
                 log = pd.DataFrame(
                     columns=["training_samples",
                              "disc_loss", "disc_loss_real",
@@ -184,8 +184,6 @@ if __name__ == "__main__":
             elif mode == "det":
                 log = pd.DataFrame(columns=["training_samples",
                                             "loss"])
-            else:
-                assert False
 
         plot_fname = os.path.join(log_folder, "progress.pdf")
         rank_small_fname = os.path.join(log_folder, "rank-small.txt")
