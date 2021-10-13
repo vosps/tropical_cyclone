@@ -52,9 +52,9 @@ def plot_sequences(gen,
             noise_in = NoiseGenerator(noise_shape, batch_size=batch_size)
             seq_gen.append(gen.decoder.predict([mean, logvar, noise_in, const]))
 
-    seq_real = data.denormalize(seq_real)
-    cond = data.denormalize(cond)
-    seq_gen = [data.denormalize(seq) for seq in seq_gen]
+    seq_real = data.denormalise(seq_real)
+    cond = data.denormalise(cond)
+    seq_gen = [data.denormalise(seq) for seq in seq_gen]
 
     num_rows = num_samples
     num_cols = 2+num_instances
