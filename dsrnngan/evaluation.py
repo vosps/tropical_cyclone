@@ -81,6 +81,7 @@ def ensemble_ranks(mode,
                    gen,
                    batch_gen,
                    noise_channels,
+                   latent_variables,
                    batch_size,
                    num_batches,
                    noise_offset=0.0,
@@ -128,8 +129,7 @@ def ensemble_ranks(mode,
 
         if mode == "GAN":
             for i in range(rank_samples):
-                img_shape = cond.shape[1:-1]
-                noise_shape = (img_shape[0], img_shape[1], noise_channels)
+                noise_shape = np.array(cond)[0,...,0].shape + (noise_channels,)
                 n = NoiseGenerator(noise_shape, batch_size=batch_size)
                 for nn in n:
                     nn *= noise_mul
@@ -144,6 +144,24 @@ def ensemble_ranks(mode,
             if denormalise_data:
                 sample_gen = data.denormalise(sample_gen)
             samples_gen.append(sample_gen)
+        elif mode == 'VAEGAN':
+            ## call encoder once
+            (mean, logvar) = gen.encoder([cond, const])
+            for i in range(rank_samples):
+                noise_shape = np.array(cond)[0,...,0].shape + (latent_variables,)
+                n = NoiseGenerator(noise_shape, batch_size=batch_size)
+                for nn in n:
+                    nn *= noise_mul
+                    nn -= noise_offset
+                ## generate ensemble of preds with decoder
+                sample_gen = gen.decoder.predict([mean, logvar, n, const])
+                if denormalise_data:
+                    sample_gen = data.denormalise(sample_gen)
+                if add_noise:
+                    (noise_dim_1, noise_dim_2) = sample_gen[0,...,0].shape
+                    noise = np.random.rand(batch_size, noise_dim_1, noise_dim_2, 1)*noise_factor
+                    sample_gen += noise
+                samples_gen.append(sample_gen)
         else:
             print("mode type not implemented in ensemble_ranks")
 
@@ -259,7 +277,8 @@ def rank_metrics_by_time(mode,
             ranks, crps_scores = ensemble_ranks(mode,
                                                 gen,
                                                 batch_gen_valid,
-                                                noise_channels,
+                                                noise_channels=noise_channels,
+                                                latent_variables=latent_variables,
                                                 batch_size=batch_size,
                                                 num_batches=num_batches,
                                                 add_noise=add_noise,
@@ -293,7 +312,8 @@ def rank_metrics_by_time(mode,
         ranks, crps_scores = ensemble_ranks(mode,
                                             gen,
                                             batch_gen_valid,
-                                            noise_channels,
+                                            noise_channels=noise_channels,
+                                            latent_variables=latent_variables,
                                             batch_size=batch_size,
                                             num_batches=num_batches,
                                             add_noise=add_noise,
@@ -364,6 +384,7 @@ def rank_metrics_by_noise(filename,
                                               batch_gen_valid,
                                               noise_mul=m,
                                               noise_channels=noise_channels,
+                                              latent_variables=latent_variables,
                                               batch_size=batch_size,
                                               num_batches=num_batches,
                                               add_noise=add_noise,
@@ -398,7 +419,7 @@ def rank_metrics_table(weights_fn,
                        load_full_image=None):
     
     train_years = None
-    if mode in ["GAN", "det", "VAE-GAN"]:
+    if mode in ["GAN", "det", "VAEGAN"]:
         (gen, batch_gen_valid) = setup_inputs(mode=mode,
                                               val_years=val_years,
                                               downsample=downsample,
@@ -415,7 +436,8 @@ def rank_metrics_table(weights_fn,
         ranks, crps_scores = ensemble_ranks(mode, 
                                             gen, 
                                             batch_gen_valid, 
-                                            noise_channels, 
+                                            noise_channels=noise_channels,
+                                            latent_variables=latent_variables,
                                             num_batches=num_batches,
                                             add_noise=add_noise,
                                             noise_factor=noise_factor)
@@ -432,13 +454,11 @@ def rank_metrics_table(weights_fn,
             gen = GeneratorRainFARM(10, data.denormalise)
             ranks, crps_scores = ensemble_ranks("GAN", gen, 
                                                 batch_gen_valid,
-                                                noise_channels, 
                                                 num_batches=num_batches)
         if mode == "lanczos":
             gen = GeneratorLanczos((100, 100))
             ranks, crps_scores = ensemble_ranks("det", gen, 
-                                                batch_gen_valid, 
-                                                noise_channels, 
+                                                batch_gen_valid,
                                                 num_batches=num_batches)
         if mode == "constant":
             gen = GeneratorConstantUp(10)
@@ -493,6 +513,7 @@ def image_quality(mode,
                   gen,
                   batch_gen,
                   noise_channels,
+                  latent_variables,
                   batch_size,
                   num_instances=1,
                   num_batches=100,
@@ -525,14 +546,21 @@ def image_quality(mode,
         if denormalise_data:
             sample = data.denormalise(sample)
 
+        if mode == 'VAEGAN':
+             ## call encoder once
+             (mean, logvar) = gen.encoder([cond, const])
+
         for i in range(num_instances):
             if mode == "GAN":
-                img_shape = cond.shape[1:-1]
-                noise_shape = (img_shape[0], img_shape[1], noise_channels)
+                noise_shape = np.array(cond)[0,...,0].shape + (noise_channels,)
                 n = NoiseGenerator(noise_shape, batch_size=batch_size)
                 img_gen = gen.predict([cond, const, n])
             elif mode == "det":
                 img_gen = gen.predict([cond, const])
+            elif mode == 'VAEGAN':
+                noise_shape = np.array(cond)[0,...,0].shape + (noise_channels,)
+                n = NoiseGenerator(noise_shape, batch_size=batch_size)
+                img_gen = gen.decoder.predict([cond, const, n])
             else:
                 try:
                     img_gen = gen.predict([cond, const])
@@ -614,6 +642,7 @@ def quality_metrics_by_time(mode,
                                              gen,
                                              batch_gen_valid,
                                              noise_channels=noise_channels,
+                                             latent_variables=latent_variables,
                                              batch_size=batch_size,
                                              num_instances=1,
                                              num_batches=num_batches,
@@ -637,7 +666,7 @@ def quality_metrics_table(weights_fn,
                           load_full_image=False):
         
     train_years = None
-    if mode in ["GAN", "det", "VAE-GAN"]:
+    if mode in ["GAN", "det", "VAEGAN"]:
         (gen, batch_gen_valid) = setup_inputs(mode=mode,
                                               val_years=val_years,
                                               downsample=downsample,
@@ -674,6 +703,7 @@ def quality_metrics_table(weights_fn,
     mae, rmse, ssim, lsd = image_quality(mode, gen,
                                          batch_gen_valid,
                                          noise_channels=noise_channels,
+                                         latent_variables=latent_variables,
                                          batch_size=batch_size,
                                          num_instances=1,
                                          num_batches=num_batches,
