@@ -118,11 +118,6 @@ if __name__ == "__main__":
     num_epochs = int(num_samples/(steps_per_epoch * batch_size))
     epoch = 1
 
-    # noise_dim = (10,10) + (noise_channels,)
-
-    # number of constant fields
-    constant_fields = 2
-
     # create log folder and model save/load subfolder if they don't exist
     Path(log_folder).mkdir(parents=True, exist_ok=True)
     model_weights_root = os.path.join(log_folder, "models")

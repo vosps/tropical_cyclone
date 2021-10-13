@@ -16,12 +16,13 @@ warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 path = os.path.dirname(os.path.abspath(__file__))
 
+
 def setup_inputs(mode,
                  val_years,
                  downsample,
                  weights,
                  input_channels,
-                 batch_size,  
+                 batch_size,
                  num_batches,
                  filters_gen,
                  filters_disc,
@@ -55,8 +56,8 @@ def setup_inputs(mode,
     if load_full_image:
         print('Loading full sized image dataset')
         # load full size image
-        batch_gen_valid = train.setup_full_image_dataset(val_years, 
-                                                         batch_size=batch_size, 
+        batch_gen_valid = train.setup_full_image_dataset(val_years,
+                                                         batch_size=batch_size,
                                                          downsample=downsample)
     else:
         print('Evaluating with smaller image dataset')
@@ -69,6 +70,7 @@ def setup_inputs(mode,
                                                         input_channels=input_channels,
                                                         batch_size=batch_size)
     return (gen, batch_gen_valid)
+
 
 def randomize_nans(x, rnd_mean, rnd_range):
     nan_mask = np.isnan(x)
@@ -129,7 +131,7 @@ def ensemble_ranks(mode,
 
         if mode == "GAN":
             for i in range(rank_samples):
-                noise_shape = np.array(cond)[0,...,0].shape + (noise_channels,)
+                noise_shape = np.array(cond)[0, ..., 0].shape + (noise_channels,)
                 n = NoiseGenerator(noise_shape, batch_size=batch_size)
                 for nn in n:
                     nn *= noise_mul
@@ -145,20 +147,20 @@ def ensemble_ranks(mode,
                 sample_gen = data.denormalise(sample_gen)
             samples_gen.append(sample_gen)
         elif mode == 'VAEGAN':
-            ## call encoder once
+            # call encoder once
             (mean, logvar) = gen.encoder([cond, const])
             for i in range(rank_samples):
-                noise_shape = np.array(cond)[0,...,0].shape + (latent_variables,)
+                noise_shape = np.array(cond)[0, ..., 0].shape + (latent_variables,)
                 n = NoiseGenerator(noise_shape, batch_size=batch_size)
                 for nn in n:
                     nn *= noise_mul
                     nn -= noise_offset
-                ## generate ensemble of preds with decoder
+                # generate ensemble of preds with decoder
                 sample_gen = gen.decoder.predict([mean, logvar, n, const])
                 if denormalise_data:
                     sample_gen = data.denormalise(sample_gen)
                 if add_noise:
-                    (noise_dim_1, noise_dim_2) = sample_gen[0,...,0].shape
+                    (noise_dim_1, noise_dim_2) = sample_gen[0, ..., 0].shape
                     noise = np.random.rand(batch_size, noise_dim_1, noise_dim_2, 1)*noise_factor
                     sample_gen += noise
                 samples_gen.append(sample_gen)
@@ -243,14 +245,14 @@ def rank_metrics_by_time(mode,
                                           downsample=downsample,
                                           weights=weights,
                                           input_channels=input_channels,
-                                          batch_size=batch_size,  
+                                          batch_size=batch_size,
                                           num_batches=num_batches,
                                           filters_gen=filters_gen,
                                           filters_disc=filters_disc,
                                           noise_channels=noise_channels,
                                           latent_variables=latent_variables,
                                           load_full_image=load_full_image)
-    
+
     if model_number is not None:
         out_fn += model_number
 
@@ -363,7 +365,7 @@ def rank_metrics_by_noise(filename,
                                           downsample=downsample,
                                           weights=weights,
                                           input_channels=input_channels,
-                                          batch_size=batch_size,  
+                                          batch_size=batch_size,
                                           num_batches=num_batches,
                                           filters_gen=filters_gen,
                                           filters_disc=filters_disc,
@@ -416,7 +418,7 @@ def rank_metrics_table(weights_fn,
                        noise_channels=None,
                        latent_variables=None,
                        load_full_image=None):
-    
+
     train_years = None
     if mode in ["GAN", "det", "VAEGAN"]:
         (gen, batch_gen_valid) = setup_inputs(mode=mode,
@@ -424,7 +426,7 @@ def rank_metrics_table(weights_fn,
                                               downsample=downsample,
                                               weights=weights,
                                               input_channels=input_channels,
-                                              batch_size=batch_size,  
+                                              batch_size=batch_size,
                                               num_batches=num_batches,
                                               filters_gen=filters_gen,
                                               filters_disc=filters_disc,
@@ -432,16 +434,16 @@ def rank_metrics_table(weights_fn,
                                               latent_variables=latent_variables,
                                               load_full_image=load_full_image)
         gen.load_weights(weights_fn)
-        ranks, crps_scores = ensemble_ranks(mode, 
-                                            gen, 
-                                            batch_gen_valid, 
+        ranks, crps_scores = ensemble_ranks(mode,
+                                            gen,
+                                            batch_gen_valid,
                                             noise_channels=noise_channels,
                                             latent_variables=latent_variables,
                                             num_batches=num_batches,
                                             add_noise=add_noise,
                                             noise_factor=noise_factor)
 
-    elif mode in ['rainfarm', 'lanczos' , 'constant']:
+    elif mode in ['rainfarm', 'lanczos', 'constant']:
         (_, batch_gen_valid) = train.setup_data(train_years,
                                                 val_years,
                                                 val_size=batch_size*num_batches,
@@ -451,12 +453,12 @@ def rank_metrics_table(weights_fn,
                                                 load_full_image=load_full_image)
         if mode == "rainfarm":
             gen = GeneratorRainFARM(10, data.denormalise)
-            ranks, crps_scores = ensemble_ranks("GAN", gen, 
+            ranks, crps_scores = ensemble_ranks("GAN", gen,
                                                 batch_gen_valid,
                                                 num_batches=num_batches)
         elif mode == "lanczos":
             gen = GeneratorLanczos((100, 100))
-            ranks, crps_scores = ensemble_ranks("det", gen, 
+            ranks, crps_scores = ensemble_ranks("det", gen,
                                                 batch_gen_valid,
                                                 num_batches=num_batches)
         elif mode == "constant":
@@ -546,18 +548,18 @@ def image_quality(mode,
             sample = data.denormalise(sample)
 
         if mode == 'VAEGAN':
-             ## call encoder once
-             (mean, logvar) = gen.encoder([cond, const])
+            # call encoder once
+            (mean, logvar) = gen.encoder([cond, const])
 
         for i in range(num_instances):
             if mode == "GAN":
-                noise_shape = np.array(cond)[0,...,0].shape + (noise_channels,)
+                noise_shape = np.array(cond)[0, ..., 0].shape + (noise_channels,)
                 n = NoiseGenerator(noise_shape, batch_size=batch_size)
                 img_gen = gen.predict([cond, const, n])
             elif mode == "det":
                 img_gen = gen.predict([cond, const])
             elif mode == 'VAEGAN':
-                noise_shape = np.array(cond)[0,...,0].shape + (noise_channels,)
+                noise_shape = np.array(cond)[0, ..., 0].shape + (noise_channels,)
                 n = NoiseGenerator(noise_shape, batch_size=batch_size)
                 img_gen = gen.decoder.predict([cond, const, n])
             else:
@@ -612,7 +614,7 @@ def quality_metrics_by_time(mode,
                                           downsample=downsample,
                                           weights=weights,
                                           input_channels=input_channels,
-                                          batch_size=batch_size,  
+                                          batch_size=batch_size,
                                           num_batches=num_batches,
                                           filters_gen=filters_gen,
                                           filters_disc=filters_disc,
@@ -645,7 +647,7 @@ def quality_metrics_by_time(mode,
                                              num_instances=1,
                                              num_batches=num_batches,
                                              load_full_image=load_full_image)
-        
+
         log_line("{} {:.6f} {:.6f} {:.6f} {:.6f}".format(N_samples, rmse.mean(), ssim.mean(), np.nanmean(lsd), mae.mean()))
 
 
@@ -662,7 +664,7 @@ def quality_metrics_table(weights_fn,
                           latent_variables=None,
                           noise_channels=None,
                           load_full_image=False):
-        
+
     train_years = None
     if mode in ["GAN", "det", "VAEGAN"]:
         (gen, batch_gen_valid) = setup_inputs(mode=mode,
