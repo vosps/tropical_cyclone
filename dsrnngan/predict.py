@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colorbar, colors, gridspec
-from noise import noise_generator
+from noise import NoiseGenerator
 import train
 import ecpoint
 import data
@@ -11,7 +11,7 @@ import argparse
 from tfrecords_generator_ifs import create_fixed_dataset
 from data_generator_ifs import DataGenerator as DataGeneratorFull
 from data import get_dates
-from plots import plot_img, plot_img_log
+from plots import plot_img
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--load_weights_root', type=str, 
@@ -171,9 +171,8 @@ seq_ecpoint = []
 data_predict_iter = iter(data_predict)    
 for i in range(num_predictions):
     (inputs,outputs) = next(data_predict_iter)
-    ## retrieve noise dimensions from input condition
-    noise_dim = inputs['generator_input'][0,...,0].shape + (noise_channels,)
-    inputs['noise_input'] = noise_generator(noise_dim, batch_size=batch_size)
+    noise_shape = inputs['generator_input'][0,...,0].shape + (noise_channels,)
+    inputs['noise_input'] = NoiseGenerator(noise_shape, batch_size=batch_size)
     ## store denormalised inputs, outputs, predictions
     seq_const.append(data.denormalise(inputs['constants']))
     seq_cond.append(data.denormalise(inputs['generator_input']))    
@@ -187,9 +186,8 @@ for i in range(num_predictions):
     ## Generate ensemble members
     pred_ensemble = []
     for j in range(num_samples):
-        ## retrieve noise dimensions from input condition
-        noise_dim = inputs['generator_input'][0,...,0].shape + (noise_channels,) 
-        inputs['noise_input'] = noise_generator(noise_dim, batch_size=batch_size)
+        noise_shape = inputs['generator_input'][0,...,0].shape + (noise_channels,)
+        inputs['noise_input'] = NoiseGenerator(noise_shape, batch_size=batch_size)
         pred_ensemble.append(data.denormalise(gen.predict(inputs)))
     pred_ensemble = np.array(pred_ensemble)
     pred.append(pred_ensemble)

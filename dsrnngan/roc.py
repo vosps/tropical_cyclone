@@ -10,7 +10,7 @@ import train
 import data
 import ecpoint
 import benchmarks
-from noise import noise_generator
+from noise import NoiseGenerator
 from data import get_dates
 
 # input parameters
@@ -116,9 +116,8 @@ for i in range(num_images):
     ## generate ensemble members
     pred_ensemble = []
     for j in range(ensemble_members):
-        ## retrieve noise dimensions from input condition
-        noise_dim = inputs['generator_input'][0,...,0].shape + (noise_channels,)
-        inputs['noise_input'] = noise_generator(noise_dim, batch_size=batch_size)
+        noise_shape = inputs['generator_input'][0,...,0].shape + (noise_channels,)
+        inputs['noise_input'] = NoiseGenerator(noise_shape, batch_size=batch_size)
         ## store denormalised predictions
         pred_ensemble.append(data.denormalise(wgan.gen.predict(inputs))[...,0])
     pred_ensemble = np.array(pred_ensemble)
