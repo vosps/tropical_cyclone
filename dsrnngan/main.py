@@ -276,9 +276,7 @@ if __name__ == "__main__":
                                         input_channels=input_channels,
                                         latent_variables=latent_variables,
                                         noise_channels=noise_channels,
-                                        rank_samples=100,
-                                        lr_disc=lr_disc,
-                                        lr_gen=lr_gen)
+                                        rank_samples=100)
 
     if args.rank_full:
         evaluation.rank_metrics_by_time(mode,
@@ -298,9 +296,7 @@ if __name__ == "__main__":
                                         input_channels=input_channels,
                                         latent_variables=latent_variables,
                                         noise_channels=noise_channels,
-                                        rank_samples=100,
-                                        lr_disc=lr_disc,
-                                        lr_gen=lr_gen)
+                                        rank_samples=100)
 
     if args.qual_small:
         evaluation.quality_metrics_by_time(mode,
@@ -317,9 +313,7 @@ if __name__ == "__main__":
                                            filters_disc=filters_disc,
                                            input_channels=input_channels,
                                            latent_variables=latent_variables,
-                                           noise_channels=noise_channels,
-                                           lr_disc=lr_disc,
-                                           lr_gen=lr_gen)
+                                           noise_channels=noise_channels)
 
     if args.qual_full:
         evaluation.quality_metrics_by_time(mode,
@@ -336,6 +330,4 @@ if __name__ == "__main__":
                                            filters_disc=filters_disc,
                                            input_channels=input_channels,
                                            latent_variables=latent_variables,
-                                           noise_channels=noise_channels,
-                                           lr_disc=lr_disc,
-                                           lr_gen=lr_gen)
+                                           noise_channels=noise_channels)
