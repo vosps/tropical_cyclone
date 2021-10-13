@@ -90,7 +90,7 @@ def setup_model(mode,
                                filters_gen=filters_gen)
         disc = models.discriminator(input_channels=input_channels, 
                                     filters_disc=filters_disc)
-        model = gan.WGANGP(gen, disc, lr_disc=lr_disc, lr_gen=lr_gen)
+        model = gan.WGANGP(gen, disc, mode, lr_disc=lr_disc, lr_gen=lr_gen)
     elif mode == 'VAEGAN':
         (encoder, decoder) = models.generator(mode=mode,
                                               input_channels=input_channels,
@@ -99,9 +99,8 @@ def setup_model(mode,
         disc = models.discriminator(input_channels=input_channels, 
                                     filters_disc=filters_disc)
         gen = VAE(encoder, decoder)
-        model = gan.WGANGP(gen, disc, lr_disc=lr_disc, 
-                                      lr_gen=lr_gen, 
-                                      kl_weight=kl_weight)
+        model = gan.WGANGP(gen, disc, mode, lr_disc=lr_disc, 
+                           lr_gen=lr_gen, kl_weight=kl_weight)
     elif mode == 'det':
         gen = models.generator(mode=mode,
                                input_channels=input_channels,
