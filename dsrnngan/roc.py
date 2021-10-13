@@ -40,9 +40,9 @@ if problem_type == "normal":
     plot_input_title = 'IFS'
     input_channels = 9
     noise_channels = 4
-elif problem_type == "easy":
+elif problem_type == "superresolution":
     downsample = True
-    plot_input_title = 'Superresolution'
+    plot_input_title = "Superresolution"
     input_channels = 1
     noise_channels = 2
 else:

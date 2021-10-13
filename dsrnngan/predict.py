@@ -28,8 +28,9 @@ parser.add_argument('--latent_variables', type=int, default=1,
                     help="Latent variables per 'pixel' in VAEGAN")
 parser.add_argument('--input_channels', type=int,
                     help="Dimensions of input condition passed to generator and discriminator", default=9)
-parser.add_argument('--problem_type', type=str, 
-                    help="normal (IFS>NIMROD), easy (NIMROD>NIMROD)", default="normal")
+parser.add_argument('--problem_type', type=str, default="normal",
+                    choices=("normal", "superresolution"),
+                    help="normal: IFS to NIMROD. superresolution: coarsened NIMROD to NIMROD")  # noqa: E128
 parser.add_argument('--predict_full_image', type=bool,
                     help="False (small images used for training), True (full image)", default=False)
 parser.add_argument('--include_Lanczos', type=bool,
@@ -82,7 +83,7 @@ if problem_type == "normal":
     downsample = False
     plot_input_title = 'IFS'
     input_channels = input_channels
-elif problem_type == "easy":
+elif problem_type == "superresolution":
     downsample = True
     plot_input_title = 'Downsampled'
     input_channels = 1 # superresolution problem doesn't have all 9 IFS fields
@@ -135,7 +136,7 @@ data_ecpoint = DataGeneratorFull(dates=dates,
                                  downsample=downsample)    
 
 if include_deterministic:
-    if problem_type == 'easy':
+    if problem_type == 'superresolution':
         filters_det = 256
         gen_det_weights = '/ppdata/lucy-cGAN/logs/EASY/deterministic/filters_256/gen_det_weights-IFS-0400000.h5'
     elif problem_type == 'normal':
