@@ -204,6 +204,8 @@ def train_model(*,
                          mode,
                          batch_gen_valid,
                          epoch,
+                         noise_channels=noise_channels,
+                         latent_variables=latent_variables,
                          num_samples=plot_samples,
                          out_fn=plot_fn)
 

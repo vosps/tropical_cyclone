@@ -24,8 +24,9 @@ def plot_img_log(img, value_range=(0.01, 5), extent=None):
 def plot_sequences(gen, 
                    mode, 
                    batch_gen,
-                   noise_shape,
                    epoch,
+                   noise_channels,
+                   latent_variables,
                    num_samples=8, 
                    num_instances=4, 
                    out_fn=None):
@@ -36,6 +37,7 @@ def plot_sequences(gen,
     seq_gen = []
     if mode == 'GAN':
         for i in range(num_instances):
+            noise_shape = cond[0,...,0].shape + (noise_channels,)
             noise_in = NoiseGenerator(noise_shape, batch_size=batch_size)
             seq_gen.append(gen.predict([cond, const, noise_in]))
     elif mode == 'det':
@@ -46,6 +48,7 @@ def plot_sequences(gen,
         (mean, logvar) = gen.encoder([cond, const])
         ## run decoder n times
         for i in range(num_instances):
+            noise_shape = cond[0,...,0].shape + (latent_variables,)
             noise_in = NoiseGenerator(noise_shape, batch_size=batch_size)
             seq_gen.append(gen.decoder.predict([mean, logvar, noise_in, const]))
 
