@@ -1,13 +1,10 @@
-
 import matplotlib
 matplotlib.use("Agg")
-import numpy as np
 import evaluation
 import plots
 
-mode = "ensemble"
+mode = "GAN"
 val_years = 2019
-application = "IFS"
 batch_size = 16
 num_batches = 64
 filters_gen = 64
@@ -15,7 +12,8 @@ filters_disc = 512
 lr_disc = 1e-5
 lr_gen = 1e-5
 downsample = False
-constant_fields = 2
+latent_variables = 1
+noise_factor = 1e-6
 #model_number = '0124800'
 model_number = None
 noise_channels = 4
@@ -31,44 +29,40 @@ if downsample == True:
 elif  downsample == False:
     input_channels = 9
 
-if mode == "ensemble":
+if mode == "GAN":
     log_path = "/ppdata/lucy-cGAN/logs/IFS/gen_64_disc_512/noise_4/weights_4x"
     rank_samples = 100
-elif mode == "deterministic":
+elif mode == "det":
     log_path = "/ppdata/lucy-cGAN/logs/IFS/filters_128/softplus/det/lr_1e-4/"
     rank_samples = 1
 
 if add_noise == False and load_full_image==False:
-    out_fn = "{}/eval-{}_no_noise__{}.txt".format(log_path, application, str(val_years))
+    out_fn = "{}/eval_no_noise__{}.txt".format(log_path, str(val_years))
 elif add_noise ==True and load_full_image==False:
-    out_fn = "{}/eval-{}_noise__{}.txt".format(log_path, application, str(val_years))
+    out_fn = "{}/eval_noise__{}.txt".format(log_path, str(val_years))
 if add_noise == False and load_full_image==True:
-    out_fn = "{}/eval-{}_no_noise_full_image__{}.txt".format(log_path, application, str(val_years))
+    out_fn = "{}/eval_no_noise_full_image__{}.txt".format(log_path, str(val_years))
 elif add_noise ==True and load_full_image==True:
-    out_fn = "{}/eval-{}_noise_full_image__{}.txt".format(log_path, application, str(val_years))
+    out_fn = "{}/eval_noise_full_image__{}.txt".format(log_path,str(val_years))
 
-eval.rank_metrics_by_time(mode, 
-                          val_years, 
-                          application, 
-                          out_fn, 
-                          weights_dir=log_path, 
-                          check_every=1, 
-                          N_range=None, 
-                          downsample=downsample,
-                          weights=weights,
-                          add_noise=add_noise,
-                          load_full_image=load_full_image,
-                          model_number=model_number,
-                          batch_size=batch_size, 
-                          num_batches=num_batches, 
-                          filters_gen=filters_gen, 
-                          filters_disc=filters_disc, 
-                          input_channels=input_channels,
-                          constant_fields=constant_fields,
-                          noise_channels=noise_channels,  
-                          rank_samples=rank_samples, 
-                          lr_disc=lr_disc, 
-                          lr_gen=lr_gen)
+evaluation.rank_metrics_by_time(mode, 
+                                val_years, 
+                                out_fn, 
+                                weights_dir=log_path, 
+                                downsample=downsample,
+                                weights=weights,
+                                add_noise=add_noise,
+                                noise_factor=noise_factor,
+                                load_full_image=load_full_image,
+                                model_number=model_number,
+                                batch_size=batch_size, 
+                                num_batches=num_batches, 
+                                filters_gen=filters_gen, 
+                                filters_disc=filters_disc, 
+                                input_channels=input_channels,
+                                latent_variables=latent_variables,
+                                noise_channels=noise_channels,  
+                                rank_samples=rank_samples)
 
 ## plot rank histograms
 labels_1 = ['124800', '198400']

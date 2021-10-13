@@ -221,7 +221,6 @@ def rank_OP(norm_ranks, num_ranks=100):
 
 def rank_metrics_by_time(mode,
                          val_years,
-                         application,
                          out_fn,
                          weights_dir,
                          downsample=False,
@@ -594,7 +593,6 @@ def image_quality(mode,
 
 def quality_metrics_by_time(mode,
                             val_years,
-                            application,
                             out_fn,
                             weights_dir,
                             downsample=False,
