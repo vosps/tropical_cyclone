@@ -17,7 +17,8 @@ warnings.filterwarnings("ignore", category=RuntimeWarning)
 path = os.path.dirname(os.path.abspath(__file__))
 
 
-def setup_inputs(mode,
+def setup_inputs(*,
+                 mode,
                  val_years,
                  downsample,
                  weights,
@@ -56,19 +57,21 @@ def setup_inputs(mode,
     if load_full_image:
         print('Loading full sized image dataset')
         # load full size image
-        batch_gen_valid = train.setup_full_image_dataset(val_years,
-                                                         batch_size=batch_size,
-                                                         downsample=downsample)
+        batch_gen_valid = train.setup_full_image_dataset(
+            val_years,
+            batch_size=batch_size,
+            downsample=downsample)
     else:
         print('Evaluating with smaller image dataset')
-        _, _, batch_gen_valid, _, _ = train.setup_model(mode,
-                                                        train_years=None,
-                                                        val_years=val_years,
-                                                        val_size=batch_size*num_batches,
-                                                        downsample=downsample,
-                                                        weights=weights,
-                                                        input_channels=input_channels,
-                                                        batch_size=batch_size)
+        _, _, batch_gen_valid, _, _ = train.setup_model(
+            mode,
+            train_years=None,
+            val_years=val_years,
+            val_size=batch_size*num_batches,
+            downsample=downsample,
+            weights=weights,
+            input_channels=input_channels,
+            batch_size=batch_size)
     return (gen, batch_gen_valid)
 
 
@@ -221,24 +224,29 @@ def rank_OP(norm_ranks, num_ranks=100):
     return op
 
 
+def log_line(log_fname, line):
+    with open(log_fname, 'a') as f:
+        print(line, file=f)
+
+
 def rank_metrics_by_time(mode,
                          val_years,
-                         out_fn,
+                         log_fname,
                          weights_dir,
                          downsample=False,
                          weights=None,
                          add_noise=True,
                          noise_factor=None,
                          load_full_image=False,
-                         model_number=None,
-                         batch_size=16,
-                         num_batches=64,
-                         filters_gen=64,
-                         filters_disc=64,
-                         input_channels=9,
-                         latent_variables=1,
-                         noise_channels=4,
-                         rank_samples=100):
+                         model_numbers=None,
+                         batch_size=None,
+                         num_batches=None,
+                         filters_gen=None,
+                         filters_disc=None,
+                         input_channels=None,
+                         latent_variables=None,
+                         noise_channels=None,
+                         rank_samples=None):
 
     (gen, batch_gen_valid) = setup_inputs(mode=mode,
                                           val_years=val_years,
@@ -253,63 +261,13 @@ def rank_metrics_by_time(mode,
                                           latent_variables=latent_variables,
                                           load_full_image=load_full_image)
 
-    if model_number is not None:
-        out_fn += model_number
+    log_line(log_fname, "N KS CvM DKL OP CRPS mean std")
 
-    def log_line(line):
-        with open(out_fn, 'a') as f:
-            print(line, file=f)
-    log_line("N KS CvM DKL OP CRPS mean std")
+    for model_number in model_numbers:
+        gen_weights_file = os.path.join(weights_dir, "gen_weights-{:07d}.h5".format(model_number))
+        print(gen_weights_file)
 
-    if model_number is None:
-        files = os.listdir(weights_dir)
-
-        def get_id(fn):
-            return fn.split("-")[1]
-        files = sorted(fn for fn in files if get_id(fn) == application)
-
-        for fn in files[::check_every]:
-            N_samples = int(fn.split("-")[-1].split(".")[0])
-            if (N_range is not None) and not (N_range[0] <= N_samples < N_range[1]):
-                continue
-            print(weights_dir + "/" + fn)
-
-            gen.load_weights(weights_dir + "/" + fn)
-            ranks, crps_scores = ensemble_ranks(mode,
-                                                gen,
-                                                batch_gen_valid,
-                                                noise_channels=noise_channels,
-                                                latent_variables=latent_variables,
-                                                batch_size=batch_size,
-                                                num_batches=num_batches,
-                                                add_noise=add_noise,
-                                                rank_samples=rank_samples,
-                                                noise_factor=noise_factor,
-                                                load_full_image=load_full_image)
-            KS = rank_KS(ranks)
-            CvM = rank_CvM(ranks)
-            DKL = rank_DKL(ranks)
-            OP = rank_OP(ranks)
-            CRPS = crps_scores.mean()
-            mean = ranks.mean()
-            std = ranks.std()
-
-            log_line("{} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}".format(N_samples, KS, CvM, DKL, OP, CRPS, mean, std))
-
-            # quasi-random selection to avoid generating loads of data
-            ranks_to_save = ['124800', '198400', '240000', '320000']
-            if any(num in fn for num in ranks_to_save) and add_noise is False and load_full_image is False:
-                np.savez('{}/ranks-{}.npz'.format(weights_dir, N_samples), ranks)
-            elif any(num in fn for num in ranks_to_save) and add_noise is True and load_full_image is False:
-                np.savez('{}/ranks-noise-{}.npz'.format(weights_dir, N_samples), ranks)
-            elif any(num in fn for num in ranks_to_save) and add_noise is False and load_full_image is True:
-                np.savez('{}/ranks-full_image-{}.npz'.format(weights_dir, N_samples), ranks)
-            elif any(num in fn for num in ranks_to_save) and add_noise is True and load_full_image is True:
-                np.savez('{}/ranks-full_image-noise-{}.npz'.format(weights_dir, N_samples), ranks)
-    else:
-        print(f"loading model number {model_number}")
-        print(weights_dir + "/gen_weights-" + application + "-" + model_number + ".h5")
-        gen.load_weights(weights_dir + "/gen_weights-" + application + "-" + model_number + ".h5")
+        gen.load_weights(gen_weights_file)
         ranks, crps_scores = ensemble_ranks(mode,
                                             gen,
                                             batch_gen_valid,
@@ -321,7 +279,6 @@ def rank_metrics_by_time(mode,
                                             rank_samples=rank_samples,
                                             noise_factor=noise_factor,
                                             load_full_image=load_full_image)
-
         KS = rank_KS(ranks)
         CvM = rank_CvM(ranks)
         DKL = rank_DKL(ranks)
@@ -330,161 +287,169 @@ def rank_metrics_by_time(mode,
         mean = ranks.mean()
         std = ranks.std()
 
-        log_line("{} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}".format(model_number, KS, CvM, DKL, OP, CRPS, mean, std))
-        if add_noise is False and load_full_image is False:
-            np.savez('{}/ranks-{}.npz'.format(weights_dir, model_number), ranks)
-        elif add_noise is True and load_full_image is False:
-            np.savez('{}/ranks-noise-{}.npz'.format(weights_dir, model_number), ranks)
-        elif add_noise is False and load_full_image is True:
-            np.savez('{}/ranks-full_image-{}.npz'.format(weights_dir, model_number), ranks)
-        elif add_noise is True and load_full_image is True:
-            np.savez('{}/ranks-full_image-noise-{}.npz'.format(weights_dir, model_number), ranks)
+        log_line(log_fname, "{} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}".format(model_number, KS, CvM, DKL, OP, CRPS, mean, std))
+
+        # quasi-random selection to avoid generating loads of data
+        ranks_to_save = [124800, 198400, 240000, 320000]
+        # save one directory up from model weights, in same dir as logfile
+        ranks_folder = os.path.dirname(log_fname)
+
+        if model_number in ranks_to_save:
+            if add_noise is False and load_full_image is False:
+                fname = 'ranks-{}.npz'.format(model_number)
+            elif add_noise is True and load_full_image is False:
+                fname = 'ranks-noise-{}.npz'.format(model_number)
+            elif add_noise is False and load_full_image is True:
+                fname = 'ranks-full_image-{}.npz'.format(model_number)
+            elif add_noise is True and load_full_image is True:
+                fname = 'ranks-full_image-noise-{}.npz'.format(model_number)
+            np.savez(os.path.join(ranks_folder, fname), ranks)
 
 
-def rank_metrics_by_noise(filename,
-                          mode,
-                          train_years,
-                          val_years,
-                          application,
-                          weights_dir,
-                          downsample=False,
-                          weights=None,
-                          add_noise=True,
-                          noise_factor=None,
-                          batch_size=None,
-                          num_batches=None,
-                          filters_gen=None,
-                          filters_disc=None,
-                          input_channels=None,
-                          noise_channels=None,
-                          latent_variables=None,
-                          load_full_image=None):
+# def rank_metrics_by_noise(filename,
+#                           mode,
+#                           train_years,
+#                           val_years,
+#                           application,
+#                           weights_dir,
+#                           downsample=False,
+#                           weights=None,
+#                           add_noise=True,
+#                           noise_factor=None,
+#                           batch_size=None,
+#                           num_batches=None,
+#                           filters_gen=None,
+#                           filters_disc=None,
+#                           input_channels=None,
+#                           noise_channels=None,
+#                           latent_variables=None,
+#                           load_full_image=None):
 
-    (gen, batch_gen_valid) = setup_inputs(mode=mode,
-                                          val_years=val_years,
-                                          downsample=downsample,
-                                          weights=weights,
-                                          input_channels=input_channels,
-                                          batch_size=batch_size,
-                                          num_batches=num_batches,
-                                          filters_gen=filters_gen,
-                                          filters_disc=filters_disc,
-                                          noise_channels=noise_channels,
-                                          latent_variables=latent_variables,
-                                          load_full_image=load_full_image)
+#     (gen, batch_gen_valid) = setup_inputs(mode=mode,
+#                                           val_years=val_years,
+#                                           downsample=downsample,
+#                                           weights=weights,
+#                                           input_channels=input_channels,
+#                                           batch_size=batch_size,
+#                                           num_batches=num_batches,
+#                                           filters_gen=filters_gen,
+#                                           filters_disc=filters_disc,
+#                                           noise_channels=noise_channels,
+#                                           latent_variables=latent_variables,
+#                                           load_full_image=load_full_image)
 
-    noise_mu_values = list([round(x * 0.01, 1) for x in range(50, 250, 10)])+[3.0, 3.5]
+#     noise_mu_values = list([round(x * 0.01, 1) for x in range(50, 250, 10)])+[3.0, 3.5]
 
-    for m in noise_mu_values:
-        epoch = 1
-        print("Run {}/{}".format(epoch, len(noise_mu_values)))
-        N_samples = int(filename.split("-")[-1].split(".")[0])
-        gen.load_weights(weights_dir + "/" + filename)
-        (ranks, crps_scores) = ensemble_ranks(mode,
-                                              gen,
-                                              batch_gen_valid,
-                                              noise_mul=m,
-                                              noise_channels=noise_channels,
-                                              latent_variables=latent_variables,
-                                              batch_size=batch_size,
-                                              num_batches=num_batches,
-                                              add_noise=add_noise,
-                                              noise_factor=noise_factor,
-                                              load_full_image=load_full_image)
+#     for m in noise_mu_values:
+#         epoch = 1
+#         print("Run {}/{}".format(epoch, len(noise_mu_values)))
+#         N_samples = int(filename.split("-")[-1].split(".")[0])
+#         gen.load_weights(weights_dir + "/" + filename)
+#         (ranks, crps_scores) = ensemble_ranks(mode,
+#                                               gen,
+#                                               batch_gen_valid,
+#                                               noise_mul=m,
+#                                               noise_channels=noise_channels,
+#                                               latent_variables=latent_variables,
+#                                               batch_size=batch_size,
+#                                               num_batches=num_batches,
+#                                               add_noise=add_noise,
+#                                               noise_factor=noise_factor,
+#                                               load_full_image=load_full_image)
 
-        KS = rank_KS(ranks)
-        CvM = rank_CvM(ranks)
-        DKL = rank_DKL(ranks)
-        CRPS = crps_scores.mean()
-        mean = ranks.mean()
-        std = ranks.std()
+#         KS = rank_KS(ranks)
+#         CvM = rank_CvM(ranks)
+#         DKL = rank_DKL(ranks)
+#         CRPS = crps_scores.mean()
+#         mean = ranks.mean()
+#         std = ranks.std()
 
-        print(N_samples, KS, CvM, DKL, CRPS, mean, std)
-        epoch += 1
+#         print(N_samples, KS, CvM, DKL, CRPS, mean, std)
+#         epoch += 1
 
 
-def rank_metrics_table(weights_fn,
-                       mode,
-                       val_years,
-                       downsample=False,
-                       weights=None,
-                       add_noise=True,
-                       noise_factor=None,
-                       batch_size=None,
-                       num_batches=None,
-                       filters_gen=None,
-                       filters_disc=None,
-                       input_channels=None,
-                       noise_channels=None,
-                       latent_variables=None,
-                       load_full_image=None):
+# def rank_metrics_table(weights_fname,
+#                        mode,
+#                        val_years,
+#                        downsample=False,
+#                        weights=None,
+#                        add_noise=True,
+#                        noise_factor=None,
+#                        batch_size=None,
+#                        num_batches=None,
+#                        filters_gen=None,
+#                        filters_disc=None,
+#                        input_channels=None,
+#                        noise_channels=None,
+#                        latent_variables=None,
+#                        load_full_image=None):
 
-    train_years = None
-    if mode in ["GAN", "det", "VAEGAN"]:
-        (gen, batch_gen_valid) = setup_inputs(mode=mode,
-                                              val_years=val_years,
-                                              downsample=downsample,
-                                              weights=weights,
-                                              input_channels=input_channels,
-                                              batch_size=batch_size,
-                                              num_batches=num_batches,
-                                              filters_gen=filters_gen,
-                                              filters_disc=filters_disc,
-                                              noise_channels=noise_channels,
-                                              latent_variables=latent_variables,
-                                              load_full_image=load_full_image)
-        gen.load_weights(weights_fn)
-        ranks, crps_scores = ensemble_ranks(mode,
-                                            gen,
-                                            batch_gen_valid,
-                                            noise_channels=noise_channels,
-                                            latent_variables=latent_variables,
-                                            num_batches=num_batches,
-                                            add_noise=add_noise,
-                                            noise_factor=noise_factor)
+#     train_years = None
+#     if mode in ["GAN", "det", "VAEGAN"]:
+#         (gen, batch_gen_valid) = setup_inputs(mode=mode,
+#                                               val_years=val_years,
+#                                               downsample=downsample,
+#                                               weights=weights,
+#                                               input_channels=input_channels,
+#                                               batch_size=batch_size,
+#                                               num_batches=num_batches,
+#                                               filters_gen=filters_gen,
+#                                               filters_disc=filters_disc,
+#                                               noise_channels=noise_channels,
+#                                               latent_variables=latent_variables,
+#                                               load_full_image=load_full_image)
+#         gen.load_weights(weights_fname)
+#         ranks, crps_scores = ensemble_ranks(mode,
+#                                             gen,
+#                                             batch_gen_valid,
+#                                             noise_channels=noise_channels,
+#                                             latent_variables=latent_variables,
+#                                             num_batches=num_batches,
+#                                             add_noise=add_noise,
+#                                             noise_factor=noise_factor)
 
-    elif mode in ['rainfarm', 'lanczos', 'constant']:
-        (_, batch_gen_valid) = train.setup_data(train_years,
-                                                val_years,
-                                                val_size=batch_size*num_batches,
-                                                downsample=downsample,
-                                                weights=weights,
-                                                batch_size=batch_size,
-                                                load_full_image=load_full_image)
-        if mode == "rainfarm":
-            gen = GeneratorRainFARM(10, data.denormalise)
-            ranks, crps_scores = ensemble_ranks("GAN", gen,
-                                                batch_gen_valid,
-                                                num_batches=num_batches)
-        elif mode == "lanczos":
-            gen = GeneratorLanczos((100, 100))
-            ranks, crps_scores = ensemble_ranks("det", gen,
-                                                batch_gen_valid,
-                                                num_batches=num_batches)
-        elif mode == "constant":
-            gen = GeneratorConstantUp(10)
-            ranks, crps_scores = ensemble_ranks("det", gen,
-                                                batch_gen_valid,
-                                                noise_channels,
-                                                num_batches=num_batches)
-    else:
-        print("rank_metrics_table not implemented for mode type")
+#     elif mode in ['rainfarm', 'lanczos', 'constant']:
+#         (_, batch_gen_valid) = train.setup_data(train_years,
+#                                                 val_years,
+#                                                 val_size=batch_size*num_batches,
+#                                                 downsample=downsample,
+#                                                 weights=weights,
+#                                                 batch_size=batch_size,
+#                                                 load_full_image=load_full_image)
+#         if mode == "rainfarm":
+#             gen = GeneratorRainFARM(10, data.denormalise)
+#             ranks, crps_scores = ensemble_ranks("GAN", gen,
+#                                                 batch_gen_valid,
+#                                                 num_batches=num_batches)
+#         elif mode == "lanczos":
+#             gen = GeneratorLanczos((100, 100))
+#             ranks, crps_scores = ensemble_ranks("det", gen,
+#                                                 batch_gen_valid,
+#                                                 num_batches=num_batches)
+#         elif mode == "constant":
+#             gen = GeneratorConstantUp(10)
+#             ranks, crps_scores = ensemble_ranks("det", gen,
+#                                                 batch_gen_valid,
+#                                                 noise_channels,
+#                                                 num_batches=num_batches)
+#     else:
+#         print("rank_metrics_table not implemented for mode type")
 
-    KS = rank_KS(ranks)
-    CvM = rank_CvM(ranks)
-    DKL = rank_DKL(ranks)
-    OP = rank_OP(ranks)
-    CRPS = crps_scores.mean()
-    mean = ranks.mean()
-    std = ranks.std()
+#     KS = rank_KS(ranks)
+#     CvM = rank_CvM(ranks)
+#     DKL = rank_DKL(ranks)
+#     OP = rank_OP(ranks)
+#     CRPS = crps_scores.mean()
+#     mean = ranks.mean()
+#     std = ranks.std()
 
-    print("KS: {:.3f}".format(KS))
-    print("CvM: {:.3f}".format(CvM))
-    print("DKL: {:.3f}".format(DKL))
-    print("OP: {:.3f}".format(OP))
-    print("CRPS: {:.3f}".format(CRPS))
-    print("mean: {:.3f}".format(mean))
-    print("std: {:.3f}".format(std))
+#     print("KS: {:.3f}".format(KS))
+#     print("CvM: {:.3f}".format(CvM))
+#     print("DKL: {:.3f}".format(DKL))
+#     print("OP: {:.3f}".format(OP))
+#     print("CRPS: {:.3f}".format(CRPS))
+#     print("mean: {:.3f}".format(mean))
+#     print("std: {:.3f}".format(std))
 
 
 def log_spectral_distance(img1, img2):
@@ -595,7 +560,7 @@ def image_quality(mode,
 
 def quality_metrics_by_time(mode,
                             val_years,
-                            out_fn,
+                            log_fname,
                             weights_dir,
                             downsample=False,
                             weights=None,
@@ -610,7 +575,7 @@ def quality_metrics_by_time(mode,
                             noise_channels=None):
 
     (gen, batch_gen_valid) = setup_inputs(mode=mode,
-                                          val_yyears=val_years,
+                                          val_years=val_years,
                                           downsample=downsample,
                                           weights=weights,
                                           input_channels=input_channels,
@@ -622,22 +587,13 @@ def quality_metrics_by_time(mode,
                                           latent_variables=latent_variables,
                                           load_full_image=load_full_image)
 
-    files = os.listdir(weights_dir)
+    log_line(log_fname, "N RMSE MSSSIM LSD MAE")
 
-    def get_app(fn):
-        return fn.split("-")[1]
-    files = sorted(fn for fn in files if get_app(fn) == application)
+    for model_number in model_numbers:
+        gen_weights_file = os.path.join(weights_dir, "gen_weights-{:07d}.h5".format(model_number))
+        print(gen_weights_file)
 
-    def log_line(line):
-        with open(out_fn, 'a') as f:
-            print(line, file=f)
-    log_line("N RMSE MSSSIM LSD MAE")
-
-    for fn in files[::check_every]:
-        N_samples = int(fn.split("-")[-1].split(".")[0])
-        print(N_samples)
-        gen.load_weights(weights_dir+"/"+fn)
-
+        gen.load_weights(gen_weights_file)
         mae, rmse, ssim, lsd = image_quality(mode,
                                              gen,
                                              batch_gen_valid,
@@ -648,71 +604,71 @@ def quality_metrics_by_time(mode,
                                              num_batches=num_batches,
                                              load_full_image=load_full_image)
 
-        log_line("{} {:.6f} {:.6f} {:.6f} {:.6f}".format(N_samples, rmse.mean(), ssim.mean(), np.nanmean(lsd), mae.mean()))
+        log_line(log_fname, "{} {:.6f} {:.6f} {:.6f} {:.6f}".format(model_number, rmse.mean(), ssim.mean(), np.nanmean(lsd), mae.mean()))
 
 
-def quality_metrics_table(weights_fn,
-                          mode,
-                          val_years,
-                          downsample=False,
-                          weights=None,
-                          batch_size=None,
-                          num_batches=None,
-                          filters_gen=None,
-                          filters_disc=None,
-                          input_channels=None,
-                          latent_variables=None,
-                          noise_channels=None,
-                          load_full_image=False):
+# def quality_metrics_table(weights_fname,
+#                           mode,
+#                           val_years,
+#                           downsample=False,
+#                           weights=None,
+#                           batch_size=None,
+#                           num_batches=None,
+#                           filters_gen=None,
+#                           filters_disc=None,
+#                           input_channels=None,
+#                           latent_variables=None,
+#                           noise_channels=None,
+#                           load_full_image=False):
 
-    train_years = None
-    if mode in ["GAN", "det", "VAEGAN"]:
-        (gen, batch_gen_valid) = setup_inputs(mode=mode,
-                                              val_years=val_years,
-                                              downsample=downsample,
-                                              weights=weights,
-                                              input_channels=input_channels,
-                                              batch_size=batch_size,
-                                              num_batches=num_batches,
-                                              filters_gen=filters_gen,
-                                              filters_disc=filters_disc,
-                                              noise_channels=noise_channels,
-                                              latent_variables=latent_variables,
-                                              load_full_image=load_full_image)
-        gen.load_weights(weights_fn)
+#     train_years = None
+#     if mode in ["GAN", "det", "VAEGAN"]:
+#         (gen, batch_gen_valid) = setup_inputs(mode=mode,
+#                                               val_years=val_years,
+#                                               downsample=downsample,
+#                                               weights=weights,
+#                                               input_channels=input_channels,
+#                                               batch_size=batch_size,
+#                                               num_batches=num_batches,
+#                                               filters_gen=filters_gen,
+#                                               filters_disc=filters_disc,
+#                                               noise_channels=noise_channels,
+#                                               latent_variables=latent_variables,
+#                                               load_full_image=load_full_image)
+#         gen.load_weights(weights_fname)
 
-    elif mode in ['rainfarm', 'lanczos', 'constant']:
-        (_, batch_gen_valid) = train.setup_data(train_years,
-                                                val_years,
-                                                val_size=batch_size*num_batches,
-                                                downsample=downsample,
-                                                weights=weights,
-                                                batch_size=batch_size,
-                                                load_full_image=load_full_image)
-        if mode == "rainfarm":
-            gen = GeneratorRainFARM(10, data.denormalise)
+#     elif mode in ['rainfarm', 'lanczos', 'constant']:
+#         (_, batch_gen_valid) = train.setup_data(train_years,
+#                                                 val_years,
+#                                                 val_size=batch_size*num_batches,
+#                                                 downsample=downsample,
+#                                                 weights=weights,
+#                                                 batch_size=batch_size,
+#                                                 load_full_image=load_full_image)
+#         if mode == "rainfarm":
+#             gen = GeneratorRainFARM(10, data.denormalise)
 
-        elif mode == "lanczos":
-            gen = GeneratorLanczos((100, 100))
+#         elif mode == "lanczos":
+#             gen = GeneratorLanczos((100, 100))
 
-        elif mode == "constant":
-            gen = GeneratorConstantUp(10)
-    else:
-        print("quality_metrics_table not implemented for mode type")
+#         elif mode == "constant":
+#             gen = GeneratorConstantUp(10)
+#     else:
+#         print("quality_metrics_table not implemented for mode type")
 
-    mae, rmse, ssim, lsd = image_quality(mode, gen,
-                                         batch_gen_valid,
-                                         noise_channels=noise_channels,
-                                         latent_variables=latent_variables,
-                                         batch_size=batch_size,
-                                         num_instances=1,
-                                         num_batches=num_batches,
-                                         load_full_image=load_full_image)
+#     mae, rmse, ssim, lsd = image_quality(mode, gen,
+#                                          batch_gen_valid,
+#                                          noise_channels=noise_channels,
+#                                          latent_variables=latent_variables,
+#                                          batch_size=batch_size,
+#                                          num_instances=1,
+#                                          num_batches=num_batches,
+#                                          load_full_image=load_full_image)
 
-    print("MAE: {:.3f}".format(mae.mean()))
-    print("RMSE: {:.3f}".format(rmse.mean()))
-    print("MSSSIM: {:.3f}".format(ssim.mean()))
-    print("LSD: {:.3f}".format(np.nanmean(lsd)))
+#     print("MAE: {:.3f}".format(mae.mean()))
+#     print("RMSE: {:.3f}".format(rmse.mean()))
+#     print("MSSSIM: {:.3f}".format(ssim.mean()))
+#     print("LSD: {:.3f}".format(np.nanmean(lsd)))
 
 
 class GeneratorLanczos:

@@ -183,10 +183,10 @@ if __name__ == "__main__":
                 assert False
 
         plot_fname = os.path.join(log_folder, "progress.pdf")
-        rank_small_fname = os.path.join(log_folder, "rank-small.pdf")
-        rank_full_fname = os.path.join(log_folder, "rank-full.pdf")
-        qual_small_fname = os.path.join(log_folder, "qual-small.pdf")
-        qual_full_fname = os.path.join(log_folder, "qual-full.pdf")
+        rank_small_fname = os.path.join(log_folder, "rank-small.txt")
+        rank_full_fname = os.path.join(log_folder, "rank-full.txt")
+        qual_small_fname = os.path.join(log_folder, "qual-small.txt")
+        qual_full_fname = os.path.join(log_folder, "qual-full.txt")
 
         while (training_samples < num_samples):  # main training loop
 
@@ -233,16 +233,16 @@ if __name__ == "__main__":
                 assert False
             log.to_csv(log_file, index=False, float_format="%.6f")
 
-            if mode in ("GAN", "det"):
-                gen_weights_file = os.path.join(model_weights_root, "gen_weights-{:07d}.h5".format(training_samples))
+            # Save model weights each epoch
+            gen_weights_file = os.path.join(model_weights_root, "gen_weights-{:07d}.h5".format(training_samples))
+            model.gen.save_weights(gen_weights_file)
 
-                model.gen.save_weights(gen_weights_file)
-            else:
-                # might need to do something different to save VAEGAN enc/dec?
-                assert False
     else:
         print("Training skipped...")
 
+    # This works nicely for the 100 * 3200 training samples that we have been
+    # working with. If these numbers change, may want to update evaluation.py
+    # accordingly.
     if args.evalnum == "blitz":
         model_numbers = [124800, 198400, 240000, 320000]
     elif args.evalnum == "short":
@@ -252,7 +252,6 @@ if __name__ == "__main__":
                          59*interval, 60*interval, 61*interval, 62*interval,
                          75*interval, 76*interval, 77*interval, 78*interval,
                          97*interval, 98*interval, 99*interval, 100*interval]
-
     elif args.evalnum == "full":
         interval = steps_per_epoch * batch_size
         model_numbers = np.arange(0, num_samples + 1, interval)[1:].tolist()
@@ -261,7 +260,7 @@ if __name__ == "__main__":
     if args.rank_small:
         evaluation.rank_metrics_by_time(mode,
                                         val_years,
-                                        out_fn=rank_small_fname,
+                                        log_fn=rank_small_fname,
                                         weights_dir=model_weights_root,
                                         downsample=downsample,
                                         weights=training_weights,
@@ -281,7 +280,7 @@ if __name__ == "__main__":
     if args.rank_full:
         evaluation.rank_metrics_by_time(mode,
                                         val_years,
-                                        out_fn=rank_full_fname,
+                                        log_fn=rank_full_fname,
                                         weights_dir=model_weights_root,
                                         downsample=downsample,
                                         weights=training_weights,
@@ -301,7 +300,7 @@ if __name__ == "__main__":
     if args.qual_small:
         evaluation.quality_metrics_by_time(mode,
                                            val_years,
-                                           out_fn=qual_small_fname,
+                                           log_fn=qual_small_fname,
                                            weights_dir=model_weights_root,
                                            downsample=downsample,
                                            weights=training_weights,
@@ -318,7 +317,7 @@ if __name__ == "__main__":
     if args.qual_full:
         evaluation.quality_metrics_by_time(mode,
                                            val_years,
-                                           out_fn=qual_full_fname,
+                                           log_fn=qual_full_fname,
                                            weights_dir=model_weights_root,
                                            downsample=downsample,
                                            weights=training_weights,
