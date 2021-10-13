@@ -14,6 +14,9 @@ from data import get_dates
 from plots import plot_img
 
 parser = argparse.ArgumentParser()
+parser.add_argument('--mode', type=str, required=True,
+                    choices=("GAN", "det", "VAEGAN"),
+                    help="type of model (pure GAN / deterministic / VAEGAN)")
 parser.add_argument('--load_weights_root', type=str, 
                     help="directory where model weights are saved", 
                     default='/ppdata/lucy-cGAN/logs/IFS/gen_128_disc_512/noise_4/lr1e-5')
@@ -21,8 +24,8 @@ parser.add_argument('--model_number', type=str,
                     help="model iteration to load", default='0313600')
 parser.add_argument('--noise_channels', type=int,
                     help="Number of noise channels passed to generator", default=4)
-parser.add_argument('--constant_fields', type=int,
-                    help="Number of constant fields passed to generator and discriminator", default=2)
+parser.add_argument('--latent_variables', type=int, default=1,
+                    help="Latent variables per 'pixel' in VAEGAN")
 parser.add_argument('--input_channels', type=int,
                     help="Dimensions of input condition passed to generator and discriminator", default=9)
 parser.add_argument('--problem_type', type=str, 
@@ -49,16 +52,13 @@ parser.add_argument('--filters_gen', type=int, default=128,
         help="Number of filters used in generator")
 parser.add_argument('--filters_disc', type=int, default=512,
         help="Number of filters used in discriminator")
-parser.add_argument('--learning_rate_disc', type=float, default=1e-5,
-        help="Learning rate used for discriminator optimizer")
-parser.add_argument('--learning_rate_gen', type=float, default=1e-5,
-        help="Learning rate used for generator optimizer")
 args = parser.parse_args()
 
-## load parameters
+mode = args.mode
 load_weights_root = args.load_weights_root
 model_number = args.model_number
 noise_channels = args.noise_channels
+latent_variables = args.latent_variables
 input_channels = args.input_channels
 constant_fields = args.constant_fields
 problem_type = args.problem_type
@@ -70,19 +70,11 @@ include_ecPoint = args.include_ecPoint
 predict_year = args.predict_year
 num_predictions = args.num_predictions
 num_samples = args.num_samples
-#batch_size default is 1 to avoid issues loading full image data
 batch_size = args.batch_size
 filters_disc = args.filters_disc
 filters_gen = args.filters_gen
-lr_disc = args.learning_rate_disc
-lr_gen = args.learning_rate_gen
 
 weights_fn = load_weights_root + '/' + 'gen_weights-IFS-{}.h5'.format(model_number)
-print(weights_fn)
-print(f"Generator filters: {filters_gen}")
-
-#weights = np.arange(6,2,-1)                                                                                                
-#weights = weights / weights.sum() 
 weights = None
 dates = get_dates(predict_year)
 
@@ -93,39 +85,22 @@ if problem_type == "normal":
 elif problem_type == "easy":
     downsample = True
     plot_input_title = 'Downsampled'
-    input_channels = 1
+    input_channels = 1 # superresolution problem doesn't have all 9 IFS fields
     if include_RainFARM or include_ecPoint or include_Lanczos:
         raise Exception("Cannot include ecPoint/Lanczos/RainFARM results for downsampled problem")
 
-## initialise GAN
-(wgan) = train.setup_gan(train_years=None, 
-                         val_years=None, 
-                         val_size=None, 
-                         downsample=downsample, 
-                         weights=weights,
-                         input_channels=input_channels,
-                         constant_fields=constant_fields,
-                         batch_size=batch_size,
-                         filters_gen=filters_gen, 
-                         filters_disc=filters_disc,
-                         noise_channels=noise_channels, 
-                         lr_disc=lr_disc, 
-                         lr_gen=lr_gen)
-
-## load GAN model
-gen = wgan.gen
+## initialise model
+model = train.setup_model(mode,
+                          downsample=downsample, 
+                          weights=weights,
+                          input_channels=input_channels,
+                          batch_size=batch_size,
+                          filters_gen=filters_gen, 
+                          filters_disc=filters_disc,
+                          noise_channels=noise_channels, 
+                          latent_variables=latent_variables)
+gen = model.gen
 gen.load_weights(weights_fn)
-
-##load det model
-## current best deterministic model
-if problem_type == 'easy':
-    filters_det = 256
-    gen_det_weights = '/ppdata/lucy-cGAN/logs/EASY/deterministic/filters_256/gen_det_weights-IFS-0400000.h5'
-elif problem_type == 'normal':
-    filters_det = 128
-    gen_det_weights = '/ppdata/lucy-cGAN/logs/IFS/filters_128/softplus/det/lr_1e-4/gen_det_weights-ERA-0400000.h5'
-gen_det = models.generator_deterministic(input_channels=input_channels, filters_gen=filters_det)
-gen_det.load_weights(gen_det_weights)
 
 ## load appropriate dataset
 if predict_full_image:
@@ -159,6 +134,16 @@ data_ecpoint = DataGeneratorFull(dates=dates,
                                  ifs_norm=False,
                                  downsample=downsample)    
 
+if include_deterministic:
+    if problem_type == 'easy':
+        filters_det = 256
+        gen_det_weights = '/ppdata/lucy-cGAN/logs/EASY/deterministic/filters_256/gen_det_weights-IFS-0400000.h5'
+    elif problem_type == 'normal':
+        filters_det = 128
+        gen_det_weights = '/ppdata/lucy-cGAN/logs/IFS/filters_128/softplus/det/lr_1e-4/gen_det_weights-ERA-0400000.h5'
+    gen_det = models.generator(mode='det', input_channels=input_channels, filters_gen=filters_det)
+    gen_det.load_weights(gen_det_weights)
+
 pred = []
 seq_real=[]
 seq_cond=[]
@@ -183,14 +168,25 @@ for i in range(num_predictions):
     elif predict_full_image == False:
         seq_real.append(data.denormalise(outputs['generator_output']))
     seq_det.append(data.denormalise(gen_det.predict(inputs)))
-    ## Generate ensemble members
-    pred_ensemble = []
-    for j in range(num_samples):
+    
+    if mode == 'det':
+        num_samples = 1 #can't generate an ensemble with deterministic method
+        pred.append(data.denormalise(gen.predict(inputs)))
+    else:
+        pred_ensemble = []
         noise_shape = inputs['generator_input'][0,...,0].shape + (noise_channels,)
-        inputs['noise_input'] = NoiseGenerator(noise_shape, batch_size=batch_size)
-        pred_ensemble.append(data.denormalise(gen.predict(inputs)))
-    pred_ensemble = np.array(pred_ensemble)
-    pred.append(pred_ensemble)
+        if mode == 'VAEGAN':
+            # call encoder once
+            mean, logvar = gen.encoder([inputs['generator_input'], inputs['constants']])       
+        for j in range(num_samples):
+            inputs['noise_input'] = NoiseGenerator(noise_shape, batch_size=batch_size)
+            if mode == 'GAN':
+                pred_ensemble.append(data.denormalise(gen.predict(inputs)))
+            elif mode == 'VAEGAN':
+                dec_inputs = [mean, logvar, inputs['noise_input'], inputs['constants']]
+                pred_ensemble.append(data.denormalise(gen.decoder.predict(dec_inputs)))
+            pred_ensemble = np.array(pred_ensemble)
+        pred.append(pred_ensemble)
     
 data_ecpoint_iter = iter(data_ecpoint)
 dummy = np.zeros((1, 940, 940))
@@ -264,7 +260,7 @@ for i in range(num_predictions):
     tmp['Deterministic'] = seq_det[i][0,...,0]
     tmp['ecPoint mean'] = seq_ecpoint[i][0,...]
     for j in range(num_samples):
-        tmp[f"GAN pred {j+1}"] = pred[i][j][0,...,0]
+        tmp[f"{mode} pred {j+1}"] = pred[i][j][0,...,0]
     sequences.append(tmp)
     
 num_cols = num_predictions

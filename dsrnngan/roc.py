@@ -1,7 +1,6 @@
 import sys
 sys.path.append('/ppdata/lucy-cGAN/dsrnngan/')
 import numpy as np
-from sklearn import metrics
 from sklearn.metrics import roc_curve, auc
 import matplotlib.pyplot as plt
 from tfrecords_generator_ifs import create_fixed_dataset
@@ -15,21 +14,15 @@ from data import get_dates
 
 # input parameters
 log_path = '/ppdata/lucy-cGAN/logs/IFS/gen_256_disc_512/noise_4/weights_4x/'
-application = 'IFS'
 model_number = '0198400'
-weights_fn = log_path + "/gen_weights-" + application + "-" +  model_number + ".h5"
+weights_fn = log_path + "/gen_weights-" +  model_number + ".h5"
 plot_ecpoint = False
-
-train_years = None
-val_years = None
-val_size = None
+mode = 'GAN'
 weights = None
 predict_year = 2019
-constant_fields = 2
 filters_disc = 512
 filters_gen = 256
-lr_disc = 1e-5
-lr_gen = 1e-5
+latent_variables = 1
 problem_type = 'normal'
 predict_full_image = True
 ensemble_members = 100
@@ -49,29 +42,25 @@ if problem_type == "normal":
     noise_channels = 4
 elif problem_type == "easy":
     downsample = True
-    plot_input_title = 'Downscaled'
+    plot_input_title = 'Superresolution'
     input_channels = 1
     noise_channels = 2
 else:
     raise Exception("no such problem type, try again!")
 
-# initialize GAN model
-(wgan) = train.setup_gan(train_years, 
-                         val_years, 
-                         val_size=val_size, 
-                         downsample=downsample,
-                         weights=weights,
-                         input_channels=input_channels,
-                         constant_fields=constant_fields,
-                         steps_per_epoch=50, 
-                         batch_size=batch_size,
-                         filters_gen=filters_gen,
-                         filters_disc=filters_disc,
-                         noise_channels=noise_channels,  
-                         lr_disc=lr_disc, 
-                         lr_gen=lr_gen)
+
+## initialise model
+model = train.setup_model(mode,
+                          downsample=downsample, 
+                          weights=weights,
+                          input_channels=input_channels,
+                          batch_size=batch_size,
+                          filters_gen=filters_gen, 
+                          filters_disc=filters_disc,
+                          noise_channels=noise_channels, 
+                          latent_variables=latent_variables)
 # load weights
-wgan.gen.load_weights(weights_fn)
+model.gen.load_weights(weights_fn)
 
 # load appropriate dataset
 if predict_full_image:
@@ -106,22 +95,30 @@ data_pred_iter = iter(data_predict)
 for i in range(num_images):
     print(f"image number {i+1} of {num_images}")
     (inputs,outputs) = next(data_pred_iter)
-    
-    ## make sure ground truth image has correct dimensions
     if predict_full_image:
         im_real = data.denormalise(np.array(outputs['generator_output']))
     elif predict_full_image:
         im_real = data.denormalise(outputs['generator_output'])[...,0]
         
-    ## generate ensemble members
-    pred_ensemble = []
-    for j in range(ensemble_members):
+    if mode == 'det':
+        num_samples = 1 #can't generate an ensemble with deterministic method
+        pred.append(data.denormalise(model.gen.predict(inputs))[...,0])
+    else:
+        pred_ensemble = []
         noise_shape = inputs['generator_input'][0,...,0].shape + (noise_channels,)
-        inputs['noise_input'] = NoiseGenerator(noise_shape, batch_size=batch_size)
-        ## store denormalised predictions
-        pred_ensemble.append(data.denormalise(wgan.gen.predict(inputs))[...,0])
-    pred_ensemble = np.array(pred_ensemble)
-    
+        if mode == 'VAEGAN':
+            # call encoder once
+            mean, logvar = model.gen.encoder([inputs['generator_input'], inputs['constants']])       
+        for j in range(ensemble_members):
+            inputs['noise_input'] = NoiseGenerator(noise_shape, batch_size=batch_size)
+            if mode == 'GAN':
+                pred_ensemble.append(data.denormalise(model.gen.predict(inputs))[...,0])
+            elif mode == 'VAEGAN':
+                dec_inputs = [mean, logvar, inputs['noise_input'], inputs['constants']]
+                pred_ensemble.append(data.denormalise(model.gen.decoder.predict(dec_inputs))[...,0])
+            pred_ensemble = np.array(pred_ensemble)
+        pred.append(pred_ensemble)    
+
     if i == 0:
         seq_real.append(im_real)
         pred.append(pred_ensemble)

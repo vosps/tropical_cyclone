@@ -454,12 +454,12 @@ def rank_metrics_table(weights_fn,
             ranks, crps_scores = ensemble_ranks("GAN", gen, 
                                                 batch_gen_valid,
                                                 num_batches=num_batches)
-        if mode == "lanczos":
+        elif mode == "lanczos":
             gen = GeneratorLanczos((100, 100))
             ranks, crps_scores = ensemble_ranks("det", gen, 
                                                 batch_gen_valid,
                                                 num_batches=num_batches)
-        if mode == "constant":
+        elif mode == "constant":
             gen = GeneratorConstantUp(10)
             ranks, crps_scores = ensemble_ranks("det", gen,
                                                 batch_gen_valid,
@@ -690,10 +690,10 @@ def quality_metrics_table(weights_fn,
         if mode == "rainfarm":
             gen = GeneratorRainFARM(10, data.denormalise)
 
-        if mode == "lanczos":
+        elif mode == "lanczos":
             gen = GeneratorLanczos((100, 100))
 
-        if mode == "constant":
+        elif mode == "constant":
             gen = GeneratorConstantUp(10)
     else:
         print("quality_metrics_table not implemented for mode type")
