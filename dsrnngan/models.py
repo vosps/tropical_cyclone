@@ -30,7 +30,7 @@ def generator(mode,
     upscaled_const_input = const_upscale_block_100(const_input, filters=filters_gen)
     print(f"upscaled constants shape: {upscaled_const_input.shape}")
     
-    if mode == 'det' or 'VAEGAN':
+    if mode in ('det', 'VAEGAN'):
         # Concatenate all inputs together
         generator_output = concatenate([generator_input, upscaled_const_input])
     elif mode == 'GAN':

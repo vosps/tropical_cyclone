@@ -23,6 +23,9 @@ if __name__ == "__main__":
     parser.add_argument('--problem_type', type=str, default="normal",
                         choices=("normal", "superresolution"),
         help="normal: IFS to NIMROD. superresolution: coarsened NIMROD to NIMROD")  # noqa: E128
+    parser.add_argument('--architecture', type=str, default="normal",
+                        choices=("normal",),
+                        help="name of model architecture to use")
     parser.add_argument('--train_years', type=int, nargs='+',
                         default=[2016, 2017, 2018],
                         help="Training years")
@@ -97,6 +100,7 @@ if __name__ == "__main__":
     print(f"training_weights for data loading are {training_weights}")
 
     mode = args.mode
+    arch = args.architecture
     log_folder = args.log_folder
     steps_per_epoch = args.steps_per_epoch
     batch_size = args.batch_size
@@ -136,9 +140,10 @@ if __name__ == "__main__":
         # initialize GAN
         print(f"val years is {val_years}")
         model, batch_gen_train, batch_gen_valid, _, _ = \
-            train.setup_model(mode,
-                              train_years,
-                              val_years,
+            train.setup_model(mode=mode,
+                              arch=arch,
+                              train_years=train_years,
+                              val_years=val_years,
                               val_size=val_size,
                               downsample=downsample,
                               weights=training_weights,
@@ -193,13 +198,14 @@ if __name__ == "__main__":
             print("Epoch {}/{}".format(epoch, num_epochs))
 
             # train for some number of batches
-            loss_log = train.train_model(model,
-                                         mode,
-                                         batch_gen_train,
-                                         batch_gen_valid,
-                                         epoch,
-                                         steps_per_epoch,
-                                         num_epochs=1,
+            loss_log = train.train_model(model=model,
+                                         mode=mode,
+                                         batch_gen_train=batch_gen_train,
+                                         batch_gen_valid=batch_gen_valid,
+                                         noise_channels=noise_channels,
+                                         latent_variables=latent_variables,
+                                         epoch=epoch,
+                                         steps_per_epoch=steps_per_epoch,
                                          plot_samples=val_size,
                                          plot_fn=plot_fname)
 
@@ -258,8 +264,9 @@ if __name__ == "__main__":
 
     # evaluate model performance
     if args.rank_small:
-        evaluation.rank_metrics_by_time(mode,
-                                        val_years,
+        evaluation.rank_metrics_by_time(mode=mode,
+                                        arch=arch,
+                                        val_years=val_years,
                                         log_fn=rank_small_fname,
                                         weights_dir=model_weights_root,
                                         downsample=downsample,
@@ -278,8 +285,9 @@ if __name__ == "__main__":
                                         rank_samples=100)
 
     if args.rank_full:
-        evaluation.rank_metrics_by_time(mode,
-                                        val_years,
+        evaluation.rank_metrics_by_time(mode=mode,
+                                        arch=arch,
+                                        val_years=val_years,
                                         log_fn=rank_full_fname,
                                         weights_dir=model_weights_root,
                                         downsample=downsample,
@@ -298,8 +306,9 @@ if __name__ == "__main__":
                                         rank_samples=100)
 
     if args.qual_small:
-        evaluation.quality_metrics_by_time(mode,
-                                           val_years,
+        evaluation.quality_metrics_by_time(mode=mode,
+                                           arch=arch,
+                                           val_years=val_years,
                                            log_fn=qual_small_fname,
                                            weights_dir=model_weights_root,
                                            downsample=downsample,
@@ -315,8 +324,9 @@ if __name__ == "__main__":
                                            noise_channels=noise_channels)
 
     if args.qual_full:
-        evaluation.quality_metrics_by_time(mode,
-                                           val_years,
+        evaluation.quality_metrics_by_time(mode=mode,
+                                           arch=arch,
+                                           val_years=val_years,
                                            log_fn=qual_full_fname,
                                            weights_dir=model_weights_root,
                                            downsample=downsample,

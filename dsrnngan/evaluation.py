@@ -19,6 +19,7 @@ path = os.path.dirname(os.path.abspath(__file__))
 
 def setup_inputs(*,
                  mode,
+                 arch,
                  val_years,
                  downsample,
                  weights,
@@ -39,7 +40,8 @@ def setup_inputs(*,
         num_batches = num_batches
 
     # initialise model
-    model = train.setup_model(mode,
+    model = train.setup_model(mode=mode,
+                              arch=arch,
                               train_years=None,
                               val_years=None,
                               val_size=None,
@@ -82,7 +84,8 @@ def randomize_nans(x, rnd_mean, rnd_range):
         (np.random.rand(*nan_shape)-0.5)*rnd_range
 
 
-def ensemble_ranks(mode,
+def ensemble_ranks(*,
+                   mode,
                    gen,
                    batch_gen,
                    noise_channels,
@@ -229,7 +232,9 @@ def log_line(log_fname, line):
         print(line, file=f)
 
 
-def rank_metrics_by_time(mode,
+def rank_metrics_by_time(*,
+                         mode,
+                         arch,
                          val_years,
                          log_fname,
                          weights_dir,
@@ -249,6 +254,7 @@ def rank_metrics_by_time(mode,
                          rank_samples=None):
 
     (gen, batch_gen_valid) = setup_inputs(mode=mode,
+                                          arch=arch,
                                           val_years=val_years,
                                           downsample=downsample,
                                           weights=weights,
@@ -475,7 +481,8 @@ def log_spectral_distance_batch(batch1, batch2):
     return np.array(lsd_batch)
 
 
-def image_quality(mode,
+def image_quality(*,
+                  mode,
                   gen,
                   batch_gen,
                   noise_channels,
@@ -558,7 +565,9 @@ def image_quality(mode,
     return (mae_all, rmse_all, ssim_all, lsd_all)
 
 
-def quality_metrics_by_time(mode,
+def quality_metrics_by_time(*,
+                            mode,
+                            arch,
                             val_years,
                             log_fname,
                             weights_dir,
@@ -575,6 +584,7 @@ def quality_metrics_by_time(mode,
                             noise_channels=None):
 
     (gen, batch_gen_valid) = setup_inputs(mode=mode,
+                                          arch=arch,
                                           val_years=val_years,
                                           downsample=downsample,
                                           weights=weights,
