@@ -545,10 +545,10 @@ def image_quality(mode,
             ssim_all.append(ssim.flatten())
             lsd_all.append(lsd.flatten())
 
-            if show_progress:
-                rmse_mean = np.mean(rmse)
-                losses = [("RMSE", rmse_mean)]
-                progbar.add(1, values=losses)
+        if show_progress:
+            rmse_mean = np.mean(rmse)  # quick and dirty; this is just the last instance
+            losses = [("RMSE", rmse_mean)]
+            progbar.add(1, values=losses)
 
     mae_all = np.concatenate(mae_all)
     rmse_all = np.concatenate(rmse_all)
