@@ -41,7 +41,6 @@ args = parser.parse_args()
 
 log_folder = args.log_folder
 model_number = args.model_number
-noise_channels = args.noise_channels
 predict_full_image = args.predict_full_image
 predict_year = args.predict_year
 include_Lanczos = args.include_Lanczos
@@ -69,7 +68,7 @@ batch_size = setup_params["TRAIN"]["batch_size"]
 val_years = setup_params["VAL"]["val_years"]
 val_size = setup_params["VAL"]["val_size"]
 
-weights_fn = log_folder + '/' + 'gen_weights-IFS-{}.h5'.format(model_number)
+weights_fn = os.path.join(log_folder, 'models', 'gen_weights-{}.h5'.format(model_number))
 dates = get_dates(predict_year)
 
 if problem_type == "normal":
@@ -84,10 +83,9 @@ elif problem_type == "superresolution":
         raise Exception("Cannot include ecPoint/Lanczos/RainFARM results for downsampled problem")
 
 ## initialise model
-model = setup_model(mode,
+model = setup_model(mode=mode,
                     arch=arch,
                     input_channels=input_channels,
-                    batch_size=batch_size,
                     filters_gen=filters_gen, 
                     filters_disc=filters_disc,
                     noise_channels=noise_channels, 
