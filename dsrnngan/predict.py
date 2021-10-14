@@ -1,8 +1,10 @@
+import os
+import yaml
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colorbar, colors, gridspec
 from noise import NoiseGenerator
-import train
+from setupmodel import setup_model
 import ecpoint
 import data
 import models
@@ -14,23 +16,11 @@ from data import get_dates
 from plots import plot_img
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--mode', type=str, required=True,
-                    choices=("GAN", "det", "VAEGAN"),
-                    help="type of model (pure GAN / deterministic / VAEGAN)")
-parser.add_argument('--load_weights_root', type=str, 
+parser.add_argument('--log_folder', type=str, 
                     help="directory where model weights are saved", 
                     default='/ppdata/lucy-cGAN/logs/IFS/gen_128_disc_512/noise_4/lr1e-5')
 parser.add_argument('--model_number', type=str, 
                     help="model iteration to load", default='0313600')
-parser.add_argument('--noise_channels', type=int,
-                    help="Number of noise channels passed to generator", default=4)
-parser.add_argument('--latent_variables', type=int, default=1,
-                    help="Latent variables per 'pixel' in VAEGAN")
-parser.add_argument('--input_channels', type=int,
-                    help="Dimensions of input condition passed to generator and discriminator", default=9)
-parser.add_argument('--problem_type', type=str, default="normal",
-                    choices=("normal", "superresolution"),
-                    help="normal: IFS to NIMROD. superresolution: coarsened NIMROD to NIMROD")  # noqa: E128
 parser.add_argument('--predict_full_image', type=bool,
                     help="False (small images used for training), True (full image)", default=False)
 parser.add_argument('--include_Lanczos', type=bool,
@@ -47,42 +37,45 @@ parser.add_argument('--num_predictions', type=int,
                     help="number of images to predict on", default=5)
 parser.add_argument('--num_samples', type=int,
                     help="size of prediction ensemble", default=3)
-parser.add_argument('--batch_size', type=int,
-                    help="Batch size", default=1)
-parser.add_argument('--filters_gen', type=int, default=128,
-        help="Number of filters used in generator")
-parser.add_argument('--filters_disc', type=int, default=512,
-        help="Number of filters used in discriminator")
 args = parser.parse_args()
 
-mode = args.mode
-load_weights_root = args.load_weights_root
+log_folder = args.log_folder
 model_number = args.model_number
 noise_channels = args.noise_channels
-latent_variables = args.latent_variables
-input_channels = args.input_channels
-constant_fields = args.constant_fields
-problem_type = args.problem_type
 predict_full_image = args.predict_full_image
+predict_year = args.predict_year
 include_Lanczos = args.include_Lanczos
 include_RainFARM = args.include_RainFARM
 include_deterministic = args.include_deterministic
 include_ecPoint = args.include_ecPoint
-predict_year = args.predict_year
 num_predictions = args.num_predictions
 num_samples = args.num_samples
-batch_size = args.batch_size
-filters_disc = args.filters_disc
-filters_gen = args.filters_gen
 
-weights_fn = load_weights_root + '/' + 'gen_weights-IFS-{}.h5'.format(model_number)
-weights = None
+config_path = os.path.join(log_folder, 'setup_params.yaml')
+with open(config_path, 'r') as f:
+    try:
+        setup_params = yaml.safe_load(f)
+    except yaml.YAMLError as exc:
+        print(exc)
+        
+mode = setup_params["GENERAL"]["mode"]
+arch = setup_params["MODEL"]["architecture"]
+problem_type = setup_params["GENERAL"]["problem_type"]
+filters_gen = setup_params["GENERATOR"]["filters_gen"]
+noise_channels = setup_params["GENERATOR"]["noise_channels"]
+latent_variables = setup_params["GENERATOR"]["latent_variables"]
+filters_disc = setup_params["DISCRIMINATOR"]["filters_disc"]
+batch_size = setup_params["TRAIN"]["batch_size"]
+val_years = setup_params["VAL"]["val_years"]
+val_size = setup_params["VAL"]["val_size"]
+
+weights_fn = log_folder + '/' + 'gen_weights-IFS-{}.h5'.format(model_number)
 dates = get_dates(predict_year)
 
 if problem_type == "normal":
     downsample = False
     plot_input_title = 'IFS'
-    input_channels = input_channels
+    input_channels = 9
 elif problem_type == "superresolution":
     downsample = True
     plot_input_title = 'Downsampled'
@@ -91,15 +84,14 @@ elif problem_type == "superresolution":
         raise Exception("Cannot include ecPoint/Lanczos/RainFARM results for downsampled problem")
 
 ## initialise model
-model = train.setup_model(mode,
-                          downsample=downsample, 
-                          weights=weights,
-                          input_channels=input_channels,
-                          batch_size=batch_size,
-                          filters_gen=filters_gen, 
-                          filters_disc=filters_disc,
-                          noise_channels=noise_channels, 
-                          latent_variables=latent_variables)
+model = setup_model(mode,
+                    arch=arch,
+                    input_channels=input_channels,
+                    batch_size=batch_size,
+                    filters_gen=filters_gen, 
+                    filters_disc=filters_disc,
+                    noise_channels=noise_channels, 
+                    latent_variables=latent_variables)
 gen = model.gen
 gen.load_weights(weights_fn)
 
@@ -230,7 +222,7 @@ for ax in ax.flat:
     ax.tick_params(left=False, bottom=False,labelleft=False, labelbottom=False)
     ax.invert_yaxis()
 
-plt.savefig("{}/prediction-and-input-{}-{}.pdf".format(load_weights_root, 
+plt.savefig("{}/prediction-and-input-{}-{}.pdf".format(log_folder, 
                                                        problem_type,
                                                        plot_label), bbox_inches='tight')
 plt.close()
