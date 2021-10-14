@@ -6,7 +6,7 @@ from pathlib import Path
 import matplotlib; matplotlib.use("Agg")  # noqa: E702
 import numpy as np
 import pandas as pd
-
+import yaml
 import train
 import evaluation
 import plots
@@ -14,50 +14,15 @@ import plots
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--mode', type=str, required=True,
-                        choices=("GAN", "det", "VAEGAN"),
-                        help="type of model (pure GAN / deterministic / VAEGAN)")
-    parser.add_argument('--log_folder', type=str, required=True,
-       help="Folder for saving/loading model weights, log files, etc.  Will be created if it doesn't already exist.")  # noqa: E128
-    parser.add_argument('--problem_type', type=str, default="normal",
-                        choices=("normal", "superresolution"),
-        help="normal: IFS to NIMROD. superresolution: coarsened NIMROD to NIMROD")  # noqa: E128
-    parser.add_argument('--architecture', type=str, default="normal",
-                        choices=("normal",),
-                        help="name of model architecture to use")
-    parser.add_argument('--train_years', type=int, nargs='+',
-                        default=[2016, 2017, 2018],
-                        help="Training years")
-    parser.add_argument('--val_years', type=int, nargs='+', default=2019,
-      help="Validation years -- cannot pass a list if using create_fixed_dataset")  # noqa: E128
-    parser.add_argument('--val_size', type=int, default=8,
-                        help='Number of validation examples')
-    parser.add_argument('--num_samples', type=int, default=320000,
-                        help="Training samples")
-    parser.add_argument('--steps_per_epoch', type=int, default=200,
-                        help="Batches per epoch")
-    parser.add_argument('--batch_size', type=int, default=16,
-                        help="Batch size for training and small-image eval")
-    parser.add_argument('--num_batches', type=int, default=64,
-                        help="Number of batches for eval metrics")
-    parser.add_argument('--filters_gen', type=int, default=128,
-                        help="Number of filters used in generator")
-    parser.add_argument('--filters_disc', type=int, default=512,
-                        help="Number of filters used in discriminator")
-    parser.add_argument('--noise_channels', type=int, default=4,
-                        help="Dimensions of noise passed to generator")
-    parser.add_argument('--latent_variables', type=int, default=1,
-                        help="Latent variables per 'pixel' in VAEGAN")
-    parser.add_argument('--learning_rate_disc', type=float, default=1e-5,
-                        help="Learning rate used for discriminator optimizer")
-    parser.add_argument('--learning_rate_gen', type=float, default=1e-5,
-                        help="Learning rate used for generator optimizer")
-    parser.add_argument('--kl_weight', type=float, default=1e-8,
-                        help="Weight of KL term in VAEGAN")
-
+    parser.add_argument("--config", help="Path to configuration file")
     parser.set_defaults(do_training=True)
     parser.add_argument('--no_train', dest='do_training', action='store_false',
                         help="Do NOT carry out training, only perform eval")
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('--eval_full', dest='evalnum', action='store_const', const="full")
+    group.add_argument('--eval_short', dest='evalnum', action='store_const', const="short")
+    group.add_argument('--eval_blitz', dest='evalnum', action='store_const', const="blitz")
+    parser.set_defaults(evalnum=None)
     parser.set_defaults(rank_small=False)
     parser.set_defaults(rank_full=False)
     parser.set_defaults(qual_small=False)
@@ -76,53 +41,50 @@ if __name__ == "__main__":
                         help="Plot rank histograms for small images")
     parser.add_argument('--plot_ranks_full', dest='plot_ranks_full', action='store_true',
                         help="Plot rank histograms for full images")
-
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument('--eval_full', dest='evalnum', action='store_const', const="full")
-    group.add_argument('--eval_short', dest='evalnum', action='store_const', const="short")
-    group.add_argument('--eval_blitz', dest='evalnum', action='store_const', const="blitz")
-    parser.set_defaults(evalnum=None)
-
-    parser.add_argument('--add_postprocessing_noise', type=bool, default=True,
-        help="Flag for adding postprocessing noise in rank statistics eval")  # noqa: E128
-    parser.add_argument('--postprocessing_noise_factor', type=float, default=1e-6,
-        help="Factor for scaling postprocessing noise in rank statistics eval")  # noqa: E128
-
     args = parser.parse_args()
 
     if args.evalnum is None and (args.rank_small or args.rank_full or args.qual_small or args.qual_full):
         raise RuntimeError("You asked for evaluation to occur, but did not pass in '--eval_full', '--eval_short', or '--eval_blitz' to specify length of evaluation")
 
-    # training_weights = np.arange(12,2,-3)
-    # training_weights = training_weights / training_weights.sum()
-    # training_weights = None
-    # training_weights = [0.87, 0.06, 0.03, 0.03]
-    # training_weights = np.arange(24,2,-7)
-    # training_weights = weights / weights.sum()
-    training_weights = [0.4, 0.3, 0.2, 0.1]
-    # training_weights_12x = np.arange(36,2,-11)
-    # training_weights = training_weights_12x / training_weights_12x.sum()
-    print(f"training_weights for data loading are {training_weights}")
+        # Read in the configurations
+    if args.config is not None:
+        config_path = args.config
+    else:
+        raise Exception("Please specify configuration!")
 
-    mode = args.mode
-    arch = args.architecture
-    log_folder = args.log_folder
-    steps_per_epoch = args.steps_per_epoch
-    batch_size = args.batch_size
-    val_size = args.val_size
-    num_samples = args.num_samples
-    train_years = args.train_years
-    val_years = args.val_years
-    num_batches = args.num_batches
-    filters_disc = args.filters_disc
-    filters_gen = args.filters_gen
-    lr_disc = args.learning_rate_disc
-    lr_gen = args.learning_rate_gen
-    kl_weight = args.kl_weight
-    noise_channels = args.noise_channels
-    latent_variables = args.latent_variables
-    add_noise = args.add_postprocessing_noise
-    noise_factor = args.postprocessing_noise_factor
+    with open(config_path, 'r') as f:
+        try:
+            setup_params = yaml.safe_load(f)
+            print(setup_params)
+        except yaml.YAMLError as exc:
+            print(exc)
+
+    mode = setup_params["GENERAL"]["mode"]
+    arch = setup_params["MODEL"]["architecture"]
+    log_folder = setup_params["SETUP"]["log_folder"]
+    problem_type = setup_params["GENERAL"]["problem_type"]
+    filters_gen = setup_params["GENERATOR"]["filters_gen"]
+    lr_gen = setup_params["GENERATOR"]["learning_rate_gen"]
+    noise_channels = setup_params["GENERATOR"]["noise_channels"]
+    latent_variables = setup_params["GENERATOR"]["latent_variables"]
+    filters_disc = setup_params["DISCRIMINATOR"]["filters_disc"]
+    lr_disc = setup_params["DISCRIMINATOR"]["learning_rate_disc"]
+    train_years = setup_params["TRAIN"]["train_years"]
+    training_weights = setup_params["TRAIN"]["training_weights"]
+    num_samples = setup_params["TRAIN"]["num_samples"]
+    steps_per_epoch = setup_params["TRAIN"]["steps_per_epoch"]
+    batch_size = setup_params["TRAIN"]["batch_size"]
+    kl_weight = setup_params["TRAIN"]["kl_weight"]
+    val_years = setup_params["VAL"]["val_years"]
+    val_size = setup_params["VAL"]["val_size"]
+    num_batches = setup_params["EVAL"]["num_batches"]
+    add_noise = setup_params["EVAL"]["add_noise"]
+    noise_factor = setup_params["EVAL"]["noise_factor"]
+         
+    if mode not in ['GAN', 'VAEGAN', 'det']:
+        raise ValueError("Mode type is restricted to 'GAN' 'VAEGAN' 'det'")
+    if problem_type not in ['normal', 'superresolution']:
+        raise ValueError("Problem type is restricted to 'normal' 'superresolution'")
 
     num_epochs = int(num_samples/(steps_per_epoch * batch_size))
     epoch = 1
@@ -131,6 +93,11 @@ if __name__ == "__main__":
     Path(log_folder).mkdir(parents=True, exist_ok=True)
     model_weights_root = os.path.join(log_folder, "models")
     Path(model_weights_root).mkdir(parents=True, exist_ok=True)
+    
+    # save setup parameters
+    save_config = os.path.join(log_folder, 'setup_params.yaml')
+    with open(save_config, 'w') as outfile:
+        yaml.dump(setup_params, outfile, default_flow_style=False)
 
     if args.problem_type == "normal":
         downsample = False
@@ -139,11 +106,10 @@ if __name__ == "__main__":
         downsample = True
         input_channels = 1
     else:
-        raise Exception("no such problem type, try again!")
+        raise ValueError("no such problem type, try again!")
 
     if args.do_training:
         # initialize GAN
-        print(f"val years is {val_years}")
         model, batch_gen_train, batch_gen_valid, _, _ = \
             train.setup_model(mode=mode,
                               arch=arch,
@@ -363,6 +329,7 @@ if __name__ == "__main__":
                                            noise_channels=noise_channels)
     if args.plot_ranks_small:
         if add_noise:
+            noise_label = "noise"
             rank_metrics_files_1 = ["{}/ranks-noise-124800.npz".format(log_folder), "{}/ranks-noise-198400.npz".format(log_folder)]
             rank_metrics_files_2 = ["{}/ranks-noise-240000.npz".format(log_folder), "{}/ranks-noise-320000.npz".format(log_folder)]
             labels_1 = ['noise-124800', 'noise-198400']
@@ -370,20 +337,21 @@ if __name__ == "__main__":
             name_1 = 'noise-early-small_image'
             name_2 = 'noise-late-small_image'
         else:
+            noise_label = "no_noise"
             rank_metrics_files_1 = ["{}/ranks-no-noise-124800.npz".format(log_folder), "{}/ranks-no-noise-198400.npz".format(log_folder)]
-            rank_metrics_files_2 = ["{}/ranks-no-noise-240000.npz".format(log_folder), "{}/ranks-no-noise-384000.npz".format(log_folder)]
+            rank_metrics_files_2 = ["{}/ranks-no-noise-240000.npz".format(log_folder), "{}/ranks-no-noise-320000.npz".format(log_folder)]
             labels_1 = ['no-noise-124800', 'no-noise-198400']
-            labels_2 = ['no-noise-240000', 'no-noise-384000']
+            labels_2 = ['no-noise-240000', 'no-noise-320000']
             name_1 = 'no-noise-early-small_image'
             name_2 = 'no-noise-late-small_image'
-            plots.plot_rank_histogram_all(rank_files=rank_metrics_files_1, 
-                                          labels=labels_1, 
-                                          log_path=log_folder, 
-                                          name=name_1)
-            plots.plot_rank_histogram_all(rank_files=rank_metrics_files_2, 
-                                          labels=labels_2, 
-                                          log_path=log_folder, 
-                                          name=name_2)
+        plots.plot_rank_histogram_all(rank_files=rank_metrics_files_1, 
+                                      labels=labels_1, 
+                                      log_path=log_folder, 
+                                      name=name_1)
+        plots.plot_rank_histogram_all(rank_files=rank_metrics_files_2, 
+                                      labels=labels_2, 
+                                      log_path=log_folder, 
+                                      name=name_2)
     if args.plot_ranks_full:
         if add_noise:
             rank_metrics_files_1 = ["{}/ranks-full_image-noise-124800.npz".format(log_folder), "{}/ranks-full_image-noise-198400.npz".format(log_folder)]
@@ -394,16 +362,16 @@ if __name__ == "__main__":
             name_2 = 'noise-late-full_image'
         else:
             rank_metrics_files_1 = ["{}/ranks-full_image-no-noise-124800.npz".format(log_folder), "{}/ranks-full_image-no-noise-198400.npz".format(log_folder)]
-            rank_metrics_files_2 = ["{}/ranks-full_image-no-noise-240000.npz".format(log_folder), "{}/ranks-full_image-no-noise-384000.npz".format(log_folder)]  
+            rank_metrics_files_2 = ["{}/ranks-full_image-no-noise-240000.npz".format(log_folder), "{}/ranks-full_image-no-noise-320000.npz".format(log_folder)]  
             labels_1 = ['no-noise-124800', 'no-noise-198400']
-            labels_2 = ['no-noise-240000', 'no-noise-384000']
+            labels_2 = ['no-noise-240000', 'no-noise-320000']
             name_1 = 'no-noise-early-full_image'
             name_2 = 'no-noise-late-full_image'
-            plots.plot_rank_histogram_all(rank_files=rank_metrics_files_1, 
-                                          labels=labels_1, 
-                                          log_path=log_folder, 
-                                          name=name_1)
-            plots.plot_rank_histogram_all(rank_files=rank_metrics_files_2, 
-                                          labels=labels_2, 
-                                          log_path=log_folder, 
-                                          name=name_2)
+        plots.plot_rank_histogram_all(rank_files=rank_metrics_files_1, 
+                                      labels=labels_1, 
+                                      log_path=log_folder, 
+                                      name=name_1)
+        plots.plot_rank_histogram_all(rank_files=rank_metrics_files_2, 
+                                      labels=labels_2, 
+                                      log_path=log_folder, 
+                                      name=name_2)
