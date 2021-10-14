@@ -1,3 +1,4 @@
+import os
 import numpy as np
 from sklearn.metrics import roc_curve, auc
 import matplotlib.pyplot as plt
@@ -8,7 +9,9 @@ import data
 from noise import NoiseGenerator
 from data import get_dates
 
-def plot_roc_curves(mode,
+def plot_roc_curves(*,
+                    mode,
+                    arch,
                     log_folder, 
                     model_numbers=None,
                     problem_type='normal',
@@ -47,13 +50,12 @@ def plot_roc_curves(mode,
     precip_values = np.array([0.01, 0.1, 1, 2, 5])
 
     ## initialise model
-    model = setupmodel.setup_model(mode,
-                                   downsample=downsample, 
+    model = setupmodel.setup_model(mode=mode,
+                                   arch=arch,
                                    input_channels=input_channels,
-                                   batch_size=batch_size,
-                                   filters_gen=filters_gen, 
+                                   filters_gen=filters_gen,
                                    filters_disc=filters_disc,
-                                   noise_channels=noise_channels, 
+                                   noise_channels=noise_channels,
                                    latent_variables=latent_variables)
     
     # load appropriate dataset
@@ -79,26 +81,27 @@ def plot_roc_curves(mode,
                                             batch_size=batch_size,
                                             downsample=downsample)
     auc_scores = []
-    for model in model_numbers:
-        print(f"calculating for model number {model}")
+    for model_number in model_numbers:
+        print(f"calculating for model number {model_number}")
         # load weights
-        weights_fn = os.path.join((log_folder, 'gen_weights-{}.h5').format(model))
+        weights_fn = os.path.join(log_folder, 'models', 'gen_weights-{}.h5'.format(model_number))
         model.gen.load_weights(weights_fn)
-        model_label = str(model)
+        model_label = str(model_number)
     
         pred = []
         seq_real = []
     
         data_pred_iter = iter(data_predict)
         for i in range(num_images):
-            (inputs,outputs) = next(data_pred_iter)
-            if predict_full_image == True:
+            inputs, outputs = next(data_pred_iter)
+            if predict_full_image:
                 im_real = data.denormalise(np.array(outputs['generator_output']))
-            elif predict_full_image == False:
+            else:
                 im_real = data.denormalise(outputs['generator_output'])[...,0]        
             if mode == 'det':
+                pred_ensemble = []
                 ensemble_members = 1 #can't generate an ensemble with deterministic method
-                pred.append(data.denormalise(model.gen.predict(inputs))[...,0])
+                pred_ensemble.append(data.denormalise(model.gen.predict([inputs['generator_input'], inputs['constants']]))[...,0])
             else:
                 pred_ensemble = []
                 noise_shape = inputs['generator_input'][0,...,0].shape + (noise_channels,)
@@ -113,7 +116,8 @@ def plot_roc_curves(mode,
                         dec_inputs = [mean, logvar, inputs['noise_input'], inputs['constants']]
                         pred_ensemble.append(data.denormalise(model.gen.decoder.predict(dec_inputs))[...,0])
                     pred_ensemble = np.array(pred_ensemble)
-                pred.append(pred_ensemble)    
+
+            pred.append(pred_ensemble)    
             if i == 0:
                 seq_real.append(im_real)
                 pred.append(pred_ensemble)

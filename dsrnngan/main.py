@@ -399,6 +399,7 @@ if __name__ == "__main__":
     if args.plot_roc_small:
         predict_full_image = False
         roc.plot_roc_curves(mode=mode,
+                            arch=arch,
                             log_folder=log_folder,
                             problem_type=problem_type,
                             filters_gen=filters_gen,
@@ -410,6 +411,7 @@ if __name__ == "__main__":
     if args.plot_roc_full:
         predict_full_image = True
         roc.plot_roc_curves(mode=mode,
+                            arch=arch,
                             log_folder=log_folder,
                             problem_type=problem_type,
                             filters_gen=filters_gen,
