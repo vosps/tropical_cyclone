@@ -80,9 +80,14 @@ if __name__ == "__main__":
     val_years = setup_params["VAL"]["val_years"]
     val_size = setup_params["VAL"]["val_size"]
     num_batches = setup_params["EVAL"]["num_batches"]
-    add_noise = setup_params["EVAL"]["add_noise"]
-    noise_factor = setup_params["EVAL"]["noise_factor"]
-         
+    add_noise = setup_params["EVAL"]["add_postprocessing_noise"]
+    noise_factor = setup_params["EVAL"]["postprocessing_noise_factor"]
+
+    # otherwise these are of type string, e.g. '1e-5'
+    lr_gen = float(lr_gen)
+    lr_disc = float(lr_disc)
+    kl_weight = float(kl_weight)
+
     if mode not in ['GAN', 'VAEGAN', 'det']:
         raise ValueError("Mode type is restricted to 'GAN' 'VAEGAN' 'det'")
     if problem_type not in ['normal', 'superresolution']:
@@ -101,10 +106,10 @@ if __name__ == "__main__":
     with open(save_config, 'w') as outfile:
         yaml.dump(setup_params, outfile, default_flow_style=False)
 
-    if args.problem_type == "normal":
+    if problem_type == "normal":
         downsample = False
         input_channels = 9
-    elif args.problem_type == "superresolution":
+    elif problem_type == "superresolution":
         downsample = True
         input_channels = 1
     else:
