@@ -89,7 +89,7 @@ class WGANGP(object):
                 disc_out_gen = self.disc(disc_in_gen)
                 self.gen_trainer = Model(inputs=gen_in, 
                                          outputs=disc_out_gen, 
-                                         name='gen trainer')
+                                         name='gen_trainer')
             elif self.mode == 'VAEGAN':
                 self.gen_trainer = VAE_trainer(self.gen, self.disc, self.kl_weight)
 

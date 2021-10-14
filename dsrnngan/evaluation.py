@@ -66,7 +66,8 @@ def setup_inputs(*,
     else:
         print('Evaluating with smaller image dataset')
         _, _, batch_gen_valid, _, _ = train.setup_model(
-            mode,
+            mode=mode,
+            arch=arch,
             train_years=None,
             val_years=val_years,
             val_size=batch_size*num_batches,
