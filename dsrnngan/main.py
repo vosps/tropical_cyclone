@@ -9,8 +9,7 @@ import pandas as pd
 
 import train
 import evaluation
-
-# TODO: Plots
+import plots
 
 if __name__ == "__main__":
 
@@ -63,6 +62,8 @@ if __name__ == "__main__":
     parser.set_defaults(rank_full=False)
     parser.set_defaults(qual_small=False)
     parser.set_defaults(qual_full=False)
+    parser.set_defaults(plot_ranks_small=False)
+    parser.set_defaults(plot_ranks_full=False)
     parser.add_argument('--rank_small', dest='rank_small', action='store_true',
                         help="Include CRPS/rank evaluation on small images")
     parser.add_argument('--rank_full', dest='rank_full', action='store_true',
@@ -71,6 +72,10 @@ if __name__ == "__main__":
                         help="Include image quality metrics on small images")
     parser.add_argument('--qual_full', dest='qual_full', action='store_true',
                         help="Include image quality metrics on full images")
+    parser.add_argument('--plot_ranks_small', dest='plot_ranks_full', action='store_true',
+                        help="Plot rank histograms for small images")
+    parser.add_argument('--plot_ranks_full', dest='plot_ranks_full', action='store_true',
+                        help="Plot rank histograms for full images")
 
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--eval_full', dest='evalnum', action='store_const', const="full")
@@ -356,3 +361,49 @@ if __name__ == "__main__":
                                            input_channels=input_channels,
                                            latent_variables=latent_variables,
                                            noise_channels=noise_channels)
+    if args.plot_ranks_small:
+        if add_noise:
+            rank_metrics_files_1 = ["{}/ranks-noise-124800.npz".format(log_folder), "{}/ranks-noise-198400.npz".format(log_folder)]
+            rank_metrics_files_2 = ["{}/ranks-noise-240000.npz".format(log_folder), "{}/ranks-noise-320000.npz".format(log_folder)]
+            labels_1 = ['noise-124800', 'noise-198400']
+            labels_2 = ['noise-240000', 'noise-320000']
+            name_1 = 'noise-early-small_image'
+            name_2 = 'noise-late-small_image'
+        else:
+            rank_metrics_files_1 = ["{}/ranks-no-noise-124800.npz".format(log_folder), "{}/ranks-no-noise-198400.npz".format(log_folder)]
+            rank_metrics_files_2 = ["{}/ranks-no-noise-240000.npz".format(log_folder), "{}/ranks-no-noise-384000.npz".format(log_folder)]
+            labels_1 = ['no-noise-124800', 'no-noise-198400']
+            labels_2 = ['no-noise-240000', 'no-noise-384000']
+            name_1 = 'no-noise-early-small_image'
+            name_2 = 'no-noise-late-small_image'
+            plots.plot_rank_histogram_all(rank_files=rank_metrics_files_1, 
+                                          labels=labels_1, 
+                                          log_path=log_folder, 
+                                          name=name_1)
+            plots.plot_rank_histogram_all(rank_files=rank_metrics_files_2, 
+                                          labels=labels_2, 
+                                          log_path=log_folder, 
+                                          name=name_2)
+    if args.plot_ranks_full:
+        if add_noise:
+            rank_metrics_files_1 = ["{}/ranks-full_image-noise-124800.npz".format(log_folder), "{}/ranks-full_image-noise-198400.npz".format(log_folder)]
+            rank_metrics_files_2 = ["{}/ranks-full_image-noise-240000.npz".format(log_folder), "{}/ranks-full_image-noise-320000.npz".format(log_folder)]
+            labels_1 = ['noise-124800', 'noise-198400']
+            labels_2 = ['noise-240000', 'noise-320000']
+            name_1 = 'noise-early-full_image'
+            name_2 = 'noise-late-full_image'
+        else:
+            rank_metrics_files_1 = ["{}/ranks-full_image-no-noise-124800.npz".format(log_folder), "{}/ranks-full_image-no-noise-198400.npz".format(log_folder)]
+            rank_metrics_files_2 = ["{}/ranks-full_image-no-noise-240000.npz".format(log_folder), "{}/ranks-full_image-no-noise-384000.npz".format(log_folder)]  
+            labels_1 = ['no-noise-124800', 'no-noise-198400']
+            labels_2 = ['no-noise-240000', 'no-noise-384000']
+            name_1 = 'no-noise-early-full_image'
+            name_2 = 'no-noise-late-full_image'
+            plots.plot_rank_histogram_all(rank_files=rank_metrics_files_1, 
+                                          labels=labels_1, 
+                                          log_path=log_folder, 
+                                          name=name_1)
+            plots.plot_rank_histogram_all(rank_files=rank_metrics_files_2, 
+                                          labels=labels_2, 
+                                          log_path=log_folder, 
+                                          name=name_2)
