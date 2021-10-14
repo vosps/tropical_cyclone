@@ -24,7 +24,7 @@ TRAIN:
     num_samples: 320000
     steps_per_epoch: 200
     batch_size: 16
-    kl_weight = 1e-8 # used for VAEGAN
+    kl_weight: 1e-8 # used for VAEGAN
 
 VAL:
     val_years: 2019 # cannot pass a list if using create_fixed_dataset
