@@ -37,7 +37,7 @@ if __name__ == "__main__":
                         help="Include image quality metrics on small images")
     parser.add_argument('--qual_full', dest='qual_full', action='store_true',
                         help="Include image quality metrics on full images")
-    parser.add_argument('--plot_ranks_small', dest='plot_ranks_full', action='store_true',
+    parser.add_argument('--plot_ranks_small', dest='plot_ranks_small', action='store_true',
                         help="Plot rank histograms for small images")
     parser.add_argument('--plot_ranks_full', dest='plot_ranks_full', action='store_true',
                         help="Plot rank histograms for full images")
@@ -164,10 +164,6 @@ if __name__ == "__main__":
                              "gen_loss_disc", "gen_loss_kl"])
 
         plot_fname = os.path.join(log_folder, "progress.pdf")
-        rank_small_fname = os.path.join(log_folder, "rank-small.txt")
-        rank_full_fname = os.path.join(log_folder, "rank-full.txt")
-        qual_small_fname = os.path.join(log_folder, "qual-small.txt")
-        qual_full_fname = os.path.join(log_folder, "qual-full.txt")
 
         while (training_samples < num_samples):  # main training loop
 
@@ -233,6 +229,11 @@ if __name__ == "__main__":
     else:
         print("Training skipped...")
 
+    rank_small_fname = os.path.join(log_folder, "rank-small.txt")
+    rank_full_fname = os.path.join(log_folder, "rank-full.txt")
+    qual_small_fname = os.path.join(log_folder, "qual-small.txt")
+    qual_full_fname = os.path.join(log_folder, "qual-full.txt")
+
     # This works nicely for the 100 * 3200 training samples that we have been
     # working with. If these numbers change, may want to update evaluation.py
     # accordingly.
@@ -254,7 +255,7 @@ if __name__ == "__main__":
         evaluation.rank_metrics_by_time(mode=mode,
                                         arch=arch,
                                         val_years=val_years,
-                                        log_fn=rank_small_fname,
+                                        log_fname=rank_small_fname,
                                         weights_dir=model_weights_root,
                                         downsample=downsample,
                                         weights=training_weights,
@@ -275,7 +276,7 @@ if __name__ == "__main__":
         evaluation.rank_metrics_by_time(mode=mode,
                                         arch=arch,
                                         val_years=val_years,
-                                        log_fn=rank_full_fname,
+                                        log_fname=rank_full_fname,
                                         weights_dir=model_weights_root,
                                         downsample=downsample,
                                         weights=training_weights,
@@ -296,7 +297,7 @@ if __name__ == "__main__":
         evaluation.quality_metrics_by_time(mode=mode,
                                            arch=arch,
                                            val_years=val_years,
-                                           log_fn=qual_small_fname,
+                                           log_fname=qual_small_fname,
                                            weights_dir=model_weights_root,
                                            downsample=downsample,
                                            weights=training_weights,
@@ -314,7 +315,7 @@ if __name__ == "__main__":
         evaluation.quality_metrics_by_time(mode=mode,
                                            arch=arch,
                                            val_years=val_years,
-                                           log_fn=qual_full_fname,
+                                           log_fname=qual_full_fname,
                                            weights_dir=model_weights_root,
                                            downsample=downsample,
                                            weights=training_weights,
@@ -327,6 +328,7 @@ if __name__ == "__main__":
                                            input_channels=input_channels,
                                            latent_variables=latent_variables,
                                            noise_channels=noise_channels)
+
     if args.plot_ranks_small:
         if add_noise:
             noise_label = "noise"
