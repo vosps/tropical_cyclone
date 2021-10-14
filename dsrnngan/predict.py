@@ -158,7 +158,8 @@ for i in range(num_predictions):
         seq_real.append(data.denormalise(sample))
     elif predict_full_image == False:
         seq_real.append(data.denormalise(outputs['generator_output']))
-    seq_det.append(data.denormalise(gen_det.predict(inputs)))
+    if include_deterministic:
+        seq_det.append(data.denormalise(gen_det.predict(inputs)))
     
     if mode == 'det':
         num_samples = 1 #can't generate an ensemble with deterministic method
@@ -278,7 +279,7 @@ cb.set_ticklabels(cb_tick_labels)
 cax.tick_params(labelsize=16)
 cb.set_label(units, size=16)
             
-plt.savefig("{}/predictions-{}-{}.pdf".format(load_weights_root, 
+plt.savefig("{}/predictions-{}-{}.pdf".format(log_folder, 
                                               problem_type,
                                               plot_label), bbox_inches='tight')
 plt.close()
