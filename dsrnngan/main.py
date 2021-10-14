@@ -12,6 +12,7 @@ import setupmodel
 import setupdata
 import evaluation
 import plots
+import roc
 
 if __name__ == "__main__":
 
@@ -31,6 +32,8 @@ if __name__ == "__main__":
     parser.set_defaults(qual_full=False)
     parser.set_defaults(plot_ranks_small=False)
     parser.set_defaults(plot_ranks_full=False)
+    parser.set_defaults(plot_roc_small=False)
+    parser.set_defaults(plot_roc_full=False)
     parser.add_argument('--rank_small', dest='rank_small', action='store_true',
                         help="Include CRPS/rank evaluation on small images")
     parser.add_argument('--rank_full', dest='rank_full', action='store_true',
@@ -43,6 +46,10 @@ if __name__ == "__main__":
                         help="Plot rank histograms for small images")
     parser.add_argument('--plot_ranks_full', dest='plot_ranks_full', action='store_true',
                         help="Plot rank histograms for full images")
+    parser.add_argument('--plot_roc_small', dest='plot_roc_small', action='store_true',
+                        help="Plot ROC and AUC curves for small images")
+    parser.add_argument('--plot_roc_full', dest='plot_roc_full', action='store_true',
+                        help="Plot ROC and AUC curves for full images")                   
     args = parser.parse_args()
 
     if args.evalnum is None and (args.rank_small or args.rank_full or args.qual_small or args.qual_full):
@@ -388,3 +395,26 @@ if __name__ == "__main__":
                                       labels=labels_2, 
                                       log_path=log_folder, 
                                       name=name_2)
+
+    if args.plot_roc_small:
+        predict_full_image = False
+        roc.plot_roc_curves(mode=mode,
+                            log_folder=log_folder,
+                            problem_type=problem_type,
+                            filters_gen=filters_gen,
+                            filters_disc=filters_disc,
+                            noise_channels=noise_channels,
+                            latent_variables=latent_variables,
+                            predict_year=val_years,
+                            predict_full_image=predict_full_image)
+    if args.plot_roc_full:
+        predict_full_image = True
+        roc.plot_roc_curves(mode=mode,
+                            log_folder=log_folder,
+                            problem_type=problem_type,
+                            filters_gen=filters_gen,
+                            filters_disc=filters_disc,
+                            noise_channels=noise_channels,
+                            latent_variables=latent_variables,
+                            predict_year=val_years,
+                            predict_full_image=predict_full_image)
