@@ -136,7 +136,7 @@ def ensemble_ranks(*,
                 nn = n()
                 nn *= noise_mul
                 nn -= noise_offset
-                sample_gen = gen.predict([cond, const, n])
+                sample_gen = gen.predict([cond, const, nn])
                 if denormalise_data:
                     sample_gen = data.denormalise(sample_gen)
                 samples_gen.append(sample_gen)
@@ -156,7 +156,7 @@ def ensemble_ranks(*,
                 nn *= noise_mul
                 nn -= noise_offset
                 # generate ensemble of preds with decoder
-                sample_gen = gen.decoder.predict([mean, logvar, n, const])
+                sample_gen = gen.decoder.predict([mean, logvar, nn, const])
                 if denormalise_data:
                     sample_gen = data.denormalise(sample_gen)
                 if add_noise:
@@ -515,21 +515,22 @@ def image_quality(*,
         if denormalise_data:
             sample = data.denormalise(sample)
 
-        if mode == 'VAEGAN':
+        if mode == "GAN":
+            noise_shape = np.array(cond)[0, ..., 0].shape + (noise_channels,)
+            n = NoiseGenerator(noise_shape, batch_size=batch_size)
+        elif mode == "VAEGAN":
+            noise_shape = np.array(cond)[0, ..., 0].shape + (latent_variables,)
+            n = NoiseGenerator(noise_shape, batch_size=batch_size)
             # call encoder once
-            (mean, logvar) = gen.encoder([cond, const])
+            mean, logvar = gen.encoder([cond, const])
 
         for i in range(num_instances):
             if mode == "GAN":
-                noise_shape = np.array(cond)[0, ..., 0].shape + (noise_channels,)
-                n = NoiseGenerator(noise_shape, batch_size=batch_size)
-                img_gen = gen.predict([cond, const, n])
+                img_gen = gen.predict([cond, const, n()])
             elif mode == "det":
                 img_gen = gen.predict([cond, const])
             elif mode == 'VAEGAN':
-                noise_shape = np.array(cond)[0, ..., 0].shape + (noise_channels,)
-                n = NoiseGenerator(noise_shape, batch_size=batch_size)
-                img_gen = gen.decoder.predict([cond, const, n])
+                img_gen = gen.decoder.predict([mean, logvar, n(), const])
             else:
                 try:
                     img_gen = gen.predict([cond, const])
@@ -602,9 +603,9 @@ def quality_metrics_by_time(*,
         else:
             print(gen_weights_file)
             gen.load_weights(gen_weights_file)
-            mae, rmse, ssim, lsd = image_quality(mode,
-                                                 gen,
-                                                 batch_gen_valid,
+            mae, rmse, ssim, lsd = image_quality(mode=mode,
+                                                 gen=gen,
+                                                 batch_gen=batch_gen_valid,
                                                  noise_channels=noise_channels,
                                                  latent_variables=latent_variables,
                                                  batch_size=batch_size,

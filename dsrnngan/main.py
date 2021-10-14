@@ -87,6 +87,7 @@ if __name__ == "__main__":
     lr_gen = float(lr_gen)
     lr_disc = float(lr_disc)
     kl_weight = float(kl_weight)
+    noise_factor = float(noise_factor)
 
     if mode not in ['GAN', 'VAEGAN', 'det']:
         raise ValueError("Mode type is restricted to 'GAN' 'VAEGAN' 'det'")
