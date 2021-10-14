@@ -72,7 +72,7 @@ if __name__ == "__main__":
                         help="Include image quality metrics on small images")
     parser.add_argument('--qual_full', dest='qual_full', action='store_true',
                         help="Include image quality metrics on full images")
-    parser.add_argument('--plot_ranks_small', dest='plot_ranks_full', action='store_true',
+    parser.add_argument('--plot_ranks_small', dest='plot_ranks_small', action='store_true',
                         help="Plot rank histograms for small images")
     parser.add_argument('--plot_ranks_full', dest='plot_ranks_full', action='store_true',
                         help="Plot rank histograms for full images")
@@ -361,6 +361,7 @@ if __name__ == "__main__":
                                            input_channels=input_channels,
                                            latent_variables=latent_variables,
                                            noise_channels=noise_channels)
+
     if args.plot_ranks_small:
         if add_noise:
             rank_metrics_files_1 = ["{}/ranks-noise-124800.npz".format(log_folder), "{}/ranks-noise-198400.npz".format(log_folder)]
@@ -371,9 +372,9 @@ if __name__ == "__main__":
             name_2 = 'noise-late-small_image'
         else:
             rank_metrics_files_1 = ["{}/ranks-no-noise-124800.npz".format(log_folder), "{}/ranks-no-noise-198400.npz".format(log_folder)]
-            rank_metrics_files_2 = ["{}/ranks-no-noise-240000.npz".format(log_folder), "{}/ranks-no-noise-384000.npz".format(log_folder)]
+            rank_metrics_files_2 = ["{}/ranks-no-noise-240000.npz".format(log_folder), "{}/ranks-no-noise-320000.npz".format(log_folder)]
             labels_1 = ['no-noise-124800', 'no-noise-198400']
-            labels_2 = ['no-noise-240000', 'no-noise-384000']
+            labels_2 = ['no-noise-240000', 'no-noise-320000']
             name_1 = 'no-noise-early-small_image'
             name_2 = 'no-noise-late-small_image'
             plots.plot_rank_histogram_all(rank_files=rank_metrics_files_1, 
@@ -394,9 +395,9 @@ if __name__ == "__main__":
             name_2 = 'noise-late-full_image'
         else:
             rank_metrics_files_1 = ["{}/ranks-full_image-no-noise-124800.npz".format(log_folder), "{}/ranks-full_image-no-noise-198400.npz".format(log_folder)]
-            rank_metrics_files_2 = ["{}/ranks-full_image-no-noise-240000.npz".format(log_folder), "{}/ranks-full_image-no-noise-384000.npz".format(log_folder)]  
+            rank_metrics_files_2 = ["{}/ranks-full_image-no-noise-240000.npz".format(log_folder), "{}/ranks-full_image-no-noise-320000.npz".format(log_folder)]  
             labels_1 = ['no-noise-124800', 'no-noise-198400']
-            labels_2 = ['no-noise-240000', 'no-noise-384000']
+            labels_2 = ['no-noise-240000', 'no-noise-320000']
             name_1 = 'no-noise-early-full_image'
             name_2 = 'no-noise-late-full_image'
             plots.plot_rank_histogram_all(rank_files=rank_metrics_files_1, 
