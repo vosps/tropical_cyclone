@@ -8,6 +8,8 @@ import numpy as np
 import pandas as pd
 
 import train
+import setupmodel
+import setupdata
 import evaluation
 import plots
 
@@ -144,23 +146,26 @@ if __name__ == "__main__":
     if args.do_training:
         # initialize GAN
         print(f"val years is {val_years}")
-        model, batch_gen_train, batch_gen_valid, _, _ = \
-            train.setup_model(mode=mode,
-                              arch=arch,
-                              train_years=train_years,
-                              val_years=val_years,
-                              val_size=val_size,
-                              downsample=downsample,
-                              weights=training_weights,
-                              input_channels=input_channels,
-                              latent_variables=latent_variables,
-                              batch_size=batch_size,
-                              filters_gen=filters_gen,
-                              filters_disc=filters_disc,
-                              noise_channels=noise_channels,
-                              lr_disc=lr_disc,
-                              lr_gen=lr_gen,
-                              kl_weight=kl_weight)
+        model = setupmodel.setup_model(
+            mode=mode,
+            arch=arch,
+            input_channels=input_channels,
+            latent_variables=latent_variables,
+            filters_gen=filters_gen,
+            filters_disc=filters_disc,
+            noise_channels=noise_channels,
+            lr_disc=lr_disc,
+            lr_gen=lr_gen,
+            kl_weight=kl_weight)
+
+        batch_gen_train, batch_gen_valid = setupdata.setup_data(
+            train_years=train_years,
+            val_years=val_years,
+            val_size=val_size,
+            downsample=downsample,
+            weights=training_weights,
+            batch_size=batch_size,
+            load_full_image=False)
 
     # Leaving around for now in case this is useful for e.g. multiple training
 #         if load_weights_root:  # load weights and run status

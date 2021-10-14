@@ -4,7 +4,8 @@ import os
 import numpy as np
 
 import crps
-import train
+import setupmodel
+import setupdata
 import data
 import msssim
 from noise import NoiseGenerator
@@ -40,40 +41,32 @@ def setup_inputs(*,
         num_batches = num_batches
 
     # initialise model
-    model = train.setup_model(mode=mode,
-                              arch=arch,
-                              train_years=None,
-                              val_years=None,
-                              val_size=None,
-                              downsample=downsample,
-                              weights=weights,
-                              input_channels=input_channels,
-                              batch_size=batch_size,
-                              filters_gen=filters_gen,
-                              filters_disc=filters_disc,
-                              noise_channels=noise_channels,
-                              latent_variables=latent_variables)
+    model = setupmodel.setup_model(mode=mode,
+                                   arch=arch,
+                                   input_channels=input_channels,
+                                   filters_gen=filters_gen,
+                                   filters_disc=filters_disc,
+                                   noise_channels=noise_channels,
+                                   latent_variables=latent_variables)
 
     gen = model.gen
 
     if load_full_image:
         print('Loading full sized image dataset')
         # load full size image
-        batch_gen_valid = train.setup_full_image_dataset(
-            val_years,
+        _, batch_gen_valid = setupdata.setup_data(
+            load_full_image=True,
+            val_years=val_years,
             batch_size=batch_size,
             downsample=downsample)
     else:
         print('Evaluating with smaller image dataset')
-        _, _, batch_gen_valid, _, _ = train.setup_model(
-            mode=mode,
-            arch=arch,
-            train_years=None,
+        _, batch_gen_valid = setupdata.setup_data(
+            load_full_image=False,
             val_years=val_years,
             val_size=batch_size*num_batches,
             downsample=downsample,
             weights=weights,
-            input_channels=input_channels,
             batch_size=batch_size)
     return (gen, batch_gen_valid)
 
@@ -277,9 +270,9 @@ def rank_metrics_by_time(*,
         else:
             print(gen_weights_file)
             gen.load_weights(gen_weights_file)
-            ranks, crps_scores = ensemble_ranks(mode,
-                                                gen,
-                                                batch_gen_valid,
+            ranks, crps_scores = ensemble_ranks(mode=mode,
+                                                gen=gen,
+                                                batch_gen=batch_gen_valid,
                                                 noise_channels=noise_channels,
                                                 latent_variables=latent_variables,
                                                 batch_size=batch_size,
@@ -418,13 +411,13 @@ def rank_metrics_by_time(*,
 #                                             noise_factor=noise_factor)
 
 #     elif mode in ['rainfarm', 'lanczos', 'constant']:
-#         (_, batch_gen_valid) = train.setup_data(train_years,
-#                                                 val_years,
-#                                                 val_size=batch_size*num_batches,
-#                                                 downsample=downsample,
-#                                                 weights=weights,
-#                                                 batch_size=batch_size,
-#                                                 load_full_image=load_full_image)
+#         (_, batch_gen_valid) = setupdata.setup_data(train_years,
+#                                                     val_years,
+#                                                     val_size=batch_size*num_batches,
+#                                                     downsample=downsample,
+#                                                     weights=weights,
+#                                                     batch_size=batch_size,
+#                                                     load_full_image=load_full_image)
 #         if mode == "rainfarm":
 #             gen = GeneratorRainFARM(10, data.denormalise)
 #             ranks, crps_scores = ensemble_ranks("GAN", gen,
@@ -653,13 +646,13 @@ def quality_metrics_by_time(*,
 #         gen.load_weights(weights_fname)
 
 #     elif mode in ['rainfarm', 'lanczos', 'constant']:
-#         (_, batch_gen_valid) = train.setup_data(train_years,
-#                                                 val_years,
-#                                                 val_size=batch_size*num_batches,
-#                                                 downsample=downsample,
-#                                                 weights=weights,
-#                                                 batch_size=batch_size,
-#                                                 load_full_image=load_full_image)
+#         (_, batch_gen_valid) = setupdata.setup_data(train_years,
+#                                                     val_years,
+#                                                     val_size=batch_size*num_batches,
+#                                                     downsample=downsample,
+#                                                     weights=weights,
+#                                                     batch_size=batch_size,
+#                                                     load_full_image=load_full_image)
 #         if mode == "rainfarm":
 #             gen = GeneratorRainFARM(10, data.denormalise)
 

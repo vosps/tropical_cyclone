@@ -5,7 +5,7 @@ from sklearn.metrics import roc_curve, auc
 import matplotlib.pyplot as plt
 from tfrecords_generator_ifs import create_fixed_dataset
 from data_generator_ifs import DataGenerator as DataGeneratorFull
-import train
+import setupmodel
 import data
 from noise import NoiseGenerator
 from data import get_dates
@@ -49,15 +49,15 @@ else:
     num_images = 50
 
 ## initialise model
-model = train.setup_model(mode,
-                          downsample=downsample, 
-                          weights=weights,
-                          input_channels=input_channels,
-                          batch_size=batch_size,
-                          filters_gen=filters_gen, 
-                          filters_disc=filters_disc,
-                          noise_channels=noise_channels, 
-                          latent_variables=latent_variables)
+model = setupmodel.setup_model(mode,
+                               downsample=downsample, 
+                               weights=weights,
+                               input_channels=input_channels,
+                               batch_size=batch_size,
+                               filters_gen=filters_gen, 
+                               filters_disc=filters_disc,
+                               noise_channels=noise_channels, 
+                               latent_variables=latent_variables)
 
 # load appropriate dataset
 if predict_full_image:
