@@ -15,9 +15,9 @@ if added_noise and not full_image:
     name_2 = 'noise-late-small_image'
 elif not added_noise and not full_image:
     rank_metrics_files_1 = ["{}/ranks-no-noise-124800.npz".format(log_path), "{}/ranks-no-noise-198400.npz".format(log_path)]
-    rank_metrics_files_2 = ["{}/ranks-no-noise-240000.npz".format(log_path), "{}/ranks-no-noise-384000.npz".format(log_path)]
+    rank_metrics_files_2 = ["{}/ranks-no-noise-240000.npz".format(log_path), "{}/ranks-no-noise-320000.npz".format(log_path)]
     labels_1 = ['no-noise-124800', 'no-noise-198400']
-    labels_2 = ['no-noise-240000', 'no-noise-384000']
+    labels_2 = ['no-noise-240000', 'no-noise-320000']
     name_1 = 'no-noise-early-small_image'
     name_2 = 'no-noise-late-small_image'
 if added_noise and full_image:
@@ -29,9 +29,9 @@ if added_noise and full_image:
     name_2 = 'noise-late-full_image'
 elif not added_noise and full_image:
     rank_metrics_files_1 = ["{}/ranks-full_image-no-noise-124800.npz".format(log_path), "{}/ranks-full_image-no-noise-198400.npz".format(log_path)]
-    rank_metrics_files_2 = ["{}/ranks-full_image-no-noise-240000.npz".format(log_path), "{}/ranks-full_image-no-noise-384000.npz".format(log_path)]  
+    rank_metrics_files_2 = ["{}/ranks-full_image-no-noise-240000.npz".format(log_path), "{}/ranks-full_image-no-noise-320000.npz".format(log_path)]  
     labels_1 = ['no-noise-124800', 'no-noise-198400']
-    labels_2 = ['no-noise-240000', 'no-noise-384000']
+    labels_2 = ['no-noise-240000', 'no-noise-320000']
     name_1 = 'no-noise-early-full_image'
     name_2 = 'no-noise-late-full_image'
 
