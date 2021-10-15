@@ -11,7 +11,7 @@ predict_year = 2019
 predict_full_image = True
 ensemble_members = 100
 
-
+model_weights_root = os.path.join(log_folder, "models")
 config_path = os.path.join(log_folder, 'setup_params.yaml')
 with open(config_path, 'r') as f:
     try:
@@ -50,6 +50,7 @@ else:
 roc.plot_roc_curves(mode=mode,
                     log_folder=log_folder,
                     model_numbers=model_numbers,
+                    weights_dir=model_weight_root,
                     problem_type=problem_type,
                     filters_gen=filters_gen,
                     filters_disc=filters_disc,

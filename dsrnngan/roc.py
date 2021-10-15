@@ -13,6 +13,7 @@ def plot_roc_curves(*,
                     mode,
                     arch,
                     log_folder, 
+                    weights_dir,
                     model_numbers=None,
                     problem_type='normal',
                     filters_gen=None,
@@ -45,7 +46,7 @@ def plot_roc_curves(*,
         num_images = 50
     
     precip_values = np.array([0.01, 0.1, 1, 2, 5])
-
+   
     ## initialise model
     model = setupmodel.setup_model(mode=mode,
                                    arch=arch,
@@ -77,12 +78,16 @@ def plot_roc_curves(*,
         data_predict = create_fixed_dataset(predict_year,
                                             batch_size=batch_size,
                                             downsample=downsample)
+
     auc_scores = []
     for model_number in model_numbers:
         print(f"calculating for model number {model_number}")
-        # load weights
-        weights_fn = os.path.join(log_folder, 'models', 'gen_weights-{}.h5'.format(model_number))
-        model.gen.load_weights(weights_fn)
+        gen_weights_file = os.path.join(weights_dir, "gen_weights-{:07d}.h5".format(model_number))
+        if not os.path.isfile(gen_weights_file):
+            print(gen_weights_file, "not found, skipping")
+        else:
+            print(gen_weights_file)
+            model.gen.load_weights(gen_weights_file)
         model_label = str(model_number)
     
         pred = []

@@ -124,7 +124,6 @@ data_ecpoint = DataGeneratorFull(dates=dates,
                                  hour=2,
                                  ifs_norm=False,
                                  downsample=downsample)    
-
 if include_deterministic:
     if problem_type == 'superresolution':
         filters_det = 256
@@ -143,7 +142,7 @@ seq_lanczos = []
 seq_rainfarm = []
 seq_det = []
 seq_ecpoint = []
-
+dummy = np.zeros((1, 940, 940))
 data_predict_iter = iter(data_predict)    
 for i in range(num_predictions):
     (inputs,outputs) = next(data_predict_iter)
@@ -160,13 +159,17 @@ for i in range(num_predictions):
         seq_real.append(data.denormalise(outputs['generator_output']))
     if include_deterministic:
         seq_det.append(data.denormalise(gen_det.predict(inputs)))
-    
+    else:
+        seq_det.append(dummy)
     if mode == 'det':
         num_samples = 1 #can't generate an ensemble with deterministic method
         pred.append(data.denormalise(gen.predict(inputs)))
     else:
         pred_ensemble = []
-        noise_shape = inputs['generator_input'][0,...,0].shape + (noise_channels,)
+        if mode == 'GAN':
+            noise_shape = inputs['generator_input'][0,...,0].shape + (noise_channels,)
+        elif mode == 'VAEGAN':
+            noise_shape = inputs['generator_input'][0,...,0].shape + (latent_variables,)
         noise = NoiseGenerator(noise_shape, batch_size=batch_size)
         if mode == 'VAEGAN':
             # call encoder once
@@ -179,25 +182,24 @@ for i in range(num_predictions):
             elif mode == 'VAEGAN':
                 dec_inputs = [mean, logvar, inputs['noise_input'], inputs['constants']]
                 pred_ensemble.append(data.denormalise(gen.decoder.predict(dec_inputs)))
-            pred_ensemble = np.array(pred_ensemble)
+        pred_ensemble = np.array(pred_ensemble)
         pred.append(pred_ensemble)
-    
+
 data_ecpoint_iter = iter(data_ecpoint)
-dummy = np.zeros((1, 940, 940))
 for i in range(num_predictions):
     (inp,outp) = next(data_ecpoint_iter)        
     ## ecPoint prediction
     if include_ecPoint:
         seq_ecpoint.append(np.mean(benchmarks.ecpointPDFmodel(inp['generator_input']),axis=-1))
-    if not include_ecPoint:
+    else:
         seq_ecpoint.append(dummy)
     if include_RainFARM:
         seq_rainfarm.append(benchmarks.rainfarmmodel(inp['generator_input'][...,1]))
-    if not include_RainFARM:
+    else:
         seq_rainfarm.append(dummy)
     if include_Lanczos:
         seq_lanczos.append(benchmarks.lanczosmodel(inp['generator_input'][...,1]))
-    if not include_Lanczos:
+    else:
         seq_lanczos.append(dummy)
 
 ## plot input conditions and prediction example
@@ -232,7 +234,7 @@ plt.close()
 ## generate labels for plots
 labels = [plot_input_title, "NIMROD"]
 for i in range(num_samples):
-    labels.append(f"GAN pred {i+1}")
+    labels.append(f"{mode} pred {i+1}")
 if include_RainFARM:
     labels.append("RainFARM")
 if include_ecPoint:
