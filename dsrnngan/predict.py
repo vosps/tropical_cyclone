@@ -74,6 +74,9 @@ batch_size = setup_params["TRAIN"]["batch_size"]
 val_years = setup_params["VAL"]["val_years"]
 val_size = setup_params["VAL"]["val_size"]
 
+if args.predict_full_image:
+    batch_size = 1
+
 weights_fn = os.path.join(log_folder, 'models', 'gen_weights-{}.h5'.format(model_number))
 dates = get_dates(predict_year)
 
