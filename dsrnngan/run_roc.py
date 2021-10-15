@@ -3,12 +3,11 @@ import os
 import yaml
 
 # input parameters
-log_folder = '/ppdata/lucy-cGAN/logs/IFS/gen_256_disc_512/noise_4/weights_4x/'
-model_numbers = '0198400'
-# model_numbers = ['0006400', '0048000', '0160000', '0169600', '0198400', '0240000', '0262400', '0275200', '0313600', '0320000']
+log_folder = '/ppdata/lucy-cGAN/logs/test/GAN'
+model_number = [16000]
 plot_ecpoint = False
 predict_year = 2019
-predict_full_image = True
+predict_full_image = False
 ensemble_members = 100
 
 model_weights_root = os.path.join(log_folder, "models")
@@ -20,6 +19,7 @@ with open(config_path, 'r') as f:
         print(exc)
 
 mode = setup_params["GENERAL"]["mode"]
+arch = setup_params["MODEL"]["architecture"]
 problem_type = setup_params["GENERAL"]["problem_type"]
 filters_gen = setup_params["GENERATOR"]["filters_gen"]
 noise_channels = setup_params["GENERATOR"]["noise_channels"]
@@ -48,9 +48,10 @@ else:
 
 
 roc.plot_roc_curves(mode=mode,
+                    arch=arch,
                     log_folder=log_folder,
-                    model_numbers=model_numbers,
-                    weights_dir=model_weight_root,
+                    model_numbers=model_number,
+                    weights_dir=model_weights_root,
                     problem_type=problem_type,
                     filters_gen=filters_gen,
                     filters_disc=filters_disc,
