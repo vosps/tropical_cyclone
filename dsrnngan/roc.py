@@ -137,129 +137,129 @@ def plot_roc_curves(*,
             seq_real = np.array(seq_real)
             pred = np.array(pred)
         
-        fpr = []
-        tpr = []
-        roc_auc = []
-        for value in precip_values:
-            # produce y_true
-            ## binary instance of truth > threshold
-            y_true = np.squeeze(1*(seq_real > value), axis = 0)
-            # produce y_score
-            ## check if pred > threshold 
-            y_score = np.mean(1*(pred > value), axis=0)
-            # flatten matrices
-            y_true = np.ravel(y_true)
-            y_score = np.ravel(y_score)
-            # Compute ROC curve and ROC area for each precip value
-            fpr_pv, tpr_pv, _ = roc_curve(y_true, y_score)
-            roc_auc_pv = auc(fpr_pv, tpr_pv)
-            fpr.append(fpr_pv)
-            tpr.append(tpr_pv)
-            roc_auc.append(roc_auc_pv)
-        auc_scores.append(np.array(roc_auc))
+            fpr = []
+            tpr = []
+            roc_auc = []
+            for value in precip_values:
+                # produce y_true
+                ## binary instance of truth > threshold
+                y_true = np.squeeze(1*(seq_real > value), axis = 0)
+                # produce y_score
+                ## check if pred > threshold 
+                y_score = np.mean(1*(pred > value), axis=0)
+                # flatten matrices
+                y_true = np.ravel(y_true)
+                y_score = np.ravel(y_score)
+                # Compute ROC curve and ROC area for each precip value
+                fpr_pv, tpr_pv, _ = roc_curve(y_true, y_score)
+                roc_auc_pv = auc(fpr_pv, tpr_pv)
+                fpr.append(fpr_pv)
+                tpr.append(tpr_pv)
+                roc_auc.append(roc_auc_pv)
+            auc_scores.append(np.array(roc_auc))
+            
+            # Plot all ROC curves
+            plt.figure(figsize=(7,5))
+            lw = 2
+            colors = ['aqua', 'darkorange', 'cornflowerblue', 'deeppink', 'navy']
+            for i, color in zip(range(len(precip_values)), colors):
+                plt.plot(fpr[i], tpr[i], color=color, lw=lw,
+                         label=f"ROC curve for precip value {precip_values[i]} (area = %0.2f)" %roc_auc[i])
         
-        # Plot all ROC curves
-        plt.figure(figsize=(7,5))
-        lw = 2
-        colors = ['aqua', 'darkorange', 'cornflowerblue', 'deeppink', 'navy']
+            plt.plot([0, 1], [0, 1], 'k--', lw=lw)
+            plt.xlim([0.0, 1.0])
+            plt.ylim([0.0, 1.05])
+            plt.xlabel('False Positive Rate')
+            plt.ylabel('True Positive Rate')
+            plt.title(f'ROC curve for {plot_input_title} problem, {ensemble_members} ensemble members, {batch_size*num_images} images')
+            plt.legend(loc="lower right")
+            plt.savefig("{}/ROC-{}-{}-{}.pdf".format(log_folder, problem_type, plot_label, model_label), bbox_inches='tight')
+            plt.show()
+        
+        auc_scores=np.transpose(np.array(auc_scores))
+        plt.figure(figsize=(8,5))
+        
+        colors = ['darkturquoise', 'teal', 'dodgerblue', 'navy', 'purple']
         for i, color in zip(range(len(precip_values)), colors):
-            plt.plot(fpr[i], tpr[i], color=color, lw=lw,
-                     label=f"ROC curve for precip value {precip_values[i]} (area = %0.2f)" %roc_auc[i])
-    
-        plt.plot([0, 1], [0, 1], 'k--', lw=lw)
-        plt.xlim([0.0, 1.0])
-        plt.ylim([0.0, 1.05])
-        plt.xlabel('False Positive Rate')
-        plt.ylabel('True Positive Rate')
-        plt.title(f'ROC curve for {plot_input_title} problem, {ensemble_members} ensemble members, {batch_size*num_images} images')
-        plt.legend(loc="lower right")
-        plt.savefig("{}/ROC-{}-{}-{}.pdf".format(log_folder, problem_type, plot_label, model_label), bbox_inches='tight')
+            plt.plot(model_numbers, auc_scores[i], color=color, lw=lw,
+                     label=f"AUC values for precip_values {precip_values[i]}")
+        
+        plt.ylim([0, 1.0])
+        plt.xlabel('Epoch number')
+        plt.ylabel('Area under ROC curve')
+        plt.title('AUC values for varying precip thresholds')
+        plt.legend(loc="best")
+        plt.savefig("{}/AUC-{}-{}.pdf".format(log_folder, problem_type, plot_label), bbox_inches='tight')
         plt.show()
     
-    auc_scores=np.transpose(np.array(auc_scores))
-    plt.figure(figsize=(8,5))
-    
-    colors = ['darkturquoise', 'teal', 'dodgerblue', 'navy', 'purple']
-    for i, color in zip(range(len(precip_values)), colors):
-        plt.plot(model_numbers, auc_scores[i], color=color, lw=lw,
-                 label=f"AUC values for precip_values {precip_values[i]}")
-    
-    plt.ylim([0, 1.0])
-    plt.xlabel('Epoch number')
-    plt.ylabel('Area under ROC curve')
-    plt.title('AUC values for varying precip thresholds')
-    plt.legend(loc="best")
-    plt.savefig("{}/AUC-{}-{}.pdf".format(log_folder, problem_type, plot_label), bbox_inches='tight')
-    plt.show()
-
-    ##ecPoint
-    ## requires a different data generator
-    if plot_ecpoint:
-        dates=get_dates(predict_year)
-        data_benchmarks = DataGeneratorFull(dates=dates,
-                                            ifs_fields=ecpoint.ifs_fields,
-                                            batch_size=batch_size,
-                                            log_precip=False,
-                                            crop=True,
-                                            shuffle=False,
-                                            constants=True,
-                                            hour=0,
-                                            ifs_norm=False,
-                                            downsample=downsample)
-    
-        # generate predictions
-        ## store preds
-        seq_ecpoint = []
-        ## store ground truth images for comparison
-        seq_real_ecpoint = []
-    
-    
-        data_benchmarks_iter = iter(data_benchmarks)
-        (inp,outp) = next(data_benchmarks_iter)
-        ## store GT data
-        seq_real_ecpoint.append(data.denormalise(outp['generator_output']))
+        ##ecPoint
+        ## requires a different data generator
+        if plot_ecpoint:
+            dates=get_dates(predict_year)
+            data_benchmarks = DataGeneratorFull(dates=dates,
+                                                ifs_fields=ecpoint.ifs_fields,
+                                                batch_size=batch_size,
+                                                log_precip=False,
+                                                crop=True,
+                                                shuffle=False,
+                                                constants=True,
+                                                hour=0,
+                                                ifs_norm=False,
+                                                downsample=downsample)
         
-        ## store mean ecPoint prediction
-        #seq_ecpoint.append(np.mean(benchmarks.ecpointPDFmodel(inputs['generator_input']), axis=-1))
-        seq_ecpoint.append(benchmarks.ecpointPDFmodel(inp['generator_input']))
-    
-        seq_ecpoint = np.array(seq_ecpoint)
-        seq_real_ecpoint = np.array(seq_real_ecpoint)
-    
-        fpr_ecpoint = []
-        tpr_ecpoint = []
-        roc_auc_ecpoint = []
-        for value in precip_values:
-            # produce y_true
-            ## binary instance of truth > threshold
-            y_true_ecpoint = np.squeeze(1*(seq_real_ecpoint > value), axis=0)
-            # produce y_score
-            ## check if pred > threshold 
-            y_score_ecpoint = np.squeeze(np.mean(1*(seq_ecpoint > value), axis=-1), axis = 0)
-            # flatten matrices
-            y_true_ecpoint = np.ravel(y_true_ecpoint)
-            y_score_ecpoint = np.ravel(y_score_ecpoint)
-            # Compute ROC curve and ROC area for each precip value
-            fpr_pv_ecpoint, tpr_pv_ecpoint, _ = roc_curve(y_true_ecpoint, y_score_ecpoint)
-            roc_auc_pv_ecpoint = auc(fpr_pv_ecpoint, tpr_pv_ecpoint)
-            fpr_ecpoint.append(fpr_pv_ecpoint)
-            tpr_ecpoint.append(tpr_pv_ecpoint)
-            roc_auc_ecpoint.append(roc_auc_pv_ecpoint)
-    
-        # Plot all ROC curves
-        plt.figure(figsize=(7,5))
-        lw = 2
-        colors = ['aqua', 'darkorange', 'cornflowerblue', 'deeppink', 'navy']
-        for i, color in zip(range(len(precip_values)), colors):
-            plt.plot(fpr_ecpoint[i], tpr_ecpoint[i], color=color, lw=lw,
-                     label=f"ROC curve for precip value {precip_values[i]} (area = %0.2f)" %roc_auc_ecpoint[i])
-    
-        plt.plot([0, 1], [0, 1], 'k--', lw=lw)
-        plt.xlim([0.0, 1.0])
-        plt.ylim([0.0, 1.05])
-        plt.xlabel('False Positive Rate')
-        plt.ylabel('True Positive Rate')
-        plt.title(f'ROC curve for ecPoint approach, batch size {batch_size}')
-        plt.legend(loc="lower right")
-        plt.savefig("{}/ROC-ecPoint-{}-{}.pdf".format(log_folder,problem_type,
-                                                      plot_label), bbox_inches='tight')
+            # generate predictions
+            ## store preds
+            seq_ecpoint = []
+            ## store ground truth images for comparison
+            seq_real_ecpoint = []
+        
+        
+            data_benchmarks_iter = iter(data_benchmarks)
+            (inp,outp) = next(data_benchmarks_iter)
+            ## store GT data
+            seq_real_ecpoint.append(data.denormalise(outp['generator_output']))
+            
+            ## store mean ecPoint prediction
+            #seq_ecpoint.append(np.mean(benchmarks.ecpointPDFmodel(inputs['generator_input']), axis=-1))
+            seq_ecpoint.append(benchmarks.ecpointPDFmodel(inp['generator_input']))
+        
+            seq_ecpoint = np.array(seq_ecpoint)
+            seq_real_ecpoint = np.array(seq_real_ecpoint)
+        
+            fpr_ecpoint = []
+            tpr_ecpoint = []
+            roc_auc_ecpoint = []
+            for value in precip_values:
+                # produce y_true
+                ## binary instance of truth > threshold
+                y_true_ecpoint = np.squeeze(1*(seq_real_ecpoint > value), axis=0)
+                # produce y_score
+                ## check if pred > threshold 
+                y_score_ecpoint = np.squeeze(np.mean(1*(seq_ecpoint > value), axis=-1), axis = 0)
+                # flatten matrices
+                y_true_ecpoint = np.ravel(y_true_ecpoint)
+                y_score_ecpoint = np.ravel(y_score_ecpoint)
+                # Compute ROC curve and ROC area for each precip value
+                fpr_pv_ecpoint, tpr_pv_ecpoint, _ = roc_curve(y_true_ecpoint, y_score_ecpoint)
+                roc_auc_pv_ecpoint = auc(fpr_pv_ecpoint, tpr_pv_ecpoint)
+                fpr_ecpoint.append(fpr_pv_ecpoint)
+                tpr_ecpoint.append(tpr_pv_ecpoint)
+                roc_auc_ecpoint.append(roc_auc_pv_ecpoint)
+        
+            # Plot all ROC curves
+            plt.figure(figsize=(7,5))
+            lw = 2
+            colors = ['aqua', 'darkorange', 'cornflowerblue', 'deeppink', 'navy']
+            for i, color in zip(range(len(precip_values)), colors):
+                plt.plot(fpr_ecpoint[i], tpr_ecpoint[i], color=color, lw=lw,
+                         label=f"ROC curve for precip value {precip_values[i]} (area = %0.2f)" %roc_auc_ecpoint[i])
+        
+            plt.plot([0, 1], [0, 1], 'k--', lw=lw)
+            plt.xlim([0.0, 1.0])
+            plt.ylim([0.0, 1.05])
+            plt.xlabel('False Positive Rate')
+            plt.ylabel('True Positive Rate')
+            plt.title(f'ROC curve for ecPoint approach, batch size {batch_size}')
+            plt.legend(loc="lower right")
+            plt.savefig("{}/ROC-ecPoint-{}-{}.pdf".format(log_folder,problem_type,
+                                                          plot_label), bbox_inches='tight')
