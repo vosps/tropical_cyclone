@@ -5,9 +5,9 @@ import yaml
 # input parameters
 log_folder = '/ppdata/lucy-cGAN/logs/test/GAN'
 model_number = [16000]
-plot_ecpoint = False
+plot_ecpoint = True
 predict_year = 2019
-predict_full_image = False
+predict_full_image = True
 ensemble_members = 100
 
 model_weights_root = os.path.join(log_folder, "models")

@@ -6,7 +6,7 @@ import evaluation
 import plots
 
 # input parameters
-log_folder = '/ppdata/lucy-cGAN/logs/test/GAN'
+log_folder = '/ppdata/lucy-cGAN/logs/test/VAEGAN'
 val_years = 2019
 load_full_image = False
 model_numbers = [3200]

@@ -42,7 +42,8 @@ def plot_roc_curves(*,
     
     if predict_full_image:
         batch_size = 2 # this will stop your computer having a strop
-        num_images = 10
+        num_images = 8
+        ensemble_members = 40
     else:
         batch_size = 16
         num_images = 50
@@ -109,7 +110,10 @@ def plot_roc_curves(*,
                                                                              inputs['constants']]))[...,0])
                 else:
                     pred_ensemble = []
-                    noise_shape = inputs['generator_input'][0,...,0].shape + (noise_channels,)
+                    if mode == 'GAN':
+                        noise_shape = inputs['generator_input'][0,...,0].shape + (noise_channels,)
+                    elif mode == 'VAEGAN':
+                        noise_shape = inputs['generator_input'][0,...,0].shape + (latent_variables,)
                     noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size)
                     if mode == 'VAEGAN':
                         # call encoder once
@@ -196,6 +200,10 @@ def plot_roc_curves(*,
     ## requires a different data generator
     if plot_ecpoint:
         dates=get_dates(predict_year)
+        if predict_full_image:
+            batch_size = 1
+        else:
+            raise RuntimeError('Data generator for benchmarks not implemented for full images')
         data_benchmarks = DataGeneratorFull(dates=dates,
                                             ifs_fields=ecpoint.ifs_fields,
                                             batch_size=batch_size,
@@ -212,7 +220,6 @@ def plot_roc_curves(*,
         seq_ecpoint = []
         ## store ground truth images for comparison
         seq_real_ecpoint = []
-    
     
         data_benchmarks_iter = iter(data_benchmarks)
         (inp,outp) = next(data_benchmarks_iter)
