@@ -1,49 +1,60 @@
+import os
+import yaml
 import matplotlib
 matplotlib.use("Agg")
 import evaluation
 
-mode = "GAN"
+# input parameters
+log_folder = '/ppdata/lucy-cGAN/logs/test/GAN'
 val_years = 2019
-batch_size = 16
-num_batches = 64
-filters_gen = 256
-filters_disc = 512
-lr_disc = 1e-5
-lr_gen = 1e-5
-downsample = False
-latent_variables = 1
-noise_channels = 4
-add_noise = True
-load_full_image = True
-#weights = [0.87, 0.06, 0.03, 0.03]
-weights = [0.4, 0.3, 0.2, 0.1]
-#weights = np.arange(36,2,-11)
-#weights = weights / weights.sum()
-#weights  = None
+load_full_image = False
 
-if downsample == True:
+model_weights_root = os.path.join(log_folder, "models")
+config_path = os.path.join(log_folder, 'setup_params.yaml')
+with open(config_path, 'r') as f:
+    try:
+        setup_params = yaml.safe_load(f)
+    except yaml.YAMLError as exc:
+        print(exc)
+
+mode = setup_params["GENERAL"]["mode"]
+arch = setup_params["MODEL"]["architecture"]
+batch_size = setup_params["TRAIN"]["batch_size"]
+problem_type = setup_params["GENERAL"]["problem_type"]
+filters_gen = setup_params["GENERATOR"]["filters_gen"]
+noise_channels = setup_params["GENERATOR"]["noise_channels"]
+latent_variables = setup_params["GENERATOR"]["latent_variables"]
+filters_disc = setup_params["DISCRIMINATOR"]["filters_disc"]
+num_batches = setup_params["EVAL"]["num_batches"]
+add_noise = setup_params["EVAL"]["add_postprocessing_noise"]
+noise_factor = setup_params["EVAL"]["postprocessing_noise_factor"]
+
+if problem_type == 'normal':
     input_channels = 1 
-elif  downsample == False:
+    downsample = False
+elif  problem_type == 'superresolution':
     input_channels = 9
+    downsample = True
 
-log_path = "/ppdata/lucy-cGAN/logs/IFS/gen_256_disc_512/noise_4/weights_4x"
-
+if load_full_image:
+    batch_size = 1
+    
 if add_noise == False and load_full_image==False:
-    out_fn = "{}/qual_no_noise__{}.txt".format(log_path, str(val_years))
+    out_fn = "{}/qual_no_noise__{}.txt".format(log_folder, str(val_years))
 elif add_noise ==True and load_full_image==False:
-    out_fn = "{}/qual_noise__{}.txt".format(log_path, str(val_years))
+    out_fn = "{}/qual_noise__{}.txt".format(log_folder, str(val_years))
 if add_noise == False and load_full_image==True:
-    out_fn = "{}/qual_no_noise_full_image__{}.txt".format(log_path, str(val_years))
+    out_fn = "{}/qual_no_noise_full_image__{}.txt".format(log_folder, str(val_years))
 elif add_noise ==True and load_full_image==True:
-    out_fn = "{}/qual_noise_full_image__{}.txt".format(log_path, str(val_years))
+    out_fn = "{}/qual_noise_full_image__{}.txt".format(log_folder, str(val_years))
 
 
 evaluation.quality_metrics_by_time(mode=mode, 
+                                   arch=arch,
                                    val_years=val_years, 
-                                   out_fn=out_fn, 
-                                   weights_dir=log_path, 
+                                   log_fname=out_fn, 
+                                   weights_dir=log_folder, 
                                    downsample=downsample,
-                                   weights=weights,
                                    load_full_image=load_full_image,
                                    batch_size=batch_size, 
                                    num_batches=num_batches, 

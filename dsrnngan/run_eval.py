@@ -1,60 +1,70 @@
+import os
+import yaml
 import matplotlib
 matplotlib.use("Agg")
 import evaluation
 import plots
 
-mode = "GAN"
+# input parameters
+log_folder = '/ppdata/lucy-cGAN/logs/test/GAN'
 val_years = 2019
-batch_size = 16
-num_batches = 64
-filters_gen = 64
-filters_disc = 512
-lr_disc = 1e-5
-lr_gen = 1e-5
-downsample = False
-latent_variables = 1
-noise_factor = 1e-6
-#model_number = '0124800'
-model_number = None
-noise_channels = 4
-add_noise = True
-load_full_image = True
-#weights = np.arange(36,2,-11)
-#weights = weights / weights.sum()
-#weights = [0.87, 0.06, 0.03, 0.03]
-weights = [0.4, 0.3, 0.2, 0.1]
+load_full_image = False
+model_numbers = [124800]
 
-if downsample == True:
+model_weights_root = os.path.join(log_folder, "models")
+config_path = os.path.join(log_folder, 'setup_params.yaml')
+with open(config_path, 'r') as f:
+    try:
+        setup_params = yaml.safe_load(f)
+    except yaml.YAMLError as exc:
+        print(exc)
+
+mode = setup_params["GENERAL"]["mode"]
+arch = setup_params["MODEL"]["architecture"]
+batch_size = setup_params["TRAIN"]["batch_size"]
+problem_type = setup_params["GENERAL"]["problem_type"]
+filters_gen = setup_params["GENERATOR"]["filters_gen"]
+noise_channels = setup_params["GENERATOR"]["noise_channels"]
+latent_variables = setup_params["GENERATOR"]["latent_variables"]
+filters_disc = setup_params["DISCRIMINATOR"]["filters_disc"]
+num_batches = setup_params["EVAL"]["num_batches"]
+add_noise = setup_params["EVAL"]["add_postprocessing_noise"]
+noise_factor = setup_params["EVAL"]["postprocessing_noise_factor"]
+
+if problem_type == 'normal':
     input_channels = 1 
-elif  downsample == False:
+    downsample = False
+elif  problem_type == 'superresolution':
     input_channels = 9
+    downsample = True
 
-if mode == "GAN":
-    log_path = "/ppdata/lucy-cGAN/logs/IFS/gen_64_disc_512/noise_4/weights_4x"
+if mode in ["GAN", "VAEGAN"]:
     rank_samples = 100
 elif mode == "det":
-    log_path = "/ppdata/lucy-cGAN/logs/IFS/filters_128/softplus/det/lr_1e-4/"
     rank_samples = 1
 
-if add_noise == False and load_full_image==False:
-    out_fn = "{}/eval_no_noise__{}.txt".format(log_path, str(val_years))
-elif add_noise ==True and load_full_image==False:
-    out_fn = "{}/eval_noise__{}.txt".format(log_path, str(val_years))
-if add_noise == False and load_full_image==True:
-    out_fn = "{}/eval_no_noise_full_image__{}.txt".format(log_path, str(val_years))
-elif add_noise ==True and load_full_image==True:
-    out_fn = "{}/eval_noise_full_image__{}.txt".format(log_path,str(val_years))
+if load_full_image:
+    batch_size = 1
 
-evaluation.rank_metrics_by_time(mode, 
-                                val_years, 
-                                out_fn, 
-                                weights_dir=log_path, 
+if add_noise == False and load_full_image==False:
+    out_fn = "{}/eval_no_noise__{}.txt".format(log_folder, str(val_years))
+elif add_noise ==True and load_full_image==False:
+    out_fn = "{}/eval_noise__{}.txt".format(log_folder, str(val_years))
+if add_noise == False and load_full_image==True:
+    out_fn = "{}/eval_no_noise_full_image__{}.txt".format(log_folder, str(val_years))
+elif add_noise ==True and load_full_image==True:
+    out_fn = "{}/eval_noise_full_image__{}.txt".format(log_folder,str(val_years))
+
+evaluation.rank_metrics_by_time(mode=mode,
+                                arch=arch,
+                                val_years=val_years, 
+                                log_fname=out_fn, 
+                                weights_dir=log_folder, 
                                 downsample=downsample,
-                                weights=weights,
                                 add_noise=add_noise,
                                 noise_factor=noise_factor,
                                 load_full_image=load_full_image,
-                                model_number=model_number,
+                                model_numbers=model_numbers,
                                 batch_size=batch_size, 
                                 num_batches=num_batches, 
                                 filters_gen=filters_gen, 
@@ -70,26 +80,26 @@ labels_2 = ['240000', '320000']
 if add_noise == True and load_full_image == False:
     name_1 = 'noise-early'
     name_2 = 'noise-late'
-    rank_metrics_files_1 = ["{}/ranks-noise-124800.npz".format(log_path), "{}/ranks-noise-198400.npz".format(log_path)]
-    rank_metrics_files_2 = ["{}/ranks-noise-240000.npz".format(log_path), "{}/ranks-noise-320000.npz".format(log_path)]
+    rank_metrics_files_1 = ["{}/ranks-noise-124800.npz".format(log_folder), "{}/ranks-noise-198400.npz".format(log_folder)]
+    rank_metrics_files_2 = ["{}/ranks-noise-240000.npz".format(log_folder), "{}/ranks-noise-320000.npz".format(log_folder)]
 
 elif add_noise == False and load_full_image == False:
     name_1 = 'no-noise-early'
     name_2 = 'no-noise-late'
-    rank_metrics_files_1 = ["{}/ranks-124800.npz".format(log_path), "{}/ranks-198400.npz".format(log_path)]
-    rank_metrics_files_2 = ["{}/ranks-240000.npz".format(log_path), "{}/ranks-320000.npz".format(log_path)]
+    rank_metrics_files_1 = ["{}/ranks-124800.npz".format(log_folder), "{}/ranks-198400.npz".format(log_folder)]
+    rank_metrics_files_2 = ["{}/ranks-240000.npz".format(log_folder), "{}/ranks-320000.npz".format(log_folder)]
 
 elif add_noise == True and load_full_image == True:
     name_1 = 'full_image-noise-early'
     name_2 = 'full_image-noise-late'
-    rank_metrics_files_1 = ["{}/ranks-full_image-noise-124800.npz".format(log_path), "{}/ranks-full_image-noise-198400.npz".format(log_path)]
-    rank_metrics_files_2 = ["{}/ranks-full_image-noise-240000.npz".format(log_path), "{}/ranks-full_image-noise-320000.npz".format(log_path)]
+    rank_metrics_files_1 = ["{}/ranks-full_image-noise-124800.npz".format(log_folder), "{}/ranks-full_image-noise-198400.npz".format(log_folder)]
+    rank_metrics_files_2 = ["{}/ranks-full_image-noise-240000.npz".format(log_folder), "{}/ranks-full_image-noise-320000.npz".format(log_folder)]
 
 elif add_noise == False and load_full_image == True:
     name_1 = 'full_image-no-noise-early'
     name_2 = 'full_image-no-noise-late'
-    rank_metrics_files_1 = ["{}/ranks-full_image-124800.npz".format(log_path), "{}/ranks-full_image-198400.npz".format(log_path)]
-    rank_metrics_files_2 = ["{}/ranks-full_image-240000.npz".format(log_path), "{}/ranks-full_image-320000.npz".format(log_path)]
+    rank_metrics_files_1 = ["{}/ranks-full_image-124800.npz".format(log_folder), "{}/ranks-full_image-198400.npz".format(log_folder)]
+    rank_metrics_files_2 = ["{}/ranks-full_image-240000.npz".format(log_folder), "{}/ranks-full_image-320000.npz".format(log_folder)]
 
-plots.plot_rank_histogram_all(rank_metrics_files_1, labels_1, log_path, name_1)
-plots.plot_rank_histogram_all(rank_metrics_files_2, labels_2, log_path, name_2)
+plots.plot_rank_histogram_all(rank_metrics_files_1, labels_1, log_folder, name_1)
+plots.plot_rank_histogram_all(rank_metrics_files_2, labels_2, log_folder, name_2)
