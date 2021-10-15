@@ -31,7 +31,7 @@ def plot_sequences(gen,
                    num_instances=4, 
                    out_fn=None):
     
-    for cond, const,  seq_real in batch_gen.take(1).as_numpy_iterator():
+    for cond, const, seq_real in batch_gen.as_numpy_iterator():
         batch_size = cond.shape[0]
 
     seq_gen = []
