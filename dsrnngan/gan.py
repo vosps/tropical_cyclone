@@ -175,7 +175,7 @@ class WGANGP(object):
                 
                 with Nontrainable(self.gen):   
                     dl = self.disc_trainer.train_on_batch(
-                        [cond,const,noise,sample], disc_target)
+                        [cond,const,noise(),sample], disc_target)
 
                 if disc_loss is None:
                     disc_loss = np.array(dl)
@@ -191,10 +191,10 @@ class WGANGP(object):
                 (cond, const, sample) = batch_gen_iter.get_next()
                 if self.mode == 'GAN':
                     gen_loss = self.gen_trainer.train_on_batch(
-                        [cond,const,noise], gen_target)
+                        [cond,const,noise()], gen_target)
                 elif self.mode == 'VAEGAN':
                     gen_loss = self.gen_trainer.train_step(
-                        [[cond,const,noise], gen_target])
+                        [[cond,const,noise()], gen_target])
                 del sample, cond, const
                 
             if show_progress:
