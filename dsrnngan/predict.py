@@ -41,13 +41,7 @@ parser.add_argument('--include_RainFARM', dest='include_RainFARM', action='store
 parser.add_argument('--include_deterministic', dest='include_deterministic', action='store_true',
                     help="Include deterministic model for comparison")
 parser.add_argument('--include_ecPoint', dest='include_ecPoint', action='store_true',
-                    help="Include ecPoint benchmark")
-parser.add_argument('--plot_ranks_full', dest='plot_ranks_full', action='store_true',
-                    help="Plot rank histograms for full images")
-parser.add_argument('--plot_roc_small', dest='plot_roc_small', action='store_true',
-                    help="Plot ROC and AUC curves for small images")
-parser.add_argument('--plot_roc_full', dest='plot_roc_full', action='store_true',
-                    help="Plot ROC and AUC curves for full images")   
+                    help="Include ecPoint benchmark")  
 args = parser.parse_args()
 
 log_folder = args.log_folder
