@@ -155,8 +155,6 @@ dummy = np.zeros((1, 940, 940))
 data_predict_iter = iter(data_predict)    
 for i in range(num_predictions):
     (inputs,outputs) = next(data_predict_iter)
-    noise_shape = inputs['generator_input'][0,...,0].shape + (noise_channels,)
-    inputs['noise_input'] = NoiseGenerator(noise_shape, batch_size=batch_size)
     ## store denormalised inputs, outputs, predictions
     seq_const.append(data.denormalise(inputs['constants']))
     seq_cond.append(data.denormalise(inputs['generator_input']))    
@@ -177,14 +175,15 @@ for i in range(num_predictions):
         pred_ensemble = []
         if mode == 'GAN':
             noise_shape = inputs['generator_input'][0,...,0].shape + (noise_channels,)
+            noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size)
         elif mode == 'VAEGAN':
             noise_shape = inputs['generator_input'][0,...,0].shape + (latent_variables,)
-        noise = NoiseGenerator(noise_shape, batch_size=batch_size)
+            noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size)
         if mode == 'VAEGAN':
             # call encoder once
             mean, logvar = gen.encoder([inputs['generator_input'], inputs['constants']])       
         for j in range(num_samples):
-            inputs['noise_input'] = noise()
+            inputs['noise_input'] = noise_gen()
             if mode == 'GAN':
                 gan_inputs = [inputs['generator_input'], inputs['constants'], inputs['noise_input']]
                 pred_ensemble.append(data.denormalise(gen.predict(gan_inputs)))

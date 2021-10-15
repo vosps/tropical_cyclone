@@ -131,9 +131,9 @@ def ensemble_ranks(*,
 
         if mode == "GAN":
             noise_shape = np.array(cond)[0, ..., 0].shape + (noise_channels,)
-            n = NoiseGenerator(noise_shape, batch_size=batch_size)
+            noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size)
             for i in range(rank_samples):
-                nn = n()
+                nn = noise_gen()
                 nn *= noise_mul
                 nn -= noise_offset
                 sample_gen = gen.predict([cond, const, nn])
@@ -150,9 +150,9 @@ def ensemble_ranks(*,
             # call encoder once
             (mean, logvar) = gen.encoder([cond, const])
             noise_shape = np.array(cond)[0, ..., 0].shape + (latent_variables,)
-            n = NoiseGenerator(noise_shape, batch_size=batch_size)
+            noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size)
             for i in range(rank_samples):
-                nn = n()
+                nn = noise_gen()
                 nn *= noise_mul
                 nn -= noise_offset
                 # generate ensemble of preds with decoder
@@ -517,20 +517,20 @@ def image_quality(*,
 
         if mode == "GAN":
             noise_shape = np.array(cond)[0, ..., 0].shape + (noise_channels,)
-            n = NoiseGenerator(noise_shape, batch_size=batch_size)
+            noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size)
         elif mode == "VAEGAN":
             noise_shape = np.array(cond)[0, ..., 0].shape + (latent_variables,)
-            n = NoiseGenerator(noise_shape, batch_size=batch_size)
+            noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size)
             # call encoder once
             mean, logvar = gen.encoder([cond, const])
 
         for i in range(num_instances):
             if mode == "GAN":
-                img_gen = gen.predict([cond, const, n()])
+                img_gen = gen.predict([cond, const, noise_gen()])
             elif mode == "det":
                 img_gen = gen.predict([cond, const])
             elif mode == 'VAEGAN':
-                img_gen = gen.decoder.predict([mean, logvar, n(), const])
+                img_gen = gen.decoder.predict([mean, logvar, noise_gen(), const])
             else:
                 try:
                     img_gen = gen.predict([cond, const])

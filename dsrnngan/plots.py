@@ -38,8 +38,8 @@ def plot_sequences(gen,
     if mode == 'GAN':
         for i in range(num_instances):
             noise_shape = cond[0,...,0].shape + (noise_channels,)
-            noise_in = NoiseGenerator(noise_shape, batch_size=batch_size)
-            seq_gen.append(gen.predict([cond, const, noise_in()]))
+            noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size)
+            seq_gen.append(gen.predict([cond, const, noise_gen()]))
     elif mode == 'det':
         for i in range(num_instances):
             seq_gen.append(gen.predict([cond, const]))
@@ -49,8 +49,8 @@ def plot_sequences(gen,
         ## run decoder n times
         for i in range(num_instances):
             noise_shape = cond[0,...,0].shape + (latent_variables,)
-            noise_in = NoiseGenerator(noise_shape, batch_size=batch_size)
-            seq_gen.append(gen.decoder.predict([mean, logvar, noise_in(), const]))
+            noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size)
+            seq_gen.append(gen.decoder.predict([mean, logvar, noise_gen(), const]))
 
     seq_real = data.denormalise(seq_real)
     cond = data.denormalise(cond)
