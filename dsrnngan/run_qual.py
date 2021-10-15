@@ -8,6 +8,7 @@ import evaluation
 log_folder = '/ppdata/lucy-cGAN/logs/test/GAN'
 val_years = 2019
 load_full_image = False
+model_numbers = [3200, 9600]
 
 model_weights_root = os.path.join(log_folder, "models")
 config_path = os.path.join(log_folder, 'setup_params.yaml')
@@ -30,10 +31,10 @@ add_noise = setup_params["EVAL"]["add_postprocessing_noise"]
 noise_factor = setup_params["EVAL"]["postprocessing_noise_factor"]
 
 if problem_type == 'normal':
-    input_channels = 1 
+    input_channels = 9
     downsample = False
 elif  problem_type == 'superresolution':
-    input_channels = 9
+    input_channels = 1
     downsample = True
 
 if load_full_image:
@@ -53,9 +54,10 @@ evaluation.quality_metrics_by_time(mode=mode,
                                    arch=arch,
                                    val_years=val_years, 
                                    log_fname=out_fn, 
-                                   weights_dir=log_folder, 
+                                   weights_dir=model_weights_root, 
                                    downsample=downsample,
                                    load_full_image=load_full_image,
+                                   model_numbers=model_numbers,
                                    batch_size=batch_size, 
                                    num_batches=num_batches, 
                                    filters_gen=filters_gen, 

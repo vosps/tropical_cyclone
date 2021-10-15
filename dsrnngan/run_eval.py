@@ -9,7 +9,7 @@ import plots
 log_folder = '/ppdata/lucy-cGAN/logs/test/GAN'
 val_years = 2019
 load_full_image = False
-model_numbers = [124800]
+model_numbers = [3200]
 
 model_weights_root = os.path.join(log_folder, "models")
 config_path = os.path.join(log_folder, 'setup_params.yaml')
@@ -30,12 +30,13 @@ filters_disc = setup_params["DISCRIMINATOR"]["filters_disc"]
 num_batches = setup_params["EVAL"]["num_batches"]
 add_noise = setup_params["EVAL"]["add_postprocessing_noise"]
 noise_factor = setup_params["EVAL"]["postprocessing_noise_factor"]
+noise_factor = float(noise_factor)
 
 if problem_type == 'normal':
-    input_channels = 1 
+    input_channels = 9 
     downsample = False
 elif  problem_type == 'superresolution':
-    input_channels = 9
+    input_channels = 1
     downsample = True
 
 if mode in ["GAN", "VAEGAN"]:
@@ -59,7 +60,7 @@ evaluation.rank_metrics_by_time(mode=mode,
                                 arch=arch,
                                 val_years=val_years, 
                                 log_fname=out_fn, 
-                                weights_dir=log_folder, 
+                                weights_dir=model_weights_root, 
                                 downsample=downsample,
                                 add_noise=add_noise,
                                 noise_factor=noise_factor,
@@ -73,33 +74,3 @@ evaluation.rank_metrics_by_time(mode=mode,
                                 latent_variables=latent_variables,
                                 noise_channels=noise_channels,  
                                 rank_samples=rank_samples)
-
-## plot rank histograms
-labels_1 = ['124800', '198400']
-labels_2 = ['240000', '320000']
-if add_noise == True and load_full_image == False:
-    name_1 = 'noise-early'
-    name_2 = 'noise-late'
-    rank_metrics_files_1 = ["{}/ranks-noise-124800.npz".format(log_folder), "{}/ranks-noise-198400.npz".format(log_folder)]
-    rank_metrics_files_2 = ["{}/ranks-noise-240000.npz".format(log_folder), "{}/ranks-noise-320000.npz".format(log_folder)]
-
-elif add_noise == False and load_full_image == False:
-    name_1 = 'no-noise-early'
-    name_2 = 'no-noise-late'
-    rank_metrics_files_1 = ["{}/ranks-124800.npz".format(log_folder), "{}/ranks-198400.npz".format(log_folder)]
-    rank_metrics_files_2 = ["{}/ranks-240000.npz".format(log_folder), "{}/ranks-320000.npz".format(log_folder)]
-
-elif add_noise == True and load_full_image == True:
-    name_1 = 'full_image-noise-early'
-    name_2 = 'full_image-noise-late'
-    rank_metrics_files_1 = ["{}/ranks-full_image-noise-124800.npz".format(log_folder), "{}/ranks-full_image-noise-198400.npz".format(log_folder)]
-    rank_metrics_files_2 = ["{}/ranks-full_image-noise-240000.npz".format(log_folder), "{}/ranks-full_image-noise-320000.npz".format(log_folder)]
-
-elif add_noise == False and load_full_image == True:
-    name_1 = 'full_image-no-noise-early'
-    name_2 = 'full_image-no-noise-late'
-    rank_metrics_files_1 = ["{}/ranks-full_image-124800.npz".format(log_folder), "{}/ranks-full_image-198400.npz".format(log_folder)]
-    rank_metrics_files_2 = ["{}/ranks-full_image-240000.npz".format(log_folder), "{}/ranks-full_image-320000.npz".format(log_folder)]
-
-plots.plot_rank_histogram_all(rank_metrics_files_1, labels_1, log_folder, name_1)
-plots.plot_rank_histogram_all(rank_metrics_files_2, labels_2, log_folder, name_2)
