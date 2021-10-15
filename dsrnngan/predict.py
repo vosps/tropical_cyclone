@@ -21,32 +21,38 @@ parser.add_argument('--log_folder', type=str,
                     default='/ppdata/lucy-cGAN/logs/IFS/gen_128_disc_512/noise_4/lr1e-5')
 parser.add_argument('--model_number', type=str, 
                     help="model iteration to load", default='0313600')
-parser.add_argument('--predict_full_image', type=bool,
-                    help="False (small images used for training), True (full image)", default=False)
-parser.add_argument('--include_Lanczos', type=bool,
-                    help="True or False)", default=False)
-parser.add_argument('--include_RainFARM', type=bool,
-                    help="True or False)", default=False)
-parser.add_argument('--include_deterministic', type=bool,
-                    help="True or False)", default=False)
-parser.add_argument('--include_ecPoint', type=bool,
-                    help="True or False)", default=False)
 parser.add_argument('--predict_year', type=int,
                     help="year to predict on", default=2019)
 parser.add_argument('--num_predictions', type=int,
                     help="number of images to predict on", default=5)
 parser.add_argument('--num_samples', type=int,
                     help="size of prediction ensemble", default=3)
+parser.set_defaults(predict_full_image=False)
+parser.set_defaults(include_Lanczos=False)
+parser.set_defaults(include_RainFARM=False)
+parser.set_defaults(include_deterministic=False)
+parser.set_defaults(include_ecPoint=False)
+parser.add_argument('--predict_full_image', dest='predict_full_image', action='store_true',
+                    help="Predict on full images")
+parser.add_argument('--include_Lanczos', dest='include_Lanczos', action='store_true',
+                    help="Include Lanczos benchmark")
+parser.add_argument('--include_RainFARM', dest='include_RainFARM', action='store_true',
+                    help="Include RainFARM benchmark")
+parser.add_argument('--include_deterministic', dest='include_deterministic', action='store_true',
+                    help="Include deterministic model for comparison")
+parser.add_argument('--include_ecPoint', dest='include_ecPoint', action='store_true',
+                    help="Include ecPoint benchmark")
+parser.add_argument('--plot_ranks_full', dest='plot_ranks_full', action='store_true',
+                    help="Plot rank histograms for full images")
+parser.add_argument('--plot_roc_small', dest='plot_roc_small', action='store_true',
+                    help="Plot ROC and AUC curves for small images")
+parser.add_argument('--plot_roc_full', dest='plot_roc_full', action='store_true',
+                    help="Plot ROC and AUC curves for full images")   
 args = parser.parse_args()
 
 log_folder = args.log_folder
 model_number = args.model_number
-predict_full_image = args.predict_full_image
 predict_year = args.predict_year
-include_Lanczos = args.include_Lanczos
-include_RainFARM = args.include_RainFARM
-include_deterministic = args.include_deterministic
-include_ecPoint = args.include_ecPoint
 num_predictions = args.num_predictions
 num_samples = args.num_samples
 
@@ -79,7 +85,7 @@ elif problem_type == "superresolution":
     downsample = True
     plot_input_title = 'Downsampled'
     input_channels = 1 # superresolution problem doesn't have all 9 IFS fields
-    if include_RainFARM or include_ecPoint or include_Lanczos:
+    if args.include_RainFARM or args.nclude_ecPoint or args.include_Lanczos:
         raise Exception("Cannot include ecPoint/Lanczos/RainFARM results for downsampled problem")
 
 ## initialise model
@@ -94,7 +100,7 @@ gen = model.gen
 gen.load_weights(weights_fn)
 
 ## load appropriate dataset
-if predict_full_image:
+if args.predict_full_image:
     plot_label = 'large'
     all_ifs_fields = ['tp','cp' ,'sp' ,'tisr','cape','tclw','tcwv','u700','v700']
     data_predict = DataGeneratorFull(dates=dates, 
@@ -108,7 +114,7 @@ if predict_full_image:
                                      ifs_norm=True,
                                      downsample=downsample)
 
-if not predict_full_image:
+else:
     include_ecPoint = False
     plot_label = 'small'
     data_predict = create_fixed_dataset(predict_year, 
@@ -124,7 +130,7 @@ data_ecpoint = DataGeneratorFull(dates=dates,
                                  hour=2,
                                  ifs_norm=False,
                                  downsample=downsample)    
-if include_deterministic:
+if args.include_deterministic:
     if problem_type == 'superresolution':
         filters_det = 256
         gen_det_weights = '/ppdata/lucy-cGAN/logs/EASY/deterministic/filters_256/gen_det_weights-IFS-0400000.h5'
@@ -152,12 +158,12 @@ for i in range(num_predictions):
     seq_const.append(data.denormalise(inputs['constants']))
     seq_cond.append(data.denormalise(inputs['generator_input']))    
     ## make sure ground truth image has correct dimensions
-    if predict_full_image == True:
+    if args.predict_full_image :
         sample = np.expand_dims(np.array(outputs['generator_output']), axis=-1)
         seq_real.append(data.denormalise(sample))
-    elif predict_full_image == False:
+    else:
         seq_real.append(data.denormalise(outputs['generator_output']))
-    if include_deterministic:
+    if args.include_deterministic:
         seq_det.append(data.denormalise(gen_det.predict(inputs)))
     else:
         seq_det.append(dummy)
@@ -189,15 +195,15 @@ data_ecpoint_iter = iter(data_ecpoint)
 for i in range(num_predictions):
     (inp,outp) = next(data_ecpoint_iter)        
     ## ecPoint prediction
-    if include_ecPoint:
+    if args.include_ecPoint:
         seq_ecpoint.append(np.mean(benchmarks.ecpointPDFmodel(inp['generator_input']),axis=-1))
     else:
         seq_ecpoint.append(dummy)
-    if include_RainFARM:
+    if args.include_RainFARM:
         seq_rainfarm.append(benchmarks.rainfarmmodel(inp['generator_input'][...,1]))
     else:
         seq_rainfarm.append(dummy)
-    if include_Lanczos:
+    if args.include_Lanczos:
         seq_lanczos.append(benchmarks.lanczosmodel(inp['generator_input'][...,1]))
     else:
         seq_lanczos.append(dummy)
@@ -235,13 +241,13 @@ plt.close()
 labels = [plot_input_title, "NIMROD"]
 for i in range(num_samples):
     labels.append(f"{mode} pred {i+1}")
-if include_RainFARM:
+if args.include_RainFARM:
     labels.append("RainFARM")
-if include_ecPoint:
+if args.include_ecPoint:
     labels.append("ecPoint mean")
-if include_deterministic:
+if args.include_deterministic:
     labels.append("Deterministic")
-if include_Lanczos:
+if args.include_Lanczos:
     labels.append("Lanczos")
 
     
