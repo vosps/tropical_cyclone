@@ -21,14 +21,14 @@ def train_model(*,
 
     if mode == 'GAN':
         noise_shape = (img_shape[0], img_shape[1], noise_channels)
-        noise_in = noise.NoiseGenerator(noise_shape, batch_size=batch_size)
-        loss_log = model.train(batch_gen_train, noise_in,
+        noise_gen = noise.NoiseGenerator(noise_shape, batch_size=batch_size)
+        loss_log = model.train(batch_gen_train, noise_gen,
                                steps_per_epoch, training_ratio=5)
 
     elif mode == 'VAEGAN':
         noise_shape = (img_shape[0], img_shape[1], latent_variables)
-        noise_in = noise.NoiseGenerator(noise_shape, batch_size=batch_size)
-        loss_log = model.train(batch_gen_train, noise_in,
+        noise_gen = noise.NoiseGenerator(noise_shape, batch_size=batch_size)
+        loss_log = model.train(batch_gen_train, noise_gen,
                                steps_per_epoch, training_ratio=5)
 
     elif mode == 'det':
