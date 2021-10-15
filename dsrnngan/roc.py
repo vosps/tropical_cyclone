@@ -88,52 +88,52 @@ def plot_roc_curves(*,
         else:
             print(gen_weights_file)
             model.gen.load_weights(gen_weights_file)
-        model_label = str(model_number)
+            model_label = str(model_number)
+        
+            pred = []
+            seq_real = []
+        
+            data_pred_iter = iter(data_predict)
+            for i in range(num_images):
+                inputs, outputs = next(data_pred_iter)
+                if predict_full_image:
+                    im_real = data.denormalise(np.array(outputs['generator_output']))
+                else:
+                    im_real = data.denormalise(outputs['generator_output'])[...,0]        
+                if mode == 'det':
+                    pred_ensemble = []
+                    ensemble_members = 1 #can't generate an ensemble with deterministic method
+                    pred_ensemble.append(data.denormalise(model.gen.predict([inputs['generator_input'], 
+                                                                             inputs['constants']]))[...,0])
+                else:
+                    pred_ensemble = []
+                    noise_shape = inputs['generator_input'][0,...,0].shape + (noise_channels,)
+                    if mode == 'VAEGAN':
+                        # call encoder once
+                        mean, logvar = model.gen.encoder([inputs['generator_input'], inputs['constants']])       
+                    for j in range(ensemble_members):
+                        noise = NoiseGenerator(noise_shape, batch_size=batch_size)
+                        inputs['noise_input'] = noise()
+                        if mode == 'GAN':
+                            pred_ensemble.append(data.denormalise(model.gen.predict([inputs['generator_input'], 
+                                                                                     inputs['constants'], 
+                                                                                     inputs['noise_input']]))[...,0])
+                        elif mode == 'VAEGAN':
+                            dec_inputs = [mean, logvar, inputs['noise_input'], inputs['constants']]
+                            pred_ensemble.append(data.denormalise(model.gen.decoder.predict(dec_inputs))[...,0])
+                    pred_ensemble = np.array(pred_ensemble)
     
-        pred = []
-        seq_real = []
-    
-        data_pred_iter = iter(data_predict)
-        for i in range(num_images):
-            inputs, outputs = next(data_pred_iter)
-            if predict_full_image:
-                im_real = data.denormalise(np.array(outputs['generator_output']))
-            else:
-                im_real = data.denormalise(outputs['generator_output'])[...,0]        
-            if mode == 'det':
-                pred_ensemble = []
-                ensemble_members = 1 #can't generate an ensemble with deterministic method
-                pred_ensemble.append(data.denormalise(model.gen.predict([inputs['generator_input'], 
-                                                                         inputs['constants']]))[...,0])
-            else:
-                pred_ensemble = []
-                noise_shape = inputs['generator_input'][0,...,0].shape + (noise_channels,)
-                if mode == 'VAEGAN':
-                    # call encoder once
-                    mean, logvar = model.gen.encoder([inputs['generator_input'], inputs['constants']])       
-                for j in range(ensemble_members):
-                    noise = NoiseGenerator(noise_shape, batch_size=batch_size)
-                    inputs['noise_input'] = noise()
-                    if mode == 'GAN':
-                        pred_ensemble.append(data.denormalise(model.gen.predict([inputs['generator_input'], 
-                                                                                 inputs['constants'], 
-                                                                                 inputs['noise_input']]))[...,0])
-                    elif mode == 'VAEGAN':
-                        dec_inputs = [mean, logvar, inputs['noise_input'], inputs['constants']]
-                        pred_ensemble.append(data.denormalise(model.gen.decoder.predict(dec_inputs))[...,0])
-                pred_ensemble = np.array(pred_ensemble)
-
-            if i == 0:
-                seq_real.append(im_real)
-                pred.append(pred_ensemble)
-                seq_real = np.array(seq_real)
-                pred = np.squeeze(np.array(pred))
-            else:
-                seq_real = np.concatenate((seq_real, np.expand_dims(im_real, axis=0)), axis=1)
-                pred = np.concatenate((pred, pred_ensemble), axis=1)
-    
-        seq_real = np.array(seq_real)
-        pred = np.array(pred)
+                if i == 0:
+                    seq_real.append(im_real)
+                    pred.append(pred_ensemble)
+                    seq_real = np.array(seq_real)
+                    pred = np.squeeze(np.array(pred))
+                else:
+                    seq_real = np.concatenate((seq_real, np.expand_dims(im_real, axis=0)), axis=1)
+                    pred = np.concatenate((pred, pred_ensemble), axis=1)
+        
+            seq_real = np.array(seq_real)
+            pred = np.array(pred)
         
         fpr = []
         tpr = []
