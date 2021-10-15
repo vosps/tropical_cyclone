@@ -269,6 +269,42 @@ if __name__ == "__main__":
         model_numbers = np.arange(0, num_samples + 1, interval)[1:].tolist()
 
     # evaluate model performance
+    if args.qual_small:
+        evaluation.quality_metrics_by_time(mode=mode,
+                                           arch=arch,
+                                           val_years=val_years,
+                                           log_fname=qual_small_fname,
+                                           weights_dir=model_weights_root,
+                                           downsample=downsample,
+                                           weights=training_weights,
+                                           load_full_image=False,
+                                           model_numbers=model_numbers,
+                                           batch_size=batch_size,
+                                           num_batches=num_batches,
+                                           filters_gen=filters_gen,
+                                           filters_disc=filters_disc,
+                                           input_channels=input_channels,
+                                           latent_variables=latent_variables,
+                                           noise_channels=noise_channels)
+
+    if args.qual_full:
+        evaluation.quality_metrics_by_time(mode=mode,
+                                           arch=arch,
+                                           val_years=val_years,
+                                           log_fname=qual_full_fname,
+                                           weights_dir=model_weights_root,
+                                           downsample=downsample,
+                                           weights=training_weights,
+                                           load_full_image=True,
+                                           model_numbers=model_numbers,
+                                           batch_size=1,  # memory issues
+                                           num_batches=num_batches,
+                                           filters_gen=filters_gen,
+                                           filters_disc=filters_disc,
+                                           input_channels=input_channels,
+                                           latent_variables=latent_variables,
+                                           noise_channels=noise_channels)
+
     if args.rank_small:
         evaluation.rank_metrics_by_time(mode=mode,
                                         arch=arch,
@@ -310,42 +346,6 @@ if __name__ == "__main__":
                                         latent_variables=latent_variables,
                                         noise_channels=noise_channels,
                                         rank_samples=100)
-
-    if args.qual_small:
-        evaluation.quality_metrics_by_time(mode=mode,
-                                           arch=arch,
-                                           val_years=val_years,
-                                           log_fname=qual_small_fname,
-                                           weights_dir=model_weights_root,
-                                           downsample=downsample,
-                                           weights=training_weights,
-                                           load_full_image=False,
-                                           model_numbers=model_numbers,
-                                           batch_size=batch_size,
-                                           num_batches=num_batches,
-                                           filters_gen=filters_gen,
-                                           filters_disc=filters_disc,
-                                           input_channels=input_channels,
-                                           latent_variables=latent_variables,
-                                           noise_channels=noise_channels)
-
-    if args.qual_full:
-        evaluation.quality_metrics_by_time(mode=mode,
-                                           arch=arch,
-                                           val_years=val_years,
-                                           log_fname=qual_full_fname,
-                                           weights_dir=model_weights_root,
-                                           downsample=downsample,
-                                           weights=training_weights,
-                                           load_full_image=True,
-                                           model_numbers=model_numbers,
-                                           batch_size=1,  # memory issues
-                                           num_batches=num_batches,
-                                           filters_gen=filters_gen,
-                                           filters_disc=filters_disc,
-                                           input_channels=input_channels,
-                                           latent_variables=latent_variables,
-                                           noise_channels=noise_channels)
 
     if args.plot_ranks_small:
         if add_noise:
