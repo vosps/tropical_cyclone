@@ -52,7 +52,7 @@ if __name__ == "__main__":
                         help="Plot ROC and AUC curves for full images")                   
     args = parser.parse_args()
 
-    if args.evalnum is None and (args.rank_small or args.rank_full or args.qual_small or args.qual_full):
+    if args.evalnum is None and (args.rank_small or args.rank_full or args.qual_small or args.qual_full or args.plot_roc_small or args.plot_roc_full):
         raise RuntimeError("You asked for evaluation to occur, but did not pass in '--eval_full', '--eval_short', or '--eval_blitz' to specify length of evaluation")
 
         # Read in the configurations
@@ -401,6 +401,7 @@ if __name__ == "__main__":
         roc.plot_roc_curves(mode=mode,
                             arch=arch,
                             log_folder=log_folder,
+                            model_numbers=model_numbers,
                             problem_type=problem_type,
                             filters_gen=filters_gen,
                             filters_disc=filters_disc,
@@ -413,6 +414,7 @@ if __name__ == "__main__":
         roc.plot_roc_curves(mode=mode,
                             arch=arch,
                             log_folder=log_folder,
+                            model_numbers=model_numbers,
                             problem_type=problem_type,
                             filters_gen=filters_gen,
                             filters_disc=filters_disc,
