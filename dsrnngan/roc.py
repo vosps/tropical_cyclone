@@ -201,7 +201,7 @@ def plot_roc_curves(*,
     if plot_ecpoint:
         dates=get_dates(predict_year)
         if predict_full_image:
-            batch_size = 1
+            batch_size = 4
         else:
             raise RuntimeError('Data generator for benchmarks not implemented for full images')
         data_benchmarks = DataGeneratorFull(dates=dates,
