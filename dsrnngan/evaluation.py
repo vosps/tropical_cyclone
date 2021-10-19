@@ -12,6 +12,7 @@ from noise import NoiseGenerator
 import plots
 import rainfarm
 import warnings
+from main import ranks_to_save
 
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
@@ -291,8 +292,6 @@ def rank_metrics_by_time(*,
 
             log_line(log_fname, "{} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}".format(model_number, KS, CvM, DKL, OP, CRPS, mean, std))
 
-            # quasi-random selection to avoid generating loads of data
-            ranks_to_save = [124800, 198400, 240000, 320000]
             # save one directory up from model weights, in same dir as logfile
             ranks_folder = os.path.dirname(log_fname)
 

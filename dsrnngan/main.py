@@ -14,6 +14,14 @@ import evaluation
 import plots
 import roc
 
+
+# model iterations to save full rank data to disk for during evaluations;
+# necessary for plot rank histograms. these are large files, so quasi-random
+# selection used to avoid storing gigabytes of data
+# TODO: this could live in .yaml file, but leave here for now
+ranks_to_save = [124800, 198400, 240000, 320000]
+
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
@@ -24,6 +32,7 @@ if __name__ == "__main__":
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--eval_full', dest='evalnum', action='store_const', const="full")
     group.add_argument('--eval_short', dest='evalnum', action='store_const', const="short")
+    group.add_argument('--eval_tenth', dest='evalnum', action='store_const', const="tenth")
     group.add_argument('--eval_blitz', dest='evalnum', action='store_const', const="blitz")
     parser.set_defaults(evalnum=None)
     parser.set_defaults(rank_small=False)
@@ -49,11 +58,11 @@ if __name__ == "__main__":
     parser.add_argument('--plot_roc_small', dest='plot_roc_small', action='store_true',
                         help="Plot ROC and AUC curves for small images")
     parser.add_argument('--plot_roc_full', dest='plot_roc_full', action='store_true',
-                        help="Plot ROC and AUC curves for full images")                   
+                        help="Plot ROC and AUC curves for full images")
     args = parser.parse_args()
 
     if args.evalnum is None and (args.rank_small or args.rank_full or args.qual_small or args.qual_full or args.plot_roc_small or args.plot_roc_full):
-        raise RuntimeError("You asked for evaluation to occur, but did not pass in '--eval_full', '--eval_short', or '--eval_blitz' to specify length of evaluation")
+        raise RuntimeError("You asked for evaluation to occur, but did not pass in '--eval_full', '--eval_short', '--eval_tenth', or '--eval_blitz' to specify length of evaluation")
 
         # Read in the configurations
     if args.config is not None:
@@ -108,7 +117,7 @@ if __name__ == "__main__":
     Path(log_folder).mkdir(parents=True, exist_ok=True)
     model_weights_root = os.path.join(log_folder, "models")
     Path(model_weights_root).mkdir(parents=True, exist_ok=True)
-    
+
     # save setup parameters
     save_config = os.path.join(log_folder, 'setup_params.yaml')
     with open(save_config, 'w') as outfile:
@@ -256,14 +265,19 @@ if __name__ == "__main__":
     # working with. If these numbers change, may want to update evaluation.py
     # accordingly.
     if args.evalnum == "blitz":
-        model_numbers = [124800, 198400, 240000, 320000]
+        model_numbers = ranks_to_save.copy()  # should not be modifying list in-place, but just in case!
     elif args.evalnum == "short":
+        # hand-picked set of 16; 4 lots of 4 consecutive epochs including
+        # the default ranks_to_save
         # this assumes 100 'epochs', may want to generalise?!
         interval = steps_per_epoch * batch_size
         model_numbers = [37*interval, 38*interval, 39*interval, 40*interval,
                          59*interval, 60*interval, 61*interval, 62*interval,
                          75*interval, 76*interval, 77*interval, 78*interval,
                          97*interval, 98*interval, 99*interval, 100*interval]
+    elif args.evalnum == "tenth":  # every 10th; does NOT include fav numbers
+        interval = steps_per_epoch * batch_size
+        model_numbers = np.arange(0, num_samples + 1, 10*interval)[1:].tolist()
     elif args.evalnum == "full":
         interval = steps_per_epoch * batch_size
         model_numbers = np.arange(0, num_samples + 1, interval)[1:].tolist()
@@ -347,6 +361,8 @@ if __name__ == "__main__":
                                         noise_channels=noise_channels,
                                         rank_samples=100)
 
+    # all these are hardcoded to Lucy's favourite numbers; will need
+    # to change for e.g. eval_tenth
     if args.plot_ranks_small:
         if add_noise:
             noise_label = "noise"
@@ -364,13 +380,13 @@ if __name__ == "__main__":
             labels_2 = ['no-noise-240000', 'no-noise-320000']
             name_1 = 'no-noise-early-small_image'
             name_2 = 'no-noise-late-small_image'
-        plots.plot_rank_histogram_all(rank_files=rank_metrics_files_1, 
-                                      labels=labels_1, 
-                                      log_path=log_folder, 
+        plots.plot_rank_histogram_all(rank_files=rank_metrics_files_1,
+                                      labels=labels_1,
+                                      log_path=log_folder,
                                       name=name_1)
-        plots.plot_rank_histogram_all(rank_files=rank_metrics_files_2, 
-                                      labels=labels_2, 
-                                      log_path=log_folder, 
+        plots.plot_rank_histogram_all(rank_files=rank_metrics_files_2,
+                                      labels=labels_2,
+                                      log_path=log_folder,
                                       name=name_2)
     if args.plot_ranks_full:
         if add_noise:
@@ -382,18 +398,18 @@ if __name__ == "__main__":
             name_2 = 'noise-late-full_image'
         else:
             rank_metrics_files_1 = ["{}/ranks-full_image-no-noise-124800.npz".format(log_folder), "{}/ranks-full_image-no-noise-198400.npz".format(log_folder)]
-            rank_metrics_files_2 = ["{}/ranks-full_image-no-noise-240000.npz".format(log_folder), "{}/ranks-full_image-no-noise-320000.npz".format(log_folder)]  
+            rank_metrics_files_2 = ["{}/ranks-full_image-no-noise-240000.npz".format(log_folder), "{}/ranks-full_image-no-noise-320000.npz".format(log_folder)]
             labels_1 = ['no-noise-124800', 'no-noise-198400']
             labels_2 = ['no-noise-240000', 'no-noise-320000']
             name_1 = 'no-noise-early-full_image'
             name_2 = 'no-noise-late-full_image'
-        plots.plot_rank_histogram_all(rank_files=rank_metrics_files_1, 
-                                      labels=labels_1, 
-                                      log_path=log_folder, 
+        plots.plot_rank_histogram_all(rank_files=rank_metrics_files_1,
+                                      labels=labels_1,
+                                      log_path=log_folder,
                                       name=name_1)
-        plots.plot_rank_histogram_all(rank_files=rank_metrics_files_2, 
-                                      labels=labels_2, 
-                                      log_path=log_folder, 
+        plots.plot_rank_histogram_all(rank_files=rank_metrics_files_2,
+                                      labels=labels_2,
+                                      log_path=log_folder,
                                       name=name_2)
 
     if args.plot_roc_small:
