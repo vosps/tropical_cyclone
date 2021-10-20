@@ -69,9 +69,9 @@ def plot_roc_curves(*,
                                          batch_size=batch_size,
                                          log_precip=True,
                                          crop=True,
-                                         shuffle=False,
+                                         shuffle=True,
                                          constants=True,
-                                         hour=0,
+                                         hour='random',
                                          ifs_norm=True,
                                          downsample=downsample)
     
@@ -209,9 +209,9 @@ def plot_roc_curves(*,
                                             batch_size=batch_size,
                                             log_precip=False,
                                             crop=True,
-                                            shuffle=False,
+                                            shuffle=True,
                                             constants=True,
-                                            hour=0,
+                                            hour="random",
                                             ifs_norm=False,
                                             downsample=downsample)
     

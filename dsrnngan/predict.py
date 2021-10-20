@@ -105,9 +105,9 @@ if args.predict_full_image:
                                      batch_size=batch_size, 
                                      log_precip=True, 
                                      crop=True,
-                                     shuffle=False,
+                                     shuffle=True,
                                      constants=True,
-                                     hour=2,
+                                     hour='random',
                                      ifs_norm=True,
                                      downsample=downsample)
 
@@ -123,8 +123,8 @@ data_ecpoint = DataGeneratorFull(dates=dates,
                                  batch_size=batch_size,
                                  log_precip=False,
                                  crop=True,
-                                 shuffle=False,
-                                 hour=2,
+                                 shuffle=True,
+                                 hour='random',
                                  ifs_norm=False,
                                  downsample=downsample)    
 if args.include_deterministic:

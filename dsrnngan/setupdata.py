@@ -51,9 +51,9 @@ def setup_full_image_dataset(years,
                                   batch_size=batch_size,
                                   log_precip=True,
                                   crop=True,
-                                  shuffle=False,
+                                  shuffle=True,
                                   constants=True,
-                                  hour=0,
+                                  hour='random',
                                   ifs_norm=True,
                                   downsample=downsample)
     return data_full

@@ -271,12 +271,15 @@ def load_ifs_nimrod_batch(batch_dates, ifs_fields=all_ifs_fields, log_precip=Fal
     if crop:
         ifs_crop = (1, -1)
         nim_crop = (5, -6)
-    if hour == 'random':
-        hours = ifs_hours[np.random.randint(22, size=[len(batch_dates)])]
+
+    if type(hour) == str:
+        if hour == 'random':
+            hours = ifs_hours[np.random.randint(22, size=[len(batch_dates)])]
+        else:
+            assert False, f"Not configured for {hour}"
     elif np.issubdtype(type(hour), np.integer):
         hours = len(batch_dates)*[hour]
     else:
-        print(type(hour))
         hours = hour
 
     for i, date in enumerate(batch_dates):
