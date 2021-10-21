@@ -169,8 +169,8 @@ def plot_spectrum1d(
 
     # Plot spectrum in log-log scale
     ax.plot(
-        10 * np.log10(fft_freq),
-        10 * np.log10(fft_power),
+        10 * np.log10(fft_freq[np.where(fft_freq > 0.0)]),
+        10 * np.log10(fft_power[np.where(fft_freq > 0.0)]),
         color=color,
         linewidth=lw,
         label=label,
