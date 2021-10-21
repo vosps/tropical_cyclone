@@ -483,6 +483,8 @@ def calculate_rapsd_rmse(truth, pred):
 
 def rapsd_batch(batch1, batch2):
     # radially averaged power spectral density
+    batch1 = np.squeeze(batch1, axis=-1)
+    batch2 = np.squeeze(batch2, axis=-1)
     rapsd_batch = []
     for i in range(batch1.shape[0]):
         rapsd_score = calculate_rapsd_rmse(
@@ -612,7 +614,7 @@ def quality_metrics_by_time(*,
                                           latent_variables=latent_variables,
                                           load_full_image=load_full_image)
 
-    log_line(log_fname, "N RMSE MSSSIM LSD MAE")
+    log_line(log_fname, "N RMSE MSSSIM LSD RAPSD MAE")
 
     for model_number in model_numbers:
         gen_weights_file = os.path.join(weights_dir, "gen_weights-{:07d}.h5".format(model_number))
