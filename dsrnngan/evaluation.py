@@ -1,8 +1,6 @@
 from tensorflow.python.keras.utils import generic_utils
 import os
-
 import numpy as np
-
 import crps
 import setupmodel
 import setupdata
@@ -13,7 +11,7 @@ import plots
 import rainfarm
 import warnings
 from main import ranks_to_save
-
+from rapsd import rapsd
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 path = os.path.dirname(os.path.abspath(__file__))
@@ -475,6 +473,23 @@ def log_spectral_distance_batch(batch1, batch2):
         lsd_batch.append(lsd)
     return np.array(lsd_batch)
 
+def calculate_rapsd_rmse(truth, pred):
+    fft_freq_truth = rapsd(truth, fft_method=np.fft)
+    fft_freq_pred = rapsd(pred, fft_method=np.fft)
+    truth = 10* np.log10(fft_freq_truth)
+    pred = 10 * np.log10(fft_freq_pred)
+    rmse = np.sqrt(np.mean((truth-pred)**2))
+    return rmse
+
+def rapsd_batch(batch1, batch2):
+    # radially averaged power spectral density
+    rapsd_batch = []
+    for i in range(batch1.shape[0]):
+        rapsd_score = calculate_rapsd_rmse(
+                        batch1[i,...], batch2[i,...])
+        rapsd_batch.append(rapsd_score)
+    return np.array(rapsd_batch)
+
 
 def image_quality(*,
                   mode,
@@ -495,6 +510,7 @@ def image_quality(*,
     rmse_all = []
     ssim_all = []
     lsd_all = []
+    rapsd_all = []
 
     if show_progress:
         # Initialize progbar and batch counter
@@ -543,10 +559,12 @@ def image_quality(*,
             rmse = np.sqrt(((sample - img_gen)**2).mean(axis=(1, 2)))
             ssim = msssim.MultiScaleSSIM(sample, img_gen, 1.0)
             lsd = log_spectral_distance_batch(sample, img_gen)
+            rapsd = rapsd_batch(sample, img_gen)
             mae_all.append(mae.flatten())
             rmse_all.append(rmse.flatten())
             ssim_all.append(ssim.flatten())
             lsd_all.append(lsd.flatten())
+            rapsd_all.append(rapsd.flatten())
 
         if show_progress:
             rmse_mean = np.mean(rmse)  # quick and dirty; this is just the last instance
@@ -557,8 +575,9 @@ def image_quality(*,
     rmse_all = np.concatenate(rmse_all)
     ssim_all = np.concatenate(ssim_all)
     lsd_all = np.concatenate(lsd_all)
+    rapsd_all = np.concatenate(rapsd_all)
 
-    return (mae_all, rmse_all, ssim_all, lsd_all)
+    return (mae_all, rmse_all, ssim_all, lsd_all, rapsd_all)
 
 
 def quality_metrics_by_time(*,
@@ -602,17 +621,22 @@ def quality_metrics_by_time(*,
         else:
             print(gen_weights_file)
             gen.load_weights(gen_weights_file)
-            mae, rmse, ssim, lsd = image_quality(mode=mode,
-                                                 gen=gen,
-                                                 batch_gen=batch_gen_valid,
-                                                 noise_channels=noise_channels,
-                                                 latent_variables=latent_variables,
-                                                 batch_size=batch_size,
-                                                 num_instances=1,
-                                                 num_batches=num_batches,
-                                                 load_full_image=load_full_image)
+            mae, rmse, ssim, lsd, rapsd = image_quality(mode=mode,
+                                                        gen=gen,
+                                                        batch_gen=batch_gen_valid,
+                                                        noise_channels=noise_channels,
+                                                        latent_variables=latent_variables,
+                                                        batch_size=batch_size,
+                                                        num_instances=1,
+                                                        num_batches=num_batches,
+                                                        load_full_image=load_full_image)
 
-            log_line(log_fname, "{} {:.6f} {:.6f} {:.6f} {:.6f}".format(model_number, rmse.mean(), ssim.mean(), np.nanmean(lsd), mae.mean()))
+            log_line(log_fname, "{} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}".format(model_number, 
+                                                                               rmse.mean(), 
+                                                                               ssim.mean(), 
+                                                                               np.nanmean(lsd), 
+                                                                               np.nanmean(rapsd), 
+                                                                               mae.mean()))
 
 
 # def quality_metrics_table(weights_fname,
@@ -664,19 +688,20 @@ def quality_metrics_by_time(*,
 #     else:
 #         print("quality_metrics_table not implemented for mode type")
 
-#     mae, rmse, ssim, lsd = image_quality(mode, gen,
-#                                          batch_gen_valid,
-#                                          noise_channels=noise_channels,
-#                                          latent_variables=latent_variables,
-#                                          batch_size=batch_size,
-#                                          num_instances=1,
-#                                          num_batches=num_batches,
-#                                          load_full_image=load_full_image)
+#     mae, rmse, ssim, lsd, rapsd = image_quality(mode, gen,
+    #                                          batch_gen_valid,
+    #                                          noise_channels=noise_channels,
+    #                                          latent_variables=latent_variables,
+    #                                          batch_size=batch_size,
+    #                                          num_instances=1,
+    #                                          num_batches=num_batches,
+    #                                          load_full_image=load_full_image)
 
 #     print("MAE: {:.3f}".format(mae.mean()))
 #     print("RMSE: {:.3f}".format(rmse.mean()))
 #     print("MSSSIM: {:.3f}".format(ssim.mean()))
 #     print("LSD: {:.3f}".format(np.nanmean(lsd)))
+#     print("RAPSD: {:.3f}".format(np.nanmean(rapsd)))
 
 
 class GeneratorLanczos:
