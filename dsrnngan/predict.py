@@ -3,6 +3,7 @@ import yaml
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colorbar, colors, gridspec
+from matplotlib.backends.backend_pdf import PdfPages
 from noise import NoiseGenerator
 from setupmodel import setup_model
 import ecpoint
@@ -14,6 +15,7 @@ from tfrecords_generator_ifs import create_fixed_dataset
 from data_generator_ifs import DataGenerator as DataGeneratorFull
 from data import get_dates
 from plots import plot_img
+from rapsd import plot_spectrum1d, rapsd
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--log_folder', type=str, 
@@ -28,12 +30,15 @@ parser.add_argument('--num_predictions', type=int,
 parser.add_argument('--num_samples', type=int,
                     help="size of prediction ensemble", default=3)
 parser.set_defaults(predict_full_image=False)
+parser.set_defaults(plot_rapsd=True)
 parser.set_defaults(include_Lanczos=False)
 parser.set_defaults(include_RainFARM=False)
 parser.set_defaults(include_deterministic=False)
 parser.set_defaults(include_ecPoint=False)
 parser.add_argument('--predict_full_image', dest='predict_full_image', action='store_true',
                     help="Predict on full images")
+parser.add_argument('--plot_rapsd', dest='plot_rapsd', action='store_true',
+                    help="Plot Radially Averaged Power Spectral Density")
 parser.add_argument('--include_Lanczos', dest='include_Lanczos', action='store_true',
                     help="Include Lanczos benchmark")
 parser.add_argument('--include_RainFARM', dest='include_RainFARM', action='store_true',
@@ -209,7 +214,7 @@ for i in range(num_predictions):
 IFS = seq_cond[0][0,...,0]
 constant_0 = seq_const[0][0,...,0]
 constant_1 = seq_const[0][0,...,1]
-NIMROD = seq_real[0][0,...,0]
+TRUTH = seq_real[0][0,...,0]
 pred_0_0 = pred[0][0][0,...,0]
 (vmin, vmax) = (0,2)
 fig, ax = plt.subplots(1,5, figsize=(15,10))
@@ -219,8 +224,8 @@ ax[1].imshow(constant_0, vmin=vmin, vmax=vmax)
 ax[1].set_title('Orography')
 ax[0].imshow(constant_1, vmin=vmin, vmax=vmax)
 ax[0].set_title('Land-sea mask')
-ax[3].imshow(NIMROD, vmin=vmin, vmax=vmax)
-ax[3].set_title('NIMROD')
+ax[3].imshow(TRUTH, vmin=vmin, vmax=vmax)
+ax[3].set_title('TRUTH')
 ax[4].imshow(pred_0_0, vmin=vmin, vmax=vmax)
 ax[4].set_title('Prediction')
 for ax in ax.flat:
@@ -234,7 +239,7 @@ plt.close()
 
 
 ## generate labels for plots
-labels = [plot_input_title, "NIMROD"]
+labels = [plot_input_title, "TRUTH"]
 for i in range(num_samples):
     labels.append(f"{mode} pred {i+1}")
 if args.include_RainFARM:
@@ -251,7 +256,7 @@ if args.include_Lanczos:
 sequences = []
 for i in range(num_predictions):
     tmp = {}
-    tmp['NIMROD'] = seq_real[i][0,...,0]
+    tmp['TRUTH'] = seq_real[i][0,...,0]
     tmp[plot_input_title] = seq_cond[i][0,...,0]
     tmp['Lanczos'] = seq_lanczos[i][0,...]
     tmp['RainFARM'] = seq_rainfarm[i][0,...]
@@ -273,6 +278,8 @@ for k in range(num_predictions):
         plot_img(sequences[k][labels[i]], value_range=value_range)
         if k==0:
             plt.ylabel(labels[i])
+        if i == 0:
+            plt.title(k+1)
 plt.suptitle('Example predictions for different input conditions')
 ##colorbar
 units = "Rain rate [mm h$^{-1}$]"
@@ -289,3 +296,39 @@ plt.savefig("{}/predictions-{}-{}.pdf".format(log_folder,
                                               problem_type,
                                               plot_label), bbox_inches='tight')
 plt.close()
+
+
+if args.plot_rapsd:
+    colours = ['plum', 'palevioletred', 'lightslategrey', 'coral', 'lightblue', 'darkseagreen', 'mediumturquoise']
+    plot_scales = [512, 256, 128, 64, 32, 16, 8, 4]
+    # create a PdfPages object to save multiple plots to same pdf
+    pdf = PdfPages("{}/RAPSD-{}-{}.pdf".format(log_folder, 
+                                            problem_type,
+                                            plot_label))
+
+    for k in range(num_predictions):
+        fig, ax = plt.subplots()
+        for i in range(len(labels)):
+            if labels[i] == 'IFS':
+                ## skip the input data b/c the resolution is different
+                pass
+            else:
+                R_1, freq_1 = rapsd(sequences[k][labels[i]], fft_method=np.fft, return_freq=True)
+                # Plot the observed power spectrum and the model
+                plot_spectrum1d(freq_1,
+                                R_1,
+                                x_units="km",
+                                y_units="dBR",
+                                color=colours[i],
+                                ax=ax,
+                                label=labels[i],
+                                wavelength_ticks=plot_scales)
+
+
+                plt.legend()
+            
+        ax.set_title(f"Radially averaged log-power spectrum - {k+1}")
+        # save the current figure
+        pdf.savefig(fig)
+    plt.close()
+    pdf.close()
