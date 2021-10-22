@@ -19,8 +19,7 @@ from rapsd import plot_spectrum1d, rapsd
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--log_folder', type=str, 
-                    help="directory where model weights are saved", 
-                    default='/ppdata/lucy-cGAN/logs/IFS/gen_128_disc_512/noise_4/lr1e-5')
+                    help="directory where model weights are saved")
 parser.add_argument('--model_number', type=str, 
                     help="model iteration to load", default='0313600')
 parser.add_argument('--predict_year', type=int,
