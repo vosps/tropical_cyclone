@@ -338,7 +338,7 @@ if __name__ == "__main__":
                                         input_channels=input_channels,
                                         latent_variables=latent_variables,
                                         noise_channels=noise_channels,
-                                        rank_samples=100)
+                                        rank_samples=10)
 
     if args.rank_full:
         evaluation.rank_metrics_by_time(mode=mode,
@@ -359,7 +359,7 @@ if __name__ == "__main__":
                                         input_channels=input_channels,
                                         latent_variables=latent_variables,
                                         noise_channels=noise_channels,
-                                        rank_samples=100)
+                                        rank_samples=10)
 
     # all these are hardcoded to Lucy's favourite numbers; will need
     # to change for e.g. eval_tenth

@@ -31,6 +31,6 @@ VAL:
     val_size: 8
 
 EVAL:
-    num_batches: 64
+    num_batches: 256
     add_postprocessing_noise: True # flag for adding postprocessing noise in rank statistics eval
     postprocessing_noise_factor: 1e-6 # factor for scaling postprocessing noise in rank statistics eval
