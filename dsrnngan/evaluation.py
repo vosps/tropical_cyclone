@@ -1,5 +1,6 @@
 from tensorflow.python.keras.utils import generic_utils
 import os
+import gc
 import numpy as np
 import crps
 import setupmodel
@@ -180,9 +181,12 @@ def ensemble_ranks(*,
             progbar.add(1, values=losses)
 
     ranks = np.concatenate(ranks)
+    gc.collect()  # big arrays!  if this isn't enough, set up ranks and crps_scores as numpy arrays from the start
     crps_scores = np.concatenate(crps_scores)
+    gc.collect()
     if normalize_ranks:
-        ranks = ranks / rank_samples
+        ranks /= rank_samples
+        gc.collect()
 
     return (ranks, crps_scores)
 
