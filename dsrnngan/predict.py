@@ -231,9 +231,10 @@ for ax in ax.flat:
     ax.tick_params(left=False, bottom=False,labelleft=False, labelbottom=False)
     ax.invert_yaxis()
 
-plt.savefig("{}/prediction-and-input-{}-{}.pdf".format(log_folder, 
-                                                       problem_type,
-                                                       plot_label), bbox_inches='tight')
+plt.savefig("{}/prediction-and-input-{}-{}-{}.pdf".format(log_folder, 
+                                                          model_number,
+                                                          problem_type,
+                                                          plot_label), bbox_inches='tight')
 plt.close()
 
 
@@ -291,9 +292,10 @@ cb.set_ticklabels(cb_tick_labels)
 cax.tick_params(labelsize=16)
 cb.set_label(units, size=16)
             
-plt.savefig("{}/predictions-{}-{}.pdf".format(log_folder, 
-                                              problem_type,
-                                              plot_label), bbox_inches='tight')
+plt.savefig("{}/predictions-{}-{}-{}.pdf".format(log_folder,
+                                                 model_number,
+                                                 problem_type,
+                                                 plot_label), bbox_inches='tight')
 plt.close()
 
 
@@ -301,9 +303,10 @@ if args.plot_rapsd:
     colours = ['plum', 'palevioletred', 'lightslategrey', 'coral', 'lightblue', 'darkseagreen', 'mediumturquoise']
     plot_scales = [512, 256, 128, 64, 32, 16, 8, 4]
     # create a PdfPages object to save multiple plots to same pdf
-    pdf = PdfPages("{}/RAPSD-{}-{}.pdf".format(log_folder, 
-                                            problem_type,
-                                            plot_label))
+    pdf = PdfPages("{}/RAPSD-{}-{}-{}.pdf".format(log_folder,
+                                                  model_number,
+                                                  problem_type,
+                                                  plot_label))
 
     for k in range(num_predictions):
         fig, ax = plt.subplots()
