@@ -487,8 +487,10 @@ def calculate_rapsd_rmse(truth, pred):
 
 def rapsd_batch(batch1, batch2):
     # radially averaged power spectral density
-    batch1 = np.squeeze(batch1, axis=-1)
-    batch2 = np.squeeze(batch2, axis=-1)
+    ## squeeze out final dimension (channels)
+    if len(batch1.shape) == 4:
+        batch1 = np.squeeze(batch1, axis=-1)
+        batch2 = np.squeeze(batch2, axis=-1)
     rapsd_batch = []
     for i in range(batch1.shape[0]):
         rapsd_score = calculate_rapsd_rmse(
