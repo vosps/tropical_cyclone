@@ -185,7 +185,7 @@ def ensemble_ranks(*,
     crps_scores = np.concatenate(crps_scores)
     gc.collect()
     if normalize_ranks:
-        ranks /= rank_samples
+        ranks = ranks / rank_samples
         gc.collect()
 
     return (ranks, crps_scores)
