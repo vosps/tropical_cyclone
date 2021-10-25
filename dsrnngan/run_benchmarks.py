@@ -13,8 +13,8 @@ parser.add_argument('--log_folder', type=str,
                     help="directory to store results")
 parser.add_argument('--predict_year', type=int,
                     help="year to predict on", default=2019)
-parser.add_argument('--num_samples', type=int,
-                    help="number of images to predict on", default=16)
+parser.add_argument('--num_batches', type=int,
+                    help="number of images to predict on", default=256)
 parser.set_defaults(include_Lanczos=False)
 parser.set_defaults(include_RainFARM=False)
 parser.set_defaults(include_ecPoint=False)
@@ -36,7 +36,7 @@ parser.add_argument('--include_zeros', dest='include_zeros', action='store_true'
 args = parser.parse_args()
 
 predict_year = args.predict_year
-num_samples = args.num_samples
+num_batches = args.num_batches
 log_folder = args.log_folder
 batch_size = 1 # memory issues
 log_fname = os.path.join(log_folder, "benchmarks.txt")
@@ -89,10 +89,13 @@ if args.include_zeros:
     mae_zeros = []
     rapsd_zeros = []
 
-log_line(log_fname, "Model CRPS RMSE MAE RAPSD CRPS")    
+log_line(log_fname, "Number of samples {}".format(num_batches))
+log_line(log_fname, "Evaluation year {}".format(predict_year))
+log_line(log_fname, "Model CRPS RMSE MAE RAPSD")    
+
 data_benchmarks_iter = iter(data_benchmarks)
-for i in range(num_samples):
-    print(i)
+for i in range(num_batches):
+    print(f" calculating for sample number {i+1} of {num_batches}")
     (inp,outp) = next(data_benchmarks_iter)
     sample_truth = outp['generator_output']
 
@@ -113,7 +116,7 @@ for i in range(num_samples):
         
     if args.include_ecPoint:
         sample_ecpoint = benchmarks.ecpointPDFmodel(inp['generator_input'])
-        crps_rainfarm.append(crps.crps_ensemble(sample_truth, sample_ecpoint))
+        crps_ecpoint.append(crps.crps_ensemble(sample_truth, sample_ecpoint))
         for j in range(sample_ecpoint.shape[-1]):
             rmse_ecpoint.append(np.sqrt(((sample_truth - sample_ecpoint[...,j])**2).mean(axis=(1,2))))
             mae_ecpoint.append((np.abs(sample_truth - sample_ecpoint[...,j])).mean(axis=(1,2)))
@@ -142,37 +145,37 @@ for i in range(num_samples):
    
 if args.include_Lanczos:        
     log_line(log_fname, "{} {:.6f} {:.6f} {:.6f} {:.6f}".format('Lanczos',
-                                                                crps_lanczos.mean(),
-                                                                rmse_lanczos.mean(),
-                                                                mae_lanczos.mean(),
-                                                                rapsd_lanczos.mean()))
+                                                                np.array(crps_lanczos).mean(),
+                                                                np.array(rmse_lanczos).mean(),
+                                                                np.array(mae_lanczos).mean(),
+                                                                np.isfinite(np.array(rapsd_lanczos)).mean()))
 if args.include_RainFARM:        
     log_line(log_fname, "{} {:.6f} {:.6f} {:.6f} {:.6f}".format('RainFARM',
-                                                                crps_rainfarm.mean(),
-                                                                rmse_rainfarm.mean(),
-                                                                mae_rainfarm.mean(),
-                                                                rapsd_rainfarm.mean()))
+                                                                np.array(crps_rainfarm).mean(),
+                                                                np.array(rmse_rainfarm).mean(),
+                                                                np.array(mae_rainfarm).mean(),
+                                                                np.isfinite(np.array(rapsd_rainfarm)).mean()))
 if args.include_ecPoint:        
     log_line(log_fname, "{} {:.6f} {:.6f} {:.6f} {:.6f}".format('ecPoint',
-                                                                crps_ecpoint.mean(),
-                                                                rmse_ecpoint.mean(),
-                                                                mae_ecpoint.mean(),
-                                                                rapsd_ecpoint.mean()))
+                                                                np.array(crps_ecpoint).mean(),
+                                                                np.array(rmse_ecpoint).mean(),
+                                                                np.array(mae_ecpoint).mean(),
+                                                                np.isfinite(np.array(rapsd_ecpoint)).mean()))
 if args.include_ecPoint_mean:        
     log_line(log_fname, "{} {:.6f} {:.6f} {:.6f} {:.6f}".format('ecPoint',
-                                                                crps_ecpoint_mean.mean(),
-                                                                rmse_ecpoint_mean.mean(),
-                                                                mae_ecpoint_mean.mean(),
-                                                                rapsd_ecpoint_mean.mean()))
+                                                                np.array(crps_ecpoint_mean).mean(),
+                                                                np.array(rmse_ecpoint_mean).mean(),
+                                                                np.array(mae_ecpoint_mean).mean(),
+                                                                np.isfinite(np.array(rapsd_ecpoint_mean)).mean()))
 if args.include_constant:        
     log_line(log_fname, "{} {:.6f} {:.6f} {:.6f} {:.6f}".format('Constant',
-                                                                crps_constant.mean(),
-                                                                rmse_constant.mean(),
-                                                                mae_constant.mean(),
-                                                                rapsd_constant.mean()))
+                                                                np.array(crps_constant).mean(),
+                                                                np.array(rmse_constant).mean(),
+                                                                np.array(mae_constant).mean(),
+                                                                np.isfinite(np.array(rapsd_constant)).mean()))
 if args.include_zeros:        
     log_line(log_fname, "{} {:.6f} {:.6f} {:.6f} {:.6f}".format('Zeros',
-                                                                crps_zeros.mean(),
-                                                                rmse_zeros.mean(),
-                                                                mae_zeros.mean(),
-                                                                rapsd_zeros.mean()))
+                                                                np.array(crps_zeros).mean(),
+                                                                np.array(rmse_zeros).mean(),
+                                                                np.array(mae_zeros).mean(),
+                                                                np.isfinite(np.array(rapsd_zeros)).mean()))
