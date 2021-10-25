@@ -185,6 +185,8 @@ for i in range(num_predictions):
             if mode == 'GAN':
                 gan_inputs = [inputs['generator_input'], inputs['constants'], inputs['noise_input']]
                 pred_ensemble.append(data.denormalise(gen.predict(gan_inputs)))
+                print(f"sample number {i+1}")
+                print(f"max predicted value is {np.amax(data.denormalise(gen.predict(gan_inputs)))}")
             elif mode == 'VAEGAN':
                 dec_inputs = [mean, logvar, inputs['noise_input'], inputs['constants']]
                 pred_ensemble.append(data.denormalise(gen.decoder.predict(dec_inputs)))
@@ -215,7 +217,7 @@ constant_0 = seq_const[0][0,...,0]
 constant_1 = seq_const[0][0,...,1]
 TRUTH = seq_real[0][0,...,0]
 pred_0_0 = pred[0][0][0,...,0]
-(vmin, vmax) = (0,2)
+(vmin, vmax) = (0,3)
 fig, ax = plt.subplots(1,5, figsize=(15,10))
 ax[2].imshow(IFS, vmin=vmin, vmax=vmax)
 ax[2].set_title(plot_input_title)
@@ -276,6 +278,7 @@ for k in range(num_predictions):
     for i in range(len(labels)):
         plt.subplot(gs[(num_rows*i):(num_rows+num_rows*i),(num_rows*k):(num_rows+num_rows*k)])
         plot_img(sequences[k][labels[i]], value_range=value_range)
+        plt.gca().invert_yaxis
         if k==0:
             plt.ylabel(labels[i])
         if i == 0:
@@ -283,8 +286,8 @@ for k in range(num_predictions):
 plt.suptitle('Example predictions for different input conditions')
 ##colorbar
 units = "Rain rate [mm h$^{-1}$]"
-cb_tick_loc = np.array([0.1, 0.5, 1, 2, 5, 10])
-cb_tick_labels = [0.1, 0.5, 1, 2, 5, 10]
+cb_tick_loc = np.array([0.1, 0.5, 1, 2, 5, 10, 20, 50])
+cb_tick_labels = [0.1, 0.5, 1, 2, 5, 10, 20, 50]
 cax = plt.subplot(gs[-1,1:-1]).axes
 cb = colorbar.ColorbarBase(cax, norm=colors.Normalize(*value_range), orientation='horizontal')
 cb.set_ticks(cb_tick_loc)
@@ -300,7 +303,7 @@ plt.close()
 
 
 if args.plot_rapsd:
-    colours = ['plum', 'palevioletred', 'lightslategrey', 'coral', 'lightblue', 'darkseagreen', 'mediumturquoise']
+    colours = ['plum', 'palevioletred', 'lightslategrey', 'coral', 'lightblue', 'darkseagreen', 'mediumturquoise', 'purple', 'navy']
     plot_scales = [512, 256, 128, 64, 32, 16, 8, 4]
     # create a PdfPages object to save multiple plots to same pdf
     pdf = PdfPages("{}/RAPSD-{}-{}-{}.pdf".format(log_folder,
