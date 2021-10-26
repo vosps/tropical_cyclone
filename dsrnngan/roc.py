@@ -203,7 +203,7 @@ def plot_roc_curves(*,
         if predict_full_image:
             batch_size = 4
         else:
-            raise RuntimeError('Data generator for benchmarks not implemented for full images')
+            raise RuntimeError('Data generator for benchmarks not implemented for small images')
         data_benchmarks = DataGeneratorFull(dates=dates,
                                             ifs_fields=ecpoint.ifs_fields,
                                             batch_size=batch_size,
