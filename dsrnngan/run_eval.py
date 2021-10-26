@@ -6,10 +6,9 @@ import evaluation
 import plots
 
 # input parameters
-log_folder = '/ppdata/lucy-cGAN/logs/test/VAEGAN'
+log_folder = '/ppdata/lucy-cGAN/logs/IFS/GAN/weights_natural'
 val_years = 2019
-load_full_image = False
-model_numbers = [3200]
+load_full_image = True
 
 model_weights_root = os.path.join(log_folder, "models")
 config_path = os.path.join(log_folder, 'setup_params.yaml')
@@ -22,6 +21,7 @@ with open(config_path, 'r') as f:
 mode = setup_params["GENERAL"]["mode"]
 arch = setup_params["MODEL"]["architecture"]
 batch_size = setup_params["TRAIN"]["batch_size"]
+steps_per_epoch = setup_params["TRAIN"]["steps_per_epoch"]
 problem_type = setup_params["GENERAL"]["problem_type"]
 filters_gen = setup_params["GENERATOR"]["filters_gen"]
 noise_channels = setup_params["GENERATOR"]["noise_channels"]
@@ -31,6 +31,14 @@ num_batches = setup_params["EVAL"]["num_batches"]
 add_noise = setup_params["EVAL"]["add_postprocessing_noise"]
 noise_factor = setup_params["EVAL"]["postprocessing_noise_factor"]
 noise_factor = float(noise_factor)
+
+##eval-short
+interval = steps_per_epoch * batch_size
+#model_numbers = [37*interval, 38*interval, 39*interval, 40*interval,
+                #59*interval, 
+model_numbers = [60*interval, 61*interval, 62*interval, 75*interval, 
+                 76*interval, 77*interval, 78*interval,
+                 97*interval, 98*interval, 99*interval, 100*interval]
 
 if problem_type == 'normal':
     input_channels = 9 

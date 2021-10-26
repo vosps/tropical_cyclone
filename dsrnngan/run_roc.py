@@ -3,8 +3,8 @@ import os
 import yaml
 
 # input parameters
-log_folder = '/ppdata/lucy-cGAN/logs/test/GAN'
-model_number = [16000]
+log_folder = '/ppdata/lucy-cGAN/logs/IFS/GAN/weights_natural'
+model_numbers = [128000, 192000, 256000, 320000]
 plot_ecpoint = True
 predict_year = 2019
 predict_full_image = True
@@ -50,7 +50,7 @@ else:
 roc.plot_roc_curves(mode=mode,
                     arch=arch,
                     log_folder=log_folder,
-                    model_numbers=model_number,
+                    model_numbers=model_numbers,
                     weights_dir=model_weights_root,
                     problem_type=problem_type,
                     filters_gen=filters_gen,
