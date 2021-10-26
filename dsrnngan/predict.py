@@ -218,7 +218,7 @@ constant_1 = seq_const[0][0,...,1]
 TRUTH = seq_real[0][0,...,0]
 pred_0_0 = pred[0][0][0,...,0]
 (vmin, vmax) = (0,3)
-fig, ax = plt.subplots(1,5, figsize=(15,10))
+fig, ax = plt.subplots(1,5, figsize=(15,10), dpi=300)
 ax[2].imshow(IFS, vmin=vmin, vmax=vmax)
 ax[2].set_title(plot_input_title)
 ax[1].imshow(constant_0, vmin=vmin, vmax=vmax)
@@ -270,7 +270,7 @@ for i in range(num_predictions):
     
 num_cols = num_predictions
 num_rows = len(labels)+1
-plt.figure(figsize=(1.5*num_cols,1.5*num_rows))
+plt.figure(figsize=(1.5*num_cols,1.5*num_rows), dpi=300)
 value_range = (0.1,5)
 gs = gridspec.GridSpec(num_rows*num_rows,num_rows*num_cols,wspace=0.5,hspace=0.5)
 
