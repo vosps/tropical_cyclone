@@ -5,11 +5,10 @@ matplotlib.use("Agg")
 import evaluation
 
 # input parameters
-log_folder = '/ppdata/lucy-cGAN/logs/test/GAN'
+log_folder = '/ppdata/lucy-cGAN/logs/IFS/GAN/baseline'
 val_years = 2019
-load_full_image = False
-model_numbers = [3200, 9600]
-
+load_full_image = True
+model_numbers = [3200, 9600, 124800, 198400, 240000]
 model_weights_root = os.path.join(log_folder, "models")
 config_path = os.path.join(log_folder, 'setup_params.yaml')
 with open(config_path, 'r') as f:

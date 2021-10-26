@@ -277,8 +277,8 @@ gs = gridspec.GridSpec(num_rows*num_rows,num_rows*num_cols,wspace=0.5,hspace=0.5
 for k in range(num_predictions):
     for i in range(len(labels)):
         plt.subplot(gs[(num_rows*i):(num_rows+num_rows*i),(num_rows*k):(num_rows+num_rows*k)])
-        plot_img(sequences[k][labels[i]], value_range=value_range)
         plt.gca().invert_yaxis
+        plot_img(sequences[k][labels[i]], value_range=value_range)
         if k==0:
             plt.ylabel(labels[i])
         if i == 0:
