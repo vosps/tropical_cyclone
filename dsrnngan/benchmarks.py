@@ -24,7 +24,7 @@ def rainfarmensemble(indata, ens_size=100):
 
 def rainfarmmodel(indata):
     if type(indata) == dict:
-        data = indata['generator_input']
+        data = indata['lo_res_inputs']
     else:
         data = indata
     try:
@@ -45,7 +45,7 @@ def rainfarmmodel(indata):
 
 def lanczosmodel(indata):
     if type(indata) == dict:
-        data = indata['generator_input']
+        data = indata['lo_res_inputs']
     else:
         data = indata
     if len(data.shape) == 2:
@@ -64,7 +64,7 @@ def lanczosmodel(indata):
 def ecpointmodel(indata, assesslog=False):
     global ecpointCDF
     if type(indata) == dict:
-        data = indata['generator_input']
+        data = indata['lo_res_inputs']
     else:
         data = indata
 
@@ -76,8 +76,8 @@ def ecpointmodel(indata, assesslog=False):
 def ecpointPDFmodel(indata, assesslog=False):
     global ecpointCDF
     if type(indata) == dict:
-        assert indata['generator_input'].log_precip is False
-        data = indata['generator_input']
+        assert indata['lo_res_inputs'].log_precip is False
+        data = indata['lo_res_inputs']
     else:
         data = indata
     if ecpointCDF is None:
@@ -127,12 +127,12 @@ def assessmodels(data_generator, models,
     for i, dta in enumerate(data_generator):
         if verbose and ((i % 10) == 0):
             print(i)
-        nim = dta[1]['generator_output']
+        nim = dta[1]['output']
         for j, model in enumerate(models):
             if model.__name__ == 'ecpointmodel':
-                pred = model(dta[0]['generator_input'])
+                pred = model(dta[0]['lo_res_inputs'])
             else:
-                pred = model(dta[0]['generator_input'][..., era_prec_index])
+                pred = model(dta[0]['lo_res_inputs'][..., era_prec_index])
             error[j] += loss(nim, pred)
     error = error / data_generator.__len__()
     return error
@@ -151,10 +151,10 @@ def probablisticassessmodels(data_generator, probablistic_models,
         # dta = data_generator.__getitem__(i)
         for j, model in enumerate(probablistic_models):
             if model.__name__ == 'ecpointCDFmodel':
-                pred = model(dta[0]['generator_input'])
+                pred = model(dta[0]['lo_res_inputs'])
             else:
-                pred = model(dta[0]['generator_input'][..., era_prec_index])
-            scr = loss(dta[1]['generator_output'], pred)
+                pred = model(dta[0]['lo_res_inputs'][..., era_prec_index])
+            scr = loss(dta[1]['output'], pred)
             rawscore[j] += scr.mean()
     rawscore = rawscore / data_generator.__len__()
     return rawscore

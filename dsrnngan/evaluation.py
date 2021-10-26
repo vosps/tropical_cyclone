@@ -111,9 +111,9 @@ def ensemble_ranks(*,
     for k in range(num_batches):
         if load_full_image:
             inputs, outputs = next(batch_gen_iter)
-            cond = inputs['generator_input']
-            const = inputs['constants']
-            sample = outputs['generator_output']
+            cond = inputs['lo_res_inputs']
+            const = inputs['hi_res_inputs']
+            sample = outputs['output']
             sample = np.expand_dims(np.array(sample), axis=-1)
         else:
             cond, const, sample = next(batch_gen_iter)
@@ -532,9 +532,9 @@ def image_quality(*,
     for k in range(num_batches):
         if load_full_image:
             (inputs, outputs) = next(batch_gen_iter)
-            cond = inputs['generator_input']
-            const = inputs['constants']
-            sample = outputs['generator_output']
+            cond = inputs['lo_res_inputs']
+            const = inputs['hi_res_inputs']
+            sample = outputs['output']
             sample = np.expand_dims(np.array(sample), axis=-1)
         else:
             (cond, const, sample) = next(batch_gen_iter)

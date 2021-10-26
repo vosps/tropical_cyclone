@@ -100,32 +100,32 @@ def plot_roc_curves(*,
             for i in range(num_images):
                 inputs, outputs = next(data_pred_iter)
                 if predict_full_image:
-                    im_real = data.denormalise(np.array(outputs['generator_output']))
+                    im_real = data.denormalise(np.array(outputs['output']))
                 else:
-                    im_real = data.denormalise(outputs['generator_output'])[...,0]        
+                    im_real = data.denormalise(outputs['output'])[...,0]        
                 if mode == 'det':
                     pred_ensemble = []
                     ensemble_members = 1 #can't generate an ensemble with deterministic method
-                    pred_ensemble.append(data.denormalise(model.gen.predict([inputs['generator_input'], 
-                                                                             inputs['constants']]))[...,0])
+                    pred_ensemble.append(data.denormalise(model.gen.predict([inputs['lo_res_inputs'], 
+                                                                             inputs['hi_res_inputs']]))[...,0])
                 else:
                     pred_ensemble = []
                     if mode == 'GAN':
-                        noise_shape = inputs['generator_input'][0,...,0].shape + (noise_channels,)
+                        noise_shape = inputs['lo_res_inputs'][0,...,0].shape + (noise_channels,)
                     elif mode == 'VAEGAN':
-                        noise_shape = inputs['generator_input'][0,...,0].shape + (latent_variables,)
+                        noise_shape = inputs['lo_res_inputs'][0,...,0].shape + (latent_variables,)
                     noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size)
                     if mode == 'VAEGAN':
                         # call encoder once
-                        mean, logvar = model.gen.encoder([inputs['generator_input'], inputs['constants']])       
+                        mean, logvar = model.gen.encoder([inputs['lo_res_inputs'], inputs['hi_res_inputs']])       
                     for j in range(ensemble_members):
                         inputs['noise_input'] = noise_gen()
                         if mode == 'GAN':
-                            pred_ensemble.append(data.denormalise(model.gen.predict([inputs['generator_input'], 
-                                                                                     inputs['constants'], 
+                            pred_ensemble.append(data.denormalise(model.gen.predict([inputs['lo_res_inputs'], 
+                                                                                     inputs['hi_res_inputs'], 
                                                                                      inputs['noise_input']]))[...,0])
                         elif mode == 'VAEGAN':
-                            dec_inputs = [mean, logvar, inputs['noise_input'], inputs['constants']]
+                            dec_inputs = [mean, logvar, inputs['noise_input'], inputs['hi_res_inputs']]
                             pred_ensemble.append(data.denormalise(model.gen.decoder.predict(dec_inputs))[...,0])
                     pred_ensemble = np.array(pred_ensemble)
     
@@ -224,11 +224,11 @@ def plot_roc_curves(*,
         data_benchmarks_iter = iter(data_benchmarks)
         (inp,outp) = next(data_benchmarks_iter)
         ## store GT data
-        seq_real_ecpoint.append(data.denormalise(outp['generator_output']))
+        seq_real_ecpoint.append(data.denormalise(outp['output']))
         
         ## store mean ecPoint prediction
         #seq_ecpoint.append(np.mean(benchmarks.ecpointPDFmodel(inputs['generator_input']), axis=-1))
-        seq_ecpoint.append(benchmarks.ecpointPDFmodel(inp['generator_input']))
+        seq_ecpoint.append(benchmarks.ecpointPDFmodel(inp['lo_res_inputs']))
     
         seq_ecpoint = np.array(seq_ecpoint)
         seq_real_ecpoint = np.array(seq_real_ecpoint)

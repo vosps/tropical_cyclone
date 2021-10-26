@@ -60,18 +60,18 @@ def _parse_batch(record_batch,
                  outsize=(250, 250, 1)):
     # Create a description of the features
     feature_description = {
-        'generator_input': tf.io.FixedLenFeature(insize, tf.float32),
-        'constants': tf.io.FixedLenFeature(consize, tf.float32),
-        'generator_output': tf.io.FixedLenFeature(outsize, tf.float32),
+        'lo_res_inputs': tf.io.FixedLenFeature(insize, tf.float32),
+        'hi_res_inputs': tf.io.FixedLenFeature(consize, tf.float32),
+        'output': tf.io.FixedLenFeature(outsize, tf.float32),
     }
 
     # Parse the input `tf.Example` proto using the dictionary above
     example = tf.io.parse_example(record_batch, feature_description)
     if return_dic:
-        return {'generator_input': example['generator_input'], 'constants': example['constants']},\
-            {'generator_output': example['generator_output']}
+        return {'lo_res_inputs': example['lo_res_inputs'], 'hi_res_inputs': example['hi_res_inputs']},\
+            {'output': example['output']}
     else:
-        return example['generator_input'], example['constants'], example['generator_output']
+        return example['lo_res_inputs'], example['hi_res_inputs'], example['output']
 
 
 def create_dataset(year, clss,
@@ -145,18 +145,18 @@ def write_data(year,
             fle_hdles.append(tf.io.TFRecordWriter(flename))
         for batch in range(len(dates)):
             sample = dgc.__getitem__(batch)
-            for k in range(sample[1]['generator_output'].shape[0]):
+            for k in range(sample[1]['output'].shape[0]):
                 for i, idx in enumerate(nimrod_starts):
                     idx1 = nimrod_ends[i]
                     for j, jdx in enumerate(nimrod_starts):
                         jdx1 = nimrod_ends[j]
-                        nimrod = sample[1]['generator_output'][k, idx:idx1, jdx:jdx1].flatten()
-                        const = sample[0]['constants'][k, idx:idx1, jdx:jdx1, :].flatten()
-                        era = sample[0]['generator_input'][k, era_starts[i]:era_ends[i], era_starts[j]:era_ends[j], :].flatten()
+                        nimrod = sample[1]['output'][k, idx:idx1, jdx:jdx1].flatten()
+                        const = sample[0]['hi_res_inputs'][k, idx:idx1, jdx:jdx1, :].flatten()
+                        era = sample[0]['lo_res_inputs'][k, era_starts[i]:era_ends[i], era_starts[j]:era_ends[j], :].flatten()
                         feature = {
-                            'generator_input': _float_feature(era),
-                            'constants': _float_feature(const),
-                            'generator_output': _float_feature(nimrod)
+                            'lo_res_inputs': _float_feature(era),
+                            'hi_res_inputs': _float_feature(const),
+                            'output': _float_feature(nimrod)
                         }
                         features = tf.train.Features(feature=feature)
                         example = tf.train.Example(features=features)

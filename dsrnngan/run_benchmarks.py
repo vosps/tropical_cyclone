@@ -97,17 +97,17 @@ data_benchmarks_iter = iter(data_benchmarks)
 for i in range(num_batches):
     print(f" calculating for sample number {i+1} of {num_batches}")
     (inp,outp) = next(data_benchmarks_iter)
-    sample_truth = outp['generator_output']
+    sample_truth = outp['output']
 
     if args.include_Lanczos:
-        sample_lanczos = benchmarks.lanczosmodel(inp['generator_input'][...,1])
+        sample_lanczos = benchmarks.lanczosmodel(inp['lo_res_inputs'][...,1])
         crps_lanczos.append(benchmarks.mean_crps(sample_truth, sample_lanczos))
         rmse_lanczos.append(np.sqrt(((sample_truth - sample_lanczos)**2).mean(axis=(1,2))))
         mae_lanczos.append((np.abs(sample_truth - sample_lanczos)).mean(axis=(1,2)))
         rapsd_lanczos.append(rapsd_batch(sample_truth, sample_lanczos))
 
     if args.include_RainFARM:
-        sample_rainfarm = benchmarks.rainfarmensemble(inp['generator_input'][...,1])
+        sample_rainfarm = benchmarks.rainfarmensemble(inp['lo_res_inputs'][...,1])
         crps_rainfarm.append(crps.crps_ensemble(sample_truth, sample_rainfarm))
         for j in range(sample_rainfarm.shape[-1]):
             rmse_rainfarm.append(np.sqrt(((sample_truth - sample_rainfarm[...,j])**2).mean(axis=(1,2))))
@@ -115,7 +115,7 @@ for i in range(num_batches):
             rapsd_rainfarm.append(rapsd_batch(sample_truth, sample_rainfarm[...,j]))
         
     if args.include_ecPoint:
-        sample_ecpoint = benchmarks.ecpointPDFmodel(inp['generator_input'])
+        sample_ecpoint = benchmarks.ecpointPDFmodel(inp['lo_res_inputs'])
         crps_ecpoint.append(crps.crps_ensemble(sample_truth, sample_ecpoint))
         for j in range(sample_ecpoint.shape[-1]):
             rmse_ecpoint.append(np.sqrt(((sample_truth - sample_ecpoint[...,j])**2).mean(axis=(1,2))))
@@ -123,21 +123,21 @@ for i in range(num_batches):
             ## doesn't make sense to calculate RAPSD for ecPoint
             
     if args.include_ecPoint_mean:
-        sample_ecpoint_mean = np.mean(benchmarks.ecpointPDFmodel(inp['generator_input']),axis=-1)
+        sample_ecpoint_mean = np.mean(benchmarks.ecpointPDFmodel(inp['lo_res_inputs']),axis=-1)
         crps_ecpoint_mean.append(benchmarks.mean_crps(sample_truth, sample_ecpoint_mean))
         rmse_ecpoint_mean.append(np.sqrt(((sample_truth - sample_ecpoint_mean)**2).mean(axis=(1,2))))
         mae_ecpoint_mean.append((np.abs(sample_truth - sample_ecpoint_mean)).mean(axis=(1,2)))
         rapsd_ecpoint_mean.append(rapsd_batch(sample_truth, sample_ecpoint_mean))
     
     if args.include_constant:
-        sample_constant = benchmarks.constantupscalemodel(inp['generator_input'][...,1])
+        sample_constant = benchmarks.constantupscalemodel(inp['lo_res_inputs'][...,1])
         crps_constant.append(benchmarks.mean_crps(sample_truth, sample_constant))
         rmse_constant.append(np.sqrt(((sample_truth - sample_constant)**2).mean(axis=(1,2))))
         mae_constant.append((np.abs(sample_truth - sample_constant)).mean(axis=(1,2)))
         rapsd_constant.append(rapsd_batch(sample_truth, sample_constant))
         
     if args.include_zeros:
-        sample_zeros = benchmarks.zerosmodel(inp['generator_input'][...,1])
+        sample_zeros = benchmarks.zerosmodel(inp['lo_res_inputs'][...,1])
         crps_zeros.append(benchmarks.mean_crps(sample_truth, sample_zeros))
         rmse_zeros.append(np.sqrt(((sample_truth - sample_zeros)**2).mean(axis=(1,2))))
         mae_zeros.append((np.abs(sample_truth - sample_zeros)).mean(axis=(1, 2)))  

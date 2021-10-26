@@ -45,11 +45,11 @@ def create_mixed_dataset(year,batch_size,era_shape=(10,10,9),con_shape=(100,100,
 # will take classes 6 & 7 together
 
 def _dataset_downsampler(inputs,outputs):
-    image = outputs['generator_output']
+    image = outputs['output']
     kernel_tf = tf.constant(0.01,shape=(10,10,1,1), dtype=tf.float32)
     image = tf.nn.conv2d(image, filters=kernel_tf, strides=[1, 10, 10, 1], padding='VALID',
                          name='conv_debug',data_format='NHWC')
-    inputs['generator_input'] = image
+    inputs['lo_res_inputs'] = image
     return inputs,outputs
 
 def _dataset_downsampler_list(inputs, constants, outputs):
@@ -63,18 +63,18 @@ def _parse_batch(record_batch,insize=(10,10,9),consize=(100,100,2),
                  outsize=(100,100,1)):
     # Create a description of the features
     feature_description = {
-        'generator_input': tf.io.FixedLenFeature(insize, tf.float32),
-        'constants': tf.io.FixedLenFeature(consize, tf.float32),
-        'generator_output': tf.io.FixedLenFeature(outsize, tf.float32),
+        'lo_res_inputs': tf.io.FixedLenFeature(insize, tf.float32),
+        'hi_res_inputs': tf.io.FixedLenFeature(consize, tf.float32),
+        'output': tf.io.FixedLenFeature(outsize, tf.float32),
     }
 
     # Parse the input `tf.Example` proto using the dictionary above
     example = tf.io.parse_example(record_batch, feature_description)
     if return_dic:
-        return {'generator_input':example['generator_input'], 'constants':example['constants']},\
-            {'generator_output':example['generator_output']}
+        return {'lo_res_inputs':example['lo_res_inputs'], 'hi_res_inputs':example['hi_res_inputs']},\
+            {'lo_res_inputs':example['lo_res_inputs']}
     else:
-        return example['generator_input'], example['constants'], example['generator_output']
+        return example['lo_res_inputs'], example['hi_res_inputs'], example['output']
 
 
 def create_dataset(year,clss,era_shape=(10,10,9),con_shape=(100,100,2),out_shape=(100,100,1),
@@ -171,18 +171,18 @@ def write_data(year,
         for batch in range(len(dates)):
             print(batch)
             sample=dgc.__getitem__(batch)
-            for k in range(sample[1]['generator_output'].shape[0]):
+            for k in range(sample[1]['output'].shape[0]):
                 for i,idx in enumerate(nimrod_starts):
                     idx1 = nimrod_ends[i]
                     for j,jdx in enumerate(nimrod_starts):
                         jdx1 = nimrod_ends[j]
-                        nimrod = sample[1]['generator_output'][k,idx:idx1,jdx:jdx1].flatten()
-                        const = sample[0]['constants'][k,idx:idx1,jdx:jdx1,:].flatten()
-                        era = sample[0]['generator_input'][k,era_starts[i]:era_ends[i],era_starts[j]:era_ends[j],:].flatten()
+                        nimrod = sample[1]['output'][k,idx:idx1,jdx:jdx1].flatten()
+                        const = sample[0]['hi_res_inputs'][k,idx:idx1,jdx:jdx1,:].flatten()
+                        era = sample[0]['lo_res_inputs'][k,era_starts[i]:era_ends[i],era_starts[j]:era_ends[j],:].flatten()
                         feature = {
-                            'generator_input': _float_feature(era),
-                            'constants': _float_feature(const),
-                            'generator_output': _float_feature(nimrod)
+                            'lo_res_inputs': _float_feature(era),
+                            'hi_res_inputs': _float_feature(const),
+                            'output': _float_feature(nimrod)
                         }
                         features = tf.train.Features(feature=feature)
                         example = tf.train.Example(features=features)
@@ -200,11 +200,11 @@ def save_dataset(tfrecords_dataset,flename):
     flename=f"{records_folder}/{flename}"
     fle_hdle =  tf.io.TFRecordWriter(flename)            
     for sample in tfrecords_dataset:
-        for k in range(sample[1]['generator_output'].shape[0]):
+        for k in range(sample[1]['output'].shape[0]):
             feature = {
-                'generator_input': _float_feature(sample[0]['generator_input'][k,...].numpy().flatten()),
-                'constants': _float_feature(sample[0]['constants'][k,...].numpy().flatten()),
-                'generator_output': _float_feature(sample[1]['generator_output'][k,...].numpy().flatten())
+                'lo_res_inputs': _float_feature(sample[0]['lo_res_inputs'][k,...].numpy().flatten()),
+                'hi_res_inputs': _float_feature(sample[0]['hi_res_inputs'][k,...].numpy().flatten()),
+                'output': _float_feature(sample[1]['output'][k,...].numpy().flatten())
             }
             features = tf.train.Features(feature=feature)
             example = tf.train.Example(features=features)

@@ -154,14 +154,14 @@ data_predict_iter = iter(data_predict)
 for i in range(num_predictions):
     (inputs,outputs) = next(data_predict_iter)
     ## store denormalised inputs, outputs, predictions
-    seq_const.append(data.denormalise(inputs['constants']))
-    seq_cond.append(data.denormalise(inputs['generator_input']))    
+    seq_const.append(data.denormalise(inputs['hi_res_inputs']))
+    seq_cond.append(data.denormalise(inputs['lo_res_inputs']))    
     ## make sure ground truth image has correct dimensions
     if args.predict_full_image :
-        sample = np.expand_dims(np.array(outputs['generator_output']), axis=-1)
+        sample = np.expand_dims(np.array(outputs['output']), axis=-1)
         seq_real.append(data.denormalise(sample))
     else:
-        seq_real.append(data.denormalise(outputs['generator_output']))
+        seq_real.append(data.denormalise(outputs['output']))
     if args.include_deterministic:
         seq_det.append(data.denormalise(gen_det.predict(inputs)))
     else:
@@ -172,23 +172,23 @@ for i in range(num_predictions):
     else:
         pred_ensemble = []
         if mode == 'GAN':
-            noise_shape = inputs['generator_input'][0,...,0].shape + (noise_channels,)
+            noise_shape = inputs['lo_res_inputs'][0,...,0].shape + (noise_channels,)
             noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size)
         elif mode == 'VAEGAN':
-            noise_shape = inputs['generator_input'][0,...,0].shape + (latent_variables,)
+            noise_shape = inputs['lo_res_inputs'][0,...,0].shape + (latent_variables,)
             noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size)
         if mode == 'VAEGAN':
             # call encoder once
-            mean, logvar = gen.encoder([inputs['generator_input'], inputs['constants']])       
+            mean, logvar = gen.encoder([inputs['lo_res_inputs'], inputs['constants']])       
         for j in range(num_samples):
             inputs['noise_input'] = noise_gen()
             if mode == 'GAN':
-                gan_inputs = [inputs['generator_input'], inputs['constants'], inputs['noise_input']]
+                gan_inputs = [inputs['lo_res_inputs'], inputs['hi_res_inputs'], inputs['noise_input']]
                 pred_ensemble.append(data.denormalise(gen.predict(gan_inputs)))
                 print(f"sample number {i+1}")
                 print(f"max predicted value is {np.amax(data.denormalise(gen.predict(gan_inputs)))}")
             elif mode == 'VAEGAN':
-                dec_inputs = [mean, logvar, inputs['noise_input'], inputs['constants']]
+                dec_inputs = [mean, logvar, inputs['noise_input'], inputs['hi_res_inputs']]
                 pred_ensemble.append(data.denormalise(gen.decoder.predict(dec_inputs)))
         pred_ensemble = np.array(pred_ensemble)
         pred.append(pred_ensemble)
@@ -198,15 +198,15 @@ for i in range(num_predictions):
     (inp,outp) = next(data_ecpoint_iter)        
     ## ecPoint prediction
     if args.include_ecPoint:
-        seq_ecpoint.append(np.mean(benchmarks.ecpointPDFmodel(inp['generator_input']),axis=-1))
+        seq_ecpoint.append(np.mean(benchmarks.ecpointPDFmodel(inp['lo_res_inputs']),axis=-1))
     else:
         seq_ecpoint.append(dummy)
     if args.include_RainFARM:
-        seq_rainfarm.append(benchmarks.rainfarmmodel(inp['generator_input'][...,1]))
+        seq_rainfarm.append(benchmarks.rainfarmmodel(inp['lo_res_inputs'][...,1]))
     else:
         seq_rainfarm.append(dummy)
     if args.include_Lanczos:
-        seq_lanczos.append(benchmarks.lanczosmodel(inp['generator_input'][...,1]))
+        seq_lanczos.append(benchmarks.lanczosmodel(inp['lo_res_inputs'][...,1]))
     else:
         seq_lanczos.append(dummy)
 

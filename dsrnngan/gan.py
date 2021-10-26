@@ -61,14 +61,14 @@ class WGANGP(object):
 
         # find shapes for inputs
         if self.mode == 'GAN':
-            cond_shapes = input_shapes(self.gen, "generator_input")
-            const_shapes = input_shapes(self.gen, "const_input")
+            cond_shapes = input_shapes(self.gen, "lo_res_inputs")
+            const_shapes = input_shapes(self.gen, "hi_res_inputs")
             noise_shapes = input_shapes(self.gen, "noise_input")
         elif self.mode == 'VAEGAN':
-            cond_shapes = input_shapes(self.gen.encoder, "generator_input")
-            const_shapes = input_shapes(self.gen.encoder, "const_input")
+            cond_shapes = input_shapes(self.gen.encoder, "lo_res_inputs")
+            const_shapes = input_shapes(self.gen.encoder, "hi_res_inputs")
             noise_shapes = input_shapes(self.gen.decoder, "noise_input")
-        sample_shapes = input_shapes(self.disc, "generator_output")
+        sample_shapes = input_shapes(self.disc, "output")
         
         # Create generator training network
         with Nontrainable(self.disc):
@@ -95,10 +95,10 @@ class WGANGP(object):
 
         # Create discriminator training network
         with Nontrainable(self.gen):
-            cond_in = [Input(shape=s,name='generator_input') for s in cond_shapes]
-            const_in = [Input(shape=s,name='constants') for s in const_shapes]
+            cond_in = [Input(shape=s,name='lo_res_inputs') for s in cond_shapes]
+            const_in = [Input(shape=s,name='hi_res_inputs') for s in const_shapes]
             noise_in = [Input(shape=s,name='noise_input') for s in noise_shapes]
-            sample_in = [Input(shape=s,name='generator_output') for s in sample_shapes]
+            sample_in = [Input(shape=s,name='output') for s in sample_shapes]
             gen_in = cond_in + const_in + noise_in
             disc_in_real = sample_in[0]
             if self.mode == 'GAN':

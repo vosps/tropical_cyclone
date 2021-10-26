@@ -21,10 +21,10 @@ def generator(mode,
 
     # Network inputs
     # low resolution condition
-    generator_input = Input(shape=(None, None, input_channels), name="generator_input")
+    generator_input = Input(shape=(None, None, input_channels), name="lo_res_inputs")
     print(f"generator_input shape: {generator_input.shape}")
     # constant fields
-    const_input = Input(shape=(None, None, constant_fields), name="const_input")
+    const_input = Input(shape=(None, None, constant_fields), name="hi_res_inputs")
     print(f"constants_input shape: {const_input.shape}")
 
     # Convolve constant fields down to match other input dimensions
@@ -84,7 +84,7 @@ def generator(mode,
     print(f"Shape after third residual block: {generator_output.shape}")
 
     # Output layer
-    generator_output = Conv2D(filters=1, kernel_size=(1, 1), activation='softplus', name="generator_output")(generator_output)
+    generator_output = Conv2D(filters=1, kernel_size=(1, 1), activation='softplus', name="output")(generator_output)
     print(f"Output shape: {generator_output.shape}")
 
     if mode == 'VAEGAN':
@@ -109,13 +109,13 @@ def discriminator(input_channels=9,
 
     # Network inputs
     # low resolution condition
-    generator_input = Input(shape=(None, None, input_channels), name="generator_input")
+    generator_input = Input(shape=(None, None, input_channels), name="lo_res_inputs")
     print(f"generator_input shape: {generator_input.shape}")
     # constant fields
-    const_input = Input(shape=(None, None, constant_fields), name="constants")
+    const_input = Input(shape=(None, None, constant_fields), name="hi_res_inputs")
     print(f"constants_input shape: {const_input.shape}")
     # target image
-    generator_output = Input(shape=(None, None, 1), name="generator_output")
+    generator_output = Input(shape=(None, None, 1), name="output")
     print(f"generator_output shape: {generator_output.shape}")
 
     # convolve down constant fields to match ERA

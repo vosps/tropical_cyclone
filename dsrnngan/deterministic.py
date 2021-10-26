@@ -37,8 +37,8 @@ class Deterministic(object):
     def build_deterministic(self):
 
         # find shapes for inputs
-        cond_shapes = input_shapes(self.gen, "generator_input")
-        const_shapes = input_shapes(self.gen, "const")
+        cond_shapes = input_shapes(self.gen, "lo_res_inputs")
+        const_shapes = input_shapes(self.gen, "hi_res_inputs")
 
         # Create generator training network
         cond_in = [Input(shape=s) for s in cond_shapes]

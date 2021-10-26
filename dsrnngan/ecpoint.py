@@ -414,11 +414,11 @@ def crps(data_generator, ecpointcdf, log=False):
     for i in range(data_generator.__len__()):
         print(i)
         dta = data_generator.__getitem__(i)
-        pred = predictupscalecdf(dta[0]['generator_input'], cdf=ecpointcdf, logout=log)
+        pred = predictupscalecdf(dta[0]['lo_res_inputs'], cdf=ecpointcdf, logout=log)
         if log:
-            scr = ps.crps_ensemble(np.log10(1+dta[1]['generator_output']), pred)
+            scr = ps.crps_ensemble(np.log10(1+dta[1]['output']), pred)
         else:
-            scr = ps.crps_ensemble(dta[1]['generator_output'], pred)
+            scr = ps.crps_ensemble(dta[1]['output'], pred)
         totscore += scr.mean()
     totscore /= data_generator.__len__()
     return totscore
