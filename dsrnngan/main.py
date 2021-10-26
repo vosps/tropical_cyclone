@@ -19,7 +19,7 @@ import roc
 # necessary for plot rank histograms. these are large files, so quasi-random
 # selection used to avoid storing gigabytes of data
 # TODO: this could live in .yaml file, but leave here for now
-ranks_to_save = [124800, 198400, 240000, 320000]
+ranks_to_save = [128000, 192000, 256000, 320000]
 
 
 if __name__ == "__main__":
@@ -267,14 +267,12 @@ if __name__ == "__main__":
     if args.evalnum == "blitz":
         model_numbers = ranks_to_save.copy()  # should not be modifying list in-place, but just in case!
     elif args.evalnum == "short":
-        # hand-picked set of 16; 4 lots of 4 consecutive epochs including
+        # hand-picked set of 12; 2 lots of 6 consecutive epochs including
         # the default ranks_to_save
-        # this assumes 100 'epochs', may want to generalise?!
+        # this assumes 25 'epochs', may want to generalise?!
         interval = steps_per_epoch * batch_size
-        model_numbers = [37*interval, 38*interval, 39*interval, 40*interval,
-                         59*interval, 60*interval, 61*interval, 62*interval,
-                         75*interval, 76*interval, 77*interval, 78*interval,
-                         97*interval, 98*interval, 99*interval, 100*interval]
+        model_numbers = [10*interval, 11*interval, 12*interval, 13*interval, 14*interval, 15*interval,
+                         20*interval, 21*interval, 22*interval, 23*interval, 24*interval, 25*interval]
     elif args.evalnum == "tenth":  # every 10th; does NOT include fav numbers
         interval = steps_per_epoch * batch_size
         model_numbers = np.arange(0, num_samples + 1, 10*interval)[1:].tolist()
@@ -364,53 +362,51 @@ if __name__ == "__main__":
     # all these are hardcoded to Lucy's favourite numbers; will need
     # to change for e.g. eval_tenth
     if args.plot_ranks_small:
-        if add_noise:
-            noise_label = "noise"
-            rank_metrics_files_1 = ["{}/ranks-noise-124800.npz".format(log_folder), "{}/ranks-noise-198400.npz".format(log_folder)]
-            rank_metrics_files_2 = ["{}/ranks-noise-240000.npz".format(log_folder), "{}/ranks-noise-320000.npz".format(log_folder)]
-            labels_1 = ['noise-124800', 'noise-198400']
-            labels_2 = ['noise-240000', 'noise-320000']
-            name_1 = 'noise-early-small_image'
-            name_2 = 'noise-late-small_image'
-        else:
-            noise_label = "no_noise"
-            rank_metrics_files_1 = ["{}/ranks-no-noise-124800.npz".format(log_folder), "{}/ranks-no-noise-198400.npz".format(log_folder)]
-            rank_metrics_files_2 = ["{}/ranks-no-noise-240000.npz".format(log_folder), "{}/ranks-no-noise-320000.npz".format(log_folder)]
-            labels_1 = ['no-noise-124800', 'no-noise-198400']
-            labels_2 = ['no-noise-240000', 'no-noise-320000']
-            name_1 = 'no-noise-early-small_image'
-            name_2 = 'no-noise-late-small_image'
+        noise_label = "noise" if add_noise else "no-noise"
+        rank_metrics_files_1 = ["{}/ranks-{}-{}.npz".format(log_folder, noise_label, ranks_to_save[0]),
+                                "{}/ranks-{}-{}.npz".format(log_folder, noise_label, ranks_to_save[1])]
+        rank_metrics_files_2 = ["{}/ranks-{}-{}.npz".format(log_folder, noise_label, ranks_to_save[2]),
+                                "{}/ranks-{}-{}.npz".format(log_folder, noise_label, ranks_to_save[3])]
+        labels_1 = ['{}-{}'.format(noise_label, ranks_to_save[0]),
+                    '{}-{}'.format(noise_label, ranks_to_save[1])]
+        labels_2 = ['{}-{}'.format(noise_label, ranks_to_save[2]),
+                    '{}-{}'.format(noise_label, ranks_to_save[3])]
+        name_1 = '{}-early-small_image'.format(noise_label)
+        name_2 = '{}-late-small_image'.format(noise_label)
+
         plots.plot_rank_histogram_all(rank_files=rank_metrics_files_1,
                                       labels=labels_1,
                                       log_path=log_folder,
-                                      name=name_1)
+                                      name=name_1,
+                                      N_ranks=11)
         plots.plot_rank_histogram_all(rank_files=rank_metrics_files_2,
                                       labels=labels_2,
                                       log_path=log_folder,
-                                      name=name_2)
+                                      name=name_2,
+                                      N_ranks=11)
     if args.plot_ranks_full:
-        if add_noise:
-            rank_metrics_files_1 = ["{}/ranks-full_image-noise-124800.npz".format(log_folder), "{}/ranks-full_image-noise-198400.npz".format(log_folder)]
-            rank_metrics_files_2 = ["{}/ranks-full_image-noise-240000.npz".format(log_folder), "{}/ranks-full_image-noise-320000.npz".format(log_folder)]
-            labels_1 = ['noise-124800', 'noise-198400']
-            labels_2 = ['noise-240000', 'noise-320000']
-            name_1 = 'noise-early-full_image'
-            name_2 = 'noise-late-full_image'
-        else:
-            rank_metrics_files_1 = ["{}/ranks-full_image-no-noise-124800.npz".format(log_folder), "{}/ranks-full_image-no-noise-198400.npz".format(log_folder)]
-            rank_metrics_files_2 = ["{}/ranks-full_image-no-noise-240000.npz".format(log_folder), "{}/ranks-full_image-no-noise-320000.npz".format(log_folder)]
-            labels_1 = ['no-noise-124800', 'no-noise-198400']
-            labels_2 = ['no-noise-240000', 'no-noise-320000']
-            name_1 = 'no-noise-early-full_image'
-            name_2 = 'no-noise-late-full_image'
+        noise_label = "noise" if add_noise else "no-noise"
+        rank_metrics_files_1 = ["{}/ranks-full_image-{}-{}.npz".format(log_folder, noise_label, ranks_to_save[0]),
+                                "{}/ranks-full_image-{}-{}.npz".format(log_folder, noise_label, ranks_to_save[1])]
+        rank_metrics_files_2 = ["{}/ranks-full_image-{}-{}.npz".format(log_folder, noise_label, ranks_to_save[2]),
+                                "{}/ranks-full_image-{}-{}.npz".format(log_folder, noise_label, ranks_to_save[3])]
+        labels_1 = ['{}-{}'.format(noise_label, ranks_to_save[0]),
+                    '{}-{}'.format(noise_label, ranks_to_save[1])]
+        labels_2 = ['{}-{}'.format(noise_label, ranks_to_save[2]),
+                    '{}-{}'.format(noise_label, ranks_to_save[3])]
+        name_1 = '{}-early-full_image'.format(noise_label)
+        name_2 = '{}-late-full_image'.format(noise_label)
+
         plots.plot_rank_histogram_all(rank_files=rank_metrics_files_1,
                                       labels=labels_1,
                                       log_path=log_folder,
-                                      name=name_1)
+                                      name=name_1,
+                                      N_ranks=11)
         plots.plot_rank_histogram_all(rank_files=rank_metrics_files_2,
                                       labels=labels_2,
                                       log_path=log_folder,
-                                      name=name_2)
+                                      name=name_2,
+                                      N_ranks=11)
 
     if args.plot_roc_small:
         predict_full_image = False

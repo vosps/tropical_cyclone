@@ -22,7 +22,7 @@ TRAIN:
     train_years: [2016, 2017, 2018] 
     training_weights: [0.4, 0.3, 0.2, 0.1]
     num_samples: 320000
-    steps_per_epoch: 200
+    steps_per_epoch: 800
     batch_size: 16
     kl_weight: 1e-8 # used for VAEGAN
 
