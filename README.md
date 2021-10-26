@@ -96,5 +96,17 @@ now you have to use predict.py. Sorry.
 file. You can then use the config.yaml file to call a different model
 architecture. We recommend not deleting the old one just yet.
 
-6. This is research code so please let us know if something is wrong and
+6. run_benchmarks.py will generate benchmark scores for CRPS, RMSE, MAE
+and RAPSD for the specified benchmark models (input arguments). We have
+set this up to use the same evaluation setup as the NN models but note
+the benchmark evaluation uses 100 ensemble members (NN default is 10 for
+time & memory reasons). So, for a proper comparison you *must* evaluate
+your model and specify 100 ensemble members.
+
+For example:
+python run_benchmarks.py --log_folder /path/to/model --include_Lanczos 
+--include_ecPoint --include_RainFARM --include_ecPoint_mean 
+--include_constant --include_zeros
+
+7. This is research code so please let us know if something is wrong and
 also note that it definitely isn't perfect :)
