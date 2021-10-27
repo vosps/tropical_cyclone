@@ -2,15 +2,16 @@ import matplotlib
 matplotlib.use("Agg")
 import plots
 
-log_path ='/ppdata/lucy-cGAN/logs/IFS/gen_256_disc_512/noise_4/weights_4x'
+log_path ='/ppdata/lucy-cGAN/logs/IFS/GAN/weights_natural'
 added_noise = True
 full_image = True
+ranks = [124800, 198400, 240000, 32000]
 
 if added_noise and not full_image:
-    rank_metrics_files_1 = ["{}/ranks-noise-124800.npz".format(log_path), "{}/ranks-noise-198400.npz".format(log_path)]
-    rank_metrics_files_2 = ["{}/ranks-noise-240000.npz".format(log_path), "{}/ranks-noise-320000.npz".format(log_path)]
-    labels_1 = ['noise-124800', 'noise-198400']
-    labels_2 = ['noise-240000', 'noise-320000']
+    rank_metrics_files_1 = ["{}/ranks-noise-{}.npz".format(log_path, ranks[0]), "{}/ranks-noise-{}.npz".format(log_path, ranks[1])]
+    rank_metrics_files_2 = ["{}/ranks-noise-{}.npz".format(log_path, ranks[2]), "{}/ranks-noise-{}.npz".format(log_path, ranks[3])]
+    labels_1 = ['noise-{}'.format(ranks[0]), 'noise-{}'.format(ranks[1])]
+    labels_2 = ['noise-{}'.format(ranks[2]), 'noise-{}'.format(ranks[3])]
     name_1 = 'noise-early-small_image'
     name_2 = 'noise-late-small_image'
 elif not added_noise and not full_image:
@@ -35,5 +36,5 @@ elif not added_noise and full_image:
     name_1 = 'no-noise-early-full_image'
     name_2 = 'no-noise-late-full_image'
 
-plots.plot_rank_histogram_all(rank_metrics_files_1, labels_1, log_path, name_1)
-plots.plot_rank_histogram_all(rank_metrics_files_2, labels_2, log_path, name_2)
+plots.plot_rank_histogram_all(rank_metrics_files_1, labels_1, log_path, name_1, N_ranks=11)
+plots.plot_rank_histogram_all(rank_metrics_files_2, labels_2, log_path, name_2, N_ranks=11)
