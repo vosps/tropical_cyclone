@@ -161,7 +161,7 @@ if args.include_ecPoint:
                                                                 np.array(rmse_ecpoint).mean(),
                                                                 np.array(mae_ecpoint).mean()))
 if args.include_ecPoint_mean:        
-    log_line(log_fname, "{} {:.6f} {:.6f} {:.6f} {:.6f}".format('ecPoint',
+    log_line(log_fname, "{} {:.6f} {:.6f} {:.6f} {:.6f}".format('ecPoint mean',
                                                                 np.array(crps_ecpoint_mean).mean(),
                                                                 np.array(rmse_ecpoint_mean).mean(),
                                                                 np.array(mae_ecpoint_mean).mean(),
