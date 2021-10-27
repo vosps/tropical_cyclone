@@ -63,19 +63,19 @@ def _parse_batch(record_batch,insize=(10,10,9),consize=(100,100,2),
                  outsize=(100,100,1)):
     # Create a description of the features
     feature_description = {
-        'lo_res_inputs': tf.io.FixedLenFeature(insize, tf.float32),
-        'hi_res_inputs': tf.io.FixedLenFeature(consize, tf.float32),
-        'output': tf.io.FixedLenFeature(outsize, tf.float32),
+        'generator_input': tf.io.FixedLenFeature(insize, tf.float32),
+        'constants': tf.io.FixedLenFeature(consize, tf.float32),
+        'generator_output': tf.io.FixedLenFeature(outsize, tf.float32),
     }
 
     # Parse the input `tf.Example` proto using the dictionary above
     example = tf.io.parse_example(record_batch, feature_description)
     if return_dic:
-        return ({'lo_res_inputs': example['lo_res_inputs'],
-                 'hi_res_inputs': example['hi_res_inputs']},
-                {'output': example['output']})
+        return ({'lo_res_inputs': example['generator_input'],
+                 'hi_res_inputs': example['constants']},
+                {'output': example['generator_output']})
     else:
-        return example['lo_res_inputs'], example['hi_res_inputs'], example['output']
+        return example['generator_input'], example['constants'], example['generator_output']
 
 
 def create_dataset(year,clss,era_shape=(10,10,9),con_shape=(100,100,2),out_shape=(100,100,1),

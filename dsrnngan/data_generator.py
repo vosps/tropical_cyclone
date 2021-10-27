@@ -41,14 +41,14 @@ class DataGenerator(Sequence):
 
         if self.constants is None:
             if return_dic:
-                return {"lo_res_inputs": data_x_batch}, {"output": data_y_batch}
+                return {"generator_input": data_x_batch}, {"generator_output": data_y_batch}
             else:
                 return data_x_batch, data_y_batch
         else:
             if return_dic:
-                return {"lo_res_inputs": data_x_batch,
-                        "hi_res_inputs": self.constants},\
-                        {"output": data_y_batch}
+                return {"generator_input": data_x_batch,
+                        "constants": self.constants},\
+                        {"generator_output": data_y_batch}
             else:
                 return data_x_batch, self.constants, data_y_batch
 
