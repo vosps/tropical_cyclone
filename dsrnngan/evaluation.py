@@ -299,9 +299,9 @@ def rank_metrics_by_time(*,
 
             if model_number in ranks_to_save:
                 if add_noise is False and load_full_image is False:
-                    fname = 'ranks-{}.npz'.format(model_number)
+                    fname = 'ranks-small_image-{}.npz'.format(model_number)
                 elif add_noise is True and load_full_image is False:
-                    fname = 'ranks-noise-{}.npz'.format(model_number)
+                    fname = 'ranks-small_image-noise-{}.npz'.format(model_number)
                 elif add_noise is False and load_full_image is True:
                     fname = 'ranks-full_image-{}.npz'.format(model_number)
                 elif add_noise is True and load_full_image is True:

@@ -2,10 +2,10 @@ import matplotlib
 matplotlib.use("Agg")
 import plots
 
-log_path ='/ppdata/lucy-cGAN/logs/IFS/GAN/weights_natural'
+log_path ='/ppdata/lucy-cGAN/logs/IFS/GAN/weights_2x'
 added_noise = True
-full_image = True
-ranks = [124800, 198400, 240000, 32000]
+full_image = False
+ranks = [124800, 198400, 240000, 320000]
 
 if added_noise:
     noise_label = "noise"
@@ -13,9 +13,9 @@ else:
     noise_label = "no-noise"
     
 if full_image:
-    image_label = "full"
+    image_label = "full_image"
 else:
-    image_label = "small"
+    image_label = "small_image"
 
 
 rank_metrics_files_1 = ["{}/ranks-{}-{}-{}.npz".format(log_path, image_label, noise_label, ranks[0]), 
