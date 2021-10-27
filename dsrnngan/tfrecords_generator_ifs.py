@@ -71,8 +71,9 @@ def _parse_batch(record_batch,insize=(10,10,9),consize=(100,100,2),
     # Parse the input `tf.Example` proto using the dictionary above
     example = tf.io.parse_example(record_batch, feature_description)
     if return_dic:
-        return {'lo_res_inputs':example['lo_res_inputs'], 'hi_res_inputs':example['hi_res_inputs']},\
-            {'lo_res_inputs':example['lo_res_inputs']}
+        return ({'lo_res_inputs': example['lo_res_inputs'],
+                 'hi_res_inputs': example['hi_res_inputs']},
+                {'output': example['output']})
     else:
         return example['lo_res_inputs'], example['hi_res_inputs'], example['output']
 
