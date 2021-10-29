@@ -480,12 +480,12 @@ def log_spectral_distance_batch(batch1, batch2):
 def calculate_rapsd_rmse(truth, pred):
     ## avoid producing inf values
     if truth.max() <= 0.1:
-        return None
+        return NaN
     fft_freq_truth = rapsd(truth, fft_method=np.fft)
     fft_freq_pred = rapsd(pred, fft_method=np.fft)
-    truth = 10* np.log10(fft_freq_truth)
+    truth = 10 * np.log10(fft_freq_truth)
     pred = 10 * np.log10(fft_freq_pred)
-    rmse = np.sqrt(np.mean((truth-pred)**2))
+    rmse = np.sqrt(np.nanmean((truth-pred)**2))
     return rmse
 
 def rapsd_batch(batch1, batch2):
