@@ -196,7 +196,6 @@ if __name__ == "__main__":
                                          plot_samples=val_size,
                                          plot_fn=plot_fname)
 
-            loss_log = np.mean(loss_log, axis=0)
             training_samples += steps_per_epoch * batch_size
 
             if epoch == 1:

@@ -177,7 +177,6 @@ class WGANGP(object):
         gen_target = disc_target_real
         target_gp = np.zeros((batch_size, 1), dtype=np.float32)
         disc_target = [disc_target_real, disc_target_fake, target_gp]
-        loss_log = []
 
         batch_gen_iter = iter(batch_gen)
 
