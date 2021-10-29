@@ -249,9 +249,9 @@ class WGANGP(object):
                 loss_log["disc_loss_real"] = disc_loss[1]
                 loss_log["disc_loss_fake"] = disc_loss[2]
                 loss_log["disc_loss_gp"] = disc_loss[3]
-                loss_log["gen_loss_total"] = gen_loss[0]
-                loss_log["gen_loss_disc"] = gen_loss[1]
-                loss_log["gen_loss_kl"] = gen_loss[2]
+                loss_log["gen_loss_total"] = gen_loss[0].numpy()
+                loss_log["gen_loss_disc"] = gen_loss[1].numpy()
+                loss_log["gen_loss_kl"] = gen_loss[2].numpy()
             gc.collect()
 
         return loss_log
