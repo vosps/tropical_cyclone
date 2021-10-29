@@ -86,7 +86,6 @@ want to do some evaluation on specific models only, you can use the scripts
 - run_eval.py
 - run_qual.py
 - run_roc.py
-- plot_histograms.py
 
 You'll have to open them and hardcode file paths and model numbes at the
 top. I also made a plot_comparisons.py at one point but I've deleted it so
