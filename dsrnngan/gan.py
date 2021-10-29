@@ -227,17 +227,32 @@ class WGANGP(object):
                 losses = []
                 for (i,dl) in enumerate(disc_loss):
                     losses.append(("D{}".format(i), dl))
-                if self.mode == 'GAN':
-                    for (i,gl) in enumerate(gen_loss):
-                        losses.append(("G{}".format(i), gl))
-                elif self.mode == 'VAEGAN':
-                    for (i,gl) in enumerate(gen_loss):
-                        losses.append(("G{}".format(i), gl))
+                for (i,gl) in enumerate(gen_loss):
+                    losses.append(("G{}".format(i), gl))
+
                 progbar.add(batch_size, 
                     values=losses)
 
-            loss_log.append(np.hstack((disc_loss,gen_loss)))
-
+            loss_log = {}
+            if self.mode == "det":
+                pass  # uh, fixup?
+            elif self.mode == "GAN":
+                loss_log["disc_loss"] = disc_loss[0]
+                loss_log["disc_loss_real"] = disc_loss[1]
+                loss_log["disc_loss_fake"] = disc_loss[2]
+                loss_log["disc_loss_gp"] = disc_loss[3]
+                loss_log["gen_loss_total"] = gen_loss[0]
+                if self.ensemble_size is not None:
+                    loss_log["gen_loss_disc"] = gen_loss[1]
+                    loss_log["gen_loss_ct"] = gen_loss[2]
+            elif self.mode == "VAEGAN":
+                loss_log["disc_loss"] = disc_loss[0]
+                loss_log["disc_loss_real"] = disc_loss[1]
+                loss_log["disc_loss_fake"] = disc_loss[2]
+                loss_log["disc_loss_gp"] = disc_loss[3]
+                loss_log["gen_loss_total"] = gen_loss[0]
+                loss_log["gen_loss_disc"] = gen_loss[1]
+                loss_log["gen_loss_kl"] = gen_loss[2]
             gc.collect()
 
-        return np.array(loss_log)
+        return loss_log

@@ -177,23 +177,6 @@ if __name__ == "__main__":
             training_samples = 0
 
             log_file = os.path.join(log_folder, "log.txt")
-            # TODO: does VAEGAN need more?
-            if mode == "GAN":
-                log = pd.DataFrame(
-                    columns=["training_samples",
-                             "disc_loss", "disc_loss_real",
-                             "disc_loss_fake", "disc_loss_gp",
-                             "gen_loss"])
-            elif mode == "det":
-                log = pd.DataFrame(columns=["training_samples",
-                                            "loss"])
-            elif mode == "VAEGAN":
-                log = pd.DataFrame(
-                    columns=["training_samples",
-                             "disc_loss", "disc_loss_real",
-                             "disc_loss_fake", "disc_loss_gp",
-                             "gen_loss_total",
-                             "gen_loss_disc", "gen_loss_kl"])
 
         plot_fname = os.path.join(log_folder, "progress.pdf")
 
@@ -215,6 +198,12 @@ if __name__ == "__main__":
 
             loss_log = np.mean(loss_log, axis=0)
             training_samples += steps_per_epoch * batch_size
+
+            if epoch == 1:
+                # set up log DataFrame based on loss_log entries
+                col_names = ["training_samples"] + [foo for foo in loss_log]
+                log = pd.DataFrame(columns=col_names)
+
             epoch += 1
 
             # save results
@@ -225,33 +214,11 @@ if __name__ == "__main__":
             with open(os.path.join(log_folder, "run_status.json"), 'w') as f:
                 json.dump(run_status, f)
 
-            if mode == "GAN":
-                log = log.append(pd.DataFrame(data={
-                    "training_samples": [training_samples],
-                    "disc_loss": [loss_log[0]],
-                    "disc_loss_real": [loss_log[1]],
-                    "disc_loss_fake": [loss_log[2]],
-                    "disc_loss_gp": [loss_log[3]],
-                    "gen_loss": [loss_log[4]]
-                }))
-            elif mode == "det":
-                log = log.append(pd.DataFrame(data={
-                    "training_samples": [training_samples],
-                    "loss": [loss_log],
-                }))
-            elif mode == "VAEGAN":
-                log = log.append(pd.DataFrame(data={
-                    "training_samples": [training_samples],
-                    "disc_loss": [loss_log[0]],
-                    "disc_loss_real": [loss_log[1]],
-                    "disc_loss_fake": [loss_log[2]],
-                    "disc_loss_gp": [loss_log[3]],
-                    "gen_loss_total": [loss_log[4]],
-                    "gen_loss_disc": [loss_log[5]],
-                    "gen_loss_kl": [loss_log[6]]
-                }))
-            else:
-                assert False
+            data = {"training_samples": [training_samples]}
+            for foo in loss_log:
+                data[foo] = loss_log[foo]
+
+            log = log.append(pd.DataFrame(data=data))
             log.to_csv(log_file, index=False, float_format="%.6f")
 
             # Save model weights each epoch
