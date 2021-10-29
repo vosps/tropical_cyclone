@@ -363,54 +363,12 @@ if __name__ == "__main__":
                                         noise_channels=noise_channels,
                                         rank_samples=10)
 
-    # all these are hardcoded to Lucy's favourite numbers; will need
-    # to change for e.g. eval_tenth
     if args.plot_ranks_small:
-        noise_label = "noise" if add_noise else "no-noise"
-        rank_metrics_files_1 = ["{}/ranks-small_image-{}-{}.npz".format(log_folder, noise_label, ranks_to_save[0]),
-                                "{}/ranks-small_image-{}-{}.npz".format(log_folder, noise_label, ranks_to_save[1])]
-        rank_metrics_files_2 = ["{}/ranks-small_image-{}-{}.npz".format(log_folder, noise_label, ranks_to_save[2]),
-                                "{}/ranks-small_image-{}-{}.npz".format(log_folder, noise_label, ranks_to_save[3])]
-        labels_1 = ['{}-{}'.format(noise_label, ranks_to_save[0]),
-                    '{}-{}'.format(noise_label, ranks_to_save[1])]
-        labels_2 = ['{}-{}'.format(noise_label, ranks_to_save[2]),
-                    '{}-{}'.format(noise_label, ranks_to_save[3])]
-        name_1 = '{}-early-small_image'.format(noise_label)
-        name_2 = '{}-late-small_image'.format(noise_label)
-
-        plots.plot_rank_histogram_all(rank_files=rank_metrics_files_1,
-                                      labels=labels_1,
-                                      log_path=log_folder,
-                                      name=name_1,
-                                      N_ranks=11)
-        plots.plot_rank_histogram_all(rank_files=rank_metrics_files_2,
-                                      labels=labels_2,
-                                      log_path=log_folder,
-                                      name=name_2,
-                                      N_ranks=11)
+        plots.plot_histograms(log_folder, ranks=ranks_to_save, N_ranks=11, 
+                              add_noise=add_noise, full_image=False)
     if args.plot_ranks_full:
-        noise_label = "noise" if add_noise else "no-noise"
-        rank_metrics_files_1 = ["{}/ranks-full_image-{}-{}.npz".format(log_folder, noise_label, ranks_to_save[0]),
-                                "{}/ranks-full_image-{}-{}.npz".format(log_folder, noise_label, ranks_to_save[1])]
-        rank_metrics_files_2 = ["{}/ranks-full_image-{}-{}.npz".format(log_folder, noise_label, ranks_to_save[2]),
-                                "{}/ranks-full_image-{}-{}.npz".format(log_folder, noise_label, ranks_to_save[3])]
-        labels_1 = ['{}-{}'.format(noise_label, ranks_to_save[0]),
-                    '{}-{}'.format(noise_label, ranks_to_save[1])]
-        labels_2 = ['{}-{}'.format(noise_label, ranks_to_save[2]),
-                    '{}-{}'.format(noise_label, ranks_to_save[3])]
-        name_1 = '{}-early-full_image'.format(noise_label)
-        name_2 = '{}-late-full_image'.format(noise_label)
-
-        plots.plot_rank_histogram_all(rank_files=rank_metrics_files_1,
-                                      labels=labels_1,
-                                      log_path=log_folder,
-                                      name=name_1,
-                                      N_ranks=11)
-        plots.plot_rank_histogram_all(rank_files=rank_metrics_files_2,
-                                      labels=labels_2,
-                                      log_path=log_folder,
-                                      name=name_2,
-                                      N_ranks=11)
+        plots.plot_histograms(log_folder, ranks=ranks_to_save, N_ranks=11, 
+                              add_noise=add_noise, full_image=True)
 
     if args.plot_roc_small:
         predict_full_image = False

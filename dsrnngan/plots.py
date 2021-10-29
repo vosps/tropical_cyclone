@@ -259,6 +259,22 @@ def plot_rank_histogram_all(rank_files, labels, log_path, name, N_ranks=101):
     plt.savefig("{}/rank-distribution-{}.pdf".format(log_path, name), bbox_inches='tight')
     plt.close()
 
+def plot_histograms(log_folder, ranks, N_ranks, add_noise=False, full_image=False):
+    noise_label = "noise" if add_noise else "no-noise"
+    image_label = "full_image" if full_image else "small_image"
+
+    rank_metrics_files_1 = ["{}/ranks-{}-{}-{}.npz".format(log_folder, image_label, noise_label, ranks[0]), 
+                            "{}/ranks-{}-{}-{}.npz".format(log_folder, image_label, noise_label, ranks[1])]
+    rank_metrics_files_2 = ["{}/ranks-{}-{}-{}.npz".format(log_folder, image_label, noise_label, ranks[2]), 
+                            "{}/ranks-{}-{}-{}.npz".format(log_folder, image_label, noise_label, ranks[3])]
+    labels_1 = ['{}-{}'.format(noise_label, ranks[0]), '{}-{}'.format(noise_label, ranks[1])]
+    labels_2 = ['{}-{}'.format(noise_label, ranks[2]), '{}-{}'.format(noise_label, ranks[3])]
+    name_1 = '{}-early-{}'.format(noise_label, image_label)
+    name_2 = '{}-late-{}'.format(noise_label, image_label)
+    
+    plot_rank_histogram_all(rank_metrics_files_1, labels_1, log_folder, name_1, N_ranks=N_ranks)
+    plot_rank_histogram_all(rank_metrics_files_2, labels_2, log_folder, name_2, N_ranks=N_ranks)
+
 def gridplot(models, model_labels=None,
              vmin = 0, vmax = 1):
     nx=models[0].shape[0]
