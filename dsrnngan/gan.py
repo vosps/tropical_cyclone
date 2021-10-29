@@ -85,7 +85,7 @@ class WGANGP(object):
                     for i in tf.range(self.ensemble_size):
                         noise_in += [Input(shape=s) for s in noise_shapes]
                     #pred_noise_in = [Input(shape=s) for s in pred_noise_shapes]
-                    #gen_in = cond_in + const_in + noise_in + pred_noise_in
+                    gen_in = cond_in + const_in + noise_in + pred_noise_in
                 else:
                     gen_in = cond_in + const_in + noise_in
                 gen_out = self.gen(gen_in[0:3])  # only use cond/const/noise
