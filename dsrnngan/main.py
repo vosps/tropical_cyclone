@@ -93,6 +93,8 @@ if __name__ == "__main__":
     steps_per_epoch = setup_params["TRAIN"]["steps_per_epoch"]
     batch_size = setup_params["TRAIN"]["batch_size"]
     kl_weight = setup_params["TRAIN"]["kl_weight"]
+    ensemble_size = setup_params["TRAIN"]["ensemble_size"]
+    content_loss_weight = setup_params["TRAIN"]["content_loss_weight"]
     val_years = setup_params["VAL"]["val_years"]
     val_size = setup_params["VAL"]["val_size"]
     num_batches = setup_params["EVAL"]["num_batches"]
@@ -144,7 +146,9 @@ if __name__ == "__main__":
             noise_channels=noise_channels,
             lr_disc=lr_disc,
             lr_gen=lr_gen,
-            kl_weight=kl_weight)
+            kl_weight=kl_weight,
+            ensemble_size=ensemble_size,
+            content_loss_weight=content_loss_weight)
 
         batch_gen_train, batch_gen_valid = setupdata.setup_data(
             train_years=train_years,

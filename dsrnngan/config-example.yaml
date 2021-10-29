@@ -25,6 +25,8 @@ TRAIN:
     steps_per_epoch: 800
     batch_size: 16
     kl_weight: 1e-8 # used for VAEGAN
+    ensemble_size: 8 # size of pred ensemble for content loss
+    content_loss_weight: 1.0
 
 VAL:
     val_years: 2019 # cannot pass a list if using create_fixed_dataset
