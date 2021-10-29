@@ -67,6 +67,8 @@ class WGANGP(object):
             cond_shapes = input_shapes(self.gen, "lo_res_inputs")
             const_shapes = input_shapes(self.gen, "hi_res_inputs")
             noise_shapes = input_shapes(self.gen, "noise_input")
+            #if self.ensemble_size is not None:
+             #   pred_noise_shapes = [noise_shapes[0] + (self.ensemble_size,)]
         elif self.mode == 'VAEGAN':
             cond_shapes = input_shapes(self.gen.encoder, "lo_res_inputs")
             const_shapes = input_shapes(self.gen.encoder, "hi_res_inputs")
@@ -79,10 +81,13 @@ class WGANGP(object):
                 cond_in = [Input(shape=s) for s in cond_shapes]
                 const_in = [Input(shape=s) for s in const_shapes]
                 noise_in = [Input(shape=s) for s in noise_shapes]
-                gen_in = cond_in + const_in + noise_in
                 if self.ensemble_size is not None:
-                    for i in range(self.ensemble_size):
-                        gen_in.append(noise_in)
+                    for i in tf.range(self.ensemble_size):
+                        noise_in += [Input(shape=s) for s in noise_shapes]
+                    #pred_noise_in = [Input(shape=s) for s in pred_noise_shapes]
+                    #gen_in = cond_in + const_in + noise_in + pred_noise_in
+                else:
+                    gen_in = cond_in + const_in + noise_in
                 gen_out = self.gen(gen_in[0:3])  # only use cond/const/noise
                 gen_out = ensure_list(gen_out)
                 disc_in_gen = cond_in + const_in + [gen_out]
@@ -91,7 +96,7 @@ class WGANGP(object):
                 if self.ensemble_size is not None:
                     # generate ensemble of predictions and add mean to gen_trainer output
                     preds = []
-                    for ii in range(self.ensemble_size):
+                    for ii in tf.range(self.ensemble_size):
                         preds.append(self.gen([gen_in[0], gen_in[1], gen_in[3+ii]]))
                     preds = tf.stack(preds)
                     pred_mean = tf.reduce_mean(preds, axis=0)
@@ -208,7 +213,7 @@ class WGANGP(object):
                 if self.mode == 'GAN':
                     gt_inputs = [cond, const, noise_gen()]
                     if self.ensemble_size is not None:
-                        for ii in range(self.ensemble_size):
+                        for ii in tf.range(self.ensemble_size):
                             gt_inputs.append(noise_gen())
                         gen_target.append(sample)
                     gen_loss = self.gen_trainer.train_on_batch(
