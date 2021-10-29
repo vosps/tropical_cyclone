@@ -367,10 +367,10 @@ if __name__ == "__main__":
     # to change for e.g. eval_tenth
     if args.plot_ranks_small:
         noise_label = "noise" if add_noise else "no-noise"
-        rank_metrics_files_1 = ["{}/ranks-{}-{}.npz".format(log_folder, noise_label, ranks_to_save[0]),
-                                "{}/ranks-{}-{}.npz".format(log_folder, noise_label, ranks_to_save[1])]
-        rank_metrics_files_2 = ["{}/ranks-{}-{}.npz".format(log_folder, noise_label, ranks_to_save[2]),
-                                "{}/ranks-{}-{}.npz".format(log_folder, noise_label, ranks_to_save[3])]
+        rank_metrics_files_1 = ["{}/ranks-small_image-{}-{}.npz".format(log_folder, noise_label, ranks_to_save[0]),
+                                "{}/ranks-small_image-{}-{}.npz".format(log_folder, noise_label, ranks_to_save[1])]
+        rank_metrics_files_2 = ["{}/ranks-small_image-{}-{}.npz".format(log_folder, noise_label, ranks_to_save[2]),
+                                "{}/ranks-small_image-{}-{}.npz".format(log_folder, noise_label, ranks_to_save[3])]
         labels_1 = ['{}-{}'.format(noise_label, ranks_to_save[0]),
                     '{}-{}'.format(noise_label, ranks_to_save[1])]
         labels_2 = ['{}-{}'.format(noise_label, ranks_to_save[2]),
