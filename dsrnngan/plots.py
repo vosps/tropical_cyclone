@@ -14,14 +14,14 @@ def plot_img(img, value_range=(np.log10(0.1), np.log10(100)), extent=None):
         norm=colors.Normalize(*value_range), extent=extent)
     plt.gca().tick_params(left=False, bottom=False,
         labelleft=False, labelbottom=False)
-    plt.gca().invert_yaxis
+    plt.gca().invert_yaxis()
 
 def plot_img_log(img, value_range=(0.01, 5), extent=None):
     plt.imshow(img, interpolation='nearest',
         norm=colors.LogNorm(*value_range), extent=extent)
     plt.gca().tick_params(left=False, bottom=False,
         labelleft=False, labelbottom=False)
-    plt.gca().invert_yaxis
+    plt.gca().invert_yaxis()
 
 def plot_sequences(gen, 
                    mode, 
