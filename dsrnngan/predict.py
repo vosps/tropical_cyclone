@@ -179,7 +179,7 @@ for i in range(num_predictions):
             noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size)
         if mode == 'VAEGAN':
             # call encoder once
-            mean, logvar = gen.encoder([inputs['lo_res_inputs'], inputs['constants']])       
+            mean, logvar = gen.encoder([inputs['lo_res_inputs'], inputs['hi_res_inputs']])       
         for j in range(num_samples):
             inputs['noise_input'] = noise_gen()
             if mode == 'GAN':
