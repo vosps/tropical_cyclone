@@ -220,8 +220,9 @@ class WGANGP(object):
                 elif self.mode == 'VAEGAN':
                     gen_loss = self.gen_trainer.train_step(
                         [[cond,const,noise_gen()], gen_target])
+                gen_loss = ensure_list(gen_loss)
                 del sample, cond, const
-                
+
             if show_progress:
                 losses = []
                 for (i,dl) in enumerate(disc_loss):
