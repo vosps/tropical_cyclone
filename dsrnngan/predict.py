@@ -29,7 +29,7 @@ parser.add_argument('--num_predictions', type=int,
 parser.add_argument('--num_samples', type=int,
                     help="size of prediction ensemble", default=3)
 parser.set_defaults(predict_full_image=False)
-parser.set_defaults(plot_rapsd=True)
+parser.set_defaults(plot_rapsd=False)
 parser.set_defaults(include_Lanczos=False)
 parser.set_defaults(include_RainFARM=False)
 parser.set_defaults(include_deterministic=False)
