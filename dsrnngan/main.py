@@ -101,6 +101,8 @@ if __name__ == "__main__":
     num_batches = setup_params["EVAL"]["num_batches"]
     add_noise = setup_params["EVAL"]["add_postprocessing_noise"]
     noise_factor = setup_params["EVAL"]["postprocessing_noise_factor"]
+    max_pooling = setup_params["EVAL"]["max_pooling"]
+    avg_pooling = setup_params["EVAL"]["avg_pooling"]
 
     # otherwise these are of type string, e.g. '1e-5'
     lr_gen = float(lr_gen)
@@ -312,7 +314,9 @@ if __name__ == "__main__":
                                         latent_variables=latent_variables,
                                         noise_channels=noise_channels,
                                         padding=padding,
-                                        rank_samples=10)
+                                        rank_samples=10,
+                                        max_pooling=max_pooling,
+                                        avg_pooling=avg_pooling)
 
     if args.rank_full:
         evaluation.rank_metrics_by_time(mode=mode,
@@ -334,7 +338,9 @@ if __name__ == "__main__":
                                         latent_variables=latent_variables,
                                         noise_channels=noise_channels,
                                         padding=padding,
-                                        rank_samples=10)
+                                        rank_samples=10,
+                                        max_pooling=max_pooling,
+                                        avg_pooling=avg_pooling)
 
     if args.plot_ranks_small:
         plots.plot_histograms(log_folder, ranks=ranks_to_save, N_ranks=11, 

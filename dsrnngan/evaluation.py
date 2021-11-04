@@ -1,4 +1,5 @@
 from tensorflow.python.keras.utils import generic_utils
+from tensorflow.keras.layers import MaxPooling2D, AveragePooling2D
 import os
 import gc
 import numpy as np
@@ -96,10 +97,12 @@ def ensemble_ranks(*,
                    noise_factor=None,
                    normalize_ranks=True,
                    load_full_image=False,
+                   max_pooling=False,
+                   avg_pooling=False,
                    show_progress=True):
 
     ranks = []
-    crps_scores = []
+    crps_scores = {}
     batch_gen_iter = iter(batch_gen)
 
     if mode == "det":
@@ -109,7 +112,7 @@ def ensemble_ranks(*,
         # Initialize progbar and batch counter
         progbar = generic_utils.Progbar(
             num_batches)
-
+    sample_crps = {}
     for k in range(num_batches):
         if load_full_image:
             inputs, outputs = next(batch_gen_iter)
@@ -127,10 +130,24 @@ def ensemble_ranks(*,
             noise_dim_1, noise_dim_2 = sample[0, ..., 0].shape
             noise = np.random.rand(batch_size, noise_dim_1, noise_dim_2, 1)*noise_factor
             sample += noise
-        sample_crps = sample
+        if max_pooling:
+            max_pool_2d_4 = MaxPooling2D(pool_size=(4, 4), strides=(1, 1), padding='valid')
+            sample_max_4 = max_pool_2d_4(sample.copy()).numpy()
+            max_pool_2d_16 = MaxPooling2D(pool_size=(16, 16), strides=(1, 1), padding='valid')
+            sample_max_16 = max_pool_2d_16(sample.copy()).numpy()
+            sample_crps['max_4'] = sample_max_4
+            sample_crps['max_16'] = sample_max_16
+        if avg_pooling:
+            avg_pool_2d_4 = AveragePooling2D(pool_size=(4, 4), strides=(1, 1), padding='valid')
+            sample_avg_4 = avg_pool_2d_4(sample.copy()).numpy()
+            avg_pool_2d_16 = AveragePooling2D(pool_size=(16, 16), strides=(1, 1), padding='valid')
+            sample_avg_16 = avg_pool_2d_16(sample.copy()).numpy()
+            sample_crps['avg_4'] = sample_avg_4
+            sample_crps['avg_16'] = sample_avg_16
+        sample_crps['no-pooling'] = sample
         sample = sample.ravel()
-        samples_gen = []
-
+        
+        samples_gen = {}
         if mode == "GAN":
             noise_shape = np.array(cond)[0, ..., 0].shape + (noise_channels,)
             noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size)
@@ -139,9 +156,37 @@ def ensemble_ranks(*,
                 nn *= noise_mul
                 nn -= noise_offset
                 sample_gen = gen.predict([cond, const, nn])
+                if max_pooling:
+                    max_pool_2d_4 = MaxPooling2D(pool_size=(4, 4), strides=(1, 1), padding='valid')
+                    sample_gen_max_4 = max_pool_2d_4(sample_gen.copy())
+                    max_pool_2d_16 = MaxPooling2D(pool_size=(16, 16), strides=(1, 1), padding='valid')
+                    sample_gen_max_16 = max_pool_2d_16(sample_gen.copy())
+                    if denormalise_data:
+                        sample_gen_max_4 = data.denormalise(sample_gen_max_4)
+                        sample_gen_max_16 = data.denormalise(sample_gen_max_16)
+                if avg_pooling:
+                    avg_pool_2d_4 = AveragePooling2D(pool_size=(4, 4), strides=(1, 1), padding='valid')
+                    sample_gen_avg_4 = avg_pool_2d_4(sample_gen.copy())
+                    avg_pool_2d_16 = AveragePooling2D(pool_size=(16, 16), strides=(1, 1), padding='valid')
+                    sample_gen_avg_16 = avg_pool_2d_16(sample_gen.copy())
+                    if denormalise_data:
+                        sample_gen_avg_4 = data.denormalise(sample_gen_avg_4)
+                        sample_gen_avg_16 = data.denormalise(sample_gen_avg_16)
                 if denormalise_data:
                     sample_gen = data.denormalise(sample_gen)
-                samples_gen.append(sample_gen)
+                if i == 0:
+                    samples_gen['no-pooling'] = []
+                    samples_gen['max_4'] = []
+                    samples_gen['max_16'] = []
+                    samples_gen['avg_4'] = []
+                    samples_gen['avg_16'] = []
+                samples_gen['no-pooling'].append(sample_gen)
+                if max_pooling:
+                    samples_gen['max_4'].append(sample_gen_max_4)
+                    samples_gen['max_16'].append(sample_gen_max_16)
+                if avg_pooling:
+                    samples_gen['avg_4'].append(sample_gen_avg_4)
+                    samples_gen['avg_16'].append(sample_gen_avg_16)
 
         elif mode == "det":
             sample_gen = gen.predict([cond, const])
@@ -168,23 +213,36 @@ def ensemble_ranks(*,
                 samples_gen.append(sample_gen)
         else:
             print("mode type not implemented in ensemble_ranks")
-
-        samples_gen = np.stack(samples_gen, axis=-1)
-        crps_score = crps.crps_ensemble(sample_crps, samples_gen)
-        crps_scores.append(crps_score.ravel())
-        samples_gen = samples_gen.reshape(
-            (np.prod(samples_gen.shape[:-1]), samples_gen.shape[-1]))
+        
+        pooling_methods = ['no-pooling']
+        if max_pooling:
+            pooling_methods.append('max_4')
+            pooling_methods.append('max_16')
+        if avg_pooling:
+            pooling_methods.append('avg_4')
+            pooling_methods.append('avg_16')
+        
+        for method in pooling_methods:
+            samples_gen[method] = np.stack(samples_gen[method], axis=-1)
+            crps_score = crps.crps_ensemble(sample_crps[method], samples_gen[method])
+            if method not in crps_scores.keys():
+                crps_scores[method] = []
+            crps_scores[method].append(crps_score.mean())
+        ## currently ranks only calculated without pooling
+        samples_gen = samples_gen['no-pooling'].reshape(
+                (np.prod(samples_gen['no-pooling'].shape[:-1]), samples_gen['no-pooling'].shape[-1]))
         rank = np.count_nonzero(sample[:, None] >= samples_gen, axis=-1)
         ranks.append(rank)
 
         if show_progress:
-            crps_mean = np.mean(crps_scores)
+            crps_mean = np.mean(crps_scores['no-pooling'])
             losses = [("CRPS", crps_mean)]
             progbar.add(1, values=losses)
 
     ranks = np.concatenate(ranks)
     gc.collect()  # big arrays!  if this isn't enough, set up ranks and crps_scores as numpy arrays from the start
-    crps_scores = np.concatenate(crps_scores)
+    for method in pooling_methods:
+        crps_scores[method] = np.array(crps_scores[method])
     gc.collect()
     if normalize_ranks:
         ranks = ranks / rank_samples
@@ -251,7 +309,9 @@ def rank_metrics_by_time(*,
                          latent_variables=None,
                          noise_channels=None,
                          padding=None,
-                         rank_samples=None):
+                         rank_samples=None,
+                         max_pooling=False,
+                         avg_pooling=False):
 
     (gen, batch_gen_valid) = setup_inputs(mode=mode,
                                           arch=arch,
@@ -268,7 +328,7 @@ def rank_metrics_by_time(*,
                                           padding=padding,
                                           load_full_image=load_full_image)
 
-    log_line(log_fname, "N KS CvM DKL OP CRPS mean std")
+    log_line(log_fname, "N KS CvM DKL OP CRPS CRPS_max_4 CRPS_max_16 CRPS_avg_4 CRPS_avg_16 mean std")
 
     for model_number in model_numbers:
         gen_weights_file = os.path.join(weights_dir, "gen_weights-{:07d}.h5".format(model_number))
@@ -287,16 +347,31 @@ def rank_metrics_by_time(*,
                                                 add_noise=add_noise,
                                                 rank_samples=rank_samples,
                                                 noise_factor=noise_factor,
-                                                load_full_image=load_full_image)
+                                                load_full_image=load_full_image,
+                                                max_pooling=max_pooling,
+                                                avg_pooling=avg_pooling)
             KS = rank_KS(ranks)
             CvM = rank_CvM(ranks)
             DKL = rank_DKL(ranks)
             OP = rank_OP(ranks)
-            CRPS = crps_scores.mean()
+            CRPS_no_pool = crps_scores['no-pooling'].mean()
+            if max_pooling:
+                CRPS_max_4 = crps_scores['max_4'].mean()
+                CRPS_max_16 = crps_scores['max_16'].mean()
+            else:
+                CRPS_max_4 = np.nan
+                CRPS_max_16 = np.nan
+            if avg_pooling:
+                CRPS_avg_4 = crps_scores['avg_4'].mean()
+                CRPS_avg_16 = crps_scores['avg_16'].mean()
+            else:
+                CRPS_avg_4 = np.nan
+                CRPS_avg_16 = np.nan
             mean = ranks.mean()
             std = ranks.std()
 
-            log_line(log_fname, "{} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}".format(model_number, KS, CvM, DKL, OP, CRPS, mean, std))
+            log_line(log_fname, "{} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}".format(
+                model_number, KS, CvM, DKL, OP, CRPS_no_pool, CRPS_max_4, CRPS_max_16, CRPS_avg_4, CRPS_avg_16, mean, std))
 
             # save one directory up from model weights, in same dir as logfile
             ranks_folder = os.path.dirname(log_fname)
