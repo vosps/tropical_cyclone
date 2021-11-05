@@ -24,7 +24,7 @@ def setup_model(*,
     if mode in ("GAN", "VAEGAN"):
         gen_to_use = {"normal": models.generator,
                       "forceconv": models.generator}[arch]
-        disc_to_use = {"normal": models.discriminator
+        disc_to_use = {"normal": models.discriminator,
                        "forceconv": models.discriminator}[arch]
     elif mode == "det":
         gen_to_use = {"normal": models.generator,

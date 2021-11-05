@@ -112,6 +112,7 @@ def discriminator(arch,
                   norm=None,
                   dropout_rate=None):
 
+    forceconv = True if arch == "forceconv" else False
     # Network inputs
     # low resolution condition
     generator_input = Input(shape=(None, None, input_channels), name="lo_res_inputs")
