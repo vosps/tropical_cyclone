@@ -4,6 +4,7 @@ GENERAL:
     
 MODEL:
     architecture: "normal"
+    padding: "reflect"  # convolution padding: 'same', 'reflect', or 'symmetric'
         
 SETUP:
     log_folder: "/ppdata/lucy-cGAN/logs/IFS"

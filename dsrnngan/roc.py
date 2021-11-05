@@ -16,14 +16,15 @@ def plot_roc_curves(*,
                     arch,
                     log_folder, 
                     weights_dir,
-                    model_numbers=None,
-                    problem_type='normal',
-                    filters_gen=None,
-                    filters_disc=None,
-                    noise_channels=None,
-                    latent_variables=None,
-                    predict_year=2019,
-                    predict_full_image=True,
+                    model_numbers,
+                    problem_type,
+                    filters_gen,
+                    filters_disc,
+                    noise_channels,
+                    latent_variables,
+                    padding,
+                    predict_year,
+                    predict_full_image,
                     ensemble_members=100,
                     plot_ecpoint=True):
        
@@ -57,7 +58,8 @@ def plot_roc_curves(*,
                                    filters_gen=filters_gen,
                                    filters_disc=filters_disc,
                                    noise_channels=noise_channels,
-                                   latent_variables=latent_variables)
+                                   latent_variables=latent_variables,
+                                   padding=padding)
     
     # load appropriate dataset
     if predict_full_image:

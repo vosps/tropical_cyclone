@@ -14,6 +14,7 @@ def setup_model(*,
                 filters_disc=None,
                 noise_channels=None,
                 latent_variables=None,
+                padding=None,
                 kl_weight=None,
                 ensemble_size=None, 
                 content_loss_weight=None,
@@ -31,10 +32,12 @@ def setup_model(*,
                          arch=arch,
                          input_channels=input_channels,
                          noise_channels=noise_channels,
-                         filters_gen=filters_gen)
+                         filters_gen=filters_gen,
+                         padding=padding)
         disc = disc_to_use(arch=arch,
                            input_channels=input_channels,
-                           filters_disc=filters_disc)
+                           filters_disc=filters_disc,
+                           padding=padding)
         model = gan.WGANGP(gen, disc, mode, lr_disc=lr_disc, lr_gen=lr_gen,
                            ensemble_size=ensemble_size, 
                            content_loss_weight=content_loss_weight)
@@ -43,10 +46,12 @@ def setup_model(*,
                                         arch=arch,
                                         input_channels=input_channels,
                                         latent_variables=latent_variables,
-                                        filters_gen=filters_gen)
+                                        filters_gen=filters_gen,
+                                        padding=padding)
         disc = disc_to_use(arch=arch,
                            input_channels=input_channels,
-                           filters_disc=filters_disc)
+                           filters_disc=filters_disc,
+                           padding=padding)
         gen = VAE(encoder, decoder)
         model = gan.WGANGP(gen, disc, mode, lr_disc=lr_disc,
                            lr_gen=lr_gen, kl_weight=kl_weight,
@@ -56,7 +61,8 @@ def setup_model(*,
         gen = gen_to_use(mode=mode,
                          arch=arch,
                          input_channels=input_channels,
-                         filters_gen=filters_gen)
+                         filters_gen=filters_gen,
+                         padding=padding)
         model = deterministic.Deterministic(gen, lr_gen,
                                             loss='mse',
                                             optimizer=Adam)

@@ -63,6 +63,7 @@ with open(config_path, 'r') as f:
         
 mode = setup_params["GENERAL"]["mode"]
 arch = setup_params["MODEL"]["architecture"]
+padding = setup_params["MODEL"]["padding"]
 problem_type = setup_params["GENERAL"]["problem_type"]
 filters_gen = setup_params["GENERATOR"]["filters_gen"]
 noise_channels = setup_params["GENERATOR"]["noise_channels"]
@@ -96,7 +97,8 @@ model = setup_model(mode=mode,
                     filters_gen=filters_gen, 
                     filters_disc=filters_disc,
                     noise_channels=noise_channels, 
-                    latent_variables=latent_variables)
+                    latent_variables=latent_variables,
+                    padding=padding)
 gen = model.gen
 gen.load_weights(weights_fn)
 

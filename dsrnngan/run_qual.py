@@ -19,6 +19,7 @@ with open(config_path, 'r') as f:
 
 mode = setup_params["GENERAL"]["mode"]
 arch = setup_params["MODEL"]["architecture"]
+padding = setup_params["MODEL"]["padding"]
 batch_size = setup_params["TRAIN"]["batch_size"]
 problem_type = setup_params["GENERAL"]["problem_type"]
 filters_gen = setup_params["GENERATOR"]["filters_gen"]
@@ -63,4 +64,5 @@ evaluation.quality_metrics_by_time(mode=mode,
                                    filters_disc=filters_disc, 
                                    input_channels=input_channels,
                                    latent_variables=latent_variables,
-                                   noise_channels=noise_channels)
+                                   noise_channels=noise_channels,
+                                   padding=padding)

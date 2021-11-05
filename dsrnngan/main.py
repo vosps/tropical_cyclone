@@ -79,6 +79,7 @@ if __name__ == "__main__":
 
     mode = setup_params["GENERAL"]["mode"]
     arch = setup_params["MODEL"]["architecture"]
+    padding = setup_params["MODEL"]["padding"]
     log_folder = setup_params["SETUP"]["log_folder"]
     problem_type = setup_params["GENERAL"]["problem_type"]
     filters_gen = setup_params["GENERATOR"]["filters_gen"]
@@ -145,6 +146,7 @@ if __name__ == "__main__":
             filters_gen=filters_gen,
             filters_disc=filters_disc,
             noise_channels=noise_channels,
+            padding=padding,
             lr_disc=lr_disc,
             lr_gen=lr_gen,
             kl_weight=kl_weight,
@@ -268,7 +270,8 @@ if __name__ == "__main__":
                                            filters_disc=filters_disc,
                                            input_channels=input_channels,
                                            latent_variables=latent_variables,
-                                           noise_channels=noise_channels)
+                                           noise_channels=noise_channels,
+                                           padding=padding)
 
     if args.qual_full:
         evaluation.quality_metrics_by_time(mode=mode,
@@ -286,7 +289,8 @@ if __name__ == "__main__":
                                            filters_disc=filters_disc,
                                            input_channels=input_channels,
                                            latent_variables=latent_variables,
-                                           noise_channels=noise_channels)
+                                           noise_channels=noise_channels,
+                                           padding=padding)
 
     if args.rank_small:
         evaluation.rank_metrics_by_time(mode=mode,
@@ -307,6 +311,7 @@ if __name__ == "__main__":
                                         input_channels=input_channels,
                                         latent_variables=latent_variables,
                                         noise_channels=noise_channels,
+                                        padding=padding,
                                         rank_samples=10)
 
     if args.rank_full:
@@ -328,6 +333,7 @@ if __name__ == "__main__":
                                         input_channels=input_channels,
                                         latent_variables=latent_variables,
                                         noise_channels=noise_channels,
+                                        padding=padding,
                                         rank_samples=10)
 
     if args.plot_ranks_small:
@@ -349,6 +355,7 @@ if __name__ == "__main__":
                             filters_disc=filters_disc,
                             noise_channels=noise_channels,
                             latent_variables=latent_variables,
+                            padding=padding,
                             predict_year=val_years,
                             predict_full_image=predict_full_image)
     if args.plot_roc_full:
@@ -363,5 +370,6 @@ if __name__ == "__main__":
                             filters_disc=filters_disc,
                             noise_channels=noise_channels,
                             latent_variables=latent_variables,
+                            padding=padding,
                             predict_year=val_years,
                             predict_full_image=predict_full_image)

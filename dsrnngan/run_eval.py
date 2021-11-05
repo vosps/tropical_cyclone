@@ -20,6 +20,7 @@ with open(config_path, 'r') as f:
 
 mode = setup_params["GENERAL"]["mode"]
 arch = setup_params["MODEL"]["architecture"]
+padding = setup_params["MODEL"]["architecture"]
 batch_size = setup_params["TRAIN"]["batch_size"]
 steps_per_epoch = setup_params["TRAIN"]["steps_per_epoch"]
 problem_type = setup_params["GENERAL"]["problem_type"]
@@ -80,5 +81,6 @@ evaluation.rank_metrics_by_time(mode=mode,
                                 filters_disc=filters_disc, 
                                 input_channels=input_channels,
                                 latent_variables=latent_variables,
-                                noise_channels=noise_channels,  
+                                noise_channels=noise_channels,
+                                padding=padding,
                                 rank_samples=rank_samples)

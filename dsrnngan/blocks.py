@@ -1,17 +1,53 @@
-from tensorflow.keras.layers import Add, Conv2D, Dropout, LeakyReLU, BatchNormalization, AveragePooling2D
+from tensorflow.keras.layers import Layer, Add, Conv2D, Dropout, LeakyReLU, BatchNormalization, AveragePooling2D
+from layers import ReflectionPadding2D, SymmetricPadding2D
 
 
-def residual_block(x, filters, conv_size=(3, 3), stride=1, relu_alpha=0.2, norm=None, dropout_rate=None):
+class Conv2DPadding(Layer):
+    def __init__(self, filters, kernel_size, padding):
+        super(Conv2DPadding, self).__init__()
+        self.filters = filters
+        self.kernel_size = kernel_size
+        self.padding = padding
+        if padding is None:
+            raise ValueError("padding should not be None")
+
+    def build(self, x):
+        if self.padding in ('reflect', 'symmetric'):
+            pad = tuple((s-1)//2 for s in self.kernel_size)  # only works if s is odd!
+            if self.padding == 'reflect':
+                self.padref = ReflectionPadding2D(padding=pad)
+            elif self.padding == 'symmetric':
+                self.symref = SymmetricPadding2D(padding=pad)
+            self.convval = Conv2D(filters=self.filters,
+                                  kernel_size=self.kernel_size,
+                                  padding='valid')
+        else:
+            self.convsam = Conv2D(filters=self.filters,
+                                  kernel_size=self.kernel_size,
+                                  padding='same')
+
+    def call(self, x):
+        if self.padding in ('reflect', 'symmetric'):
+            if self.padding == 'reflect':
+                x = self.padref(x)
+            elif self.padding == 'symmetric':
+                x = self.symref(x)
+            return self.convval(x)
+        else:  # same
+            return self.convsam(x)
+
+
+def residual_block(x, filters, conv_size=(3, 3), stride=1, relu_alpha=0.2, norm=None, dropout_rate=None, padding=None):
     in_channels = int(x.shape[-1])
     x_in = x
 
     x_in = AveragePooling2D(pool_size=(stride, stride))(x_in)
     if (filters != in_channels):
-        x_in = Conv2D(filters=filters, kernel_size=(1, 1), padding="same")(x_in)
+        x_in = Conv2D(filters=filters, kernel_size=(1, 1))(x_in)
 
     # first block of activation and 3x3 convolution
     x = LeakyReLU(relu_alpha)(x)
-    x = Conv2D(filters=filters, kernel_size=conv_size, padding="same")(x)
+    x = Conv2DPadding(filters=filters, kernel_size=conv_size, padding=padding)(x)
     if norm == "batch":
         x = BatchNormalization()(x)
     elif norm is None:
@@ -24,7 +60,7 @@ def residual_block(x, filters, conv_size=(3, 3), stride=1, relu_alpha=0.2, norm=
 
     # second block of activation and 3x3 convolution
     x = LeakyReLU(relu_alpha)(x)
-    x = Conv2D(filters=filters, kernel_size=conv_size, padding="same")(x)
+    x = Conv2DPadding(filters=filters, kernel_size=conv_size, padding=padding)(x)
     if norm == "batch":
         x = BatchNormalization()(x)
     elif norm is None:

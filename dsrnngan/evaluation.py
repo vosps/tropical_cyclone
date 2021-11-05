@@ -31,6 +31,7 @@ def setup_inputs(*,
                  filters_disc,
                  noise_channels,
                  latent_variables,
+                 padding,
                  load_full_image):
 
     if load_full_image:
@@ -47,7 +48,8 @@ def setup_inputs(*,
                                    filters_gen=filters_gen,
                                    filters_disc=filters_disc,
                                    noise_channels=noise_channels,
-                                   latent_variables=latent_variables)
+                                   latent_variables=latent_variables,
+                                   padding=padding)
 
     gen = model.gen
 
@@ -248,6 +250,7 @@ def rank_metrics_by_time(*,
                          input_channels=None,
                          latent_variables=None,
                          noise_channels=None,
+                         padding=None,
                          rank_samples=None):
 
     (gen, batch_gen_valid) = setup_inputs(mode=mode,
@@ -262,6 +265,7 @@ def rank_metrics_by_time(*,
                                           filters_disc=filters_disc,
                                           noise_channels=noise_channels,
                                           latent_variables=latent_variables,
+                                          padding=padding,
                                           load_full_image=load_full_image)
 
     log_line(log_fname, "N KS CvM DKL OP CRPS mean std")
@@ -608,7 +612,8 @@ def quality_metrics_by_time(*,
                             filters_disc=None,
                             input_channels=None,
                             latent_variables=None,
-                            noise_channels=None):
+                            noise_channels=None,
+                            padding=None):
 
     (gen, batch_gen_valid) = setup_inputs(mode=mode,
                                           arch=arch,
@@ -622,6 +627,7 @@ def quality_metrics_by_time(*,
                                           filters_disc=filters_disc,
                                           noise_channels=noise_channels,
                                           latent_variables=latent_variables,
+                                          padding=padding,
                                           load_full_image=load_full_image)
 
     log_line(log_fname, "N RMSE MSSSIM LSD RAPSD MAE")
