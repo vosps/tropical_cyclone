@@ -138,7 +138,7 @@ if args.include_deterministic:
     elif problem_type == 'normal':
         filters_det = 128
         gen_det_weights = '/ppdata/lucy-cGAN/logs/IFS/filters_128/softplus/det/lr_1e-4/gen_det_weights-ERA-0400000.h5'
-    gen_det = models.generator(mode='det', input_channels=input_channels, filters_gen=filters_det)
+    gen_det = models.generator(mode='det', arch='normal', input_channels=input_channels, filters_gen=filters_det)
     gen_det.load_weights(gen_det_weights)
 
 pred = []

@@ -28,20 +28,24 @@ def setup_model(*,
 
     if mode == 'GAN':
         gen = gen_to_use(mode=mode,
+                         arch=arch,
                          input_channels=input_channels,
                          noise_channels=noise_channels,
                          filters_gen=filters_gen)
-        disc = disc_to_use(input_channels=input_channels,
+        disc = disc_to_use(arch=arch,
+                           input_channels=input_channels,
                            filters_disc=filters_disc)
         model = gan.WGANGP(gen, disc, mode, lr_disc=lr_disc, lr_gen=lr_gen,
                            ensemble_size=ensemble_size, 
                            content_loss_weight=content_loss_weight)
     elif mode == 'VAEGAN':
         (encoder, decoder) = gen_to_use(mode=mode,
+                                        arch=arch,
                                         input_channels=input_channels,
                                         latent_variables=latent_variables,
                                         filters_gen=filters_gen)
-        disc = disc_to_use(input_channels=input_channels,
+        disc = disc_to_use(arch=arch,
+                           input_channels=input_channels,
                            filters_disc=filters_disc)
         gen = VAE(encoder, decoder)
         model = gan.WGANGP(gen, disc, mode, lr_disc=lr_disc,
@@ -50,6 +54,7 @@ def setup_model(*,
                            content_loss_weight=content_loss_weight)
     elif mode == 'det':
         gen = gen_to_use(mode=mode,
+                         arch=arch,
                          input_channels=input_channels,
                          filters_gen=filters_gen)
         model = deterministic.Deterministic(gen, lr_gen,

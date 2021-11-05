@@ -7,6 +7,7 @@ from blocks import residual_block, const_upscale_block_100
 
 
 def generator(mode,
+              arch,
               input_channels=9,
               latent_variables=1,
               noise_channels=8,
@@ -98,7 +99,8 @@ def generator(mode,
         return model
 
 
-def discriminator(input_channels=9,
+def discriminator(arch,
+                  input_channels=9,
                   constant_fields=2,
                   filters_disc=64,
                   conv_size=(3, 3),
