@@ -132,18 +132,14 @@ def ensemble_ranks(*,
             sample += noise
         if max_pooling:
             max_pool_2d_4 = MaxPooling2D(pool_size=(4, 4), strides=(1, 1), padding='valid')
-            sample_max_4 = max_pool_2d_4(sample.copy()).numpy()
+            sample_crps['max_4'] = max_pool_2d_4(sample.copy()).numpy()
             max_pool_2d_16 = MaxPooling2D(pool_size=(16, 16), strides=(1, 1), padding='valid')
-            sample_max_16 = max_pool_2d_16(sample.copy()).numpy()
-            sample_crps['max_4'] = sample_max_4
-            sample_crps['max_16'] = sample_max_16
+            sample_crps['max_16'] = max_pool_2d_16(sample.copy()).numpy()
         if avg_pooling:
             avg_pool_2d_4 = AveragePooling2D(pool_size=(4, 4), strides=(1, 1), padding='valid')
-            sample_avg_4 = avg_pool_2d_4(sample.copy()).numpy()
+            sample_crps['avg_4'] = avg_pool_2d_4(sample.copy()).numpy()
             avg_pool_2d_16 = AveragePooling2D(pool_size=(16, 16), strides=(1, 1), padding='valid')
-            sample_avg_16 = avg_pool_2d_16(sample.copy()).numpy()
-            sample_crps['avg_4'] = sample_avg_4
-            sample_crps['avg_16'] = sample_avg_16
+            sample_crps['avg_16'] = avg_pool_2d_16(sample.copy()).numpy()
         sample_crps['no-pooling'] = sample
         sample = sample.ravel()
         
@@ -157,17 +153,13 @@ def ensemble_ranks(*,
                 nn -= noise_offset
                 sample_gen = gen.predict([cond, const, nn])
                 if max_pooling:
-                    max_pool_2d_4 = MaxPooling2D(pool_size=(4, 4), strides=(1, 1), padding='valid')
                     sample_gen_max_4 = max_pool_2d_4(sample_gen.copy())
-                    max_pool_2d_16 = MaxPooling2D(pool_size=(16, 16), strides=(1, 1), padding='valid')
                     sample_gen_max_16 = max_pool_2d_16(sample_gen.copy())
                     if denormalise_data:
                         sample_gen_max_4 = data.denormalise(sample_gen_max_4)
                         sample_gen_max_16 = data.denormalise(sample_gen_max_16)
                 if avg_pooling:
-                    avg_pool_2d_4 = AveragePooling2D(pool_size=(4, 4), strides=(1, 1), padding='valid')
                     sample_gen_avg_4 = avg_pool_2d_4(sample_gen.copy())
-                    avg_pool_2d_16 = AveragePooling2D(pool_size=(16, 16), strides=(1, 1), padding='valid')
                     sample_gen_avg_16 = avg_pool_2d_16(sample_gen.copy())
                     if denormalise_data:
                         sample_gen_avg_4 = data.denormalise(sample_gen_avg_4)
@@ -204,8 +196,37 @@ def ensemble_ranks(*,
                 nn -= noise_offset
                 # generate ensemble of preds with decoder
                 sample_gen = gen.decoder.predict([mean, logvar, nn, const])
+                if max_pooling:
+                    sample_gen_max_4 = max_pool_2d_4(sample_gen.copy())
+                    sample_gen_max_16 = max_pool_2d_16(sample_gen.copy())
+                    if denormalise_data:
+                        sample_gen_max_4 = data.denormalise(sample_gen_max_4)
+                        sample_gen_max_16 = data.denormalise(sample_gen_max_16)
+                if avg_pooling:
+                    sample_gen_avg_4 = avg_pool_2d_4(sample_gen.copy())
+                    sample_gen_avg_16 = avg_pool_2d_16(sample_gen.copy())
+                    if denormalise_data:
+                        sample_gen_avg_4 = data.denormalise(sample_gen_avg_4)
+                        sample_gen_avg_16 = data.denormalise(sample_gen_avg_16)
                 if denormalise_data:
                     sample_gen = data.denormalise(sample_gen)
+                if add_noise:
+                    (noise_dim_1, noise_dim_2) = sample_gen[0, ..., 0].shape
+                    noise = np.random.rand(batch_size, noise_dim_1, noise_dim_2, 1)*noise_factor
+                    sample_gen += noise
+                if i == 0:
+                    samples_gen['no-pooling'] = []
+                    samples_gen['max_4'] = []
+                    samples_gen['max_16'] = []
+                    samples_gen['avg_4'] = []
+                    samples_gen['avg_16'] = []
+                samples_gen['no-pooling'].append(sample_gen)
+                if max_pooling:
+                    samples_gen['max_4'].append(sample_gen_max_4)
+                    samples_gen['max_16'].append(sample_gen_max_16)
+                if avg_pooling:
+                    samples_gen['avg_4'].append(sample_gen_avg_4)
+                    samples_gen['avg_16'].append(sample_gen_avg_16)
                 if add_noise:
                     (noise_dim_1, noise_dim_2) = sample_gen[0, ..., 0].shape
                     noise = np.random.rand(batch_size, noise_dim_1, noise_dim_2, 1)*noise_factor
