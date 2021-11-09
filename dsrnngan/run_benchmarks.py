@@ -146,9 +146,8 @@ for benchmark in benchmark_methods:
                 print(f" crps_score is {crps_score}")
                 del sample_truth_pooled, sample_benchmark_pooled
                 if method not in crps_scores[benchmark].keys():
-                    crps_scores[benchmark][method] = crps_score
-                else:
-                    crps_scores[benchmark][method].append(crps_score)     
+                    crps_scores[benchmark][method] = []
+                crps_scores[benchmark][method].append(crps_score)     
             for j in range(sample_benchmark.shape[-1]):
                 rmse_tmp = np.sqrt(((sample_truth - sample_benchmark[...,j])**2).mean(axis=(1,2)))
                 mae_tmp = (np.abs(sample_truth - sample_benchmark[...,j])).mean(axis=(1,2))
@@ -185,9 +184,8 @@ for benchmark in benchmark_methods:
                 crps_score = (benchmarks.mean_crps(sample_truth_pooled, sample_benchmark_pooled)).mean()
                 del sample_truth_pooled, sample_benchmark_pooled
                 if method not in crps_scores[benchmark].keys():
-                    crps_scores[benchmark][method] = crps_score
-                else:
-                    crps_scores[benchmark][method].append(crps_score) 
+                    crps_scores[benchmark][method] = []
+                crps_scores[benchmark][method].append(crps_score) 
                 gc.collect()
             rmse_score = (np.sqrt(((sample_truth - sample_benchmark)**2)).mean(axis=(1,2)))
             mae_score = (np.abs(sample_truth - sample_benchmark)).mean(axis=(1,2))
