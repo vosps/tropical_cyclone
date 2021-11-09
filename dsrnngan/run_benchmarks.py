@@ -141,15 +141,26 @@ for benchmark in benchmark_methods:
                     sample_truth_pooled = avg_pool_2d_16(np.expand_dims(sample_truth, axis=-1)).numpy()
                     sample_benchmark_pooled = avg_pool_2d_16(sample_benchmark)
                 crps_score = (crps.crps_ensemble(sample_truth_pooled, sample_benchmark_pooled)).mean()
+                print(method)
+                print(benchmark)
+                print(f" crps_score is {crps_score}")
                 del sample_truth_pooled, sample_benchmark_pooled
-                for j in range(sample_benchmark.shape[-1]):
-                    rmse_tmp = np.sqrt(((sample_truth - sample_benchmark[...,j])**2).mean(axis=(1,2)))
-                    mae_tmp = (np.abs(sample_truth - sample_benchmark[...,j])).mean(axis=(1,2))
-                    rapsd_tmp = rapsd_batch(sample_truth, sample_benchmark[...,j])
-                rmse_score = rmse_tmp.mean()
-                mae_score = mae_tmp.mean()
-                rapsd_score = rapsd_tmp.mean()
-                del rmse_tmp, mae_tmp, rapsd_tmp
+                if method not in crps_scores[benchmark].keys():
+                    crps_scores[benchmark][method] = crps_score
+                else:
+                    crps_scores[benchmark][method].append(crps_score)     
+            for j in range(sample_benchmark.shape[-1]):
+                rmse_tmp = np.sqrt(((sample_truth - sample_benchmark[...,j])**2).mean(axis=(1,2)))
+                mae_tmp = (np.abs(sample_truth - sample_benchmark[...,j])).mean(axis=(1,2))
+                rapsd_tmp = rapsd_batch(sample_truth, sample_benchmark[...,j])
+            rmse_score = rmse_tmp.mean()
+            mae_score = mae_tmp.mean()
+            rapsd_score = rapsd_tmp.mean()
+            del rmse_tmp, mae_tmp, rapsd_tmp                      
+            rmse_scores[benchmark].append(rmse_score)
+            mae_scores[benchmark].append(mae_score)
+            rapsd_scores[benchmark].append(rapsd_score)
+            gc.collect()
         else: 
             for method in pooling_methods:
                 if method == 'no_pooling':
@@ -173,21 +184,21 @@ for benchmark in benchmark_methods:
                     sample_benchmark_pooled = avg_pool_2d_16(np.expand_dims(sample_benchmark, axis =-1))
                 crps_score = (benchmarks.mean_crps(sample_truth_pooled, sample_benchmark_pooled)).mean()
                 del sample_truth_pooled, sample_benchmark_pooled
-                gc.collect()
-                rmse_score = (np.sqrt(((sample_truth - sample_benchmark)**2)).mean(axis=(1,2)))
-                mae_score = (np.abs(sample_truth - sample_benchmark)).mean(axis=(1,2))
-                if benchmark == 'zeros':
-                    rapsd_score = np.nan
+                if method not in crps_scores[benchmark].keys():
+                    crps_scores[benchmark][method] = crps_score
                 else:
-                    rapsd_score = rapsd_batch(sample_truth, sample_benchmark)
-        if method not in crps_scores[benchmark].keys():
-            crps_scores[benchmark][method] = crps_score
-        else:
-            crps_scores[benchmark][method].append(crps_score)     
-        rmse_scores[benchmark].append(rmse_score)
-        mae_scores[benchmark].append(mae_score)
-        rapsd_scores[benchmark].append(rapsd_score)
-        gc.collect()
+                    crps_scores[benchmark][method].append(crps_score) 
+                gc.collect()
+            rmse_score = (np.sqrt(((sample_truth - sample_benchmark)**2)).mean(axis=(1,2)))
+            mae_score = (np.abs(sample_truth - sample_benchmark)).mean(axis=(1,2))
+            if benchmark == 'zeros':
+                rapsd_score = np.nan
+            else:
+                rapsd_score = rapsd_batch(sample_truth, sample_benchmark)    
+            rmse_scores[benchmark].append(rmse_score)
+            mae_scores[benchmark].append(mae_score)
+            rapsd_scores[benchmark].append(rapsd_score)
+            gc.collect()
 
 for benchmark in benchmark_methods:
     if not args.max_pooling:
