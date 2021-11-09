@@ -100,7 +100,7 @@ for benchmark in benchmark_methods:
     rmse_scores[benchmark] = []
     mae_scores[benchmark] = []
     rapsd_scores[benchmark] = []
-    print(f"calculating for benchmark method = {benchmark}")
+    print(f"calculating for benchmark method {benchmark}")
     data_benchmarks_iter = iter(data_benchmarks)
     for i in range(num_batches):
         print(f" calculating for sample number {i+1} of {num_batches}")
@@ -126,20 +126,20 @@ for benchmark in benchmark_methods:
                     sample_benchmark_pooled = sample_benchmark
                 if method == 'max_4':
                     max_pool_2d_4 = MaxPooling2D(pool_size=(4, 4), strides=(1, 1), padding='valid')
-                    sample_truth_pooled = max_pool_2d_4(np.expand_dims(sample_truth, axis=-1)).numpy()
-                    sample_benchmark_pooled = max_pool_2d_4(sample_benchmark)
+                    sample_truth_pooled = max_pool_2d_4(np.expand_dims(sample_truth.astype("float32"), axis=-1)).numpy()
+                    sample_benchmark_pooled = max_pool_2d_4(sample_benchmark.astype("float32"))
                 if method == 'max_16':
                     max_pool_2d_16 = MaxPooling2D(pool_size=(16, 16), strides=(1, 1), padding='valid')
-                    sample_truth_pooled = max_pool_2d_16(np.expand_dims(sample_truth, axis=-1)).numpy()
-                    sample_benchmark_pooled = max_pool_2d_16(sample_benchmark)
+                    sample_truth_pooled = max_pool_2d_16(np.expand_dims(sample_truth.astype("float32"), axis=-1)).numpy()
+                    sample_benchmark_pooled = max_pool_2d_16(sample_benchmark.astype("float32"))
                 if method == 'avg_4':
                     avg_pool_2d_4 = AveragePooling2D(pool_size=(4, 4), strides=(1, 1), padding='valid')
-                    sample_truth_pooled = avg_pool_2d_4(np.expand_dims(sample_truth, axis=-1)).numpy()
-                    sample_benchmark_pooled = avg_pool_2d_4(sample_benchmark)
+                    sample_truth_pooled = avg_pool_2d_4(np.expand_dims(sample_truth.astype("float32"), axis=-1)).numpy()
+                    sample_benchmark_pooled = avg_pool_2d_4(sample_benchmark.astype("float32"))
                 if method == 'avg_16':
                     avg_pool_2d_16 = AveragePooling2D(pool_size=(16, 16), strides=(1, 1), padding='valid')
-                    sample_truth_pooled = avg_pool_2d_16(np.expand_dims(sample_truth, axis=-1)).numpy()
-                    sample_benchmark_pooled = avg_pool_2d_16(sample_benchmark)
+                    sample_truth_pooled = avg_pool_2d_16(np.expand_dims(sample_truth.astype("float32"), axis=-1)).numpy()
+                    sample_benchmark_pooled = avg_pool_2d_16(sample_benchmark.astype("float32"))
                 crps_score = (crps.crps_ensemble(sample_truth_pooled, sample_benchmark_pooled)).mean()
                 print(method)
                 print(benchmark)
@@ -167,26 +167,29 @@ for benchmark in benchmark_methods:
                     sample_benchmark_pooled = np.expand_dims(sample_benchmark, axis =-1)
                 if method == 'max_4':
                     max_pool_2d_4 = MaxPooling2D(pool_size=(4, 4), strides=(1, 1), padding='valid')
-                    sample_truth_pooled = max_pool_2d_4(np.expand_dims(sample_truth, axis=-1)).numpy()
-                    sample_benchmark_pooled = max_pool_2d_4(np.expand_dims(sample_benchmark, axis =-1))
+                    sample_truth_pooled = max_pool_2d_4(np.expand_dims(sample_truth.astype("float32"), axis=-1)).numpy()
+                    sample_benchmark_pooled = max_pool_2d_4(np.expand_dims(sample_benchmark.astype("float32"), axis =-1))
                 if method == 'max_16':
                     max_pool_2d_16 = MaxPooling2D(pool_size=(16, 16), strides=(1, 1), padding='valid')
-                    sample_truth_pooled = max_pool_2d_16(np.expand_dims(sample_truth, axis=-1)).numpy()
-                    sample_benchmark_pooled = max_pool_2d_16(np.expand_dims(sample_benchmark, axis =-1))
+                    sample_truth_pooled = max_pool_2d_16(np.expand_dims(sample_truth.astype("float32"), axis=-1)).numpy()
+                    sample_benchmark_pooled = max_pool_2d_16(np.expand_dims(sample_benchmark.astype("float32"), axis =-1))
                 if method == 'avg_4':
                     avg_pool_2d_4 = AveragePooling2D(pool_size=(4, 4), strides=(1, 1), padding='valid')
-                    sample_truth_pooled = avg_pool_2d_4(np.expand_dims(sample_truth, axis=-1)).numpy()
-                    sample_benchmark_pooled = avg_pool_2d_4(np.expand_dims(sample_benchmark, axis =-1))
+                    sample_truth_pooled = avg_pool_2d_4(np.expand_dims(sample_truth.astype("float32"), axis=-1)).numpy()
+                    sample_benchmark_pooled = avg_pool_2d_4(np.expand_dims(sample_benchmark.astype("float32"), axis =-1))
                 if method == 'avg_16':
                     avg_pool_2d_16 = AveragePooling2D(pool_size=(16, 16), strides=(1, 1), padding='valid')
-                    sample_truth_pooled = avg_pool_2d_16(np.expand_dims(sample_truth, axis=-1)).numpy()
-                    sample_benchmark_pooled = avg_pool_2d_16(np.expand_dims(sample_benchmark, axis =-1))
+                    sample_truth_pooled = avg_pool_2d_16(np.expand_dims(sample_truth.astype("float32"), axis=-1)).numpy()
+                    sample_benchmark_pooled = avg_pool_2d_16(np.expand_dims(sample_benchmark.astype("float32"), axis =-1))
                 crps_score = (benchmarks.mean_crps(sample_truth_pooled, sample_benchmark_pooled)).mean()
                 del sample_truth_pooled, sample_benchmark_pooled
                 if method not in crps_scores[benchmark].keys():
                     crps_scores[benchmark][method] = []
                 crps_scores[benchmark][method].append(crps_score) 
                 gc.collect()
+                print(method)
+                print(benchmark)
+                print(f" crps_score is {crps_score}")
             rmse_score = (np.sqrt(((sample_truth - sample_benchmark)**2)).mean(axis=(1,2)))
             mae_score = (np.abs(sample_truth - sample_benchmark)).mean(axis=(1,2))
             if benchmark == 'zeros':
