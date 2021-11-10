@@ -181,14 +181,14 @@ def write_data(year,
                         const = sample[0]['hi_res_inputs'][k,idx:idx1,jdx:jdx1,:].flatten()
                         era = sample[0]['lo_res_inputs'][k,era_starts[i]:era_ends[i],era_starts[j]:era_ends[j],:].flatten()
                         feature = {
-                            'lo_res_inputs': _float_feature(era),
-                            'hi_res_inputs': _float_feature(const),
-                            'output': _float_feature(nimrod)
+                            'generator_input': _float_feature(era),
+                            'constants': _float_feature(const),
+                            'generator_output': _float_feature(nimrod)
                         }
                         features = tf.train.Features(feature=feature)
                         example = tf.train.Example(features=features)
                         example_to_string = example.SerializeToString()
-                        clss = min(int(np.floor(((nimrod > 0.1).mean()*num_class))),num_class-1)
+                        clss = min(int(np.floor(((nimrod > 0.1).mean()*num_class))),num_class-1)  # all class binning is here!
                         fle_hdles[clss].write(example_to_string)
         for fh in fle_hdles:
             fh.close()
