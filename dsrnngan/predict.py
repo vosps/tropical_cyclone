@@ -71,7 +71,6 @@ latent_variables = setup_params["GENERATOR"]["latent_variables"]
 filters_disc = setup_params["DISCRIMINATOR"]["filters_disc"]
 batch_size = setup_params["TRAIN"]["batch_size"]
 val_years = setup_params["VAL"]["val_years"]
-val_size = setup_params["VAL"]["val_size"]
 
 if args.predict_full_image:
     batch_size = 1
