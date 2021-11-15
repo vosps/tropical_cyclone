@@ -11,15 +11,24 @@ class DataGenerator(Sequence):
     def __init__(self, dates, ifs_fields, batch_size, log_precip=True,
                  crop=False,
                  shuffle=True, constants=None, hour='random', ifs_norm=True,
-                 downsample=False, seed = 9999,
+                 downsample=False, seed=9999,
 ):
         self.dates = dates
-        if hour == 'random':
-            self.hours = np.repeat(ifs_hours,len(self.dates))
-            self.dates = np.tile(self.dates,len(ifs_hours))
-        elif type(hour) == list or type(hour) == np.array:
-            self.hours = np.repeat(hour,len(self.dates))
-            self.dates = np.tile(self.dates,len(hour))
+        if isinstance(hour, str):
+            if hour == 'random':
+                self.hours = np.repeat(ifs_hours, len(self.dates))
+                self.dates = np.tile(self.dates, len(ifs_hours))
+            else:
+                assert False, f"Unsupported hour {hour}"
+
+        elif isinstance(hour, int):
+            self.hours = np.repeat(hour, len(self.dates))
+            self.dates = np.tile(self.dates, 1)  # lol
+
+        elif isinstance(hour, list):
+            self.hours = np.repeat(hour, len(self.dates))
+            self.dates = np.tile(self.dates, len(hour))
+
         else:
             assert False, f"Unsupported hour {hour}"
 
