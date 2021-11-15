@@ -1,6 +1,7 @@
 import argparse
 import os
 import gc
+import time
 from data import get_dates
 from data_generator_ifs import DataGenerator as DataGeneratorFull
 from tensorflow.keras.layers import MaxPooling2D, AveragePooling2D
@@ -74,6 +75,7 @@ if args.include_constant:
     benchmark_methods.append('constant')
 if args.include_zeros:
     benchmark_methods.append('zeros')
+print(benchmark_methods)
 
 pooling_methods = ['no_pooling']
 if args.max_pooling:
@@ -82,7 +84,7 @@ if args.max_pooling:
 if args.avg_pooling:
     pooling_methods.append('avg_4')
     pooling_methods.append('avg_16')
-
+print(pooling_methods)
 
 log_line(log_fname, "Number of samples {}".format(num_batches))
 log_line(log_fname, "Evaluation year {}".format(predict_year))
@@ -103,7 +105,7 @@ for benchmark in benchmark_methods:
     print(f"calculating for benchmark method {benchmark}")
     data_benchmarks_iter = iter(data_benchmarks)
     for i in range(num_batches):
-        print(f" calculating for sample number {i+1} of {num_batches}")
+        print(f"calculating for sample number {i+1} of {num_batches}")
         (inp,outp) = next(data_benchmarks_iter)
         sample_truth = outp['output']
         if benchmark == 'lanczos':
@@ -120,30 +122,30 @@ for benchmark in benchmark_methods:
             sample_benchmark = benchmarks.zerosmodel(inp['lo_res_inputs'][...,1])
 
         if benchmark in ['rainfarm', 'ecpoint']:
-            for method in pooling_methods:        
+            for method in pooling_methods:
                 if method == 'no_pooling':
-                    sample_truth_pooled = np.expand_dims(sample_truth, axis=-1)
+                    sample_truth_pooled = sample_truth
                     sample_benchmark_pooled = sample_benchmark
                 if method == 'max_4':
                     max_pool_2d_4 = MaxPooling2D(pool_size=(4, 4), strides=(1, 1), padding='valid')
                     sample_truth_pooled = max_pool_2d_4(np.expand_dims(sample_truth.astype("float32"), axis=-1)).numpy()
-                    sample_benchmark_pooled = max_pool_2d_4(sample_benchmark.astype("float32"))
+                    sample_benchmark_pooled = max_pool_2d_4(sample_benchmark.astype("float32")).numpy()
                 if method == 'max_16':
                     max_pool_2d_16 = MaxPooling2D(pool_size=(16, 16), strides=(1, 1), padding='valid')
                     sample_truth_pooled = max_pool_2d_16(np.expand_dims(sample_truth.astype("float32"), axis=-1)).numpy()
-                    sample_benchmark_pooled = max_pool_2d_16(sample_benchmark.astype("float32"))
+                    sample_benchmark_pooled = max_pool_2d_16(sample_benchmark.astype("float32")).numpy()
                 if method == 'avg_4':
                     avg_pool_2d_4 = AveragePooling2D(pool_size=(4, 4), strides=(1, 1), padding='valid')
                     sample_truth_pooled = avg_pool_2d_4(np.expand_dims(sample_truth.astype("float32"), axis=-1)).numpy()
-                    sample_benchmark_pooled = avg_pool_2d_4(sample_benchmark.astype("float32"))
+                    sample_benchmark_pooled = avg_pool_2d_4(sample_benchmark.astype("float32")).numpy()
                 if method == 'avg_16':
                     avg_pool_2d_16 = AveragePooling2D(pool_size=(16, 16), strides=(1, 1), padding='valid')
                     sample_truth_pooled = avg_pool_2d_16(np.expand_dims(sample_truth.astype("float32"), axis=-1)).numpy()
-                    sample_benchmark_pooled = avg_pool_2d_16(sample_benchmark.astype("float32"))
+                    sample_benchmark_pooled = avg_pool_2d_16(sample_benchmark.astype("float32")).numpy()
+                if method != 'no_pooling':
+                    sample_truth_pooled = np.squeeze(sample_truth_pooled)
+                    sample_benchmark_pooled = np.squeeze(sample_benchmark_pooled)
                 crps_score = (crps.crps_ensemble(sample_truth_pooled, sample_benchmark_pooled)).mean()
-                print(method)
-                print(benchmark)
-                print(f" crps_score is {crps_score}")
                 del sample_truth_pooled, sample_benchmark_pooled
                 if method not in crps_scores[benchmark].keys():
                     crps_scores[benchmark][method] = []
@@ -155,6 +157,7 @@ for benchmark in benchmark_methods:
             rmse_score = rmse_tmp.mean()
             mae_score = mae_tmp.mean()
             rapsd_score = rapsd_tmp.mean()
+            print(f"rapsd_score is {rapsd_score}")
             del rmse_tmp, mae_tmp, rapsd_tmp                      
             rmse_scores[benchmark].append(rmse_score)
             mae_scores[benchmark].append(mae_score)
@@ -163,39 +166,40 @@ for benchmark in benchmark_methods:
         else: 
             for method in pooling_methods:
                 if method == 'no_pooling':
-                    sample_truth_pooled = np.expand_dims(sample_truth, axis=-1)
-                    sample_benchmark_pooled = np.expand_dims(sample_benchmark, axis =-1)
+                    sample_truth_pooled = sample_truth
+                    sample_benchmark_pooled = sample_benchmark
                 if method == 'max_4':
                     max_pool_2d_4 = MaxPooling2D(pool_size=(4, 4), strides=(1, 1), padding='valid')
                     sample_truth_pooled = max_pool_2d_4(np.expand_dims(sample_truth.astype("float32"), axis=-1)).numpy()
-                    sample_benchmark_pooled = max_pool_2d_4(np.expand_dims(sample_benchmark.astype("float32"), axis =-1))
+                    sample_benchmark_pooled = max_pool_2d_4(np.expand_dims(sample_benchmark.astype("float32"), axis=-1)).numpy()
                 if method == 'max_16':
                     max_pool_2d_16 = MaxPooling2D(pool_size=(16, 16), strides=(1, 1), padding='valid')
                     sample_truth_pooled = max_pool_2d_16(np.expand_dims(sample_truth.astype("float32"), axis=-1)).numpy()
-                    sample_benchmark_pooled = max_pool_2d_16(np.expand_dims(sample_benchmark.astype("float32"), axis =-1))
+                    sample_benchmark_pooled = max_pool_2d_16(np.expand_dims(sample_benchmark.astype("float32"), axis=-1)).numpy()
                 if method == 'avg_4':
                     avg_pool_2d_4 = AveragePooling2D(pool_size=(4, 4), strides=(1, 1), padding='valid')
                     sample_truth_pooled = avg_pool_2d_4(np.expand_dims(sample_truth.astype("float32"), axis=-1)).numpy()
-                    sample_benchmark_pooled = avg_pool_2d_4(np.expand_dims(sample_benchmark.astype("float32"), axis =-1))
+                    sample_benchmark_pooled = avg_pool_2d_4(np.expand_dims(sample_benchmark.astype("float32"), axis=-1)).numpy()
                 if method == 'avg_16':
                     avg_pool_2d_16 = AveragePooling2D(pool_size=(16, 16), strides=(1, 1), padding='valid')
                     sample_truth_pooled = avg_pool_2d_16(np.expand_dims(sample_truth.astype("float32"), axis=-1)).numpy()
-                    sample_benchmark_pooled = avg_pool_2d_16(np.expand_dims(sample_benchmark.astype("float32"), axis =-1))
-                crps_score = (benchmarks.mean_crps(sample_truth_pooled, sample_benchmark_pooled)).mean()
+                    sample_benchmark_pooled = avg_pool_2d_16(np.expand_dims(sample_benchmark.astype("float32"), axis=-1)).numpy()
+                if method != 'no_pooling':
+                    sample_truth_pooled = np.squeeze(sample_truth_pooled)
+                    sample_benchmark_pooled = np.squeeze(sample_benchmark_pooled)
+                crps_score = (benchmarks.mean_crps(sample_truth_pooled, sample_benchmark_pooled))
                 del sample_truth_pooled, sample_benchmark_pooled
                 if method not in crps_scores[benchmark].keys():
                     crps_scores[benchmark][method] = []
                 crps_scores[benchmark][method].append(crps_score) 
                 gc.collect()
-                print(method)
-                print(benchmark)
-                print(f" crps_score is {crps_score}")
             rmse_score = (np.sqrt(((sample_truth - sample_benchmark)**2)).mean(axis=(1,2)))
             mae_score = (np.abs(sample_truth - sample_benchmark)).mean(axis=(1,2))
             if benchmark == 'zeros':
                 rapsd_score = np.nan
             else:
                 rapsd_score = rapsd_batch(sample_truth, sample_benchmark)    
+            print(f"rapsd_score is {rapsd_score}")
             rmse_scores[benchmark].append(rmse_score)
             mae_scores[benchmark].append(mae_score)
             rapsd_scores[benchmark].append(rapsd_score)
@@ -208,15 +212,16 @@ for benchmark in benchmark_methods:
     if not args.avg_pooling:
         crps_scores[benchmark]['avg_4'] = np.nan
         crps_scores[benchmark]['avg_16'] = np.nan
-    
+    print(f"benchmark {benchmark}")
+    print(f"RAPSD scores {rapsd_scores[benchmark]}")
     log_line(log_fname, "{} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}".format(
                                                                 benchmark,
-                                                                crps_scores[benchmark]['no_pooling'].mean(),
-                                                                crps_scores[benchmark]['max_4'].mean(),
-                                                                crps_scores[benchmark]['max_16'].mean(),
-                                                                crps_scores[benchmark]['avg_4'].mean(),
-                                                                crps_scores[benchmark]['avg_16'].mean(),
-                                                                rmse_scores[benchmark].mean(),
-                                                                mae_scores[benchmark].mean(),
-                                                                rapsd_score[benchmark].mean()
+                                                                np.array(crps_scores[benchmark]['no_pooling']).mean(),
+                                                                np.array(crps_scores[benchmark]['max_4']).mean(),
+                                                                np.array(crps_scores[benchmark]['max_16']).mean(),
+                                                                np.array(crps_scores[benchmark]['avg_4']).mean(),
+                                                                np.array(crps_scores[benchmark]['avg_16']).mean(),
+                                                                np.array(rmse_scores[benchmark]).mean(),
+                                                                np.array(mae_scores[benchmark]).mean(),
+                                                                np.nanmean(np.array(rapsd_scores[benchmark]))
                                                                 ))        
