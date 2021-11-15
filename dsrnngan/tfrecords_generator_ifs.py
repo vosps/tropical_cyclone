@@ -3,32 +3,33 @@ import tensorflow as tf
 import glob
 from data import all_ifs_fields,ifs_hours
 
-records_folder = '/ppdata/tfrecordsIFS_fixed/'
+records_folder = '/ppdata/tfrecordsIFS20/'
 return_dic = True
 
-def DataGenerator(year,batch_size,repeat=True,downsample = False, weights = None):
-    return create_mixed_dataset(year,batch_size,repeat=repeat, downsample = downsample, weights = weights)
+def DataGenerator(year, batch_size, repeat=True, downsample=False, weights=None):
+    return create_mixed_dataset(year, batch_size, repeat=repeat, downsample=downsample, weights=weights)
 
-def create_random_dataset(year,batch_size,era_shape=(10,10,9),con_shape=(100,100,2),
-                         out_shape=(100,100,1),repeat=True,
-                         folder=records_folder, shuffle_size = 1024):
-    dataset = create_dataset(year, '*', era_shape=era_shape,con_shape=con_shape,
-                               out_shape=out_shape,folder=folder,repeat=repeat,
-                               shuffle_size = shuffle_size)
-    return dataset.batch(batch_size).prefetch(2)
+# def create_random_dataset(year,batch_size,era_shape=(10,10,9),con_shape=(100,100,2),
+#                          out_shape=(100,100,1),repeat=True,
+#                          folder=records_folder, shuffle_size = 1024):
+#     dataset = create_dataset(year, '*', era_shape=era_shape,con_shape=con_shape,
+#                                out_shape=out_shape,folder=folder,repeat=repeat,
+#                                shuffle_size = shuffle_size)
+#     return dataset.batch(batch_size).prefetch(2)
 
-def create_mixed_dataset(year,batch_size,era_shape=(10,10,9),con_shape=(100,100,2),
-                         out_shape=(100,100,1),repeat=True,downsample = False,
-                         folder=records_folder, shuffle_size = 1024,
-                         weights = None):
+
+def create_mixed_dataset(year, batch_size, era_shape=(20,20,9), con_shape=(200,200,2),
+                         out_shape=(200,200,1), repeat=True, downsample=False,
+                         folder=records_folder, shuffle_size=1024,
+                         weights=None):
 
     classes = 4
     if weights is None:
         weights = [1./classes]*classes
     datasets = [create_dataset(year, i, era_shape=era_shape,
                                con_shape=con_shape,
-                               out_shape=out_shape,folder=folder,
-                               shuffle_size = shuffle_size,repeat=repeat)
+                               out_shape=out_shape, folder=folder,
+                               shuffle_size=shuffle_size, repeat=repeat)
                 for i in range(classes)]
     sampled_ds=tf.data.experimental.sample_from_datasets(datasets,
                                                          weights=weights).batch(batch_size)
@@ -131,65 +132,71 @@ def _float_feature(list_of_floats):  # float32
 
 
 def write_data(year,
-               ifs_fields = all_ifs_fields,
-               hours = ifs_hours,
-               era_chunk_width = 10,
-               num_class = 4 ,
-               log_precip = True,
-               ifs_norm = True
+               ifs_fields=all_ifs_fields,
+               hours=ifs_hours,
+               era_chunk_width=20,
+               num_class=4 ,
+               log_precip=True,
+               ifs_norm=True
 ):
     from data import get_dates
     from data_generator_ifs import DataGenerator
 
-    dates=get_dates(year)
+    dates = get_dates(year)
 
-    nim_size = 951
-    era_size = 96
+    nim_size = 940
+    era_size = 94
 
     upscaling_factor = 10
-    half_width = int(np.ceil(upscaling_factor/2))
 
-    nimrod_chunk_width = upscaling_factor * era_chunk_width
-    nimrod_starts = np.arange(half_width,nim_size-half_width,nimrod_chunk_width )
-    nimrod_starts[-1] = nim_size-half_width-nimrod_chunk_width
-    nimrod_ends = nimrod_starts+nimrod_chunk_width
-    era_starts = np.arange(1,era_size-1,era_chunk_width )
-    era_starts[-1] = era_size - 1 - era_chunk_width
-    era_ends = era_starts + era_chunk_width
-    print(nimrod_starts,nimrod_ends)
-    print(era_starts,era_ends)
-
+    nsamples = (era_size//era_chunk_width + 1)**2
+    print("Samples per image:", nsamples)
+    import random
 
     for hour in hours:
         dgc = DataGenerator(dates=dates,
                             ifs_fields=ifs_fields,
-                            batch_size=1,log_precip=log_precip,constants=True,
-                            hour=hour,ifs_norm=ifs_norm)
+                            batch_size=1,
+                            log_precip=log_precip,
+                            crop=True,
+                            shuffle=False,
+                            constants=True,
+                            hour=np.array([hour]),
+                            ifs_norm=ifs_norm)
         fle_hdles = []
         for fh in range(num_class):
-            flename=f"{records_folder}{year}_{hour}.{fh}.tfrecords"
+            flename = f"{records_folder}{year}_{hour}.{fh}.tfrecords"
             fle_hdles.append( tf.io.TFRecordWriter(flename))
         for batch in range(len(dates)):
-            print(batch)
-            sample=dgc.__getitem__(batch)
+            print(hour, batch)
+            sample = dgc.__getitem__(batch)
             for k in range(sample[1]['output'].shape[0]):
-                for i,idx in enumerate(nimrod_starts):
-                    idx1 = nimrod_ends[i]
-                    for j,jdx in enumerate(nimrod_starts):
-                        jdx1 = nimrod_ends[j]
-                        nimrod = sample[1]['output'][k,idx:idx1,jdx:jdx1].flatten()
-                        const = sample[0]['hi_res_inputs'][k,idx:idx1,jdx:jdx1,:].flatten()
-                        era = sample[0]['lo_res_inputs'][k,era_starts[i]:era_ends[i],era_starts[j]:era_ends[j],:].flatten()
-                        feature = {
-                            'generator_input': _float_feature(era),
-                            'constants': _float_feature(const),
-                            'generator_output': _float_feature(nimrod)
-                        }
-                        features = tf.train.Features(feature=feature)
-                        example = tf.train.Example(features=features)
-                        example_to_string = example.SerializeToString()
-                        clss = min(int(np.floor(((nimrod > 0.1).mean()*num_class))),num_class-1)  # all class binning is here!
-                        fle_hdles[clss].write(example_to_string)
+                for ii in range(nsamples):
+                    # e.g. for ERA width 94 and era_chunk_width 20, can have 0:20 up to 74:94
+                    idx = random.randint(0, era_size-era_chunk_width)
+                    idy = random.randint(0, era_size-era_chunk_width)
+
+                    nimrod = sample[1]['output'][k,
+                                                 idx*upscaling_factor:(idx+era_chunk_width)*upscaling_factor,
+                                                 idy*upscaling_factor:(idy+era_chunk_width)*upscaling_factor].flatten()
+                    const = sample[0]['hi_res_inputs'][k,
+                                                       idx*upscaling_factor:(idx+era_chunk_width)*upscaling_factor,
+                                                       idy*upscaling_factor:(idy+era_chunk_width)*upscaling_factor,
+                                                       :].flatten()
+                    era = sample[0]['lo_res_inputs'][k,
+                                                     idx:idx+era_chunk_width,
+                                                     idy:idy+era_chunk_width,
+                                                     :].flatten()
+                    feature = {
+                        'generator_input': _float_feature(era),
+                        'constants': _float_feature(const),
+                        'generator_output': _float_feature(nimrod)
+                    }
+                    features = tf.train.Features(feature=feature)
+                    example = tf.train.Example(features=features)
+                    example_to_string = example.SerializeToString()
+                    clss = min(int(np.floor(((nimrod > 0.1).mean()*num_class))), num_class-1)  # all class binning is here!
+                    fle_hdles[clss].write(example_to_string)
         for fh in fle_hdles:
             fh.close()
 

@@ -19,7 +19,7 @@ import roc
 # necessary for plot rank histograms. these are large files, so quasi-random
 # selection used to avoid storing gigabytes of data
 # TODO: this could live in .yaml file, but leave here for now
-ranks_to_save = [128000, 192000, 256000, 320000]
+ranks_to_save = [64000, 96000, 128000, 160000]
 
 
 if __name__ == "__main__":
