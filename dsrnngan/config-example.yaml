@@ -22,12 +22,12 @@ DISCRIMINATOR:
 TRAIN:
     train_years: [2016, 2017, 2018] 
     training_weights: [0.4, 0.3, 0.2, 0.1]
-    num_samples: 320000
-    steps_per_epoch: 800
-    batch_size: 16
-    kl_weight: 1e-8 # used for VAEGAN
-    ensemble_size: 8 # size of pred ensemble for content loss
-    content_loss_weight: 1.0
+    num_samples: 160000
+    steps_per_epoch: 3200
+    batch_size: 2  # can use 400x16 without CL, or 3200x2 with CL
+    kl_weight: 1e-8  # used for VAEGAN
+    ensemble_size: 8  # size of pred ensemble for content loss
+    content_loss_weight: 1000.0
 
 VAL:
     val_years: 2019 # cannot pass a list if using create_fixed_dataset
