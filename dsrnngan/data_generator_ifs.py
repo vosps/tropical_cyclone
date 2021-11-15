@@ -14,6 +14,7 @@ class DataGenerator(Sequence):
                  downsample=False, seed=9999,
 ):
         self.dates = dates
+
         if isinstance(hour, str):
             if hour == 'random':
                 self.hours = np.repeat(ifs_hours, len(self.dates))
@@ -21,11 +22,11 @@ class DataGenerator(Sequence):
             else:
                 assert False, f"Unsupported hour {hour}"
 
-        elif isinstance(hour, int):
+        elif isinstance(hour, (int, np.integer)):
             self.hours = np.repeat(hour, len(self.dates))
             self.dates = np.tile(self.dates, 1)  # lol
 
-        elif isinstance(hour, list):
+        elif isinstance(hour, (list, np.ndarray)):
             self.hours = np.repeat(hour, len(self.dates))
             self.dates = np.tile(self.dates, len(hour))
 

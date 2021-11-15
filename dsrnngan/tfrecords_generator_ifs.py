@@ -161,7 +161,7 @@ def write_data(year,
                             crop=True,
                             shuffle=False,
                             constants=True,
-                            hour=np.array([hour]),
+                            hour=hour,
                             ifs_norm=ifs_norm)
         fle_hdles = []
         for fh in range(num_class):
