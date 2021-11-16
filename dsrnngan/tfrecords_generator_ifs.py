@@ -103,7 +103,7 @@ def create_dataset(year,clss,era_shape=(10,10,9),con_shape=(100,100,2),out_shape
 
 def create_fixed_dataset(year=None,mode='validation',batch_size=16,
                          downsample=False,
-                         era_shape=(10,10,9),con_shape=(100,100,2),out_shape=(100,100,1),
+                         era_shape=(20,20,9),con_shape=(200,200,2),out_shape=(200,200,1),
                          name=None,folder=records_folder):
     assert year is not None or name is not None, "Must specify year or file name"
     if folder[-1] != '/':
@@ -202,17 +202,21 @@ def write_data(year,
 
 
 
-def save_dataset(tfrecords_dataset,flename):
+def save_dataset(tfrecords_dataset, flename, max_batches=None):
 
     assert return_dic, "Only works with return_dic=True"
     flename=f"{records_folder}/{flename}"
     fle_hdle =  tf.io.TFRecordWriter(flename)            
-    for sample in tfrecords_dataset:
+    for ii, sample in enumerate(tfrecords_dataset):
+        print(ii)
+        if max_batches is not None:
+            if ii == max_batches:
+                break
         for k in range(sample[1]['output'].shape[0]):
             feature = {
-                'lo_res_inputs': _float_feature(sample[0]['lo_res_inputs'][k,...].numpy().flatten()),
-                'hi_res_inputs': _float_feature(sample[0]['hi_res_inputs'][k,...].numpy().flatten()),
-                'output': _float_feature(sample[1]['output'][k,...].numpy().flatten())
+                'generator_input': _float_feature(sample[0]['lo_res_inputs'][k,...].numpy().flatten()),
+                'constants': _float_feature(sample[0]['hi_res_inputs'][k,...].numpy().flatten()),
+                'generator_output': _float_feature(sample[1]['output'][k,...].numpy().flatten())
             }
             features = tf.train.Features(feature=feature)
             example = tf.train.Example(features=features)
