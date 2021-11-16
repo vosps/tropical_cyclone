@@ -1,5 +1,4 @@
 from tensorflow.python.keras.utils import generic_utils
-from tensorflow.keras.layers import MaxPooling2D, AveragePooling2D
 import os
 import gc
 import numpy as np
@@ -14,6 +13,7 @@ import rainfarm
 import warnings
 from main import ranks_to_save
 from rapsd import rapsd
+from pooling import pool
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 path = os.path.dirname(os.path.abspath(__file__))
@@ -106,7 +106,7 @@ def ensemble_ranks(*,
     batch_gen_iter = iter(batch_gen)
 
     if mode == "det":
-        rank_samples = 1 #can't generate an ensemble deterministically
+        rank_samples = 1  # can't generate an ensemble deterministically
 
     if show_progress:
         # Initialize progbar and batch counter
@@ -181,6 +181,7 @@ def ensemble_ranks(*,
         
         # calculate ranks
         # currently ranks only calculated without pooling
+        # probably fine but may want to threshold in the future, e.g. <1mm, >5mm
         samples_gen_ranks = samples_gen.reshape((np.prod(samples_gen.shape[:-1]), samples_gen.shape[-1]))
         rank = np.count_nonzero(sample_truth[:, None] >= samples_gen_ranks, axis=-1)
         ranks.append(rank)
@@ -195,35 +196,15 @@ def ensemble_ranks(*,
             if method == 'no_pooling':
                 sample_truth_pooled = sample_truth
                 samples_gen_pooled = samples_gen
-            if method == 'max_4':
-                max_pool_2d_4 = MaxPooling2D(pool_size=(4, 4), strides=(1, 1), padding='valid')
-                sample_truth_pooled = max_pool_2d_4(sample_truth.astype("float32")).numpy()
-                samples_gen_pooled = max_pool_2d_4(samples_gen).numpy()
-            if method == 'max_16':
-                max_pool_2d_16 = MaxPooling2D(pool_size=(16, 16), strides=(1, 1), padding='valid')
-                sample_truth_pooled = max_pool_2d_16(sample_truth.astype("float32")).numpy()
-                samples_gen_pooled = max_pool_2d_16(samples_gen).numpy()
-            if method == 'max_10_no_overlap':
-                max_pool_2d_10 = MaxPooling2D(pool_size=(10, 10), strides=(10, 10), padding='valid')
-                sample_truth_pooled = max_pool_2d_10(sample_truth.astype("float32")).numpy()
-                samples_gen_pooled = max_pool_2d_10(samples_gen).numpy()
-            if method == 'avg_4':
-                avg_pool_2d_4 = AveragePooling2D(pool_size=(4, 4), strides=(1, 1), padding='valid')
-                sample_truth_pooled = avg_pool_2d_4(sample_truth.astype("float32")).numpy()
-                samples_gen_pooled = avg_pool_2d_4(samples_gen).numpy()
-            if method == 'avg_16':
-                avg_pool_2d_16 = AveragePooling2D(pool_size=(16, 16), strides=(1, 1), padding='valid')
-                sample_truth_pooled = avg_pool_2d_16(sample_truth.astype("float32")).numpy()
-                samples_gen_pooled = avg_pool_2d_16(samples_gen).numpy()
-            if method == 'avg_10_no_overlap':
-                avg_pool_2d_10 = AveragePooling2D(pool_size=(10, 10), strides=(10, 10), padding='valid')
-                sample_truth_pooled = avg_pool_2d_10(sample_truth.astype("float32")).numpy()
-                samples_gen_pooled = avg_pool_2d_10(samples_gen).numpy()
-            crps_score = (crps.crps_ensemble(sample_truth_pooled, samples_gen_pooled)).mean()
+            else:
+                sample_truth_pooled = pool(sample_truth, method)
+                samples_gen_pooled = pool(samples_gen, method)
+
+            crps_score = crps.crps_ensemble(sample_truth_pooled, samples_gen_pooled).mean()
             del sample_truth_pooled, samples_gen_pooled
             gc.collect()
 
-            if method not in crps_scores[method].keys():
+            if method not in crps_scores:
                 crps_scores[method] = []
             crps_scores[method].append(crps_score)
 

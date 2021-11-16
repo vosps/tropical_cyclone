@@ -3,12 +3,12 @@ import os
 import gc
 from data import get_dates
 from data_generator_ifs import DataGenerator as DataGeneratorFull
-from tensorflow.keras.layers import MaxPooling2D, AveragePooling2D
 import ecpoint
 import benchmarks
 import numpy as np
 import crps
 from evaluation import rapsd_batch, log_line
+from pooling import pool
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--log_folder', type=str, 
@@ -105,8 +105,8 @@ for benchmark in benchmark_methods:
     data_benchmarks_iter = iter(data_benchmarks)
     for i in range(num_batches):
         print(f"calculating for sample number {i+1} of {num_batches}")
-        (inp,outp) = next(data_benchmarks_iter)
-        sample_truth = outp['output']
+        (inp, outp) = next(data_benchmarks_iter)
+        sample_truth = np.expand_dims(outp['output'], axis=-1)
         if benchmark == 'lanczos':
             sample_benchmark = benchmarks.lanczosmodel(inp['lo_res_inputs'][...,1])
         elif benchmark == 'rainfarm':
@@ -121,40 +121,19 @@ for benchmark in benchmark_methods:
             sample_benchmark = benchmarks.zerosmodel(inp['lo_res_inputs'][...,1])
 
         if benchmark in ['rainfarm', 'ecpoint']:
+            # these benchmarks produce an ensemble of samples
             for method in pooling_methods:
                 if method == 'no_pooling':
                     sample_truth_pooled = sample_truth
                     sample_benchmark_pooled = sample_benchmark
-                if method == 'max_4':
-                    max_pool_2d_4 = MaxPooling2D(pool_size=(4, 4), strides=(1, 1), padding='valid')
-                    sample_truth_pooled = max_pool_2d_4(np.expand_dims(sample_truth.astype("float32"), axis=-1)).numpy()
-                    sample_benchmark_pooled = max_pool_2d_4(sample_benchmark.astype("float32")).numpy()
-                if method == 'max_16':
-                    max_pool_2d_16 = MaxPooling2D(pool_size=(16, 16), strides=(1, 1), padding='valid')
-                    sample_truth_pooled = max_pool_2d_16(np.expand_dims(sample_truth.astype("float32"), axis=-1)).numpy()
-                    sample_benchmark_pooled = max_pool_2d_16(sample_benchmark.astype("float32")).numpy()
-                if method == 'max_10_no_overlap':
-                    max_pool_2d_10 = MaxPooling2D(pool_size=(10, 10), strides=(10, 10), padding='valid')
-                    sample_truth_pooled = max_pool_2d_10(np.expand_dims(sample_truth.astype("float32"), axis=-1)).numpy()
-                    sample_benchmark_pooled = max_pool_2d_10(sample_benchmark.astype("float32")).numpy()
-                if method == 'avg_4':
-                    avg_pool_2d_4 = AveragePooling2D(pool_size=(4, 4), strides=(1, 1), padding='valid')
-                    sample_truth_pooled = avg_pool_2d_4(np.expand_dims(sample_truth.astype("float32"), axis=-1)).numpy()
-                    sample_benchmark_pooled = avg_pool_2d_4(sample_benchmark.astype("float32")).numpy()
-                if method == 'avg_16':
-                    avg_pool_2d_16 = AveragePooling2D(pool_size=(16, 16), strides=(1, 1), padding='valid')
-                    sample_truth_pooled = avg_pool_2d_16(np.expand_dims(sample_truth.astype("float32"), axis=-1)).numpy()
-                    sample_benchmark_pooled = avg_pool_2d_16(sample_benchmark.astype("float32")).numpy()
-                if method == 'avg_10_no_overlap':
-                    avg_pool_2d_10 = AveragePooling2D(pool_size=(10, 10), strides=(10, 10), padding='valid')
-                    sample_truth_pooled = avg_pool_2d_10(np.expand_dims(sample_truth.astype("float32"), axis=-1)).numpy()
-                    sample_benchmark_pooled = avg_pool_2d_10(sample_benchmark.astype("float32")).numpy()
-                if method != 'no_pooling':
+                else:
+                    sample_truth_pooled = pool(sample_truth, method)
+                    sample_benchmark_pooled = pool(sample_benchmark, method)
                     sample_truth_pooled = np.squeeze(sample_truth_pooled)
-                    sample_benchmark_pooled = np.squeeze(sample_benchmark_pooled)
-                crps_score = (crps.crps_ensemble(sample_truth_pooled, sample_benchmark_pooled)).mean()
+
+                crps_score = crps.crps_ensemble(sample_truth_pooled, sample_benchmark_pooled).mean()
                 del sample_truth_pooled, sample_benchmark_pooled
-                if method not in crps_scores[benchmark].keys():
+                if method not in crps_scores[benchmark]:
                     crps_scores[benchmark][method] = []
                 crps_scores[benchmark][method].append(crps_score)     
             for j in range(sample_benchmark.shape[-1]):
@@ -170,38 +149,30 @@ for benchmark in benchmark_methods:
             mae_scores[benchmark].append(mae_score)
             rapsd_scores[benchmark].append(rapsd_score)
             gc.collect()
-        else: 
+
+        else:
+            # these benchmarks produce a single sample
+            sample_benchmark = np.expand_dims(sample_benchmark, axis=-1)
             for method in pooling_methods:
                 if method == 'no_pooling':
                     sample_truth_pooled = sample_truth
                     sample_benchmark_pooled = sample_benchmark
-                if method == 'max_4':
-                    max_pool_2d_4 = MaxPooling2D(pool_size=(4, 4), strides=(1, 1), padding='valid')
-                    sample_truth_pooled = max_pool_2d_4(np.expand_dims(sample_truth.astype("float32"), axis=-1)).numpy()
-                    sample_benchmark_pooled = max_pool_2d_4(np.expand_dims(sample_benchmark.astype("float32"), axis=-1)).numpy()
-                if method == 'max_16':
-                    max_pool_2d_16 = MaxPooling2D(pool_size=(16, 16), strides=(1, 1), padding='valid')
-                    sample_truth_pooled = max_pool_2d_16(np.expand_dims(sample_truth.astype("float32"), axis=-1)).numpy()
-                    sample_benchmark_pooled = max_pool_2d_16(np.expand_dims(sample_benchmark.astype("float32"), axis=-1)).numpy()
-                if method == 'avg_4':
-                    avg_pool_2d_4 = AveragePooling2D(pool_size=(4, 4), strides=(1, 1), padding='valid')
-                    sample_truth_pooled = avg_pool_2d_4(np.expand_dims(sample_truth.astype("float32"), axis=-1)).numpy()
-                    sample_benchmark_pooled = avg_pool_2d_4(np.expand_dims(sample_benchmark.astype("float32"), axis=-1)).numpy()
-                if method == 'avg_16':
-                    avg_pool_2d_16 = AveragePooling2D(pool_size=(16, 16), strides=(1, 1), padding='valid')
-                    sample_truth_pooled = avg_pool_2d_16(np.expand_dims(sample_truth.astype("float32"), axis=-1)).numpy()
-                    sample_benchmark_pooled = avg_pool_2d_16(np.expand_dims(sample_benchmark.astype("float32"), axis=-1)).numpy()
-                if method != 'no_pooling':
+                else:
+                    sample_truth_pooled = pool(sample_truth, method)
+                    sample_benchmark_pooled = pool(sample_benchmark, method)
                     sample_truth_pooled = np.squeeze(sample_truth_pooled)
                     sample_benchmark_pooled = np.squeeze(sample_benchmark_pooled)
-                crps_score = (benchmarks.mean_crps(sample_truth_pooled, sample_benchmark_pooled))
+
+                crps_score = benchmarks.mean_crps(sample_truth_pooled, sample_benchmark_pooled)
                 del sample_truth_pooled, sample_benchmark_pooled
-                if method not in crps_scores[benchmark].keys():
+
+                if method not in crps_scores[benchmark]:
                     crps_scores[benchmark][method] = []
                 crps_scores[benchmark][method].append(crps_score) 
                 gc.collect()
-            rmse_score = (np.sqrt(((sample_truth - sample_benchmark)**2)).mean(axis=(1,2)))
-            mae_score = (np.abs(sample_truth - sample_benchmark)).mean(axis=(1,2))
+
+            rmse_score = np.sqrt((sample_truth - sample_benchmark)**2).mean(axis=(1,2))
+            mae_score = np.abs(sample_truth - sample_benchmark).mean(axis=(1,2))
             if benchmark == 'zeros':
                 rapsd_score = np.nan
             else:
