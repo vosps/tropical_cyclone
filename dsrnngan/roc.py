@@ -191,7 +191,7 @@ def plot_roc_curves(*,
                  label=f"AUC values for precip_values {precip_values[i]}")
     
     plt.ylim([0, 1.0])
-    plt.xlabel('Epoch number')
+    plt.xlabel('Checkpoint number')
     plt.ylabel('Area under ROC curve')
     plt.title('AUC values for varying precip thresholds')
     plt.legend(loc="best")

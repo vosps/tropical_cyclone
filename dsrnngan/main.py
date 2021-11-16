@@ -91,7 +91,7 @@ if __name__ == "__main__":
     train_years = setup_params["TRAIN"]["train_years"]
     training_weights = setup_params["TRAIN"]["training_weights"]
     num_samples = setup_params["TRAIN"]["num_samples"]
-    steps_per_epoch = setup_params["TRAIN"]["steps_per_epoch"]
+    steps_per_checkpoint = setup_params["TRAIN"]["steps_per_checkpoint"]
     batch_size = setup_params["TRAIN"]["batch_size"]
     kl_weight = setup_params["TRAIN"]["kl_weight"]
     ensemble_size = setup_params["TRAIN"]["ensemble_size"]
@@ -116,8 +116,8 @@ if __name__ == "__main__":
     if problem_type not in ['normal', 'superresolution']:
         raise ValueError("Problem type is restricted to 'normal' 'superresolution'")
 
-    num_epochs = int(num_samples/(steps_per_epoch * batch_size))
-    epoch = 1
+    num_checkpoints = int(num_samples/(steps_per_checkpoint * batch_size))
+    checkpoint = 1
 
     # create log folder and model save/load subfolder if they don't exist
     Path(log_folder).mkdir(parents=True, exist_ok=True)
@@ -186,7 +186,7 @@ if __name__ == "__main__":
 
         while (training_samples < num_samples):  # main training loop
 
-            print("Epoch {}/{}".format(epoch, num_epochs))
+            print("Checkpoint {}/{}".format(checkpoint, num_checkpoints))
 
             # train for some number of batches
             loss_log = train.train_model(model=model,
@@ -195,19 +195,19 @@ if __name__ == "__main__":
                                          batch_gen_valid=batch_gen_valid,
                                          noise_channels=noise_channels,
                                          latent_variables=latent_variables,
-                                         epoch=epoch,
-                                         steps_per_epoch=steps_per_epoch,
+                                         checkpoint=checkpoint,
+                                         steps_per_checkpoint=steps_per_checkpoint,
                                          plot_samples=val_size,
                                          plot_fn=plot_fname)
 
-            training_samples += steps_per_epoch * batch_size
+            training_samples += steps_per_checkpoint * batch_size
 
-            if epoch == 1:
+            if checkpoint == 1:
                 # set up log DataFrame based on loss_log entries
                 col_names = ["training_samples"] + [foo for foo in loss_log]
                 log = pd.DataFrame(columns=col_names)
 
-            epoch += 1
+            checkpoint += 1
 
             # save results
             model.save(model_weights_root)
@@ -224,7 +224,7 @@ if __name__ == "__main__":
             log = log.append(pd.DataFrame(data=data))
             log.to_csv(log_file, index=False, float_format="%.6f")
 
-            # Save model weights each epoch
+            # Save model weights each checkpoint
             gen_weights_file = os.path.join(model_weights_root, "gen_weights-{:07d}.h5".format(training_samples))
             model.gen.save_weights(gen_weights_file)
 
@@ -242,17 +242,17 @@ if __name__ == "__main__":
     if args.evalnum == "blitz":
         model_numbers = ranks_to_save.copy()  # should not be modifying list in-place, but just in case!
     elif args.evalnum == "short":
-        # hand-picked set of 12; 2 lots of 6 consecutive epochs including
+        # hand-picked set of 12; 2 lots of 6 consecutive checkpoints including
         # the default ranks_to_save
-        # this assumes 25 'epochs', may want to generalise?!
-        interval = steps_per_epoch * batch_size
+        # this assumes 25 checkpoints, may want to generalise?!
+        interval = steps_per_checkpoint * batch_size
         model_numbers = [10*interval, 11*interval, 12*interval, 13*interval, 14*interval, 15*interval,
                          20*interval, 21*interval, 22*interval, 23*interval, 24*interval, 25*interval]
     elif args.evalnum == "tenth":  # every 10th; does NOT include fav numbers
-        interval = steps_per_epoch * batch_size
+        interval = steps_per_checkpoint * batch_size
         model_numbers = np.arange(0, num_samples + 1, 10*interval)[1:].tolist()
     elif args.evalnum == "full":
-        interval = steps_per_epoch * batch_size
+        interval = steps_per_checkpoint * batch_size
         model_numbers = np.arange(0, num_samples + 1, interval)[1:].tolist()
 
     # evaluate model performance

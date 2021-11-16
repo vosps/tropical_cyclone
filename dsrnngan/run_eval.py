@@ -22,7 +22,7 @@ mode = setup_params["GENERAL"]["mode"]
 arch = setup_params["MODEL"]["architecture"]
 padding = setup_params["MODEL"]["architecture"]
 batch_size = setup_params["TRAIN"]["batch_size"]
-steps_per_epoch = setup_params["TRAIN"]["steps_per_epoch"]
+steps_per_checkpoint = setup_params["TRAIN"]["steps_per_checkpoint"]
 problem_type = setup_params["GENERAL"]["problem_type"]
 filters_gen = setup_params["GENERATOR"]["filters_gen"]
 noise_channels = setup_params["GENERATOR"]["noise_channels"]
@@ -34,7 +34,7 @@ noise_factor = setup_params["EVAL"]["postprocessing_noise_factor"]
 noise_factor = float(noise_factor)
 
 ##eval-short
-interval = steps_per_epoch * batch_size
+interval = steps_per_checkpoint * batch_size
 #model_numbers = [37*interval, 38*interval, 39*interval, 40*interval,
                 #59*interval, 
 model_numbers = [60*interval, 61*interval, 62*interval, 75*interval, 

@@ -23,7 +23,7 @@ TRAIN:
     train_years: [2016, 2017, 2018] 
     training_weights: [0.4, 0.3, 0.2, 0.1]
     num_samples: 160000
-    steps_per_epoch: 3200
+    steps_per_checkpoint: 3200
     batch_size: 2  # can use 400x16 without CL, or 3200x2 with CL
     kl_weight: 1e-8  # used for VAEGAN
     ensemble_size: 8  # size of pred ensemble for content loss

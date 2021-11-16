@@ -26,7 +26,7 @@ def plot_img_log(img, value_range=(0.01, 5), extent=None):
 def plot_sequences(gen, 
                    mode, 
                    batch_gen,
-                   epoch,
+                   checkpoint,
                    noise_channels,
                    latent_variables,
                    num_samples=8, 
@@ -80,7 +80,7 @@ def plot_sequences(gen,
             plt.subplot(gs[i,j])
             plot_img(seq_gen[k][s,:,:,0], value_range=value_range) 
 
-    plt.suptitle('Epoch ' + str(epoch))
+    plt.suptitle('Checkpoint ' + str(checkpoint))
 
     if out_fn is not None:
         plt.savefig(out_fn, bbox_inches='tight')

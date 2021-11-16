@@ -52,7 +52,7 @@ class Deterministic(object):
 
         self.gen_trainer.summary()
 
-    def train(self, batch_gen_train, steps_per_epoch=1, show_progress=True):
+    def train(self, batch_gen_train, steps_per_checkpoint=1, show_progress=True):
 
         for tmp_batch, _, _ in batch_gen_train.take(1).as_numpy_iterator():
             batch_size = tmp_batch.shape[0]
@@ -60,13 +60,13 @@ class Deterministic(object):
 
         if show_progress:
             # Initialize progbar and batch counter
-            progbar = generic_utils.Progbar(steps_per_epoch*batch_size)
+            progbar = generic_utils.Progbar(steps_per_checkpoint*batch_size)
 
         loss_log = []
 
         batch_gen_iter = iter(batch_gen_train)
 
-        for k in range(steps_per_epoch):
+        for k in range(steps_per_checkpoint):
             cond, const, sample = batch_gen_iter.get_next()
             loss = self.gen_trainer.train_on_batch([cond, const], sample)
             del sample, cond, const
