@@ -106,44 +106,43 @@ def ensemble_ranks(*,
     batch_gen_iter = iter(batch_gen)
 
     if mode == "det":
-        rank_samples = 1
+        rank_samples = 1 #can't generate an ensemble deterministically
 
     if show_progress:
         # Initialize progbar and batch counter
         progbar = generic_utils.Progbar(
             num_batches)
-    sample_crps = {}
+        
+    pooling_methods = ['no_pooling']
+    if max_pooling:
+        pooling_methods.append('max_4')
+        pooling_methods.append('max_16')
+        pooling_methods.append('max_10_no_overlap')
+    if avg_pooling:
+        pooling_methods.append('avg_4')
+        pooling_methods.append('avg_16')
+        pooling_methods.append('avg_10_no_overlap')
+
     for k in range(num_batches):
+        # load truth images
         if load_full_image:
             inputs, outputs = next(batch_gen_iter)
             cond = inputs['lo_res_inputs']
             const = inputs['hi_res_inputs']
-            sample = outputs['output']
-            sample = np.expand_dims(np.array(sample), axis=-1)
+            sample_truth = outputs['output']
+            sample_truth = np.expand_dims(np.array(sample_truth, axis=-1))
         else:
             cond, const, sample = next(batch_gen_iter)
-            sample = sample.numpy()
-
+            sample_truth = sample.numpy()
         if denormalise_data:
-            sample = data.denormalise(sample)
+            sample_truth = data.denormalise(sample_truth)
         if add_noise:
             noise_dim_1, noise_dim_2 = sample[0, ..., 0].shape
             noise = np.random.rand(batch_size, noise_dim_1, noise_dim_2, 1)*noise_factor
-            sample += noise
-        if max_pooling:
-            max_pool_2d_4 = MaxPooling2D(pool_size=(4, 4), strides=(1, 1), padding='valid')
-            sample_crps['max_4'] = max_pool_2d_4(sample.copy()).numpy()
-            max_pool_2d_16 = MaxPooling2D(pool_size=(16, 16), strides=(1, 1), padding='valid')
-            sample_crps['max_16'] = max_pool_2d_16(sample.copy()).numpy()
-        if avg_pooling:
-            avg_pool_2d_4 = AveragePooling2D(pool_size=(4, 4), strides=(1, 1), padding='valid')
-            sample_crps['avg_4'] = avg_pool_2d_4(sample.copy()).numpy()
-            avg_pool_2d_16 = AveragePooling2D(pool_size=(16, 16), strides=(1, 1), padding='valid')
-            sample_crps['avg_16'] = avg_pool_2d_16(sample.copy()).numpy()
-        sample_crps['no-pooling'] = sample
-        sample = sample.ravel()
+            sample_truth += noise
         
-        samples_gen = {}
+        # generate predictions, depending on model type
+        samples_gen = []
         if mode == "GAN":
             noise_shape = np.array(cond)[0, ..., 0].shape + (noise_channels,)
             noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size)
@@ -152,39 +151,10 @@ def ensemble_ranks(*,
                 nn *= noise_mul
                 nn -= noise_offset
                 sample_gen = gen.predict([cond, const, nn])
-                if max_pooling:
-                    sample_gen_max_4 = max_pool_2d_4(sample_gen.copy())
-                    sample_gen_max_16 = max_pool_2d_16(sample_gen.copy())
-                    if denormalise_data:
-                        sample_gen_max_4 = data.denormalise(sample_gen_max_4)
-                        sample_gen_max_16 = data.denormalise(sample_gen_max_16)
-                if avg_pooling:
-                    sample_gen_avg_4 = avg_pool_2d_4(sample_gen.copy())
-                    sample_gen_avg_16 = avg_pool_2d_16(sample_gen.copy())
-                    if denormalise_data:
-                        sample_gen_avg_4 = data.denormalise(sample_gen_avg_4)
-                        sample_gen_avg_16 = data.denormalise(sample_gen_avg_16)
-                if denormalise_data:
-                    sample_gen = data.denormalise(sample_gen)
-                if i == 0:
-                    samples_gen['no-pooling'] = []
-                    samples_gen['max_4'] = []
-                    samples_gen['max_16'] = []
-                    samples_gen['avg_4'] = []
-                    samples_gen['avg_16'] = []
-                samples_gen['no-pooling'].append(sample_gen)
-                if max_pooling:
-                    samples_gen['max_4'].append(sample_gen_max_4)
-                    samples_gen['max_16'].append(sample_gen_max_16)
-                if avg_pooling:
-                    samples_gen['avg_4'].append(sample_gen_avg_4)
-                    samples_gen['avg_16'].append(sample_gen_avg_16)
-
+                samples_gen.append(sample_gen.astype("float32"))
         elif mode == "det":
             sample_gen = gen.predict([cond, const])
-            if denormalise_data:
-                sample_gen = data.denormalise(sample_gen)
-            samples_gen.append(sample_gen)
+            samples_gen.append(sample_gen.astype("float32"))
         elif mode == 'VAEGAN':
             # call encoder once
             (mean, logvar) = gen.encoder([cond, const])
@@ -196,78 +166,71 @@ def ensemble_ranks(*,
                 nn -= noise_offset
                 # generate ensemble of preds with decoder
                 sample_gen = gen.decoder.predict([mean, logvar, nn, const])
-                if max_pooling:
-                    sample_gen_max_4 = max_pool_2d_4(sample_gen.copy())
-                    sample_gen_max_16 = max_pool_2d_16(sample_gen.copy())
-                    if denormalise_data:
-                        sample_gen_max_4 = data.denormalise(sample_gen_max_4)
-                        sample_gen_max_16 = data.denormalise(sample_gen_max_16)
-                if avg_pooling:
-                    sample_gen_avg_4 = avg_pool_2d_4(sample_gen.copy())
-                    sample_gen_avg_16 = avg_pool_2d_16(sample_gen.copy())
-                    if denormalise_data:
-                        sample_gen_avg_4 = data.denormalise(sample_gen_avg_4)
-                        sample_gen_avg_16 = data.denormalise(sample_gen_avg_16)
-                if denormalise_data:
-                    sample_gen = data.denormalise(sample_gen)
-                if add_noise:
-                    (noise_dim_1, noise_dim_2) = sample_gen[0, ..., 0].shape
-                    noise = np.random.rand(batch_size, noise_dim_1, noise_dim_2, 1)*noise_factor
-                    sample_gen += noise
-                if i == 0:
-                    samples_gen['no-pooling'] = []
-                    samples_gen['max_4'] = []
-                    samples_gen['max_16'] = []
-                    samples_gen['avg_4'] = []
-                    samples_gen['avg_16'] = []
-                samples_gen['no-pooling'].append(sample_gen)
-                if max_pooling:
-                    samples_gen['max_4'].append(sample_gen_max_4)
-                    samples_gen['max_16'].append(sample_gen_max_16)
-                if avg_pooling:
-                    samples_gen['avg_4'].append(sample_gen_avg_4)
-                    samples_gen['avg_16'].append(sample_gen_avg_16)
-                if add_noise:
-                    (noise_dim_1, noise_dim_2) = sample_gen[0, ..., 0].shape
-                    noise = np.random.rand(batch_size, noise_dim_1, noise_dim_2, 1)*noise_factor
-                    sample_gen += noise
-                samples_gen.append(sample_gen)
-        else:
-            print("mode type not implemented in ensemble_ranks")
+                samples_gen.append(sample_gen.astype("float32"))
+        for ii in range(len(samples_gen)):
+            sample_gen = samples_gen[ii]
+            if denormalise_data:
+                sample_gen = data.denormalise(sample_gen)
+            if add_noise:
+                (noise_dim_1, noise_dim_2) = sample_gen[0, ..., 0].shape
+                noise = np.random.rand(batch_size, noise_dim_1, noise_dim_2, 1)*noise_factor
+                sample_gen += noise
+            samples_gen[ii] = sample_gen
+        # turn list into array
+        samples_gen = np.stack(samples_gen, axis=-1)
         
-        pooling_methods = ['no-pooling']
-        if max_pooling:
-            pooling_methods.append('max_4')
-            pooling_methods.append('max_16')
-        if avg_pooling:
-            pooling_methods.append('avg_4')
-            pooling_methods.append('avg_16')
-        
-        for method in pooling_methods:
-            samples_gen[method] = np.stack(samples_gen[method], axis=-1)
-            crps_score = crps.crps_ensemble(sample_crps[method], samples_gen[method])
-            if method not in crps_scores.keys():
-                crps_scores[method] = []
-            crps_scores[method].append(crps_score.mean())
-        ## currently ranks only calculated without pooling
-        samples_gen = samples_gen['no-pooling'].reshape(
-                (np.prod(samples_gen['no-pooling'].shape[:-1]), samples_gen['no-pooling'].shape[-1]))
-        rank = np.count_nonzero(sample[:, None] >= samples_gen, axis=-1)
+        # calculate ranks
+        # currently ranks only calculated without pooling
+        samples_gen_ranks = samples_gen.reshape((np.prod(samples_gen.shape[:-1]), samples_gen.shape[-1]))
+        rank = np.count_nonzero(sample_truth[:, None] >= samples_gen_ranks, axis=-1)
         ranks.append(rank)
+        ranks = np.concatenate(ranks)        
+        if normalize_ranks:
+            ranks = ranks / rank_samples      
+        del samples_gen_ranks
+        gc.collect()        
+
+        # calculate CRPS scores for different pooling methods        
+        for method in pooling_methods:
+            if method == 'no_pooling':
+                sample_truth_pooled = sample_truth
+                samples_gen_pooled = samples_gen
+            if method == 'max_4':
+                max_pool_2d_4 = MaxPooling2D(pool_size=(4, 4), strides=(1, 1), padding='valid')
+                sample_truth_pooled = max_pool_2d_4(sample_truth.astype("float32")).numpy()
+                samples_gen_pooled = max_pool_2d_4(samples_gen).numpy()
+            if method == 'max_16':
+                max_pool_2d_16 = MaxPooling2D(pool_size=(16, 16), strides=(1, 1), padding='valid')
+                sample_truth_pooled = max_pool_2d_16(sample_truth.astype("float32")).numpy()
+                samples_gen_pooled = max_pool_2d_16(samples_gen).numpy()
+            if method == 'max_10_no_overlap':
+                max_pool_2d_10 = MaxPooling2D(pool_size=(10, 10), strides=(10, 10), padding='valid')
+                sample_truth_pooled = max_pool_2d_10(sample_truth.astype("float32")).numpy()
+                samples_gen_pooled = max_pool_2d_10(samples_gen).numpy()
+            if method == 'avg_4':
+                avg_pool_2d_4 = AveragePooling2D(pool_size=(4, 4), strides=(1, 1), padding='valid')
+                sample_truth_pooled = avg_pool_2d_4(sample_truth.astype("float32")).numpy()
+                samples_gen_pooled = avg_pool_2d_4(samples_gen).numpy()
+            if method == 'avg_16':
+                avg_pool_2d_16 = AveragePooling2D(pool_size=(16, 16), strides=(1, 1), padding='valid')
+                sample_truth_pooled = avg_pool_2d_16(sample_truth.astype("float32")).numpy()
+                samples_gen_pooled = avg_pool_2d_16(samples_gen).numpy()
+            if method == 'avg_10_no_overlap':
+                avg_pool_2d_10 = AveragePooling2D(pool_size=(10, 10), strides=(10, 10), padding='valid')
+                sample_truth_pooled = avg_pool_2d_10(sample_truth.astype("float32")).numpy()
+                samples_gen_pooled = avg_pool_2d_10(samples_gen).numpy()
+            crps_score = (crps.crps_ensemble(sample_truth_pooled, samples_gen_pooled)).mean()
+            del sample_truth_pooled, samples_gen_pooled
+            gc.collect()
+
+            if method not in crps_scores[method].keys():
+                crps_scores[method] = []
+            crps_scores[method].append(crps_score)
 
         if show_progress:
             crps_mean = np.mean(crps_scores['no-pooling'])
             losses = [("CRPS", crps_mean)]
             progbar.add(1, values=losses)
-
-    ranks = np.concatenate(ranks)
-    gc.collect()  # big arrays!  if this isn't enough, set up ranks and crps_scores as numpy arrays from the start
-    for method in pooling_methods:
-        crps_scores[method] = np.array(crps_scores[method])
-    gc.collect()
-    if normalize_ranks:
-        ranks = ranks / rank_samples
-        gc.collect()
 
     return (ranks, crps_scores)
 

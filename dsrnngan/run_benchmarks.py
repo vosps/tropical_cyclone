@@ -1,7 +1,6 @@
 import argparse
 import os
 import gc
-import time
 from data import get_dates
 from data_generator_ifs import DataGenerator as DataGeneratorFull
 from tensorflow.keras.layers import MaxPooling2D, AveragePooling2D
@@ -75,16 +74,16 @@ if args.include_constant:
     benchmark_methods.append('constant')
 if args.include_zeros:
     benchmark_methods.append('zeros')
-print(benchmark_methods)
 
 pooling_methods = ['no_pooling']
 if args.max_pooling:
     pooling_methods.append('max_4')
     pooling_methods.append('max_16')
+    pooling_methods.append('max_10_no_overlap')
 if args.avg_pooling:
     pooling_methods.append('avg_4')
     pooling_methods.append('avg_16')
-print(pooling_methods)
+    pooling_methods.append('avg_10_no_overlap')
 
 log_line(log_fname, "Number of samples {}".format(num_batches))
 log_line(log_fname, "Evaluation year {}".format(predict_year))
@@ -134,6 +133,10 @@ for benchmark in benchmark_methods:
                     max_pool_2d_16 = MaxPooling2D(pool_size=(16, 16), strides=(1, 1), padding='valid')
                     sample_truth_pooled = max_pool_2d_16(np.expand_dims(sample_truth.astype("float32"), axis=-1)).numpy()
                     sample_benchmark_pooled = max_pool_2d_16(sample_benchmark.astype("float32")).numpy()
+                if method == 'max_10_no_overlap':
+                    max_pool_2d_10 = MaxPooling2D(pool_size=(10, 10), strides=(10, 10), padding='valid')
+                    sample_truth_pooled = max_pool_2d_10(np.expand_dims(sample_truth.astype("float32"), axis=-1)).numpy()
+                    sample_benchmark_pooled = max_pool_2d_10(sample_benchmark.astype("float32")).numpy()
                 if method == 'avg_4':
                     avg_pool_2d_4 = AveragePooling2D(pool_size=(4, 4), strides=(1, 1), padding='valid')
                     sample_truth_pooled = avg_pool_2d_4(np.expand_dims(sample_truth.astype("float32"), axis=-1)).numpy()
@@ -142,6 +145,10 @@ for benchmark in benchmark_methods:
                     avg_pool_2d_16 = AveragePooling2D(pool_size=(16, 16), strides=(1, 1), padding='valid')
                     sample_truth_pooled = avg_pool_2d_16(np.expand_dims(sample_truth.astype("float32"), axis=-1)).numpy()
                     sample_benchmark_pooled = avg_pool_2d_16(sample_benchmark.astype("float32")).numpy()
+                if method == 'avg_10_no_overlap':
+                    avg_pool_2d_10 = AveragePooling2D(pool_size=(10, 10), strides=(10, 10), padding='valid')
+                    sample_truth_pooled = avg_pool_2d_10(np.expand_dims(sample_truth.astype("float32"), axis=-1)).numpy()
+                    sample_benchmark_pooled = avg_pool_2d_10(sample_benchmark.astype("float32")).numpy()
                 if method != 'no_pooling':
                     sample_truth_pooled = np.squeeze(sample_truth_pooled)
                     sample_benchmark_pooled = np.squeeze(sample_benchmark_pooled)
