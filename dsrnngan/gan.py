@@ -235,7 +235,7 @@ class WGANGP(object):
 
             loss_log = {}
             if self.mode == "det":
-                pass  # uh, fixup?
+                raise RuntimeError("Doctor, what are you doing here? You're supposed to be on Gallifrey")
             elif self.mode == "GAN":
                 loss_log["disc_loss"] = disc_loss[0]
                 loss_log["disc_loss_real"] = disc_loss[1]

@@ -62,10 +62,8 @@ class Deterministic(object):
             # Initialize progbar and batch counter
             progbar = generic_utils.Progbar(steps_per_checkpoint*batch_size)
 
-        loss_log = []
-
+        loss_log = {}
         batch_gen_iter = iter(batch_gen_train)
-
         for k in range(steps_per_checkpoint):
             cond, const, sample = batch_gen_iter.get_next()
             loss = self.gen_trainer.train_on_batch([cond, const], sample)
@@ -77,8 +75,7 @@ class Deterministic(object):
                     losses.append(("Loss {}".format(i), l))
                 progbar.add(batch_size, values=losses)
 
-            loss_log.append(loss)
-
+            loss_log["gen_loss"] = loss
             gc.collect()
 
-        return np.array(loss_log)
+        return loss_log
