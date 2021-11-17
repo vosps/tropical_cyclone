@@ -44,11 +44,11 @@ def plot_roc_curves(*,
 
     if predict_full_image:
         batch_size = 2  # this will stop your computer having a strop
-        num_images = 8
+        num_batches = 8
         ensemble_members = 40
     else:
         batch_size = 16
-        num_images = 50
+        num_batches = 50
 
     precip_values = np.array([0.01, 0.1, 1, 2, 5])
 
@@ -99,7 +99,7 @@ def plot_roc_curves(*,
             seq_real = []
 
             data_pred_iter = iter(data_predict)
-            for i in range(num_images):
+            for i in range(num_batches):
                 inputs, outputs = next(data_pred_iter)
                 if predict_full_image:
                     im_real = data.denormalise(np.array(outputs['output']))
@@ -177,7 +177,7 @@ def plot_roc_curves(*,
             plt.ylim([0.0, 1.05])
             plt.xlabel('False Positive Rate')
             plt.ylabel('True Positive Rate')
-            plt.title(f'ROC curve for {plot_input_title} problem, {ensemble_members} ensemble members, {batch_size*num_images} images')
+            plt.title(f'ROC curve for {plot_input_title} problem, {ensemble_members} ensemble members, {batch_size*num_batches} images')
             plt.legend(loc="lower right")
             plt.savefig("{}/ROC-{}-{}-{}.pdf".format(log_folder, problem_type, plot_label, model_label), bbox_inches='tight')
             plt.show()
