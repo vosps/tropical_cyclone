@@ -9,7 +9,7 @@ import data
 import ecpoint
 import benchmarks
 from noise import NoiseGenerator
-from data import get_dates
+from data import get_dates, all_ifs_fields
 
 
 def plot_roc_curves(*,
@@ -65,7 +65,6 @@ def plot_roc_curves(*,
     # load appropriate dataset
     if predict_full_image:
         plot_label = 'large'
-        all_ifs_fields = ['tp', 'cp', 'sp', 'tisr', 'cape', 'tclw', 'tcwv', 'u700', 'v700']
         dates = get_dates(predict_year)
         data_predict = DataGeneratorFull(dates=dates,
                                          ifs_fields=all_ifs_fields,
