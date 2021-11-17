@@ -546,7 +546,7 @@ def rapsd_batch(batch1, batch2):
                         batch1[i,...], batch2[i,...])
         if rapsd_score:
             rapsd_batch.append(rapsd_score)
-    return rapsd_batch
+    return np.array(rapsd_batch)
 
 
 def image_quality(*,
