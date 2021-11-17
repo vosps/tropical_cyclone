@@ -11,10 +11,11 @@ import benchmarks
 from noise import NoiseGenerator
 from data import get_dates
 
+
 def plot_roc_curves(*,
                     mode,
                     arch,
-                    log_folder, 
+                    log_folder,
                     weights_dir,
                     model_numbers,
                     problem_type,
@@ -27,7 +28,7 @@ def plot_roc_curves(*,
                     predict_full_image,
                     ensemble_members=100,
                     plot_ecpoint=True):
-       
+
     if problem_type == "normal":
         downsample = False
         plot_input_title = 'IFS'
@@ -40,18 +41,18 @@ def plot_roc_curves(*,
         noise_channels = 2
     else:
         raise Exception("no such problem type, try again!")
-    
+
     if predict_full_image:
-        batch_size = 2 # this will stop your computer having a strop
+        batch_size = 2  # this will stop your computer having a strop
         num_images = 8
         ensemble_members = 40
     else:
         batch_size = 16
         num_images = 50
-    
+
     precip_values = np.array([0.01, 0.1, 1, 2, 5])
-   
-    ## initialise model
+
+    # initialise model
     model = setupmodel.setup_model(mode=mode,
                                    arch=arch,
                                    input_channels=input_channels,
@@ -60,12 +61,12 @@ def plot_roc_curves(*,
                                    noise_channels=noise_channels,
                                    latent_variables=latent_variables,
                                    padding=padding)
-    
+
     # load appropriate dataset
     if predict_full_image:
         plot_label = 'large'
-        all_ifs_fields = ['tp','cp' ,'sp' ,'tisr','cape','tclw','tcwv','u700','v700']
-        dates=get_dates(predict_year)
+        all_ifs_fields = ['tp', 'cp', 'sp', 'tisr', 'cape', 'tclw', 'tcwv', 'u700', 'v700']
+        dates = get_dates(predict_year)
         data_predict = DataGeneratorFull(dates=dates,
                                          ifs_fields=all_ifs_fields,
                                          batch_size=batch_size,
@@ -76,8 +77,7 @@ def plot_roc_curves(*,
                                          hour='random',
                                          ifs_norm=True,
                                          downsample=downsample)
-    
-        
+
     if not predict_full_image:
         plot_label = 'small'
         data_predict = create_fixed_dataset(predict_year,
@@ -94,43 +94,43 @@ def plot_roc_curves(*,
             print(gen_weights_file)
             model.gen.load_weights(gen_weights_file)
             model_label = str(model_number)
-        
+
             pred = []
             seq_real = []
-        
+
             data_pred_iter = iter(data_predict)
             for i in range(num_images):
                 inputs, outputs = next(data_pred_iter)
                 if predict_full_image:
                     im_real = data.denormalise(np.array(outputs['output']))
                 else:
-                    im_real = data.denormalise(outputs['output'])[...,0]        
+                    im_real = data.denormalise(outputs['output'])[..., 0]
                 if mode == 'det':
                     pred_ensemble = []
-                    ensemble_members = 1 #can't generate an ensemble with deterministic method
-                    pred_ensemble.append(data.denormalise(model.gen.predict([inputs['lo_res_inputs'], 
-                                                                             inputs['hi_res_inputs']]))[...,0])
+                    ensemble_members = 1  # can't generate an ensemble with deterministic method
+                    pred_ensemble.append(data.denormalise(model.gen.predict([inputs['lo_res_inputs'],
+                                                                             inputs['hi_res_inputs']]))[..., 0])
                 else:
                     pred_ensemble = []
                     if mode == 'GAN':
-                        noise_shape = inputs['lo_res_inputs'][0,...,0].shape + (noise_channels,)
+                        noise_shape = inputs['lo_res_inputs'][0, ..., 0].shape + (noise_channels,)
                     elif mode == 'VAEGAN':
-                        noise_shape = inputs['lo_res_inputs'][0,...,0].shape + (latent_variables,)
+                        noise_shape = inputs['lo_res_inputs'][0, ..., 0].shape + (latent_variables,)
                     noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size)
                     if mode == 'VAEGAN':
                         # call encoder once
-                        mean, logvar = model.gen.encoder([inputs['lo_res_inputs'], inputs['hi_res_inputs']])       
+                        mean, logvar = model.gen.encoder([inputs['lo_res_inputs'], inputs['hi_res_inputs']])
                     for j in range(ensemble_members):
                         inputs['noise_input'] = noise_gen()
                         if mode == 'GAN':
-                            pred_ensemble.append(data.denormalise(model.gen.predict([inputs['lo_res_inputs'], 
-                                                                                     inputs['hi_res_inputs'], 
-                                                                                     inputs['noise_input']]))[...,0])
+                            pred_ensemble.append(data.denormalise(model.gen.predict([inputs['lo_res_inputs'],
+                                                                                     inputs['hi_res_inputs'],
+                                                                                     inputs['noise_input']]))[..., 0])
                         elif mode == 'VAEGAN':
                             dec_inputs = [mean, logvar, inputs['noise_input'], inputs['hi_res_inputs']]
-                            pred_ensemble.append(data.denormalise(model.gen.decoder.predict(dec_inputs))[...,0])
+                            pred_ensemble.append(data.denormalise(model.gen.decoder.predict(dec_inputs))[..., 0])
                     pred_ensemble = np.array(pred_ensemble)
-    
+
                 if i == 0:
                     seq_real.append(im_real)
                     pred.append(pred_ensemble)
@@ -139,19 +139,19 @@ def plot_roc_curves(*,
                 else:
                     seq_real = np.concatenate((seq_real, np.expand_dims(im_real, axis=0)), axis=1)
                     pred = np.concatenate((pred, pred_ensemble), axis=1)
-        
+
             seq_real = np.array(seq_real)
             pred = np.array(pred)
-        
+
             fpr = []
             tpr = []
             roc_auc = []
             for value in precip_values:
                 # produce y_true
-                ## binary instance of truth > threshold
-                y_true = np.squeeze(1*(seq_real > value), axis = 0)
+                # binary instance of truth > threshold
+                y_true = np.squeeze(1*(seq_real > value), axis=0)
                 # produce y_score
-                ## check if pred > threshold 
+                # check if pred > threshold
                 y_score = np.mean(1*(pred > value), axis=0)
                 # flatten matrices
                 y_true = np.ravel(y_true)
@@ -163,15 +163,15 @@ def plot_roc_curves(*,
                 tpr.append(tpr_pv)
                 roc_auc.append(roc_auc_pv)
             auc_scores.append(np.array(roc_auc))
-            
+
             # Plot all ROC curves
-            plt.figure(figsize=(7,5))
+            plt.figure(figsize=(7, 5))
             lw = 2
             colors = ['aqua', 'darkorange', 'cornflowerblue', 'deeppink', 'navy']
             for i, color in zip(range(len(precip_values)), colors):
                 plt.plot(fpr[i], tpr[i], color=color, lw=lw,
-                         label=f"ROC curve for precip value {precip_values[i]} (area = %0.2f)" %roc_auc[i])
-        
+                         label=f"ROC curve for precip value {precip_values[i]} (area = %0.2f)" % roc_auc[i])
+
             plt.plot([0, 1], [0, 1], 'k--', lw=lw)
             plt.xlim([0.0, 1.0])
             plt.ylim([0.0, 1.05])
@@ -181,15 +181,15 @@ def plot_roc_curves(*,
             plt.legend(loc="lower right")
             plt.savefig("{}/ROC-{}-{}-{}.pdf".format(log_folder, problem_type, plot_label, model_label), bbox_inches='tight')
             plt.show()
-        
-    auc_scores=np.transpose(np.array(auc_scores))
-    plt.figure(figsize=(8,5))
-    
+
+    auc_scores = np.transpose(np.array(auc_scores))
+    plt.figure(figsize=(8, 5))
+
     colors = ['darkturquoise', 'teal', 'dodgerblue', 'navy', 'purple']
     for i, color in zip(range(len(precip_values)), colors):
         plt.plot(model_numbers, auc_scores[i], color=color, lw=lw,
                  label=f"AUC values for precip_values {precip_values[i]}")
-    
+
     plt.ylim([0, 1.0])
     plt.xlabel('Checkpoint number')
     plt.ylabel('Area under ROC curve')
@@ -197,11 +197,11 @@ def plot_roc_curves(*,
     plt.legend(loc="best")
     plt.savefig("{}/AUC-{}-{}.pdf".format(log_folder, problem_type, plot_label), bbox_inches='tight')
     plt.show()
-    
-    ##ecPoint
-    ## requires a different data generator
+
+    # ecPoint
+    # requires a different data generator
     if plot_ecpoint:
-        dates=get_dates(predict_year)
+        dates = get_dates(predict_year)
         if predict_full_image:
             batch_size = 4
         else:
@@ -216,35 +216,35 @@ def plot_roc_curves(*,
                                             hour="random",
                                             ifs_norm=False,
                                             downsample=downsample)
-    
+
         # generate predictions
-        ## store preds
+        # store preds
         seq_ecpoint = []
-        ## store ground truth images for comparison
+        # store ground truth images for comparison
         seq_real_ecpoint = []
-    
+
         data_benchmarks_iter = iter(data_benchmarks)
-        (inp,outp) = next(data_benchmarks_iter)
-        ## store GT data
+        inp, outp = next(data_benchmarks_iter)
+        # store GT data
         seq_real_ecpoint.append(data.denormalise(outp['output']))
-        
-        ## store mean ecPoint prediction
-        #seq_ecpoint.append(np.mean(benchmarks.ecpointPDFmodel(inputs['generator_input']), axis=-1))
+
+        # store mean ecPoint prediction
+        # seq_ecpoint.append(np.mean(benchmarks.ecpointPDFmodel(inputs['generator_input']), axis=-1))
         seq_ecpoint.append(benchmarks.ecpointPDFmodel(inp['lo_res_inputs']))
-    
+
         seq_ecpoint = np.array(seq_ecpoint)
         seq_real_ecpoint = np.array(seq_real_ecpoint)
-    
+
         fpr_ecpoint = []
         tpr_ecpoint = []
         roc_auc_ecpoint = []
         for value in precip_values:
             # produce y_true
-            ## binary instance of truth > threshold
+            # binary instance of truth > threshold
             y_true_ecpoint = np.squeeze(1*(seq_real_ecpoint > value), axis=0)
             # produce y_score
-            ## check if pred > threshold 
-            y_score_ecpoint = np.squeeze(np.mean(1*(seq_ecpoint > value), axis=-1), axis = 0)
+            # check if pred > threshold
+            y_score_ecpoint = np.squeeze(np.mean(1*(seq_ecpoint > value), axis=-1), axis=0)
             # flatten matrices
             y_true_ecpoint = np.ravel(y_true_ecpoint)
             y_score_ecpoint = np.ravel(y_score_ecpoint)
@@ -254,15 +254,15 @@ def plot_roc_curves(*,
             fpr_ecpoint.append(fpr_pv_ecpoint)
             tpr_ecpoint.append(tpr_pv_ecpoint)
             roc_auc_ecpoint.append(roc_auc_pv_ecpoint)
-    
+
         # Plot all ROC curves
-        plt.figure(figsize=(7,5))
+        plt.figure(figsize=(7, 5))
         lw = 2
         colors = ['aqua', 'darkorange', 'cornflowerblue', 'deeppink', 'navy']
         for i, color in zip(range(len(precip_values)), colors):
             plt.plot(fpr_ecpoint[i], tpr_ecpoint[i], color=color, lw=lw,
-                     label=f"ROC curve for precip value {precip_values[i]} (area = %0.2f)" %roc_auc_ecpoint[i])
-    
+                     label=f"ROC curve for precip value {precip_values[i]} (area = %0.2f)" % roc_auc_ecpoint[i])
+
         plt.plot([0, 1], [0, 1], 'k--', lw=lw)
         plt.xlim([0.0, 1.0])
         plt.ylim([0.0, 1.05])
@@ -270,5 +270,6 @@ def plot_roc_curves(*,
         plt.ylabel('True Positive Rate')
         plt.title(f'ROC curve for ecPoint approach, batch size {batch_size}')
         plt.legend(loc="lower right")
-        plt.savefig("{}/ROC-ecPoint-{}-{}.pdf".format(log_folder,problem_type,
+        plt.savefig("{}/ROC-ecPoint-{}-{}.pdf".format(log_folder,
+                                                      problem_type,
                                                       plot_label), bbox_inches='tight')
