@@ -13,7 +13,7 @@ import benchmarks
 import argparse
 from tfrecords_generator_ifs import create_fixed_dataset
 from data_generator_ifs import DataGenerator as DataGeneratorFull
-from data import get_dates
+from data import get_dates, all_ifs_fields
 from plots import plot_img
 from rapsd import plot_spectrum1d, rapsd
 
@@ -104,7 +104,6 @@ gen.load_weights(weights_fn)
 ## load appropriate dataset
 if args.predict_full_image:
     plot_label = 'large'
-    all_ifs_fields = ['tp','cp' ,'sp' ,'tisr','cape','tclw','tcwv','u700','v700']
     data_predict = DataGeneratorFull(dates=dates, 
                                      ifs_fields=all_ifs_fields,
                                      batch_size=batch_size, 
