@@ -143,7 +143,7 @@ def plot_roc_curves(*,
                 seq_real.append(im_real)
                 pred.append(pred_ensemble)
                 seq_real = np.array(seq_real)
-                pred = np.squeeze(np.array(pred))
+                pred = np.squeeze(np.array(pred), axis=0)
             else:
                 seq_real = np.concatenate((seq_real, np.expand_dims(im_real, axis=0)), axis=1)
                 pred = np.concatenate((pred, pred_ensemble), axis=1)
