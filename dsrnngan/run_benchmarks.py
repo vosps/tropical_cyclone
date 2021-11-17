@@ -1,6 +1,7 @@
 import argparse
 import os
 import gc
+import time
 from data import get_dates
 from data_generator_ifs import DataGenerator as DataGeneratorFull
 import ecpoint
@@ -87,8 +88,7 @@ if args.avg_pooling:
 
 log_line(log_fname, "Number of samples {}".format(num_batches))
 log_line(log_fname, "Evaluation year {}".format(predict_year))
-log_line(log_fname, "Model CRPS CRPS_max_4 CRPS_max_16 CRPS_avg_4 CRPS_avg_16 RMSE MAE RAPSD")    
-
+log_line(log_fname, "Model CRPS CRPS_max_4 CRPS_max_16 CRPS_max_10_no_overlap CRPS_avg_4 CRPS_avg_16 CRPS_avg_10_no_overlap RMSE MAE RAPSD")
 
 sample_crps = {}
 crps_scores = {}
@@ -106,6 +106,7 @@ for benchmark in benchmark_methods:
     for i in range(num_batches):
         print(f"calculating for sample number {i+1} of {num_batches}")
         (inp, outp) = next(data_benchmarks_iter)
+        # pooling requires 4 dimensions NHWC
         sample_truth = np.expand_dims(outp['output'], axis=-1)
         if benchmark == 'lanczos':
             sample_benchmark = benchmarks.lanczosmodel(inp['lo_res_inputs'][...,1])
@@ -129,21 +130,27 @@ for benchmark in benchmark_methods:
                 else:
                     sample_truth_pooled = pool(sample_truth, method)
                     sample_benchmark_pooled = pool(sample_benchmark, method)
-                    sample_truth_pooled = np.squeeze(sample_truth_pooled)
-
+                sample_truth_pooled = np.squeeze(sample_truth_pooled, axis=-1)
                 crps_score = crps.crps_ensemble(sample_truth_pooled, sample_benchmark_pooled).mean()
                 del sample_truth_pooled, sample_benchmark_pooled
                 if method not in crps_scores[benchmark]:
                     crps_scores[benchmark][method] = []
-                crps_scores[benchmark][method].append(crps_score)     
+                crps_scores[benchmark][method].append(crps_score)
+            rmse_tmp = []
+            mae_tmp = []
+            rapsd_tmp = []
+            # sample_truth dims should match sample_benchmark[...,j] dims
+            sample_truth = np.squeeze(sample_truth, axis=-1)
             for j in range(sample_benchmark.shape[-1]):
-                rmse_tmp = np.sqrt(((sample_truth - sample_benchmark[...,j])**2).mean(axis=(1,2)))
-                mae_tmp = (np.abs(sample_truth - sample_benchmark[...,j])).mean(axis=(1,2))
-                rapsd_tmp = rapsd_batch(sample_truth, sample_benchmark[...,j])
-            rmse_score = rmse_tmp.mean()
-            mae_score = mae_tmp.mean()
-            rapsd_score = rapsd_tmp.mean()
-            print(f"rapsd_score is {rapsd_score}")
+                rmse = np.sqrt(((sample_truth - sample_benchmark[...,j])**2).mean(axis=(1,2)))
+                rmse_tmp.append(rmse)
+                mae = (np.abs(sample_truth - sample_benchmark[...,j])).mean(axis=(1,2))
+                mae_tmp.append(mae)
+                rapsd = rapsd_batch(sample_truth, sample_benchmark[...,j])
+                rapsd_tmp.append(rapsd)
+            rmse_score = np.asarray(rmse_tmp).mean()
+            mae_score = np.asarray(mae_tmp).mean()
+            rapsd_score = np.asarray(rapsd_tmp).mean()
             del rmse_tmp, mae_tmp, rapsd_tmp                      
             rmse_scores[benchmark].append(rmse_score)
             mae_scores[benchmark].append(mae_score)
@@ -160,8 +167,8 @@ for benchmark in benchmark_methods:
                 else:
                     sample_truth_pooled = pool(sample_truth, method)
                     sample_benchmark_pooled = pool(sample_benchmark, method)
-                    sample_truth_pooled = np.squeeze(sample_truth_pooled)
-                    sample_benchmark_pooled = np.squeeze(sample_benchmark_pooled)
+                sample_truth_pooled = np.squeeze(sample_truth_pooled)
+                sample_benchmark_pooled = np.squeeze(sample_benchmark_pooled)
 
                 crps_score = benchmarks.mean_crps(sample_truth_pooled, sample_benchmark_pooled)
                 del sample_truth_pooled, sample_benchmark_pooled
@@ -177,7 +184,6 @@ for benchmark in benchmark_methods:
                 rapsd_score = np.nan
             else:
                 rapsd_score = rapsd_batch(sample_truth, sample_benchmark)    
-            print(f"rapsd_score is {rapsd_score}")
             rmse_scores[benchmark].append(rmse_score)
             mae_scores[benchmark].append(mae_score)
             rapsd_scores[benchmark].append(rapsd_score)
@@ -187,19 +193,21 @@ for benchmark in benchmark_methods:
     if not args.max_pooling:
         crps_scores[benchmark]['max_4'] = np.nan
         crps_scores[benchmark]['max_16'] = np.nan
+        crps_scores[benchmark]['max_10_no_overlap'] = np.nan
     if not args.avg_pooling:
         crps_scores[benchmark]['avg_4'] = np.nan
         crps_scores[benchmark]['avg_16'] = np.nan
-    print(f"benchmark {benchmark}")
-    print(f"RAPSD scores {rapsd_scores[benchmark]}")
-    log_line(log_fname, "{} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}".format(
-                                                                benchmark,
-                                                                np.array(crps_scores[benchmark]['no_pooling']).mean(),
-                                                                np.array(crps_scores[benchmark]['max_4']).mean(),
-                                                                np.array(crps_scores[benchmark]['max_16']).mean(),
-                                                                np.array(crps_scores[benchmark]['avg_4']).mean(),
-                                                                np.array(crps_scores[benchmark]['avg_16']).mean(),
-                                                                np.array(rmse_scores[benchmark]).mean(),
-                                                                np.array(mae_scores[benchmark]).mean(),
-                                                                np.nanmean(np.array(rapsd_scores[benchmark]))
-                                                                ))        
+        crps_scores[benchmark]['avg_10_no_overlap'] = np.nan
+    log_line(log_fname, "{} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}"
+             .format(benchmark,
+                     np.array(crps_scores[benchmark]['no_pooling']).mean(),
+                     np.array(crps_scores[benchmark]['max_4']).mean(),
+                     np.array(crps_scores[benchmark]['max_16']).mean(),
+                     np.array(crps_scores[benchmark]['max_10_no_overlap']).mean(),
+                     np.array(crps_scores[benchmark]['avg_4']).mean(),
+                     np.array(crps_scores[benchmark]['avg_16']).mean(),
+                     np.array(crps_scores[benchmark]['avg_10_no_overlap']).mean(),
+                     np.array(rmse_scores[benchmark]).mean(),
+                     np.array(mae_scores[benchmark]).mean(),
+                     np.nanmean(np.array(rapsd_scores[benchmark]))
+                 ))        

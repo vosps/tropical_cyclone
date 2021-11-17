@@ -538,6 +538,7 @@ def rapsd_batch(batch1, batch2):
     ## squeeze out final dimension (channels)
     if len(batch1.shape) == 4:
         batch1 = np.squeeze(batch1, axis=-1)
+    if len(batch2.shape) == 4:
         batch2 = np.squeeze(batch2, axis=-1)
     rapsd_batch = []
     for i in range(batch1.shape[0]):
@@ -545,7 +546,7 @@ def rapsd_batch(batch1, batch2):
                         batch1[i,...], batch2[i,...])
         if rapsd_score:
             rapsd_batch.append(rapsd_score)
-    return np.array(rapsd_batch)
+    return rapsd_batch
 
 
 def image_quality(*,
