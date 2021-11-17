@@ -1,4 +1,5 @@
 import os
+import gc
 import numpy as np
 from sklearn.metrics import roc_curve, auc
 import matplotlib.pyplot as plt
@@ -50,6 +51,9 @@ def plot_roc_curves(*,
         batch_size = 16
         num_batches = 50
 
+    if mode == 'det':
+        ensemble_members = 1  # in this case, only used for printing
+
     precip_values = np.array([0.01, 0.1, 1, 2, 5])
 
     # initialise model
@@ -99,20 +103,19 @@ def plot_roc_curves(*,
         pred = []
         seq_real = []
 
-        data_pred_iter = iter(data_predict)
-        for i in range(num_batches):
+        data_pred_iter = iter(data_predict)  # "restarts" data iterator
+        for ii in range(num_batches):
             inputs, outputs = next(data_pred_iter)
             if predict_full_image:
                 im_real = data.denormalise(np.array(outputs['output']))
             else:
                 im_real = data.denormalise(outputs['output'])[..., 0]
+
+            pred_ensemble = []
             if mode == 'det':
-                pred_ensemble = []
-                ensemble_members = 1  # can't generate an ensemble with deterministic method
                 pred_ensemble.append(data.denormalise(model.gen.predict([inputs['lo_res_inputs'],
                                                                          inputs['hi_res_inputs']]))[..., 0])
             else:
-                pred_ensemble = []
                 if mode == 'GAN':
                     noise_shape = inputs['lo_res_inputs'][0, ..., 0].shape + (noise_channels,)
                 elif mode == 'VAEGAN':
@@ -130,9 +133,13 @@ def plot_roc_curves(*,
                     elif mode == 'VAEGAN':
                         dec_inputs = [mean, logvar, inputs['noise_input'], inputs['hi_res_inputs']]
                         pred_ensemble.append(data.denormalise(model.gen.decoder.predict(dec_inputs))[..., 0])
-                pred_ensemble = np.array(pred_ensemble)
 
-            if i == 0:
+            # turn list into numpy array
+            pred_ensemble = np.array(pred_ensemble)
+            # list was of size ensemble_members * width * height; can be large so force garbage collect
+            gc.collect()
+
+            if ii == 0:
                 seq_real.append(im_real)
                 pred.append(pred_ensemble)
                 seq_real = np.array(seq_real)
