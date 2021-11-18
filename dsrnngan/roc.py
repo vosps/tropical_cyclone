@@ -147,8 +147,6 @@ def plot_roc_curves(*,
 
         seq_real = np.concatenate(seq_real, axis=0)  # n_images x W x H
         pred = np.concatenate(pred, axis=1)  # ens x n_images x W x H
-        print("seq_real shape:", seq_real.shape)
-        print("pred shape:", pred.shape)
         gc.collect()
 
         fpr = []
