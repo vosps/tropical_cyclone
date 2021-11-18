@@ -130,14 +130,14 @@ def ensemble_ranks(*,
             cond = inputs['lo_res_inputs']
             const = inputs['hi_res_inputs']
             sample_truth = outputs['output']
-            sample_truth = np.expand_dims(np.array(sample_truth, axis=-1))
+            sample_truth = np.expand_dims(np.array(sample_truth), axis=-1)
         else:
             cond, const, sample = next(batch_gen_iter)
             sample_truth = sample.numpy()
         if denormalise_data:
             sample_truth = data.denormalise(sample_truth)
         if add_noise:
-            noise_dim_1, noise_dim_2 = sample[0, ..., 0].shape
+            noise_dim_1, noise_dim_2 = sample_truth[0, ..., 0].shape
             noise = np.random.rand(batch_size, noise_dim_1, noise_dim_2, 1)*noise_factor
             sample_truth += noise
         
@@ -178,18 +178,16 @@ def ensemble_ranks(*,
             samples_gen[ii] = sample_gen
         # turn list into array
         samples_gen = np.stack(samples_gen, axis=-1)
-        
+                
         # calculate ranks
         # currently ranks only calculated without pooling
         # probably fine but may want to threshold in the future, e.g. <1mm, >5mm
+        sample_truth_ranks = sample_truth.ravel()
         samples_gen_ranks = samples_gen.reshape((np.prod(samples_gen.shape[:-1]), samples_gen.shape[-1]))
-        rank = np.count_nonzero(sample_truth[:, None] >= samples_gen_ranks, axis=-1)
+        rank = np.count_nonzero(sample_truth_ranks[:, None] >= samples_gen_ranks, axis=-1)
         ranks.append(rank)
-        ranks = np.concatenate(ranks)        
-        if normalize_ranks:
-            ranks = ranks / rank_samples      
-        del samples_gen_ranks
-        gc.collect()        
+        del samples_gen_ranks, sample_truth_ranks
+        gc.collect()
 
         # calculate CRPS scores for different pooling methods        
         for method in pooling_methods:
@@ -198,8 +196,11 @@ def ensemble_ranks(*,
                 samples_gen_pooled = samples_gen
             else:
                 sample_truth_pooled = pool(sample_truth, method)
-                samples_gen_pooled = pool(samples_gen, method)
-
+                samples_gen_pooled = []
+                for jj in range(samples_gen.shape[-1]):
+                    sample_gen_pooled = pool(samples_gen[...,jj], method)
+                    samples_gen_pooled.append(sample_gen_pooled)
+                samples_gen_pooled = np.stack(samples_gen_pooled, axis=-1)
             crps_score = crps.crps_ensemble(sample_truth_pooled, samples_gen_pooled).mean()
             del sample_truth_pooled, samples_gen_pooled
             gc.collect()
@@ -209,9 +210,15 @@ def ensemble_ranks(*,
             crps_scores[method].append(crps_score)
 
         if show_progress:
-            crps_mean = np.mean(crps_scores['no-pooling'])
+            crps_mean = np.mean(crps_scores['no_pooling'])
             losses = [("CRPS", crps_mean)]
             progbar.add(1, values=losses)
+
+    ranks = np.concatenate(ranks)
+    gc.collect()
+    if normalize_ranks:
+        ranks = ranks / rank_samples
+        gc.collect()
 
     return (ranks, crps_scores)
 
@@ -524,7 +531,7 @@ def log_spectral_distance_batch(batch1, batch2):
 def calculate_rapsd_rmse(truth, pred):
     ## avoid producing inf values by removing RAPSD calc for images 
     ## that are mostly zeroes (mean pixel value < 0.01)
-    if (truth.mean()) < 0.002:
+    if (truth.mean()) < 0.002 or (pred.mean()) < 0.002:
         return np.nan
     fft_freq_truth = rapsd(truth, fft_method=np.fft)
     fft_freq_pred = rapsd(pred, fft_method=np.fft)
