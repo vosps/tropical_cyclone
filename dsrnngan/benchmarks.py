@@ -85,6 +85,18 @@ def ecpointPDFmodel(indata, assesslog=False):
     return ecpoint.predictupscalecdf(raw_inputs=data, cdf=ecpointCDF, logout=assesslog)
 
 
+def ecpointboxensmodel(indata, assesslog=False, ensemble_size = 100):
+    global ecpointCDF
+    if type(indata) == dict:
+        assert indata['lo_res_inputs'].log_precip is False
+        data = indata['lo_res_inputs']
+    else:
+        data = indata
+    if ecpointCDF is None:
+        ecpointCDF = ecpoint.loadcdf(name='CDF3YIFS.txt')
+    return ecpoint.predictthenupscale(raw_inputs=data, cdf=ecpointCDF, 
+                                      logout=assesslog, ensemble_size = ensemble_size)
+
 def constantupscalemodel(data):
     reshaped_inputs = np.repeat(np.repeat(data, 10, axis=-1), 10, axis=-2)
     return reshaped_inputs

@@ -1,3 +1,4 @@
+
 """ Data generator class for batched training of precipitation downscaling network """
 import numpy as np
 import tensorflow as tf
@@ -14,6 +15,7 @@ class DataGenerator(Sequence):
                  downsample=False, seed = 9999, start_times = ['00', '12']
 ):
         self.lead_time = lead_time
+        assert lead_time > 0 and lead_time < 73, "Lead time not in [1,72]"
 
         self.year = year
         self.dates,self.start_times = get_long_dates(year, 
