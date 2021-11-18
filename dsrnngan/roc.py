@@ -1,4 +1,5 @@
 import os
+import gc
 import numpy as np
 from sklearn.metrics import roc_curve, auc
 import matplotlib.pyplot as plt
@@ -50,6 +51,9 @@ def plot_roc_curves(*,
         batch_size = 16
         num_batches = 50
 
+    if mode == 'det':
+        ensemble_members = 1  # in this case, only used for printing
+
     precip_values = np.array([0.01, 0.1, 1, 2, 5])
 
     # initialise model
@@ -87,99 +91,99 @@ def plot_roc_curves(*,
     for model_number in model_numbers:
         print(f"calculating for model number {model_number}")
         gen_weights_file = os.path.join(weights_dir, "gen_weights-{:07d}.h5".format(model_number))
+
         if not os.path.isfile(gen_weights_file):
             print(gen_weights_file, "not found, skipping")
-        else:
-            print(gen_weights_file)
-            model.gen.load_weights(gen_weights_file)
-            model_label = str(model_number)
+            continue
 
-            pred = []
-            seq_real = []
+        print(gen_weights_file)
+        model.gen.load_weights(gen_weights_file)
+        model_label = str(model_number)
 
-            data_pred_iter = iter(data_predict)
-            for i in range(num_batches):
-                inputs, outputs = next(data_pred_iter)
-                if predict_full_image:
-                    im_real = data.denormalise(np.array(outputs['output']))
-                else:
-                    im_real = data.denormalise(outputs['output'])[..., 0]
-                if mode == 'det':
-                    pred_ensemble = []
-                    ensemble_members = 1  # can't generate an ensemble with deterministic method
-                    pred_ensemble.append(data.denormalise(model.gen.predict([inputs['lo_res_inputs'],
-                                                                             inputs['hi_res_inputs']]))[..., 0])
-                else:
-                    pred_ensemble = []
+        pred = []
+        seq_real = []
+
+        data_pred_iter = iter(data_predict)  # "restarts" data iterator
+        for ii in range(num_batches):
+            inputs, outputs = next(data_pred_iter)
+            if predict_full_image:
+                im_real = data.denormalise(np.array(outputs['output']))  # shape: batch_size x H x W
+            else:
+                im_real = data.denormalise(outputs['output'])[..., 0]
+
+            pred_ensemble = []
+            if mode == 'det':
+                pred_ensemble.append(data.denormalise(model.gen.predict([inputs['lo_res_inputs'],
+                                                                         inputs['hi_res_inputs']]))[..., 0])
+            else:
+                if mode == 'GAN':
+                    noise_shape = inputs['lo_res_inputs'][0, ..., 0].shape + (noise_channels,)
+                elif mode == 'VAEGAN':
+                    noise_shape = inputs['lo_res_inputs'][0, ..., 0].shape + (latent_variables,)
+                noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size)
+                if mode == 'VAEGAN':
+                    # call encoder once
+                    mean, logvar = model.gen.encoder([inputs['lo_res_inputs'], inputs['hi_res_inputs']])
+                for j in range(ensemble_members):
+                    inputs['noise_input'] = noise_gen()
                     if mode == 'GAN':
-                        noise_shape = inputs['lo_res_inputs'][0, ..., 0].shape + (noise_channels,)
+                        pred_ensemble.append(data.denormalise(model.gen.predict([inputs['lo_res_inputs'],
+                                                                                 inputs['hi_res_inputs'],
+                                                                                 inputs['noise_input']]))[..., 0])
                     elif mode == 'VAEGAN':
-                        noise_shape = inputs['lo_res_inputs'][0, ..., 0].shape + (latent_variables,)
-                    noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size)
-                    if mode == 'VAEGAN':
-                        # call encoder once
-                        mean, logvar = model.gen.encoder([inputs['lo_res_inputs'], inputs['hi_res_inputs']])
-                    for j in range(ensemble_members):
-                        inputs['noise_input'] = noise_gen()
-                        if mode == 'GAN':
-                            pred_ensemble.append(data.denormalise(model.gen.predict([inputs['lo_res_inputs'],
-                                                                                     inputs['hi_res_inputs'],
-                                                                                     inputs['noise_input']]))[..., 0])
-                        elif mode == 'VAEGAN':
-                            dec_inputs = [mean, logvar, inputs['noise_input'], inputs['hi_res_inputs']]
-                            pred_ensemble.append(data.denormalise(model.gen.decoder.predict(dec_inputs))[..., 0])
-                    pred_ensemble = np.array(pred_ensemble)
+                        dec_inputs = [mean, logvar, inputs['noise_input'], inputs['hi_res_inputs']]
+                        pred_ensemble.append(data.denormalise(model.gen.decoder.predict(dec_inputs))[..., 0])
 
-                if i == 0:
-                    seq_real.append(im_real)
-                    pred.append(pred_ensemble)
-                    seq_real = np.array(seq_real)
-                    pred = np.squeeze(np.array(pred))
-                else:
-                    seq_real = np.concatenate((seq_real, np.expand_dims(im_real, axis=0)), axis=1)
-                    pred = np.concatenate((pred, pred_ensemble), axis=1)
+            # turn accumulated list into numpy array
+            pred_ensemble = np.array(pred_ensemble)  # shape: ensemble_mem x batch_size x H x W
 
-            seq_real = np.array(seq_real)
-            pred = np.array(pred)
+            # list is large, so force garbage collect
+            gc.collect()
 
-            fpr = []
-            tpr = []
-            roc_auc = []
-            for value in precip_values:
-                # produce y_true
-                # binary instance of truth > threshold
-                y_true = np.squeeze(1*(seq_real > value), axis=0)
-                # produce y_score
-                # check if pred > threshold
-                y_score = np.mean(1*(pred > value), axis=0)
-                # flatten matrices
-                y_true = np.ravel(y_true)
-                y_score = np.ravel(y_score)
-                # Compute ROC curve and ROC area for each precip value
-                fpr_pv, tpr_pv, _ = roc_curve(y_true, y_score)
-                roc_auc_pv = auc(fpr_pv, tpr_pv)
-                fpr.append(fpr_pv)
-                tpr.append(tpr_pv)
-                roc_auc.append(roc_auc_pv)
-            auc_scores.append(np.array(roc_auc))
+            seq_real.append(im_real)
+            pred.append(pred_ensemble)
 
-            # Plot all ROC curves
-            plt.figure(figsize=(7, 5))
-            lw = 2
-            colors = ['aqua', 'darkorange', 'cornflowerblue', 'deeppink', 'navy']
-            for i, color in zip(range(len(precip_values)), colors):
-                plt.plot(fpr[i], tpr[i], color=color, lw=lw,
-                         label=f"ROC curve for precip value {precip_values[i]} (area = %0.2f)" % roc_auc[i])
+            # need to calculate averages each batch; can't store n_images x n_ensemble x H x W!
 
-            plt.plot([0, 1], [0, 1], 'k--', lw=lw)
-            plt.xlim([0.0, 1.0])
-            plt.ylim([0.0, 1.05])
-            plt.xlabel('False Positive Rate')
-            plt.ylabel('True Positive Rate')
-            plt.title(f'ROC curve for {plot_input_title} problem, {ensemble_members} ensemble members, {batch_size*num_batches} images')
-            plt.legend(loc="lower right")
-            plt.savefig("{}/ROC-{}-{}-{}.pdf".format(log_folder, problem_type, plot_label, model_label), bbox_inches='tight')
-            plt.show()
+        seq_real = np.concatenate(seq_real, axis=0)  # n_images x W x H
+        pred = np.concatenate(pred, axis=1)  # ens x n_images x W x H
+        gc.collect()
+
+        fpr = []
+        tpr = []
+        roc_auc = []
+        for value in precip_values:
+            # produce y_true
+            # binary instance of truth > threshold
+            y_true = (seq_real > value)
+            # produce y_score
+            # check if pred > threshold
+            y_score = np.mean((pred > value), axis=0)
+            # Compute ROC curve and ROC area for each precip value
+            fpr_pv, tpr_pv, _ = roc_curve(np.ravel(y_true), np.ravel(y_score), drop_intermediate=False)
+            roc_auc_pv = auc(fpr_pv, tpr_pv)
+            fpr.append(fpr_pv)
+            tpr.append(tpr_pv)
+            roc_auc.append(roc_auc_pv)
+        auc_scores.append(np.array(roc_auc))
+
+        # Plot all ROC curves
+        plt.figure(figsize=(7, 5))
+        lw = 2
+        colors = ['aqua', 'darkorange', 'cornflowerblue', 'deeppink', 'navy']
+        for i, color in zip(range(len(precip_values)), colors):
+            plt.plot(fpr[i], tpr[i], color=color, lw=lw,
+                     label=f"ROC curve for precip value {precip_values[i]} (area = %0.2f)" % roc_auc[i])
+
+        plt.plot([0, 1], [0, 1], 'k--', lw=lw)
+        plt.xlim([0.0, 1.0])
+        plt.ylim([0.0, 1.05])
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+        plt.title(f'ROC curve for {plot_input_title} problem, {ensemble_members} ensemble members, {batch_size*num_batches} images')
+        plt.legend(loc="lower right")
+        plt.savefig("{}/ROC-{}-{}-{}.pdf".format(log_folder, problem_type, plot_label, model_label), bbox_inches='tight')
+        plt.show()
 
     auc_scores = np.transpose(np.array(auc_scores))
     plt.figure(figsize=(8, 5))

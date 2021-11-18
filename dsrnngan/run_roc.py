@@ -27,12 +27,13 @@ noise_channels = setup_params["GENERATOR"]["noise_channels"]
 latent_variables = setup_params["GENERATOR"]["latent_variables"]
 filters_disc = setup_params["DISCRIMINATOR"]["filters_disc"]
 
-if predict_full_image:
-    batch_size = 2
-    num_images = 10
-else:
-    batch_size = 16
-    num_images = 50
+# These are completely unused!  batch_size and num_batches are only defined in roc.py -- ATTM
+# if predict_full_image:
+#     batch_size = 2
+#     num_images = 10
+# else:
+#     batch_size = 16
+#     num_images = 50
 
 if problem_type == "normal":
     downsample = False

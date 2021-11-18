@@ -407,6 +407,21 @@ def predictupscalecdf(raw_inputs=None, proc_inputs=None, out_shape=None,
     # upscaled_ans = upscaled_ans
     return upscaled_ans  # [:,4:-5:,4:-5,:]
 
+def predictthenupscale(raw_inputs=None, proc_inputs=None, out_shape=None,
+                       cdf=None, logout=False, ensemble_size = 100):
+    ans = predictcdf(raw_inputs=raw_inputs, cdf=cdf, logout=logout)
+    small_output = np.zeros(ans.shape[:-1] + (ensemble_size,))
+    # There is definitely a better way to do this sampling
+    # but Im not clever enough to do it
+    for i in range(ans.shape[0]):
+        for j in range(ans.shape[1]):
+            for k in range(ans.shape[2]):
+                selection = np.random.choice(ans.shape[3],
+                                             size=ensemble_size,
+                                             replace=True).astype(int)
+                small_output[i,j,k,:] = ans[i,j,j,selection]
+    upscaled_ans = np.repeat(np.repeat(small_output, 10, axis=-3), 10, axis=-2)
+    return upscaled_ans    
 
 def crps(data_generator, ecpointcdf, log=False):
     import properscoring as ps

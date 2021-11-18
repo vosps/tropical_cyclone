@@ -304,60 +304,62 @@ def rank_metrics_by_time(*,
 
     for model_number in model_numbers:
         gen_weights_file = os.path.join(weights_dir, "gen_weights-{:07d}.h5".format(model_number))
+
         if not os.path.isfile(gen_weights_file):
             print(gen_weights_file, "not found, skipping")
+            continue
+
+        print(gen_weights_file)
+        gen.load_weights(gen_weights_file)
+        ranks, crps_scores = ensemble_ranks(mode=mode,
+                                            gen=gen,
+                                            batch_gen=batch_gen_valid,
+                                            noise_channels=noise_channels,
+                                            latent_variables=latent_variables,
+                                            batch_size=batch_size,
+                                            num_batches=num_batches,
+                                            add_noise=add_noise,
+                                            rank_samples=rank_samples,
+                                            noise_factor=noise_factor,
+                                            load_full_image=load_full_image,
+                                            max_pooling=max_pooling,
+                                            avg_pooling=avg_pooling)
+        KS = rank_KS(ranks)
+        CvM = rank_CvM(ranks)
+        DKL = rank_DKL(ranks)
+        OP = rank_OP(ranks)
+        CRPS_no_pool = crps_scores['no-pooling'].mean()
+        if max_pooling:
+            CRPS_max_4 = crps_scores['max_4'].mean()
+            CRPS_max_16 = crps_scores['max_16'].mean()
         else:
-            print(gen_weights_file)
-            gen.load_weights(gen_weights_file)
-            ranks, crps_scores = ensemble_ranks(mode=mode,
-                                                gen=gen,
-                                                batch_gen=batch_gen_valid,
-                                                noise_channels=noise_channels,
-                                                latent_variables=latent_variables,
-                                                batch_size=batch_size,
-                                                num_batches=num_batches,
-                                                add_noise=add_noise,
-                                                rank_samples=rank_samples,
-                                                noise_factor=noise_factor,
-                                                load_full_image=load_full_image,
-                                                max_pooling=max_pooling,
-                                                avg_pooling=avg_pooling)
-            KS = rank_KS(ranks)
-            CvM = rank_CvM(ranks)
-            DKL = rank_DKL(ranks)
-            OP = rank_OP(ranks)
-            CRPS_no_pool = crps_scores['no-pooling'].mean()
-            if max_pooling:
-                CRPS_max_4 = crps_scores['max_4'].mean()
-                CRPS_max_16 = crps_scores['max_16'].mean()
-            else:
-                CRPS_max_4 = np.nan
-                CRPS_max_16 = np.nan
-            if avg_pooling:
-                CRPS_avg_4 = crps_scores['avg_4'].mean()
-                CRPS_avg_16 = crps_scores['avg_16'].mean()
-            else:
-                CRPS_avg_4 = np.nan
-                CRPS_avg_16 = np.nan
-            mean = ranks.mean()
-            std = ranks.std()
+            CRPS_max_4 = np.nan
+            CRPS_max_16 = np.nan
+        if avg_pooling:
+            CRPS_avg_4 = crps_scores['avg_4'].mean()
+            CRPS_avg_16 = crps_scores['avg_16'].mean()
+        else:
+            CRPS_avg_4 = np.nan
+            CRPS_avg_16 = np.nan
+        mean = ranks.mean()
+        std = ranks.std()
 
-            log_line(log_fname, "{} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}".format(
-                model_number, KS, CvM, DKL, OP, CRPS_no_pool, CRPS_max_4, CRPS_max_16, CRPS_avg_4, CRPS_avg_16, mean, std))
+        log_line(log_fname, "{} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}".format(
+            model_number, KS, CvM, DKL, OP, CRPS_no_pool, CRPS_max_4, CRPS_max_16, CRPS_avg_4, CRPS_avg_16, mean, std))
 
-            # save one directory up from model weights, in same dir as logfile
-            ranks_folder = os.path.dirname(log_fname)
+        # save one directory up from model weights, in same dir as logfile
+        ranks_folder = os.path.dirname(log_fname)
 
-            if model_number in ranks_to_save:
-                if add_noise is False and load_full_image is False:
-                    fname = 'ranks-small_image-{}.npz'.format(model_number)
-                elif add_noise is True and load_full_image is False:
-                    fname = 'ranks-small_image-noise-{}.npz'.format(model_number)
-                elif add_noise is False and load_full_image is True:
-                    fname = 'ranks-full_image-{}.npz'.format(model_number)
-                elif add_noise is True and load_full_image is True:
-                    fname = 'ranks-full_image-noise-{}.npz'.format(model_number)
-                np.savez(os.path.join(ranks_folder, fname), ranks)
+        if model_number in ranks_to_save:
+            if add_noise is False and load_full_image is False:
+                fname = 'ranks-small_image-{}.npz'.format(model_number)
+            elif add_noise is True and load_full_image is False:
+                fname = 'ranks-small_image-noise-{}.npz'.format(model_number)
+            elif add_noise is False and load_full_image is True:
+                fname = 'ranks-full_image-{}.npz'.format(model_number)
+            elif add_noise is True and load_full_image is True:
+                fname = 'ranks-full_image-noise-{}.npz'.format(model_number)
+            np.savez(os.path.join(ranks_folder, fname), ranks)
 
 
 # def rank_metrics_by_noise(filename,
@@ -683,27 +685,29 @@ def quality_metrics_by_time(*,
 
     for model_number in model_numbers:
         gen_weights_file = os.path.join(weights_dir, "gen_weights-{:07d}.h5".format(model_number))
+
         if not os.path.isfile(gen_weights_file):
             print(gen_weights_file, "not found, skipping")
-        else:
-            print(gen_weights_file)
-            gen.load_weights(gen_weights_file)
-            mae, rmse, ssim, lsd, rapsd = image_quality(mode=mode,
-                                                        gen=gen,
-                                                        batch_gen=batch_gen_valid,
-                                                        noise_channels=noise_channels,
-                                                        latent_variables=latent_variables,
-                                                        batch_size=batch_size,
-                                                        num_instances=1,
-                                                        num_batches=num_batches,
-                                                        load_full_image=load_full_image)
+            continue
 
-            log_line(log_fname, "{} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}".format(model_number, 
-                                                                               rmse.mean(), 
-                                                                               ssim.mean(), 
-                                                                               np.nanmean(lsd), 
-                                                                               np.nanmean(rapsd), 
-                                                                               mae.mean()))
+        print(gen_weights_file)
+        gen.load_weights(gen_weights_file)
+        mae, rmse, ssim, lsd, rapsd = image_quality(mode=mode,
+                                                    gen=gen,
+                                                    batch_gen=batch_gen_valid,
+                                                    noise_channels=noise_channels,
+                                                    latent_variables=latent_variables,
+                                                    batch_size=batch_size,
+                                                    num_instances=1,
+                                                    num_batches=num_batches,
+                                                    load_full_image=load_full_image)
+
+        log_line(log_fname, "{} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}".format(model_number, 
+                                                                           rmse.mean(), 
+                                                                           ssim.mean(), 
+                                                                           np.nanmean(lsd), 
+                                                                           np.nanmean(rapsd), 
+                                                                           mae.mean()))
 
 
 # def quality_metrics_table(weights_fname,
