@@ -89,6 +89,7 @@ def plot_roc_curves(*,
 
     auc_scores = []
     for model_number in model_numbers:
+        gc.collect()
         print(f"calculating for model number {model_number}")
         gen_weights_file = os.path.join(weights_dir, "gen_weights-{:07d}.h5".format(model_number))
 
@@ -100,8 +101,12 @@ def plot_roc_curves(*,
         model.gen.load_weights(gen_weights_file)
         model_label = str(model_number)
 
-        pred = []
-        seq_real = []
+        y_true = {}
+        y_score = {}
+        gc.collect()  # for subsequent model_numbers after the first
+        for value in precip_values:
+            y_true[value] = []
+            y_score[value] = []
 
         data_pred_iter = iter(data_predict)  # "restarts" data iterator
         for ii in range(num_batches):
@@ -140,31 +145,43 @@ def plot_roc_curves(*,
             # list is large, so force garbage collect
             gc.collect()
 
-            seq_real.append(im_real)
-            pred.append(pred_ensemble)
-
             # need to calculate averages each batch; can't store n_images x n_ensemble x H x W!
+            for value in precip_values:
+                # binary instance of truth > threshold
+                # append an array of shape batch_size x H x W
+                y_true[value].append((im_real > value))
+                # check what proportion of pred > threshold
+                # collapse over ensemble dim, so append an array also of shape batch_size x H x W
+                y_score[value].append(np.mean(pred_ensemble > value, axis=0, dtype=np.single))
 
-        seq_real = np.concatenate(seq_real, axis=0)  # n_images x W x H
-        pred = np.concatenate(pred, axis=1)  # ens x n_images x W x H
-        gc.collect()
+        for value in precip_values:
+            y_true[value] = np.concatenate(y_true[value], axis=0)  # n_images x W x H
+            gc.collect()
+
+        for value in precip_values:
+            y_score[value] = np.concatenate(y_score[value], axis=0)  # n_images x W x H
+            gc.collect()
+
+#         for value in precip_values:
+#             # debug code for testing memory usage without generating samples
+#             print("Generating random array", value)
+#             y_true[value] = np.random.randint(0, 2, (256, 940, 940), dtype=np.bool)
+#             y_score[value] = (np.random.randint(0, 101, (256, 940, 940))/100.0).astype(np.single)
+#             gc.collect()
 
         fpr = []
         tpr = []
         roc_auc = []
         for value in precip_values:
-            # produce y_true
-            # binary instance of truth > threshold
-            y_true = (seq_real > value)
-            # produce y_score
-            # check if pred > threshold
-            y_score = np.mean((pred > value), axis=0)
+            print("Computing ROC for", value)
             # Compute ROC curve and ROC area for each precip value
-            fpr_pv, tpr_pv, _ = roc_curve(np.ravel(y_true), np.ravel(y_score), drop_intermediate=False)
+            fpr_pv, tpr_pv, _ = roc_curve(np.ravel(y_true[value]), np.ravel(y_score[value]), drop_intermediate=False)
             roc_auc_pv = auc(fpr_pv, tpr_pv)
             fpr.append(fpr_pv)
             tpr.append(tpr_pv)
             roc_auc.append(roc_auc_pv)
+            gc.collect()
+
         auc_scores.append(np.array(roc_auc))
 
         # Plot all ROC curves
