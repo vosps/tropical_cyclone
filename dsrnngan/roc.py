@@ -107,7 +107,7 @@ def plot_roc_curves(*,
         for ii in range(num_batches):
             inputs, outputs = next(data_pred_iter)
             if predict_full_image:
-                im_real = data.denormalise(np.array(outputs['output']))
+                im_real = data.denormalise(np.array(outputs['output']))  # shape: batch_size x H x W
             else:
                 im_real = data.denormalise(outputs['output'])[..., 0]
 
@@ -134,22 +134,22 @@ def plot_roc_curves(*,
                         dec_inputs = [mean, logvar, inputs['noise_input'], inputs['hi_res_inputs']]
                         pred_ensemble.append(data.denormalise(model.gen.decoder.predict(dec_inputs))[..., 0])
 
-            # turn list into numpy array
-            pred_ensemble = np.array(pred_ensemble)
-            # list was of size ensemble_members * width * height; can be large so force garbage collect
+            # turn accumulated list into numpy array
+            pred_ensemble = np.array(pred_ensemble)  # shape: ensemble_mem x batch_size x H x W
+
+            # list is large, so force garbage collect
             gc.collect()
 
-            if ii == 0:
-                seq_real.append(im_real)
-                pred.append(pred_ensemble)
-                seq_real = np.array(seq_real)
-                pred = np.squeeze(np.array(pred), axis=0)
-            else:
-                seq_real = np.concatenate((seq_real, np.expand_dims(im_real, axis=0)), axis=1)
-                pred = np.concatenate((pred, pred_ensemble), axis=1)
+            seq_real.append(im_real)
+            pred.append(pred_ensemble)
 
-        seq_real = np.array(seq_real)
-        pred = np.array(pred)
+            # need to calculate averages each batch; can't store n_images x n_ensemble x H x W!
+
+        seq_real = np.concatenate(seq_real, axis=0)  # n_images x W x H
+        pred = np.concatenate(pred, axis=1)  # ens x n_images x W x H
+        print("seq_real shape:", seq_real.shape)
+        print("pred shape:", pred.shape)
+        gc.collect()
 
         fpr = []
         tpr = []
@@ -157,15 +157,12 @@ def plot_roc_curves(*,
         for value in precip_values:
             # produce y_true
             # binary instance of truth > threshold
-            y_true = np.squeeze(1*(seq_real > value), axis=0)
+            y_true = (seq_real > value)
             # produce y_score
             # check if pred > threshold
-            y_score = np.mean(1*(pred > value), axis=0)
-            # flatten matrices
-            y_true = np.ravel(y_true)
-            y_score = np.ravel(y_score)
+            y_score = np.mean((pred > value), axis=0)
             # Compute ROC curve and ROC area for each precip value
-            fpr_pv, tpr_pv, _ = roc_curve(y_true, y_score)
+            fpr_pv, tpr_pv, _ = roc_curve(np.ravel(y_true), np.ravel(y_score), drop_intermediate=False)
             roc_auc_pv = auc(fpr_pv, tpr_pv)
             fpr.append(fpr_pv)
             tpr.append(tpr_pv)
