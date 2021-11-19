@@ -11,6 +11,7 @@ import ecpoint
 import benchmarks
 from noise import NoiseGenerator
 from data import get_dates, all_ifs_fields
+from pooling import pool
 
 
 def plot_roc_curves(*,
@@ -56,6 +57,10 @@ def plot_roc_curves(*,
 
     precip_values = np.array([0.5, 2.0, 10.0])
 
+    pooling_methods = ['no_pooling',
+                       'max_4', 'max_16', 'max_10_no_overlap',
+                       'avg_4', 'avg_16', 'avg_10_no_overlap']
+
     # initialise model
     model = setupmodel.setup_model(mode=mode,
                                    arch=arch,
@@ -87,8 +92,12 @@ def plot_roc_curves(*,
                                             batch_size=batch_size,
                                             downsample=downsample)
 
-    auc_scores_roc = []
-    auc_scores_pr = []
+    auc_scores_roc = {}
+    auc_scores_pr = {}
+    for method in pooling_methods:
+        auc_scores_roc[method] = []
+        auc_scores_pr[method] = []
+
     for model_number in model_numbers:
         print(f"calculating for model number {model_number}")
         gen_weights_file = os.path.join(weights_dir, "gen_weights-{:07d}.h5".format(model_number))
@@ -103,9 +112,12 @@ def plot_roc_curves(*,
 
         y_true = {}
         y_score = {}
-        for value in precip_values:
-            y_true[value] = []
-            y_score[value] = []
+        for method in pooling_methods:
+            y_true[method] = {}
+            y_score[method] = {}
+            for value in precip_values:
+                y_true[method][value] = []
+                y_score[method][value] = []
 
         data_pred_iter = iter(data_predict)  # "restarts" data iterator
 
@@ -147,134 +159,156 @@ def plot_roc_curves(*,
             gc.collect()
 
             # need to calculate averages each batch; can't store n_images x n_ensemble x H x W!
-            for value in precip_values:
-                # binary instance of truth > threshold
-                # append an array of shape batch_size x H x W
-                y_true[value].append((im_real > value))
-                # check what proportion of pred > threshold
-                # collapse over ensemble dim, so append an array also of shape batch_size x H x W
-                y_score[value].append(np.mean(pred_ensemble > value, axis=0, dtype=np.single))
+            for method in pooling_methods:
+                if method == 'no_pooling':
+                    im_real_pooled = im_real.copy()
+                    pred_ensemble_pooled = pred_ensemble.copy()
+                else:
+                    # im_real only has 3 dims but the pooling needs 4,
+                    # so add a fake extra dim and squeeze back down
+                    im_real_pooled = np.expand_dims(im_real, axis=0)
+                    im_real_pooled = pool(im_real_pooled, method, data_format='channels_first')
+                    im_real_pooled = np.squeeze(im_real_pooled, axis=0)
+                    pred_ensemble_pooled = pool(pred_ensemble, method, data_format='channels_first')
+
+                for value in precip_values:
+                    # binary instance of truth > threshold
+                    # append an array of shape batch_size x H x W
+                    y_true[method][value].append((im_real_pooled > value))
+                    # check what proportion of pred > threshold
+                    # collapse over ensemble dim, so append an array also of shape batch_size x H x W
+                    y_score[method][value].append(np.mean(pred_ensemble_pooled > value, axis=0, dtype=np.single))
+                del im_real_pooled
+                del pred_ensemble_pooled
+                gc.collect()
 
             # pred_ensemble is pretty large
             del im_real
             del pred_ensemble
             gc.collect()
 
-        for value in precip_values:
-            # turn list of batch_size x H x W into a single array
-            y_true[value] = np.concatenate(y_true[value], axis=0)  # n_images x W x H
-            gc.collect()  # clean up the list representation of y_true[value]
+        for method in pooling_methods:
+            for value in precip_values:
+                # turn list of batch_size x H x W into a single array
+                y_true[method][value] = np.concatenate(y_true[method][value], axis=0)  # n_images x W x H
+                gc.collect()  # clean up the list representation of y_true[value]
 
-        for value in precip_values:
-            # ditto
-            y_score[value] = np.concatenate(y_score[value], axis=0)  # n_images x W x H
-            gc.collect()
+            for value in precip_values:
+                # ditto
+                y_score[method][value] = np.concatenate(y_score[method][value], axis=0)  # n_images x W x H
+                gc.collect()
 
-#         for value in precip_values:
-#             # debug code for testing memory usage without generating samples
-#             print("Generating random array", value)
-#             y_true[value] = np.random.randint(0, 2, (256, 940, 940), dtype=np.bool)
-#             y_score[value] = (np.random.randint(0, 101, (256, 940, 940))/100.0).astype(np.single)
-#             gc.collect()
+#         for method in pooling_methods:
+#             for value in precip_values:
+#                 # debug code for testing memory usage without generating samples
+#                 print("Generating random array", value)
+#                 y_true[method][value] = np.random.randint(0, 2, (256, 940, 940), dtype=np.bool)
+#                 y_score[method][value] = (np.random.randint(0, 101, (256, 940, 940))/100.0).astype(np.single)
+#                 gc.collect()
 
-        fpr = []  # list of ROC fprs
-        tpr = []  # list of ROC tprs
-        rec = []  # list of precision-recall recalls
-        pre = []  # list of precision-recall precisions
-        baserates = []  # precision-recall 'no-skill' levels
-        roc_auc = []  # list of ROC AUCs
-        pr_auc = []  # list of p-r AUCs
-        for value in precip_values:
-            print("Computing ROC and prec-recall for", value)
-            # Compute ROC curve and ROC area for each precip value
-            fpr_pv, tpr_pv, _ = roc_curve(np.ravel(y_true[value]), np.ravel(y_score[value]), drop_intermediate=False)
-            gc.collect()
-            pre_pv, rec_pv, _ = precision_recall_curve(np.ravel(y_true[value]), np.ravel(y_score[value]))
-            gc.collect()
-            # note: fpr_pv, tpr_pv, etc., are at most the size of the number of unique values of y_score.
-            # for us, this is just "fraction of ensemble members > threshold" which is relatively small,
-            # but if y_score took arbirary values, this could be really large (particularly with drop_intermediate=False)
-            roc_auc_pv = auc(fpr_pv, tpr_pv)
-            pr_auc_pv = auc(rec_pv, pre_pv)
-            fpr.append(fpr_pv)
-            tpr.append(tpr_pv)
-            pre.append(pre_pv)
-            rec.append(rec_pv)
-            baserates.append(y_true[value].mean())
-            roc_auc.append(roc_auc_pv)
-            pr_auc.append(pr_auc_pv)
-            del y_true[value]
-            del y_score[value]
-            gc.collect()
+        fpr = {}; tpr = {}; rec = {}; pre = {}; baserates = {}; roc_auc = {}; pr_auc = {}
+        for method in pooling_methods:
+            fpr[method] = []  # list of ROC fprs
+            tpr[method] = []  # list of ROC tprs
+            rec[method] = []  # list of precision-recall recalls
+            pre[method] = []  # list of precision-recall precisions
+            baserates[method] = []  # precision-recall 'no-skill' levels
+            roc_auc[method] = []  # list of ROC AUCs
+            pr_auc[method] = []  # list of p-r AUCs
 
-        auc_scores_roc.append(np.array(roc_auc))
-        auc_scores_pr.append(np.array(pr_auc))
+            for value in precip_values:
+                print("Computing ROC and prec-recall for", value)
+                # Compute ROC curve and ROC area for each precip value
+                fpr_pv, tpr_pv, _ = roc_curve(np.ravel(y_true[method][value]), np.ravel(y_score[method][value]), drop_intermediate=False)
+                gc.collect()
+                pre_pv, rec_pv, _ = precision_recall_curve(np.ravel(y_true[method][value]), np.ravel(y_score[method][value]))
+                gc.collect()
+                # note: fpr_pv, tpr_pv, etc., are at most the size of the number of unique values of y_score.
+                # for us, this is just "fraction of ensemble members > threshold" which is relatively small,
+                # but if y_score took arbirary values, this could be really large (particularly with drop_intermediate=False)
+                roc_auc_pv = auc(fpr_pv, tpr_pv)
+                pr_auc_pv = auc(rec_pv, pre_pv)
+                fpr[method].append(fpr_pv)
+                tpr[method].append(tpr_pv)
+                pre[method].append(pre_pv)
+                rec[method].append(rec_pv)
+                baserates[method].append(y_true[method][value].mean())
+                roc_auc[method].append(roc_auc_pv)
+                pr_auc[method].append(pr_auc_pv)
+                del y_true[method][value]
+                del y_score[method][value]
+                gc.collect()
 
-        # Plot all ROC curves
-        plt.figure(figsize=(7, 5))
-        lw = 2
-        colors = ['aqua', 'darkorange', 'cornflowerblue', 'deeppink', 'navy']
+            auc_scores_roc[method].append(np.array(roc_auc[method]))
+            auc_scores_pr[method].append(np.array(pr_auc[method]))
+
+        for method in pooling_methods:
+            # Plot all ROC curves
+            plt.figure(figsize=(7, 5))
+            lw = 2
+            colors = ['aqua', 'darkorange', 'cornflowerblue', 'deeppink', 'navy']
+            for i, color in zip(range(len(precip_values)), colors):
+                plt.plot(fpr[method][i], tpr[method][i], color=color, lw=lw,
+                         label=f"ROC curve for precip value {precip_values[i]} (area = %0.2f)" % roc_auc[method][i])
+
+            plt.plot([0, 1], [0, 1], 'k--', lw=lw)  # no-skill
+            plt.xlim([0.0, 1.0])
+            plt.ylim([0.0, 1.05])
+            plt.xlabel('False Positive Rate')
+            plt.ylabel('True Positive Rate')
+            plt.title(f'ROC curve for {plot_input_title} problem, {ensemble_members} ensemble members, {batch_size*num_batches} images, pooling type {method}')
+            plt.legend(loc="lower right")
+            plt.savefig("{}/ROC-{}-{}-{}-{}.pdf".format(log_folder, problem_type, plot_label, model_label, method), bbox_inches='tight')
+            plt.close()
+
+            # Plot all precision-recall curves
+            plt.figure(figsize=(7, 5))
+            lw = 2
+            colors = ['aqua', 'darkorange', 'cornflowerblue', 'deeppink', 'navy']
+            for i, color in zip(range(len(precip_values)), colors):
+                plt.plot(rec[method][i], pre[method][i], color=color, lw=lw,
+                         label=f"Precision-recall curve for precip value {precip_values[i]} (area = %0.2f)" % pr_auc[method][i])
+                plt.plot([0, 1], [baserates[method][i], baserates[method][i]], '--', lw=0.5, color=color)  # no skill
+
+            plt.xlim([0.0, 1.0])
+            # plt.ylim([0.0, 1.05])
+            plt.xlabel('Recall')
+            plt.ylabel('Precision')
+            plt.title(f'Precision-recall curve for {plot_input_title} problem, {ensemble_members} ensemble members, {batch_size*num_batches} images, pooling type {method}')
+            plt.legend(loc="upper right")
+            plt.savefig("{}/PR-{}-{}-{}-{}.pdf".format(log_folder, problem_type, plot_label, model_label, method), bbox_inches='tight')
+            plt.close()
+
+    for method in pooling_methods:
+        auc_scores_roc[method] = np.transpose(np.array(auc_scores_roc[method]))
+        plt.figure(figsize=(8, 5))
+        colors = ['darkturquoise', 'teal', 'dodgerblue', 'navy', 'purple']
         for i, color in zip(range(len(precip_values)), colors):
-            plt.plot(fpr[i], tpr[i], color=color, lw=lw,
-                     label=f"ROC curve for precip value {precip_values[i]} (area = %0.2f)" % roc_auc[i])
+            plt.plot(model_numbers, auc_scores_roc[method][i], color=color, lw=lw,
+                     label=f"AUC values for precip_values {precip_values[i]}")
 
-        plt.plot([0, 1], [0, 1], 'k--', lw=lw)  # no-skill
-        plt.xlim([0.0, 1.0])
-        plt.ylim([0.0, 1.05])
-        plt.xlabel('False Positive Rate')
-        plt.ylabel('True Positive Rate')
-        plt.title(f'ROC curve for {plot_input_title} problem, {ensemble_members} ensemble members, {batch_size*num_batches} images')
-        plt.legend(loc="lower right")
-        plt.savefig("{}/ROC-{}-{}-{}.pdf".format(log_folder, problem_type, plot_label, model_label), bbox_inches='tight')
-        plt.show()
+        plt.ylim([0, 1.0])
+        plt.xlabel('Checkpoint number')
+        plt.ylabel('Area under ROC curve')
+        plt.title(f'ROC AUC values for varying precip thresholds, pooling type {method}')
+        plt.legend(loc="best")
+        plt.savefig("{}/AUC-ROC-{}-{}-{}.pdf".format(log_folder, problem_type, plot_label, method), bbox_inches='tight')
+        plt.close()
 
-        # Plot all precision-recall curves
-        plt.figure(figsize=(7, 5))
-        lw = 2
-        colors = ['aqua', 'darkorange', 'cornflowerblue', 'deeppink', 'navy']
+        auc_scores_pr[method] = np.transpose(np.array(auc_scores_pr[method]))
+        plt.figure(figsize=(8, 5))
+        colors = ['darkturquoise', 'teal', 'dodgerblue', 'navy', 'purple']
         for i, color in zip(range(len(precip_values)), colors):
-            plt.plot(rec[i], pre[i], color=color, lw=lw,
-                     label=f"Precision-recall curve for precip value {precip_values[i]} (area = %0.2f)" % pr_auc[i])
-            plt.plot([0, 1], [baserates[i], baserates[i]], '--', lw=0.5, color=color)
+            plt.plot(model_numbers, auc_scores_pr[method][i], color=color, lw=lw,
+                     label=f"AUC values for precip_values {precip_values[i]}")
 
-        plt.xlim([0.0, 1.0])
-        # plt.ylim([0.0, 1.05])
-        plt.xlabel('Recall')
-        plt.ylabel('Precision')
-        plt.title(f'Precision-recall curve for {plot_input_title} problem, {ensemble_members} ensemble members, {batch_size*num_batches} images')
-        plt.legend(loc="upper right")
-        plt.savefig("{}/PR-{}-{}-{}.pdf".format(log_folder, problem_type, plot_label, model_label), bbox_inches='tight')
-        plt.show()
-
-    auc_scores_roc = np.transpose(np.array(auc_scores_roc))
-    plt.figure(figsize=(8, 5))
-    colors = ['darkturquoise', 'teal', 'dodgerblue', 'navy', 'purple']
-    for i, color in zip(range(len(precip_values)), colors):
-        plt.plot(model_numbers, auc_scores_roc[i], color=color, lw=lw,
-                 label=f"AUC values for precip_values {precip_values[i]}")
-
-    plt.ylim([0, 1.0])
-    plt.xlabel('Checkpoint number')
-    plt.ylabel('Area under ROC curve')
-    plt.title('ROC AUC values for varying precip thresholds')
-    plt.legend(loc="best")
-    plt.savefig("{}/AUC-ROC-{}-{}.pdf".format(log_folder, problem_type, plot_label), bbox_inches='tight')
-    plt.show()
-
-    auc_scores_pr = np.transpose(np.array(auc_scores_pr))
-    plt.figure(figsize=(8, 5))
-    colors = ['darkturquoise', 'teal', 'dodgerblue', 'navy', 'purple']
-    for i, color in zip(range(len(precip_values)), colors):
-        plt.plot(model_numbers, auc_scores_pr[i], color=color, lw=lw,
-                 label=f"AUC values for precip_values {precip_values[i]}")
-
-    plt.ylim([0, 1.0])
-    plt.xlabel('Checkpoint number')
-    plt.ylabel('Area under ROC curve')
-    plt.title('PR AUC values for varying precip thresholds')
-    plt.legend(loc="best")
-    plt.savefig("{}/AUC-PR-{}-{}.pdf".format(log_folder, problem_type, plot_label), bbox_inches='tight')
-    plt.show()
+        plt.ylim([0, 1.0])
+        plt.xlabel('Checkpoint number')
+        plt.ylabel('Area under ROC curve')
+        plt.title(f'PR AUC values for varying precip thresholds, pooling type {method}')
+        plt.legend(loc="best")
+        plt.savefig("{}/AUC-PR-{}-{}-{}.pdf".format(log_folder, problem_type, plot_label, method), bbox_inches='tight')
+        plt.close()
 
     # ecPoint
     # requires a different data generator
