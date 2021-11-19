@@ -130,7 +130,7 @@ def ensemble_ranks(*,
             cond = inputs['lo_res_inputs']
             const = inputs['hi_res_inputs']
             sample_truth = outputs['output']
-            sample_truth = np.expand_dims(np.array(sample_truth), axis=-1)
+            sample_truth = np.expand_dims(np.array(sample_truth), axis=-1) # must be 4D tensor for pooling NHWC
         else:
             cond, const, sample = next(batch_gen_iter)
             sample_truth = sample.numpy()
@@ -168,23 +168,24 @@ def ensemble_ranks(*,
                 sample_gen = gen.decoder.predict([mean, logvar, nn, const])
                 samples_gen.append(sample_gen.astype("float32"))
         for ii in range(len(samples_gen)):
-            sample_gen = samples_gen[ii]
+            sample_gen = np.squeeze(samples_gen[ii], axis=-1) # squeeze out trival dim
+            #sample_gen shape should be [n, h, w] e.g. [1, 940, 940]
             if denormalise_data:
                 sample_gen = data.denormalise(sample_gen)
             if add_noise:
-                (noise_dim_1, noise_dim_2) = sample_gen[0, ..., 0].shape
-                noise = np.random.rand(batch_size, noise_dim_1, noise_dim_2, 1)*noise_factor
+                (noise_dim_1, noise_dim_2) = sample_gen[0, ...].shape
+                noise = np.random.rand(batch_size, noise_dim_1, noise_dim_2)*noise_factor
                 sample_gen += noise
             samples_gen[ii] = sample_gen
         # turn list into array
-        samples_gen = np.stack(samples_gen, axis=-1)
+        samples_gen = np.stack(samples_gen, axis=-1) #shape of samples_gen is [n, h, w, c] e.g. [1, 940, 940, 10]
                 
         # calculate ranks
         # currently ranks only calculated without pooling
         # probably fine but may want to threshold in the future, e.g. <1mm, >5mm
-        sample_truth_ranks = sample_truth.ravel()
-        samples_gen_ranks = samples_gen.reshape((np.prod(samples_gen.shape[:-1]), samples_gen.shape[-1]))
-        rank = np.count_nonzero(sample_truth_ranks[:, None] >= samples_gen_ranks, axis=-1)
+        sample_truth_ranks = sample_truth.ravel() # unwrap into one long array, then unwrap samples_gen in same format
+        samples_gen_ranks = samples_gen.reshape((-1, rank_samples)) # unknown batch size/img dims, known number of samples
+        rank = np.count_nonzero(sample_truth_ranks[:, None] >= samples_gen_ranks, axis=-1) # mask array where truth > samples gen, count
         ranks.append(rank)
         del samples_gen_ranks, sample_truth_ranks
         gc.collect()
@@ -196,12 +197,9 @@ def ensemble_ranks(*,
                 samples_gen_pooled = samples_gen
             else:
                 sample_truth_pooled = pool(sample_truth, method)
-                samples_gen_pooled = []
-                for jj in range(samples_gen.shape[-1]):
-                    sample_gen_pooled = pool(samples_gen[...,jj], method)
-                    samples_gen_pooled.append(sample_gen_pooled)
-                samples_gen_pooled = np.stack(samples_gen_pooled, axis=-1)
-            crps_score = crps.crps_ensemble(sample_truth_pooled, samples_gen_pooled).mean()
+                samples_gen_pooled = pool(samples_gen, method)
+            # crps_ensemble expects truth dims [N, H, W], pred dims [N, H, W, C]
+            crps_score = crps.crps_ensemble(np.squeeze(sample_truth_pooled, axis=-1), samples_gen_pooled).mean()
             del sample_truth_pooled, samples_gen_pooled
             gc.collect()
 
