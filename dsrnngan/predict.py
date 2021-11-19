@@ -15,6 +15,7 @@ from tfrecords_generator_ifs import create_fixed_dataset
 from data_generator_ifs import DataGenerator as DataGeneratorFull
 from data import get_dates, all_ifs_fields
 from plots import plot_img
+from data import ifs_norm
 from rapsd import plot_spectrum1d, rapsd
 
 parser = argparse.ArgumentParser()
@@ -71,6 +72,8 @@ latent_variables = setup_params["GENERATOR"]["latent_variables"]
 filters_disc = setup_params["DISCRIMINATOR"]["filters_disc"]
 batch_size = setup_params["TRAIN"]["batch_size"]
 val_years = setup_params["VAL"]["val_years"]
+lr_gen = setup_params["GENERATOR"]["learning_rate_gen"]
+lr_gen = float(lr_gen)
 
 if args.predict_full_image:
     batch_size = 1
@@ -97,7 +100,8 @@ model = setup_model(mode=mode,
                     filters_disc=filters_disc,
                     noise_channels=noise_channels, 
                     latent_variables=latent_variables,
-                    padding=padding)
+                    padding=padding,
+                    lr_gen=lr_gen)
 gen = model.gen
 gen.load_weights(weights_fn)
 
@@ -155,22 +159,30 @@ for i in range(num_predictions):
     (inputs,outputs) = next(data_predict_iter)
     ## store denormalised inputs, outputs, predictions
     seq_const.append(data.denormalise(inputs['hi_res_inputs']))
-    seq_cond.append(data.denormalise(inputs['lo_res_inputs']))    
+    input_conditions = inputs['lo_res_inputs'].copy()
+    ##  denormalise precip inputs
+    input_conditions[...,0:2] = data.denormalise(inputs['lo_res_inputs'][...,0:2])
+    ##  denormalise wind inputs
+    input_conditions[...,-2] = inputs['lo_res_inputs'][...,-2]*ifs_norm['u700'][1] + ifs_norm['u700'][0]
+    input_conditions[...,-1] = inputs['lo_res_inputs'][...,-1]*ifs_norm['v700'][1] + ifs_norm['v700'][0]
+    seq_cond.append(input_conditions)    
     ## make sure ground truth image has correct dimensions
     if args.predict_full_image :
         sample = np.expand_dims(np.array(outputs['output']), axis=-1)
         seq_real.append(data.denormalise(sample))
     else:
         seq_real.append(data.denormalise(outputs['output']))
-    if args.include_deterministic:
+    if args.include_deterministic: # NB this is using det as a comparison
         seq_det.append(data.denormalise(gen_det.predict(inputs)))
     else:
         seq_det.append(dummy)
-    if mode == 'det':
+    pred_ensemble = []
+    if mode == 'det': # this is plotting det as a model
         num_samples = 1 #can't generate an ensemble with deterministic method
-        pred.append(data.denormalise(gen.predict(inputs)))
+        pred_ensemble.append(data.denormalise(gen.predict(inputs))) #pretend it's an ensemble so dims match
+        pred_ensemble = np.array(pred_ensemble)
+        pred.append(pred_ensemble)
     else:
-        pred_ensemble = []
         if mode == 'GAN':
             noise_shape = inputs['lo_res_inputs'][0,...,0].shape + (noise_channels,)
             noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size)
