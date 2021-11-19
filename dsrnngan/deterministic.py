@@ -47,7 +47,6 @@ class Deterministic(object):
         gen_out = self.gen(gen_in)
         gen_out = ensure_list(gen_out)
         self.gen_trainer = Model(inputs=gen_in, outputs=gen_out)
-
         self.gen_trainer.compile(loss=self.loss, optimizer=self.optimizer(lr=self.lr))
 
         self.gen_trainer.summary()

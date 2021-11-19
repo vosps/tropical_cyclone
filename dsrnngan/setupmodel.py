@@ -20,7 +20,7 @@ def setup_model(*,
                 content_loss_weight=None,
                 lr_disc=None,
                 lr_gen=None):
-
+ 
     if mode in ("GAN", "VAEGAN"):
         gen_to_use = {"normal": models.generator,
                       "forceconv": models.generator}[arch]
@@ -66,7 +66,8 @@ def setup_model(*,
                          input_channels=input_channels,
                          filters_gen=filters_gen,
                          padding=padding)
-        model = deterministic.Deterministic(gen, lr_gen,
+        model = deterministic.Deterministic(gen, 
+                                            lr=lr_gen,
                                             loss='mse',
                                             optimizer=Adam)
 
