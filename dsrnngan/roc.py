@@ -1,7 +1,7 @@
 import os
 import gc
 import numpy as np
-from sklearn.metrics import roc_curve, auc
+from sklearn.metrics import roc_curve, precision_recall_curve, auc
 import matplotlib.pyplot as plt
 from tfrecords_generator_ifs import create_fixed_dataset
 from data_generator_ifs import DataGenerator as DataGeneratorFull
@@ -54,7 +54,7 @@ def plot_roc_curves(*,
     if mode == 'det':
         ensemble_members = 1  # in this case, only used for printing
 
-    precip_values = np.array([0.01, 0.1, 1, 2, 5])
+    precip_values = np.array([0.5, 2.0, 10.0])
 
     # initialise model
     model = setupmodel.setup_model(mode=mode,
@@ -87,9 +87,9 @@ def plot_roc_curves(*,
                                             batch_size=batch_size,
                                             downsample=downsample)
 
-    auc_scores = []
+    auc_scores_roc = []
+    auc_scores_pr = []
     for model_number in model_numbers:
-        gc.collect()
         print(f"calculating for model number {model_number}")
         gen_weights_file = os.path.join(weights_dir, "gen_weights-{:07d}.h5".format(model_number))
 
@@ -103,13 +103,14 @@ def plot_roc_curves(*,
 
         y_true = {}
         y_score = {}
-        gc.collect()  # for subsequent model_numbers after the first
         for value in precip_values:
             y_true[value] = []
             y_score[value] = []
 
         data_pred_iter = iter(data_predict)  # "restarts" data iterator
+
         for ii in range(num_batches):
+            # print(ii, num_batches)
             inputs, outputs = next(data_pred_iter)
             if predict_full_image:
                 im_real = data.denormalise(np.array(outputs['output']))  # shape: batch_size x H x W
@@ -154,11 +155,18 @@ def plot_roc_curves(*,
                 # collapse over ensemble dim, so append an array also of shape batch_size x H x W
                 y_score[value].append(np.mean(pred_ensemble > value, axis=0, dtype=np.single))
 
-        for value in precip_values:
-            y_true[value] = np.concatenate(y_true[value], axis=0)  # n_images x W x H
+            # pred_ensemble is pretty large
+            del im_real
+            del pred_ensemble
             gc.collect()
 
         for value in precip_values:
+            # turn list of batch_size x H x W into a single array
+            y_true[value] = np.concatenate(y_true[value], axis=0)  # n_images x W x H
+            gc.collect()  # clean up the list representation of y_true[value]
+
+        for value in precip_values:
+            # ditto
             y_score[value] = np.concatenate(y_score[value], axis=0)  # n_images x W x H
             gc.collect()
 
@@ -169,20 +177,38 @@ def plot_roc_curves(*,
 #             y_score[value] = (np.random.randint(0, 101, (256, 940, 940))/100.0).astype(np.single)
 #             gc.collect()
 
-        fpr = []
-        tpr = []
-        roc_auc = []
+        fpr = []  # list of ROC fprs
+        tpr = []  # list of ROC tprs
+        rec = []  # list of precision-recall recalls
+        pre = []  # list of precision-recall precisions
+        baserates = []  # precision-recall 'no-skill' levels
+        roc_auc = []  # list of ROC AUCs
+        pr_auc = []  # list of p-r AUCs
         for value in precip_values:
-            print("Computing ROC for", value)
+            print("Computing ROC and prec-recall for", value)
             # Compute ROC curve and ROC area for each precip value
             fpr_pv, tpr_pv, _ = roc_curve(np.ravel(y_true[value]), np.ravel(y_score[value]), drop_intermediate=False)
+            gc.collect()
+            pre_pv, rec_pv, _ = precision_recall_curve(np.ravel(y_true[value]), np.ravel(y_score[value]))
+            gc.collect()
+            # note: fpr_pv, tpr_pv, etc., are at most the size of the number of unique values of y_score.
+            # for us, this is just "fraction of ensemble members > threshold" which is relatively small,
+            # but if y_score took arbirary values, this could be really large (particularly with drop_intermediate=False)
             roc_auc_pv = auc(fpr_pv, tpr_pv)
+            pr_auc_pv = auc(rec_pv, pre_pv)
             fpr.append(fpr_pv)
             tpr.append(tpr_pv)
+            pre.append(pre_pv)
+            rec.append(rec_pv)
+            baserates.append(y_true[value].mean())
             roc_auc.append(roc_auc_pv)
+            pr_auc.append(pr_auc_pv)
+            del y_true[value]
+            del y_score[value]
             gc.collect()
 
-        auc_scores.append(np.array(roc_auc))
+        auc_scores_roc.append(np.array(roc_auc))
+        auc_scores_pr.append(np.array(pr_auc))
 
         # Plot all ROC curves
         plt.figure(figsize=(7, 5))
@@ -192,7 +218,7 @@ def plot_roc_curves(*,
             plt.plot(fpr[i], tpr[i], color=color, lw=lw,
                      label=f"ROC curve for precip value {precip_values[i]} (area = %0.2f)" % roc_auc[i])
 
-        plt.plot([0, 1], [0, 1], 'k--', lw=lw)
+        plt.plot([0, 1], [0, 1], 'k--', lw=lw)  # no-skill
         plt.xlim([0.0, 1.0])
         plt.ylim([0.0, 1.05])
         plt.xlabel('False Positive Rate')
@@ -202,20 +228,52 @@ def plot_roc_curves(*,
         plt.savefig("{}/ROC-{}-{}-{}.pdf".format(log_folder, problem_type, plot_label, model_label), bbox_inches='tight')
         plt.show()
 
-    auc_scores = np.transpose(np.array(auc_scores))
-    plt.figure(figsize=(8, 5))
+        # Plot all precision-recall curves
+        plt.figure(figsize=(7, 5))
+        lw = 2
+        colors = ['aqua', 'darkorange', 'cornflowerblue', 'deeppink', 'navy']
+        for i, color in zip(range(len(precip_values)), colors):
+            plt.plot(rec[i], pre[i], color=color, lw=lw,
+                     label=f"Precision-recall curve for precip value {precip_values[i]} (area = %0.2f)" % pr_auc[i])
+            plt.plot([0, 1], [baserates[i], baserates[i]], '--', lw=0.5, color=color)
 
+        plt.xlim([0.0, 1.0])
+        # plt.ylim([0.0, 1.05])
+        plt.xlabel('Recall')
+        plt.ylabel('Precision')
+        plt.title(f'Precision-recall curve for {plot_input_title} problem, {ensemble_members} ensemble members, {batch_size*num_batches} images')
+        plt.legend(loc="upper right")
+        plt.savefig("{}/PR-{}-{}-{}.pdf".format(log_folder, problem_type, plot_label, model_label), bbox_inches='tight')
+        plt.show()
+
+    auc_scores_roc = np.transpose(np.array(auc_scores_roc))
+    plt.figure(figsize=(8, 5))
     colors = ['darkturquoise', 'teal', 'dodgerblue', 'navy', 'purple']
     for i, color in zip(range(len(precip_values)), colors):
-        plt.plot(model_numbers, auc_scores[i], color=color, lw=lw,
+        plt.plot(model_numbers, auc_scores_roc[i], color=color, lw=lw,
                  label=f"AUC values for precip_values {precip_values[i]}")
 
     plt.ylim([0, 1.0])
     plt.xlabel('Checkpoint number')
     plt.ylabel('Area under ROC curve')
-    plt.title('AUC values for varying precip thresholds')
+    plt.title('ROC AUC values for varying precip thresholds')
     plt.legend(loc="best")
-    plt.savefig("{}/AUC-{}-{}.pdf".format(log_folder, problem_type, plot_label), bbox_inches='tight')
+    plt.savefig("{}/AUC-ROC-{}-{}.pdf".format(log_folder, problem_type, plot_label), bbox_inches='tight')
+    plt.show()
+
+    auc_scores_pr = np.transpose(np.array(auc_scores_pr))
+    plt.figure(figsize=(8, 5))
+    colors = ['darkturquoise', 'teal', 'dodgerblue', 'navy', 'purple']
+    for i, color in zip(range(len(precip_values)), colors):
+        plt.plot(model_numbers, auc_scores_pr[i], color=color, lw=lw,
+                 label=f"AUC values for precip_values {precip_values[i]}")
+
+    plt.ylim([0, 1.0])
+    plt.xlabel('Checkpoint number')
+    plt.ylabel('Area under ROC curve')
+    plt.title('PR AUC values for varying precip thresholds')
+    plt.legend(loc="best")
+    plt.savefig("{}/AUC-PR-{}-{}.pdf".format(log_folder, problem_type, plot_label), bbox_inches='tight')
     plt.show()
 
     # ecPoint
