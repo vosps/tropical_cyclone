@@ -208,7 +208,7 @@ def ensemble_ranks(*,
             if method not in crps_scores:
                 crps_scores[method] = []
             crps_scores[method].append(crps_score)
-
+            
         if show_progress:
             crps_mean = np.mean(crps_scores['no_pooling'])
             losses = [("CRPS", crps_mean)]
@@ -300,7 +300,7 @@ def rank_metrics_by_time(*,
                                           padding=padding,
                                           load_full_image=load_full_image)
 
-    log_line(log_fname, "N KS CvM DKL OP CRPS CRPS_max_4 CRPS_max_16 CRPS_avg_4 CRPS_avg_16 mean std")
+    log_line(log_fname, "N KS CvM DKL OP CRPS CRPS_max_4 CRPS_max_16 CRPS_max_10_no_overlap CRPS_avg_4 CRPS_avg_16 CRPS_max_10_no_overlap mean std")
 
     for model_number in model_numbers:
         gen_weights_file = os.path.join(weights_dir, "gen_weights-{:07d}.h5".format(model_number))
@@ -328,24 +328,29 @@ def rank_metrics_by_time(*,
         CvM = rank_CvM(ranks)
         DKL = rank_DKL(ranks)
         OP = rank_OP(ranks)
-        CRPS_no_pool = crps_scores['no-pooling'].mean()
+        CRPS_no_pool = np.asarray(crps_scores['no_pooling']).mean()
         if max_pooling:
-            CRPS_max_4 = crps_scores['max_4'].mean()
-            CRPS_max_16 = crps_scores['max_16'].mean()
+            CRPS_max_4 = np.asarray(crps_scores['max_4']).mean()
+            CRPS_max_16 = np.asarray(crps_scores['max_16']).mean()
+            CRPS_max_10_no_overlap = np.asarray(crps_scores['max_10_no_overlap']).mean()
         else:
             CRPS_max_4 = np.nan
             CRPS_max_16 = np.nan
+            CRPS_max_10_no_overlap = np.nan
         if avg_pooling:
-            CRPS_avg_4 = crps_scores['avg_4'].mean()
-            CRPS_avg_16 = crps_scores['avg_16'].mean()
+            CRPS_avg_4 = np.asarray(crps_scores['avg_4']).mean()
+            CRPS_avg_16 = np.asarray(crps_scores['avg_16']).mean()
+            CRPS_avg_10_no_overlap = np.asarray(crps_scores['max_10_no_overlap']).mean()
         else:
             CRPS_avg_4 = np.nan
             CRPS_avg_16 = np.nan
+            CRPS_avg_10_no_overlap = np.nan
         mean = ranks.mean()
         std = ranks.std()
 
-        log_line(log_fname, "{} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}".format(
-            model_number, KS, CvM, DKL, OP, CRPS_no_pool, CRPS_max_4, CRPS_max_16, CRPS_avg_4, CRPS_avg_16, mean, std))
+        log_line(log_fname, "{} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}".format(
+            model_number, KS, CvM, DKL, OP, CRPS_no_pool, CRPS_max_4, CRPS_max_16, CRPS_max_10_no_overlap, 
+            CRPS_avg_4, CRPS_avg_16, CRPS_avg_10_no_overlap, mean, std))
 
         # save one directory up from model weights, in same dir as logfile
         ranks_folder = os.path.dirname(log_fname)
