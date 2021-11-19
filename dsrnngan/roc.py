@@ -209,7 +209,7 @@ def plot_roc_curves(*,
 
         auc_scores_roc.append(np.array(roc_auc))
         auc_scores_pr.append(np.array(pr_auc))
-        
+
         # Plot all ROC curves
         plt.figure(figsize=(7, 5))
         lw = 2
