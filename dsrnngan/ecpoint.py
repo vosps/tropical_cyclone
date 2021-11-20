@@ -419,7 +419,7 @@ def predictthenupscale(raw_inputs=None, proc_inputs=None, out_shape=None,
                 selection = np.random.choice(ans.shape[3],
                                              size=ensemble_size,
                                              replace=True).astype(int)
-                small_output[i,j,k,:] = ans[i,j,j,selection]
+                small_output[i,j,k,:] = ans[i,j,k,selection]
     upscaled_ans = np.repeat(np.repeat(small_output, 10, axis=-3), 10, axis=-2)
     return upscaled_ans    
 
