@@ -373,7 +373,7 @@ def predictcdf(raw_inputs=None,  # proc_inputs=None,
 
 
 def predictupscale(raw_inputs=None, proc_inputs=None, out_shape=None,
-                   cdf=None, logout=False):
+                   cdf=None, logout=False, ensemble_size=100):
     assert (raw_inputs is None) != (proc_inputs is None)
     assert out_shape is None
     if proc_inputs is None:
@@ -385,15 +385,18 @@ def predictupscale(raw_inputs=None, proc_inputs=None, out_shape=None,
         non_zero = (reshaped_inputs[sli] > 0.01)
         proc_inputs = remapERA(reshaped_inputs[non_zero, :])
     bins = filtbreak(proc_inputs, breakpoints_hourly).astype(int)
-    selection = np.random.choice(100,
-                                 size=proc_inputs.shape[0],
-                                 replace=True).astype(int)
-    # pred = np.zeros(non_zero.shape)
-    # for i in range(non_zero.size):
-    #     pred[i] = cdf[bins[i],selection[i])
-    pred = cdf[bins, selection]
     output = reshaped_inputs[sli]
-    output[non_zero] *= (1 + pred)
+    output = np.repeat(output[..., np.newaxis], ensemble_size, axis=-1)
+
+    for ii in range(ensemble_size):
+        selection = np.random.choice(100,
+                                     size=proc_inputs.shape[0],
+                                     replace=True).astype(int)
+        # pred = np.zeros(non_zero.shape)
+        # for i in range(non_zero.size):
+        #     pred[i] = cdf[bins[i],selection[i])
+        pred = cdf[bins, selection]
+        output[non_zero, ii] *= (1 + pred)
     if logout:
         return np.log10(1+output)
     else:
@@ -408,7 +411,7 @@ def predictupscalecdf(raw_inputs=None, proc_inputs=None, out_shape=None,
     return upscaled_ans  # [:,4:-5:,4:-5,:]
 
 def predictthenupscale(raw_inputs=None, proc_inputs=None, out_shape=None,
-                       cdf=None, logout=False, ensemble_size = 100):
+                       cdf=None, logout=False, ensemble_size=100):
     ans = predictcdf(raw_inputs=raw_inputs, cdf=cdf, logout=logout)
     small_output = np.zeros(ans.shape[:-1] + (ensemble_size,))
     # There is definitely a better way to do this sampling

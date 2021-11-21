@@ -61,7 +61,7 @@ def lanczosmodel(indata):
         return np.stack(ans, axis=0)
 
 
-def ecpointmodel(indata, assesslog=False):
+def ecpointmodel(indata, assesslog=False, ensemble_size=100):
     global ecpointCDF
     if type(indata) == dict:
         data = indata['lo_res_inputs']
@@ -70,7 +70,8 @@ def ecpointmodel(indata, assesslog=False):
 
     if ecpointCDF is None:
         ecpointCDF = ecpoint.loadcdf(name='CDF3YIFS.txt')
-    return ecpoint.predictupscale(raw_inputs=data, cdf=ecpointCDF, logout=assesslog)
+    return ecpoint.predictupscale(raw_inputs=data, cdf=ecpointCDF,
+                                  logout=assesslog, ensemble_size=ensemble_size)
 
 
 def ecpointPDFmodel(indata, assesslog=False):
@@ -85,7 +86,7 @@ def ecpointPDFmodel(indata, assesslog=False):
     return ecpoint.predictupscalecdf(raw_inputs=data, cdf=ecpointCDF, logout=assesslog)
 
 
-def ecpointboxensmodel(indata, assesslog=False, ensemble_size = 100):
+def ecpointboxensmodel(indata, assesslog=False, ensemble_size=100):
     global ecpointCDF
     if type(indata) == dict:
         assert indata['lo_res_inputs'].log_precip is False
@@ -95,7 +96,7 @@ def ecpointboxensmodel(indata, assesslog=False, ensemble_size = 100):
     if ecpointCDF is None:
         ecpointCDF = ecpoint.loadcdf(name='CDF3YIFS.txt')
     return ecpoint.predictthenupscale(raw_inputs=data, cdf=ecpointCDF, 
-                                      logout=assesslog, ensemble_size = ensemble_size)
+                                      logout=assesslog, ensemble_size=ensemble_size)
 
 def constantupscalemodel(data):
     reshaped_inputs = np.repeat(np.repeat(data, 10, axis=-1), 10, axis=-2)
