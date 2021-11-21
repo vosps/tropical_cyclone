@@ -91,22 +91,44 @@ def plot_roc_curves(*,
                                             batch_size=batch_size,
                                             downsample=downsample)
 
-    auc_scores_roc = {}
+    if plot_ecpoint:
+        if not predict_full_image:
+            raise RuntimeError('Data generator for benchmarks not implemented for small images')
+        # requires a different data generator with different fields and no ifs_norm
+        data_benchmarks = DataGeneratorFull(dates=dates,
+                                            ifs_fields=ecpoint.ifs_fields,
+                                            batch_size=batch_size,
+                                            log_precip=False,
+                                            crop=True,
+                                            shuffle=True,
+                                            constants=True,
+                                            hour="random",
+                                            ifs_norm=False,
+                                            downsample=downsample)
+
+    auc_scores_roc = {}  # will only contain GAN AUCs; used for "progress vs time" plot
     auc_scores_pr = {}
     for method in pooling_methods:
         auc_scores_roc[method] = []
         auc_scores_pr[method] = []
 
-    for model_number in model_numbers:
+    # tidier to iterate over GAN checkpoints and ecPoint using joint code
+    model_numbers_ec = model_numbers.copy()
+    if plot_ecpoint:
+        # model_numbers_ec.extend(["ecPoint-nocorr", "ecPoint-partcorr", "ecPoint-fullcorr"])
+        model_numbers_ec.extend(["ecPoint-partcorr", "ecPoint-fullcorr"])  # nocorr is horrible slow rn
+
+    for model_number in model_numbers_ec:
         print(f"calculating for model number {model_number}")
-        gen_weights_file = os.path.join(weights_dir, "gen_weights-{:07d}.h5".format(model_number))
+        if model_number in model_numbers:
+            # only load weights for GAN, not ecPoint
+            gen_weights_file = os.path.join(weights_dir, "gen_weights-{:07d}.h5".format(model_number))
+            if not os.path.isfile(gen_weights_file):
+                print(gen_weights_file, "not found, skipping")
+                continue
+            print(gen_weights_file)
+            model.gen.load_weights(gen_weights_file)
 
-        if not os.path.isfile(gen_weights_file):
-            print(gen_weights_file, "not found, skipping")
-            continue
-
-        print(gen_weights_file)
-        model.gen.load_weights(gen_weights_file)
         model_label = str(model_number)
 
         y_true = {}
@@ -118,44 +140,66 @@ def plot_roc_curves(*,
                 y_true[method][value] = []
                 y_score[method][value] = []
 
-        data_pred_iter = iter(data_predict)  # "restarts" data iterator
+        if model_number in model_numbers:
+            data_pred_iter = iter(data_predict)  # "restarts" GAN data iterator
+        else:
+            data_benchmarks_iter = iter(data_benchmarks)  # ecPoint data iterator
 
         for ii in range(num_batches):
             # print(ii, num_batches)
-            inputs, outputs = next(data_pred_iter)
+
+            if model_number in model_numbers:
+                # GAN, not ecPoint
+                inputs, outputs = next(data_pred_iter)
+            else:
+                # ecPoint
+                inputs, outputs = next(data_benchmarks_iter)
+
             if predict_full_image:
-                im_real = data.denormalise(np.array(outputs['output']))  # shape: batch_size x H x W
+                im_real = data.denormalise(outputs['output']).astype(np.single)  # shape: batch_size x H x W
             else:
-                im_real = data.denormalise(outputs['output'])[..., 0]
+                im_real = (data.denormalise(outputs['output'])[..., 0]).astype(np.single)
 
-            pred_ensemble = []
-            if mode == 'det':
-                pred_ensemble.append(data.denormalise(model.gen.predict([inputs['lo_res_inputs'],
-                                                                         inputs['hi_res_inputs']]))[..., 0])
-            else:
-                if mode == 'GAN':
-                    noise_shape = inputs['lo_res_inputs'][0, ..., 0].shape + (noise_channels,)
-                elif mode == 'VAEGAN':
-                    noise_shape = inputs['lo_res_inputs'][0, ..., 0].shape + (latent_variables,)
-                noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size)
-                if mode == 'VAEGAN':
-                    # call encoder once
-                    mean, logvar = model.gen.encoder([inputs['lo_res_inputs'], inputs['hi_res_inputs']])
-                for j in range(ensemble_members):
-                    inputs['noise_input'] = noise_gen()
+            if model_number in model_numbers:
+                # get GAN predictions
+                pred_ensemble = []
+                if mode == 'det':
+                    pred_ensemble.append(data.denormalise(model.gen.predict([inputs['lo_res_inputs'],
+                                                                             inputs['hi_res_inputs']]))[..., 0])
+                else:
                     if mode == 'GAN':
-                        pred_ensemble.append(data.denormalise(model.gen.predict([inputs['lo_res_inputs'],
-                                                                                 inputs['hi_res_inputs'],
-                                                                                 inputs['noise_input']]))[..., 0])
+                        noise_shape = inputs['lo_res_inputs'][0, ..., 0].shape + (noise_channels,)
                     elif mode == 'VAEGAN':
-                        dec_inputs = [mean, logvar, inputs['noise_input'], inputs['hi_res_inputs']]
-                        pred_ensemble.append(data.denormalise(model.gen.decoder.predict(dec_inputs))[..., 0])
+                        noise_shape = inputs['lo_res_inputs'][0, ..., 0].shape + (latent_variables,)
+                    noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size)
+                    if mode == 'VAEGAN':
+                        # call encoder once
+                        mean, logvar = model.gen.encoder([inputs['lo_res_inputs'], inputs['hi_res_inputs']])
+                    for j in range(ensemble_members):
+                        inputs['noise_input'] = noise_gen()
+                        if mode == 'GAN':
+                            pred_ensemble.append(data.denormalise(model.gen.predict([inputs['lo_res_inputs'],
+                                                                                     inputs['hi_res_inputs'],
+                                                                                     inputs['noise_input']]))[..., 0])
+                        elif mode == 'VAEGAN':
+                            dec_inputs = [mean, logvar, inputs['noise_input'], inputs['hi_res_inputs']]
+                            pred_ensemble.append(data.denormalise(model.gen.decoder.predict(dec_inputs))[..., 0])
 
-            # turn accumulated list into numpy array
-            pred_ensemble = np.array(pred_ensemble)  # shape: ensemble_mem x batch_size x H x W
+                # turn accumulated list into numpy array
+                pred_ensemble = np.stack(pred_ensemble, axis=-1)  # shape: batch_size x H x W x ensemble_mem
 
-            # list is large, so force garbage collect
-            gc.collect()
+                # list is large, so force garbage collect
+                gc.collect()
+            else:
+                # pred_ensemble will be batch_size x H x W x 100
+                if model_number == "ecPoint-nocorr":
+                    pred_ensemble = benchmarks.ecpointmodel(inputs['lo_res_inputs'])
+                elif model_number == "ecPoint-partcorr":
+                    pred_ensemble = benchmarks.ecpointboxensmodel(inputs['lo_res_inputs'])
+                elif model_number == "ecPoint-fullcorr":
+                    pred_ensemble = benchmarks.ecpointPDFmodel(inputs['lo_res_inputs'])
+                else:
+                    raise RuntimeError('Unknown model_number {}' % model_number)
 
             # need to calculate averages each batch; can't store n_images x n_ensemble x H x W!
             for method in pooling_methods:
@@ -165,10 +209,10 @@ def plot_roc_curves(*,
                 else:
                     # im_real only has 3 dims but the pooling needs 4,
                     # so add a fake extra dim and squeeze back down
-                    im_real_pooled = np.expand_dims(im_real, axis=0)
-                    im_real_pooled = pool(im_real_pooled, method, data_format='channels_first')
-                    im_real_pooled = np.squeeze(im_real_pooled, axis=0)
-                    pred_ensemble_pooled = pool(pred_ensemble, method, data_format='channels_first')
+                    im_real_pooled = np.expand_dims(im_real, axis=-1)
+                    im_real_pooled = pool(im_real_pooled, method)
+                    im_real_pooled = np.squeeze(im_real_pooled, axis=-1)
+                    pred_ensemble_pooled = pool(pred_ensemble, method)
 
                 for value in precip_values:
                     # binary instance of truth > threshold
@@ -176,7 +220,7 @@ def plot_roc_curves(*,
                     y_true[method][value].append((im_real_pooled > value))
                     # check what proportion of pred > threshold
                     # collapse over ensemble dim, so append an array also of shape batch_size x H x W
-                    y_score[method][value].append(np.mean(pred_ensemble_pooled > value, axis=0, dtype=np.single))
+                    y_score[method][value].append(np.mean(pred_ensemble_pooled > value, axis=-1, dtype=np.single))
                 del im_real_pooled
                 del pred_ensemble_pooled
                 gc.collect()
@@ -216,7 +260,7 @@ def plot_roc_curves(*,
             pr_auc[method] = []  # list of p-r AUCs
 
             for value in precip_values:
-                print("Computing ROC and prec-recall for", value)
+                print("Computing ROC and prec-recall for", value, method)
                 # Compute ROC curve and ROC area for each precip value
                 fpr_pv, tpr_pv, _ = roc_curve(np.ravel(y_true[method][value]), np.ravel(y_score[method][value]), drop_intermediate=False)
                 gc.collect()
@@ -238,8 +282,10 @@ def plot_roc_curves(*,
                 del y_score[method][value]
                 gc.collect()
 
-            auc_scores_roc[method].append(np.array(roc_auc[method]))
-            auc_scores_pr[method].append(np.array(pr_auc[method]))
+            if model_number in model_numbers:
+                # i.e., don't do this for ecPoint
+                auc_scores_roc[method].append(np.array(roc_auc[method]))
+                auc_scores_pr[method].append(np.array(pr_auc[method]))
 
         for method in pooling_methods:
             # Plot all ROC curves
@@ -255,7 +301,7 @@ def plot_roc_curves(*,
             plt.ylim([0.0, 1.05])
             plt.xlabel('False Positive Rate')
             plt.ylabel('True Positive Rate')
-            plt.title(f'ROC curve for {plot_input_title} problem, {ensemble_members} ensemble members, {batch_size*num_batches} images, pooling type {method}')
+            plt.title(f'Model {model_label} ROC curve for {plot_input_title} problem, {ensemble_members} ensemble members, {batch_size*num_batches} images, pooling type {method}')
             plt.legend(loc="lower right")
             plt.savefig("{}/ROC-{}-{}-{}-{}.pdf".format(log_folder, problem_type, plot_label, model_label, method), bbox_inches='tight')
             plt.close()
@@ -273,114 +319,39 @@ def plot_roc_curves(*,
             # plt.ylim([0.0, 1.05])
             plt.xlabel('Recall')
             plt.ylabel('Precision')
-            plt.title(f'Precision-recall curve for {plot_input_title} problem, {ensemble_members} ensemble members, {batch_size*num_batches} images, pooling type {method}')
+            plt.title(f'Model {model_label} precision-recall curve for {plot_input_title} problem, {ensemble_members} ensemble members, {batch_size*num_batches} images, pooling type {method}')
             plt.legend(loc="upper right")
             plt.savefig("{}/PR-{}-{}-{}-{}.pdf".format(log_folder, problem_type, plot_label, model_label, method), bbox_inches='tight')
             plt.close()
 
-    for method in pooling_methods:
-        auc_scores_roc[method] = np.transpose(np.array(auc_scores_roc[method]))
-        plt.figure(figsize=(8, 5))
-        colors = ['darkturquoise', 'teal', 'dodgerblue', 'navy', 'purple']
-        for i, color in zip(range(len(precip_values)), colors):
-            plt.plot(model_numbers, auc_scores_roc[method][i], color=color, lw=lw,
-                     label=f"AUC values for precip_values {precip_values[i]}")
+    if len(model_numbers) > 0:  # just in case we're in ecPoint-only mode!
+        for method in pooling_methods:
+            auc_scores_roc[method] = np.transpose(np.array(auc_scores_roc[method]))
+            plt.figure(figsize=(8, 5))
+            colors = ['darkturquoise', 'teal', 'dodgerblue', 'navy', 'purple']
+            for i, color in zip(range(len(precip_values)), colors):
+                plt.plot(model_numbers, auc_scores_roc[method][i], color=color, lw=lw,
+                         label=f"AUC values for precip_values {precip_values[i]}")
 
-        plt.ylim([0, 1.0])
-        plt.xlabel('Checkpoint number')
-        plt.ylabel('Area under ROC curve')
-        plt.title(f'ROC AUC values for varying precip thresholds, pooling type {method}')
-        plt.legend(loc="best")
-        plt.savefig("{}/AUC-ROC-{}-{}-{}.pdf".format(log_folder, problem_type, plot_label, method), bbox_inches='tight')
-        plt.close()
+            plt.ylim([0, 1.0])
+            plt.xlabel('Checkpoint number')
+            plt.ylabel('Area under ROC curve')
+            plt.title(f'ROC AUC values for varying precip thresholds, pooling type {method}')
+            plt.legend(loc="best")
+            plt.savefig("{}/AUC-ROC-{}-{}-{}.pdf".format(log_folder, problem_type, plot_label, method), bbox_inches='tight')
+            plt.close()
 
-        auc_scores_pr[method] = np.transpose(np.array(auc_scores_pr[method]))
-        plt.figure(figsize=(8, 5))
-        colors = ['darkturquoise', 'teal', 'dodgerblue', 'navy', 'purple']
-        for i, color in zip(range(len(precip_values)), colors):
-            plt.plot(model_numbers, auc_scores_pr[method][i], color=color, lw=lw,
-                     label=f"AUC values for precip_values {precip_values[i]}")
+            auc_scores_pr[method] = np.transpose(np.array(auc_scores_pr[method]))
+            plt.figure(figsize=(8, 5))
+            colors = ['darkturquoise', 'teal', 'dodgerblue', 'navy', 'purple']
+            for i, color in zip(range(len(precip_values)), colors):
+                plt.plot(model_numbers, auc_scores_pr[method][i], color=color, lw=lw,
+                         label=f"AUC values for precip_values {precip_values[i]}")
 
-        plt.ylim([0, 1.0])
-        plt.xlabel('Checkpoint number')
-        plt.ylabel('Area under ROC curve')
-        plt.title(f'PR AUC values for varying precip thresholds, pooling type {method}')
-        plt.legend(loc="best")
-        plt.savefig("{}/AUC-PR-{}-{}-{}.pdf".format(log_folder, problem_type, plot_label, method), bbox_inches='tight')
-        plt.close()
-
-    # ecPoint
-    # requires a different data generator
-    if plot_ecpoint:
-        dates = get_dates(predict_year)
-        if predict_full_image:
-            batch_size = 4
-        else:
-            raise RuntimeError('Data generator for benchmarks not implemented for small images')
-        data_benchmarks = DataGeneratorFull(dates=dates,
-                                            ifs_fields=ecpoint.ifs_fields,
-                                            batch_size=batch_size,
-                                            log_precip=False,
-                                            crop=True,
-                                            shuffle=True,
-                                            constants=True,
-                                            hour="random",
-                                            ifs_norm=False,
-                                            downsample=downsample)
-
-        # generate predictions
-        # store preds
-        seq_ecpoint = []
-        # store ground truth images for comparison
-        seq_real_ecpoint = []
-
-        data_benchmarks_iter = iter(data_benchmarks)
-        inp, outp = next(data_benchmarks_iter)
-        # store GT data
-        seq_real_ecpoint.append(data.denormalise(outp['output']))
-
-        # store mean ecPoint prediction
-        # seq_ecpoint.append(np.mean(benchmarks.ecpointPDFmodel(inputs['generator_input']), axis=-1))
-        seq_ecpoint.append(benchmarks.ecpointPDFmodel(inp['lo_res_inputs']))
-
-        seq_ecpoint = np.array(seq_ecpoint)
-        seq_real_ecpoint = np.array(seq_real_ecpoint)
-
-        fpr_ecpoint = []
-        tpr_ecpoint = []
-        roc_auc_ecpoint = []
-        for value in precip_values:
-            # produce y_true
-            # binary instance of truth > threshold
-            y_true_ecpoint = np.squeeze(1*(seq_real_ecpoint > value), axis=0)
-            # produce y_score
-            # check if pred > threshold
-            y_score_ecpoint = np.squeeze(np.mean(1*(seq_ecpoint > value), axis=-1), axis=0)
-            # flatten matrices
-            y_true_ecpoint = np.ravel(y_true_ecpoint)
-            y_score_ecpoint = np.ravel(y_score_ecpoint)
-            # Compute ROC curve and ROC area for each precip value
-            fpr_pv_ecpoint, tpr_pv_ecpoint, _ = roc_curve(y_true_ecpoint, y_score_ecpoint)
-            roc_auc_pv_ecpoint = auc(fpr_pv_ecpoint, tpr_pv_ecpoint)
-            fpr_ecpoint.append(fpr_pv_ecpoint)
-            tpr_ecpoint.append(tpr_pv_ecpoint)
-            roc_auc_ecpoint.append(roc_auc_pv_ecpoint)
-
-        # Plot all ROC curves
-        plt.figure(figsize=(7, 5))
-        lw = 2
-        colors = ['aqua', 'darkorange', 'cornflowerblue', 'deeppink', 'navy']
-        for i, color in zip(range(len(precip_values)), colors):
-            plt.plot(fpr_ecpoint[i], tpr_ecpoint[i], color=color, lw=lw,
-                     label=f"ROC curve for precip value {precip_values[i]} (area = %0.2f)" % roc_auc_ecpoint[i])
-
-        plt.plot([0, 1], [0, 1], 'k--', lw=lw)
-        plt.xlim([0.0, 1.0])
-        plt.ylim([0.0, 1.05])
-        plt.xlabel('False Positive Rate')
-        plt.ylabel('True Positive Rate')
-        plt.title(f'ROC curve for ecPoint approach, batch size {batch_size}')
-        plt.legend(loc="lower right")
-        plt.savefig("{}/ROC-ecPoint-{}-{}.pdf".format(log_folder,
-                                                      problem_type,
-                                                      plot_label), bbox_inches='tight')
+            plt.ylim([0, 1.0])
+            plt.xlabel('Checkpoint number')
+            plt.ylabel('Area under ROC curve')
+            plt.title(f'PR AUC values for varying precip thresholds, pooling type {method}')
+            plt.legend(loc="best")
+            plt.savefig("{}/AUC-PR-{}-{}-{}.pdf".format(log_folder, problem_type, plot_label, method), bbox_inches='tight')
+            plt.close()
