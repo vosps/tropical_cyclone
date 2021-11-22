@@ -63,12 +63,10 @@ def plot_fss_curves(*,
 
     if problem_type == "normal":
         downsample = False
-        plot_input_title = 'IFS'
         input_channels = 9
         noise_channels = 4
     elif problem_type == "superresolution":
         downsample = True
-        plot_input_title = 'Superresolution'
         input_channels = 1
         noise_channels = 2
     else:
@@ -100,7 +98,6 @@ def plot_fss_curves(*,
 
     # load appropriate dataset
     if predict_full_image:
-        plot_label = 'large'
         dates = get_dates(predict_year)
         data_predict = DataGeneratorFull(dates=dates,
                                          ifs_fields=all_ifs_fields,
@@ -114,7 +111,6 @@ def plot_fss_curves(*,
                                          downsample=downsample)
 
     if not predict_full_image:
-        plot_label = 'small'
         data_predict = create_fixed_dataset(predict_year,
                                             batch_size=batch_size,
                                             downsample=downsample)
@@ -133,7 +129,6 @@ def plot_fss_curves(*,
                                             hour="random",
                                             ifs_norm=False,
                                             downsample=downsample)
-
 
     # tidier to iterate over GAN checkpoints and ecPoint using joint code
     model_numbers_ec = model_numbers.copy()
@@ -165,8 +160,6 @@ def plot_fss_curves(*,
                 continue
             print(gen_weights_file)
             model.gen.load_weights(gen_weights_file)
-
-        model_label = str(model_number)
 
         if model_number in model_numbers:
             data_pred_iter = iter(data_predict)  # "restarts" GAN data iterator
