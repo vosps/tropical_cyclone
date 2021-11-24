@@ -1,9 +1,12 @@
 import os
 import yaml
+import gc
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colorbar, colors, gridspec
 from matplotlib.backends.backend_pdf import PdfPages
+import cartopy
+import cartopy.crs as ccrs
 from noise import NoiseGenerator
 from setupmodel import setup_model
 import ecpoint
@@ -14,9 +17,24 @@ import argparse
 from tfrecords_generator_ifs import create_fixed_dataset
 from data_generator_ifs import DataGenerator as DataGeneratorFull
 from data import get_dates, all_ifs_fields
-from plots import plot_img
+from plots import plot_img_log_coastlines
 from data import ifs_norm
 from rapsd import plot_spectrum1d, rapsd
+
+# plotting parameters
+value_range_precip = (0.1,50)
+value_range_lsm = (0,1.2)
+value_range_orog = (0,1)
+cmap = "viridis"
+linewidth = 0.6
+extent = [-7.5, 2, 59, 49.5]
+alpha = 0.8
+mask_threshold = 0.1
+
+#colorbar
+units = "Rain rate [mm h$^{-1}$]"
+cb_tick_loc = np.array([0.1, 0.5, 1, 2, 5, 10, 20, 30])
+cb_tick_labels = [0.1, 0.5, 1, 2, 5, 10, 20, 30]
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--log_folder', type=str, 
@@ -89,7 +107,7 @@ elif problem_type == "superresolution":
     downsample = True
     plot_input_title = 'Downsampled'
     input_channels = 1 # superresolution problem doesn't have all 9 IFS fields
-    if args.include_RainFARM or args.nclude_ecPoint or args.include_Lanczos:
+    if args.include_RainFARM or args.include_ecPoint or args.include_Lanczos:
         raise Exception("Cannot include ecPoint/Lanczos/RainFARM results for downsampled problem")
 
 ## initialise model
@@ -157,25 +175,32 @@ dummy = np.zeros((1, 940, 940))
 data_predict_iter = iter(data_predict)    
 for i in range(num_predictions):
     (inputs,outputs) = next(data_predict_iter)
+    if problem_type == 'superresolution': # superresolution problem has only one input field
+        inputs['lo_res_inputs'] = np.expand_dims(inputs['lo_res_inputs'][...,0], axis=-1)
     ## store denormalised inputs, outputs, predictions
     seq_const.append(data.denormalise(inputs['hi_res_inputs']))
     input_conditions = inputs['lo_res_inputs'].copy()
+    
     ##  denormalise precip inputs
     input_conditions[...,0:2] = data.denormalise(inputs['lo_res_inputs'][...,0:2])
-    ##  denormalise wind inputs
-    input_conditions[...,-2] = inputs['lo_res_inputs'][...,-2]*ifs_norm['u700'][1] + ifs_norm['u700'][0]
-    input_conditions[...,-1] = inputs['lo_res_inputs'][...,-1]*ifs_norm['v700'][1] + ifs_norm['v700'][0]
+    if problem_type != 'superresolution': # superresolution problem has only one input field
+        ##  denormalise wind inputs
+        input_conditions[...,-2] = inputs['lo_res_inputs'][...,-2]*ifs_norm['u700'][1] + ifs_norm['u700'][0]
+        input_conditions[...,-1] = inputs['lo_res_inputs'][...,-1]*ifs_norm['v700'][1] + ifs_norm['v700'][0]
     seq_cond.append(input_conditions)    
+    
     ## make sure ground truth image has correct dimensions
     if args.predict_full_image :
         sample = np.expand_dims(np.array(outputs['output']), axis=-1)
         seq_real.append(data.denormalise(sample))
     else:
         seq_real.append(data.denormalise(outputs['output']))
+
     if args.include_deterministic: # NB this is using det as a comparison
         seq_det.append(data.denormalise(gen_det.predict(inputs)))
     else:
         seq_det.append(dummy)
+
     pred_ensemble = []
     if mode == 'det': # this is plotting det as a model
         num_samples = 1 #can't generate an ensemble with deterministic method
@@ -223,29 +248,104 @@ for i in range(num_predictions):
         seq_lanczos.append(dummy)
 
 ## plot input conditions and prediction example
+
+masked_imgs = {}
 ## batch 0
-IFS = seq_cond[0][0,...,0]
-constant_0 = seq_const[0][0,...,0]
-constant_1 = seq_const[0][0,...,1]
-TRUTH = seq_real[0][0,...,0]
-pred_0_0 = pred[0][0][0,...,0]
-(vmin, vmax) = (0,3)
-fig, ax = plt.subplots(1,5, figsize=(15,10), dpi=300)
-ax[2].imshow(IFS, vmin=vmin, vmax=vmax)
-ax[2].set_title(plot_input_title)
-ax[1].imshow(constant_0, vmin=vmin, vmax=vmax)
-ax[1].set_title('Orography')
-ax[0].imshow(constant_1, vmin=vmin, vmax=vmax)
-ax[0].set_title('Land-sea mask')
-ax[3].imshow(TRUTH, vmin=vmin, vmax=vmax)
-ax[3].set_title('TRUTH')
-ax[4].imshow(pred_0_0, vmin=vmin, vmax=vmax)
-ax[4].set_title('Prediction')
-for ax in ax.flat:
+masked_imgs['IFS_total'] = seq_cond[0][0,...,0].copy() #total precip
+if problem_type != 'superresolution':
+    masked_imgs['IFS_conv'] = seq_cond[0][0,...,1].copy() #convective precip
+constant_0 = seq_const[0][0,...,0].copy()
+constant_1 = seq_const[0][0,...,1].copy()
+masked_imgs['NIMROD'] = seq_real[0][0,...,0].copy()
+masked_imgs['pred_img'] = pred[0][0][0,...,0].copy()
+masked_imgs['pred_mean'] = np.squeeze(np.array(pred[0]).mean(axis=0))
+
+for key in masked_imgs.keys():
+    img_masked = masked_imgs[key]
+    img_masked[img_masked < mask_threshold] = 0
+    masked_imgs[key] = img_masked
+
+##colorbar
+cb = list(range(0,6))
+    
+plt.figure(figsize=(8,7), dpi=200)
+gs = gridspec.GridSpec(2, 3)
+ax1 = plt.subplot(gs[0, 0], projection=ccrs.PlateCarree())
+if problem_type != 'superresolution':
+    ax2 = plt.subplot(gs[0, 1], projection=ccrs.PlateCarree())
+else:
+    ax2 = plt.subplot(gs[0, 1])
+ax3 = plt.subplot(gs[0, 2])
+ax4 = plt.subplot(gs[1, 0], projection=ccrs.PlateCarree())
+ax5 = plt.subplot(gs[1, 1], projection=ccrs.PlateCarree())
+ax6 = plt.subplot(gs[1, 2], projection=ccrs.PlateCarree())
+ax = [ax1, ax2, ax3, ax4, ax5, ax6]
+
+IFS_total = ax[0].imshow(masked_imgs['IFS_total'], norm=colors.LogNorm(*value_range_precip), cmap=cmap, vmin=value_range_precip[0], 
+                  vmax=value_range_precip[1], origin='upper', extent=extent, transform=ccrs.PlateCarree(), alpha=0.8)
+ax[0].set_title(plot_input_title)
+ax[0].coastlines(resolution='10m', color='black', linewidth=linewidth)
+cb[2] = plt.colorbar(IFS_total, ax=ax[0], norm=colors.LogNorm(*value_range_precip), orientation='horizontal',
+                    fraction=0.035, pad=0.04)
+
+if problem_type != 'superresolution':
+    IFS_conv = ax[1].imshow(masked_imgs['IFS_conv'], norm=colors.LogNorm(*value_range_precip), cmap=cmap, vmin=value_range_precip[0], 
+                      vmax=value_range_precip[1], origin='upper', extent=extent, transform=ccrs.PlateCarree(), alpha=0.8)
+    ax[1].set_title('IFS - convective precip')
+    ax[1].coastlines(resolution='10m', color='black', linewidth=linewidth)
+    cb[1] = plt.colorbar(IFS_conv, ax=ax[1], norm=colors.LogNorm(*value_range_precip), orientation='horizontal',
+                        fraction=0.035, pad=0.04)
+else:
+    LSM = ax[1].imshow(constant_1, norm=colors.Normalize(*value_range_lsm), cmap="terrain", alpha=0.8)
+    ax[1].set_title('Land sea mask')
+    cb[1] = plt.colorbar(LSM, ax=ax[1], norm=colors.Normalize(*value_range_lsm), orientation='horizontal',
+                        fraction=0.035, pad=0.04)
+
+OROG = ax[2].imshow(constant_0, norm=colors.Normalize(*value_range_orog), cmap="terrain")
+ax[2].set_title('Orography')
+cb[0] = plt.colorbar(OROG, ax=ax[2], norm=colors.Normalize(*value_range_orog), orientation='horizontal',
+                    fraction=0.04, pad=0.04)
+
+TRUTH = ax[3].imshow(masked_imgs['NIMROD'], norm=colors.LogNorm(*value_range_precip), cmap=cmap, vmin=value_range_precip[0], 
+                  vmax=value_range_precip[1], origin='upper', extent=extent, transform=ccrs.PlateCarree(), alpha=0.8)
+ax[3].set_title('NIMROD - ground truth')
+ax[3].coastlines(resolution='10m', color='black', linewidth=linewidth)
+cb[3] = plt.colorbar(TRUTH, ax=ax[3], norm=colors.LogNorm(*value_range_precip), orientation='horizontal',
+                    fraction=0.035, pad=0.04)
+
+PRED = ax[4].imshow(masked_imgs['pred_img'], norm=colors.LogNorm(*value_range_precip), cmap=cmap, vmin=value_range_precip[0], 
+                  vmax=value_range_precip[1], origin='upper', extent=extent, transform=ccrs.PlateCarree(), alpha=0.8)
+ax[4].set_title('GAN - example prediction')
+ax[4].coastlines(resolution='10m', color='black', linewidth=linewidth)
+cb[4] = plt.colorbar(PRED, ax=ax[4], norm=colors.LogNorm(*value_range_precip), orientation='horizontal',
+                    fraction=0.035, pad=0.04)
+
+PRED_mean = ax[5].imshow(masked_imgs['pred_mean'], norm=colors.LogNorm(*value_range_precip), cmap=cmap, vmin=value_range_precip[0], 
+                  vmax=value_range_precip[1], origin='upper', extent=extent, transform=ccrs.PlateCarree(), alpha=0.8)
+ax[5].set_title('GAN - mean prediction')
+ax[5].coastlines(resolution='10m', color='black', linewidth=linewidth)
+cb[5] = plt.colorbar(PRED_mean, ax=ax[5], norm=colors.LogNorm(*value_range_precip), orientation='horizontal',
+                    fraction=0.035, pad=0.04)
+
+for ax in ax:
     ax.tick_params(left=False, bottom=False,labelleft=False, labelbottom=False)
     ax.invert_yaxis()
+    
+if problem_type != "superresolution":
+    for cb in cb[1:]:
+        cb.set_ticks(cb_tick_loc)
+        cb.set_ticklabels(cb_tick_labels)
+        ax.tick_params(labelsize=8)
+        cb.set_label(units, size=8)
+else:
+    for cb in cb[2:]:
+        cb.set_ticks(cb_tick_loc)
+        cb.set_ticklabels(cb_tick_labels)
+        ax.tick_params(labelsize=8)
+        cb.set_label(units, size=8)
 
-plt.savefig("{}/prediction-and-input-{}-{}-{}.pdf".format(log_folder, 
+
+plt.savefig("{}/prediction-and-inputs-{}-{}-{}.pdf".format(log_folder, 
                                                           model_number,
                                                           problem_type,
                                                           plot_label), bbox_inches='tight')
@@ -283,35 +383,39 @@ for i in range(num_predictions):
 num_cols = num_predictions
 num_rows = len(labels)+1
 plt.figure(figsize=(1.5*num_cols,1.5*num_rows), dpi=300)
-value_range = (0.1,5)
+
 gs = gridspec.GridSpec(num_rows*num_rows,num_rows*num_cols,wspace=0.5,hspace=0.5)
 
 for k in range(num_predictions):
     for i in range(len(labels)):
-        plt.subplot(gs[(num_rows*i):(num_rows+num_rows*i),(num_rows*k):(num_rows+num_rows*k)])
-        plot_img(sequences[k][labels[i]], value_range=value_range)
+        img_masked = sequences[k][labels[i]].copy()
+        img_masked[img_masked < 0.1] = 0
+        plt.subplot(gs[(num_rows*i):(num_rows+num_rows*i),(num_rows*k):(num_rows+num_rows*k)], 
+                    projection=ccrs.PlateCarree())
+        ax = plt.gca()
+        ax.coastlines(resolution='10m', color='black', linewidth=linewidth)
+        plot_img_log_coastlines(img_masked, value_range=value_range_precip, cmap=cmap,
+                                extent=extent, alpha=alpha)
         if k==0:
             plt.ylabel(labels[i])
         if i == 0:
             plt.title(k+1)
+
 plt.suptitle('Example predictions for different input conditions')
-##colorbar
-units = "Rain rate [mm h$^{-1}$]"
-cb_tick_loc = np.array([0.1, 0.5, 1, 2, 5, 10, 20, 50])
-cb_tick_labels = [0.1, 0.5, 1, 2, 5, 10, 20, 50]
+
 cax = plt.subplot(gs[-1,1:-1]).axes
-cb = colorbar.ColorbarBase(cax, norm=colors.Normalize(*value_range), orientation='horizontal')
+cb = colorbar.ColorbarBase(cax, norm=colors.LogNorm(*value_range_precip), orientation='horizontal')
 cb.set_ticks(cb_tick_loc)
 cb.set_ticklabels(cb_tick_labels)
-cax.tick_params(labelsize=16)
-cb.set_label(units, size=16)
+cax.tick_params(labelsize=12)
+cb.set_label(units, size=12)
             
 plt.savefig("{}/predictions-{}-{}-{}.pdf".format(log_folder,
                                                  model_number,
                                                  problem_type,
                                                  plot_label), bbox_inches='tight')
 plt.close()
-
+gc.collect()
 
 if args.plot_rapsd:
     colours = ['plum', 'palevioletred', 'lightslategrey', 'coral', 'lightblue', 'darkseagreen', 'mediumturquoise', 'purple', 'navy']
