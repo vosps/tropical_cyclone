@@ -22,19 +22,19 @@ from data import ifs_norm
 from rapsd import plot_spectrum1d, rapsd
 
 # plotting parameters
-value_range_precip = (0.1,50)
-value_range_lsm = (0,1.2)
+value_range_precip = (0.1,30)
+value_range_lsm = (0,1)
 value_range_orog = (0,1)
 cmap = "viridis"
-linewidth = 0.6
+linewidth = 0.4
 extent = [-7.5, 2, 59, 49.5]
 alpha = 0.8
 mask_threshold = 0.1
 
 #colorbar
 units = "Rain rate [mm h$^{-1}$]"
-cb_tick_loc = np.array([0.1, 0.5, 1, 2, 5, 10, 20, 30])
-cb_tick_labels = [0.1, 0.5, 1, 2, 5, 10, 20, 30]
+cb_tick_loc = np.array([0.1, 0.5, 1, 2, 5, 10, 30, 50])
+cb_tick_labels = [0.1, 0.5, 1, 2, 5, 10, 30, 50]
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--log_folder', type=str, 
@@ -394,13 +394,15 @@ for k in range(num_predictions):
                     projection=ccrs.PlateCarree())
         ax = plt.gca()
         ax.coastlines(resolution='10m', color='black', linewidth=linewidth)
-        plot_img_log_coastlines(img_masked, value_range=value_range_precip, cmap=cmap,
+        plot_img_log_coastlines(img_masked, value_range_precip=value_range_precip, cmap=cmap,
                                 extent=extent, alpha=alpha)
-        if k==0:
-            plt.ylabel(labels[i])
         if i == 0:
             plt.title(k+1)
 
+        if k==0:
+            ax.set_ylabel(labels[i]) # cartopy takes over the xlabel and ylabel
+            ax.set_yticks([]) # this weird hack restores them. WHY?!?!
+            
 plt.suptitle('Example predictions for different input conditions')
 
 cax = plt.subplot(gs[-1,1:-1]).axes
