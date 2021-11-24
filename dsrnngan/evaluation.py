@@ -298,7 +298,7 @@ def rank_metrics_by_time(*,
                                           padding=padding,
                                           load_full_image=load_full_image)
 
-    log_line(log_fname, "N KS CvM DKL OP CRPS CRPS_max_4 CRPS_max_16 CRPS_max_10_no_overlap CRPS_avg_4 CRPS_avg_16 CRPS_max_10_no_overlap mean std")
+    log_line(log_fname, "N KS CvM DKL OP CRPS CRPS_max_4 CRPS_max_16 CRPS_max_10_no_overlap CRPS_avg_4 CRPS_avg_16 CRPS_avg_10_no_overlap mean std")
 
     for model_number in model_numbers:
         gen_weights_file = os.path.join(weights_dir, "gen_weights-{:07d}.h5".format(model_number))
@@ -338,7 +338,7 @@ def rank_metrics_by_time(*,
         if avg_pooling:
             CRPS_avg_4 = np.asarray(crps_scores['avg_4']).mean()
             CRPS_avg_16 = np.asarray(crps_scores['avg_16']).mean()
-            CRPS_avg_10_no_overlap = np.asarray(crps_scores['max_10_no_overlap']).mean()
+            CRPS_avg_10_no_overlap = np.asarray(crps_scores['avg_10_no_overlap']).mean()
         else:
             CRPS_avg_4 = np.nan
             CRPS_avg_16 = np.nan
