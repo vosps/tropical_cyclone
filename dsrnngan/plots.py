@@ -5,6 +5,7 @@ from matplotlib import colors, gridspec
 import numpy as np
 import pandas as pd
 import data
+import cartopy.crs as ccrs
 from noise import NoiseGenerator
 
 path = os.path.dirname(os.path.abspath(__file__))
@@ -22,6 +23,13 @@ def plot_img_log(img, value_range=(0.01, 5), extent=None):
     plt.gca().tick_params(left=False, bottom=False,
         labelleft=False, labelbottom=False)
     plt.gca().invert_yaxis()
+
+def plot_img_log_coastlines(img, value_range_precip=(0.01, 5), cmap='viridis', extent=None, alpha=0.8):
+    plt.imshow(img, interpolation='nearest', norm=colors.LogNorm(*value_range_precip), cmap=cmap, 
+               vmin=value_range_precip[0], vmax=value_range_precip[1], origin='upper', extent=extent, 
+               transform=ccrs.PlateCarree(), alpha=alpha)
+    plt.gca().tick_params(left=False, bottom=False,
+        labelleft=False, labelbottom=False)
 
 def plot_sequences(gen, 
                    mode, 
