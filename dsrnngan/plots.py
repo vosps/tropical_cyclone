@@ -30,6 +30,7 @@ def plot_img_log_coastlines(img, value_range_precip=(0.01, 5), cmap='viridis', e
                transform=ccrs.PlateCarree(), alpha=alpha)
     plt.gca().tick_params(left=False, bottom=False,
         labelleft=False, labelbottom=False)
+    plt.gca().invert_yaxis()
 
 def plot_sequences(gen, 
                    mode, 
