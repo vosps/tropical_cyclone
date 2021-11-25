@@ -7,30 +7,33 @@ import pandas as pd
 import data
 import cartopy.crs as ccrs
 from noise import NoiseGenerator
+import matplotlib as mpl
 
 path = os.path.dirname(os.path.abspath(__file__))
 
 def plot_img(img, value_range=(np.log10(0.1), np.log10(100)), extent=None):
-    plt.imshow(img, interpolation='nearest',
-        norm=colors.Normalize(*value_range), extent=extent)
+    plt.imshow(img, interpolation='nearest', norm=colors.Normalize(*value_range),
+               origin='lower', extent=extent)
     plt.gca().tick_params(left=False, bottom=False,
         labelleft=False, labelbottom=False)
-    plt.gca().invert_yaxis()
 
 def plot_img_log(img, value_range=(0.01, 5), extent=None):
-    plt.imshow(img, interpolation='nearest',
-        norm=colors.LogNorm(*value_range), extent=extent)
+    plt.imshow(img, interpolation='nearest', norm=colors.LogNorm(*value_range), 
+               origin='lower', extent=extent)
     plt.gca().tick_params(left=False, bottom=False,
         labelleft=False, labelbottom=False)
-    plt.gca().invert_yaxis()
 
 def plot_img_log_coastlines(img, value_range_precip=(0.01, 5), cmap='viridis', extent=None, alpha=0.8):
     plt.imshow(img, interpolation='nearest', norm=colors.LogNorm(*value_range_precip), cmap=cmap, 
-               vmin=value_range_precip[0], vmax=value_range_precip[1], origin='upper', extent=extent, 
-               transform=ccrs.PlateCarree(), alpha=alpha)
+               origin='lower', extent=extent, transform=ccrs.PlateCarree(), alpha=alpha)
     plt.gca().tick_params(left=False, bottom=False,
         labelleft=False, labelbottom=False)
-    plt.gca().invert_yaxis()
+
+def truncate_colourmap(cmap, minval=0.0, maxval=1.0, n=100):
+    new_cmap = mpl.colors.LinearSegmentedColormap.from_list(
+        'trunc({n},{a:.2f},{b:.2f})'.format(n=cmap.name, a=minval, b=maxval),
+        cmap(np.linspace(minval, maxval, n)))
+    return new_cmap
 
 def plot_sequences(gen, 
                    mode, 
