@@ -1,5 +1,5 @@
 import numpy as np
-from data import load_era_nimrod, ifs_hours, load_ifs_nimrod_batch, get_dates
+from data import ifs_hours, load_ifs_nimrod_batch, get_dates
 
 DEFAULT_FER_BINS = [
         -1.1,
@@ -33,8 +33,8 @@ breakpoints_ma = np.ma.masked_where(np.logical_or(breakpoints == 9999, breakpoin
 breakpoints_hourly = breakpoints.copy()
 breakpoints_hourly[breakpoints_hourly==9999] = 9999999  # Extend bounds  # noqa: E225
 breakpoints_hourly[breakpoints_hourly==-9999] = -9999999  # Extend bounds  # noqa: E225
-breakpoints_hourly[:, [3, 4]]=breakpoints_hourly[:, [3, 4]]/12  # Rescale Cape & cdir  # noqa: E225
-breakpoints_hourly[:, [3, 4]] = breakpoints_hourly[:, [3, 4]]
+breakpoints_hourly[:, [3, 4]] = breakpoints_hourly[:, [3, 4]]/12  # Rescale Cape & cdir  # noqa: E225
+# breakpoints_hourly[:, [3, 4]] = breakpoints_hourly[:, [3, 4]]
 
 era_fields = ['prc', 'pr', 'u700', 'v700', 'cape', 'cdir']
 ifs_fields = ['cp', 'tp', 'u700', 'v700', 'cape', 'cdir']
@@ -330,10 +330,8 @@ def loadcdf(name, fixempty=True):
         return np.loadtxt(filename)
 
 
-def predict(raw_inputs=None,  # proc_inputs=None,
-            cdf=None, logout=False):
-    assert (raw_inputs is not None)  # != (proc_inputs is None)
-    # if proc_inputs is None:
+def predict(raw_inputs=None, cdf=None, logout=False):
+    assert raw_inputs is not None
     sli = [slice(None)]*len(raw_inputs.shape)
     sli[-1] = 1
     sli = tuple(sli)
@@ -351,10 +349,9 @@ def predict(raw_inputs=None,  # proc_inputs=None,
         return output
 
 
-def predictcdf(raw_inputs=None,  # proc_inputs=None,
+def predictcdf(raw_inputs=None,
                cdf=None, logout=False):
-    assert (raw_inputs is not None)  # != (proc_inputs is None)
-    # if proc_inputs is None:
+    assert raw_inputs is not None
     sli = [slice(None)]*len(raw_inputs.shape)
     sli[-1] = 1
     sli = tuple(sli)
@@ -372,45 +369,60 @@ def predictcdf(raw_inputs=None,  # proc_inputs=None,
         return output
 
 
-def predictupscale(raw_inputs=None, proc_inputs=None, out_shape=None,
-                   cdf=None, logout=False, ensemble_size=100):
-    assert (raw_inputs is None) != (proc_inputs is None)
-    assert out_shape is None
-    if proc_inputs is None:
-        sli = [slice(None)]*len(raw_inputs.shape)
-        sli[-1] = 1
-        sli = tuple(sli)
-        reshaped_inputs = np.repeat(np.repeat(raw_inputs, 10, axis=1), 10, axis=2)
-        # reshaped_inputs = reshaped_inputs[:,4:-5:,4:-5,:]
-        non_zero = (reshaped_inputs[sli] > 0.01)
-        proc_inputs = remapERA(reshaped_inputs[non_zero, :])
-    bins = filtbreak(proc_inputs, breakpoints_hourly).astype(int)
-    output = reshaped_inputs[sli]
-    output = np.repeat(output[..., np.newaxis], ensemble_size, axis=-1)
+def predictupscale(raw_inputs=None,
+                   cdf=None,
+                   logout=False,
+                   ensemble_size=100,
+                   data_format='channels_last'):
+    assert raw_inputs is not None
+    assert data_format in ("channels_first", "channels_last")
 
-    for ii in range(ensemble_size):
-        selection = np.random.choice(100,
-                                     size=proc_inputs.shape[0],
-                                     replace=True).astype(int)
-        # pred = np.zeros(non_zero.shape)
-        # for i in range(non_zero.size):
-        #     pred[i] = cdf[bins[i],selection[i])
-        pred = cdf[bins, selection]
-        output[non_zero, ii] *= (1 + pred)
+    from numpy.random import default_rng
+    rng = default_rng()
+
+    # previously only applied to pixels > 0.01, but code is much
+    # easier to follow if we calculate bins for all elements, then only
+    # apply to > 0.01 pixels at the end
+
+    # raw_inputs is batch_size x H x W x nfields(6)
+    proc_input = remapERA(raw_inputs[:, :, :, :])  # returns batch_size x H x W x 5
+
+    # filtbreak expects pixels to be unrolled
+    bins = filtbreak(np.reshape(proc_input, (-1, 5)), breakpoints_hourly)
+    bins = np.reshape(bins, raw_inputs.shape[:3])
+    # scale IFS precip up to 940x940
+    imgout = np.repeat(np.repeat(raw_inputs[:, :, :, 1], 10, axis=1), 10, axis=2)
+    binslarge = np.repeat(np.repeat(bins, 10, axis=1), 10, axis=2)
+    # add ensemble dimension
+    if data_format == 'channels_first':
+        output = np.repeat(imgout[:, np.newaxis, :, :], ensemble_size, axis=1)
+        binslarge = np.repeat(binslarge[:, np.newaxis, :, :], ensemble_size, axis=1)
+    elif data_format == 'channels_last':
+        output = np.repeat(imgout[:, :, :, np.newaxis], ensemble_size, axis=-1)
+        binslarge = np.repeat(binslarge[:, :, :, np.newaxis], ensemble_size, axis=-1)
+
+    selection = rng.integers(low=0, high=100, size=output.shape, endpoint=False)
+    # array of FERs
+    pred = cdf[binslarge, selection]
+    # only apply ecPoint technique where rain is non-trivial
+    non_zero = (output > 0.01)
+    output[non_zero] *= (1.0 + pred[non_zero])
+
     if logout:
         return np.log10(1+output)
     else:
         return output
 
 
-def predictupscalecdf(raw_inputs=None, proc_inputs=None, out_shape=None,
+def predictupscalecdf(raw_inputs=None,
                       cdf=None, logout=False):
     ans = predictcdf(raw_inputs=raw_inputs, cdf=cdf, logout=logout)
     upscaled_ans = np.repeat(np.repeat(ans, 10, axis=-3), 10, axis=-2)
     # upscaled_ans = upscaled_ans
     return upscaled_ans  # [:,4:-5:,4:-5,:]
 
-def predictthenupscale(raw_inputs=None, proc_inputs=None, out_shape=None,
+
+def predictthenupscale(raw_inputs=None,
                        cdf=None, logout=False, ensemble_size=100):
     ans = predictcdf(raw_inputs=raw_inputs, cdf=cdf, logout=logout)
     small_output = np.zeros(ans.shape[:-1] + (ensemble_size,))
@@ -422,9 +434,10 @@ def predictthenupscale(raw_inputs=None, proc_inputs=None, out_shape=None,
                 selection = np.random.choice(ans.shape[3],
                                              size=ensemble_size,
                                              replace=True).astype(int)
-                small_output[i,j,k,:] = ans[i,j,k,selection]
+                small_output[i, j, k, :] = ans[i, j, k, selection]
     upscaled_ans = np.repeat(np.repeat(small_output, 10, axis=-3), 10, axis=-2)
-    return upscaled_ans    
+    return upscaled_ans
+
 
 def crps(data_generator, ecpointcdf, log=False):
     import properscoring as ps
