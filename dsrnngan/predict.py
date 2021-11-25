@@ -53,7 +53,7 @@ parser.add_argument('--predict_year', type=int,
                     help="year to predict on", default=2019)
 parser.add_argument('--num_samples', type=int,
                     help="number of images to generate predictions for", default=5)
-parser.add_argument('--ensemble_size', type=int,
+parser.add_argument('--pred_ensemble_size', type=int,
                     help="size of prediction ensemble", default=3)
 parser.set_defaults(predict_full_image=False)
 parser.set_defaults(plot_rapsd=False)
@@ -79,7 +79,7 @@ log_folder = args.log_folder
 model_number = args.model_number
 predict_year = args.predict_year
 num_samples = args.num_samples
-ensemble_size = args.ensemble_size
+pred_ensemble_size = args.pred_ensemble_size
 
 config_path = os.path.join(log_folder, 'setup_params.yaml')
 with open(config_path, 'r') as f:
@@ -211,7 +211,7 @@ for i in range(num_samples):
 
     pred_ensemble = []
     if mode == 'det': # this is plotting det as a model
-        ensemble_size = 1 # can't generate an ensemble with deterministic method
+        pred_ensemble_size = 1 # can't generate an ensemble with deterministic method
         pred_ensemble.append(data.denormalise(gen.predict(inputs))) #pretend it's an ensemble so dims match
         pred_ensemble = np.array(pred_ensemble)
         pred.append(pred_ensemble)
@@ -225,7 +225,7 @@ for i in range(num_samples):
         if mode == 'VAEGAN':
             # call encoder once
             mean, logvar = gen.encoder([inputs['lo_res_inputs'], inputs['hi_res_inputs']])       
-        for j in range(ensemble_size):
+        for j in range(pred_ensemble_size):
             inputs['noise_input'] = noise_gen()
             if mode == 'GAN':
                 gan_inputs = [inputs['lo_res_inputs'], inputs['hi_res_inputs'], inputs['noise_input']]
@@ -267,7 +267,7 @@ if problem_type != 'superresolution':
 constant_0 = seq_const[0][0,...,0] #orog
 constant_1 = seq_const[0][0,...,1] #lsm
 NIMROD = seq_real[0][0,...,0]
-pred_0_0 = pred[0][0][0,...,0] # [sample_images][ensemble_size][NHWC]
+pred_0_0 = pred[0][0][0,...,0] # [sample_images][pred_ensemble_size][NHWC]
 pred_mean = pred[0][:,0,...,0].mean(axis=0) # mean of ensemble members for img 0
 
 ##colorbar
@@ -357,7 +357,7 @@ plt.close()
 
 ## generate labels for plots
 labels = [plot_input_title, "TRUTH"]
-for i in range(ensemble_size):
+for i in range(pred_ensemble_size):
     labels.append(f"{mode} pred {i+1}")
 if args.include_RainFARM:
     labels.append("RainFARM")
@@ -379,7 +379,7 @@ for i in range(num_samples):
     tmp['RainFARM'] = seq_rainfarm[i][0,...]
     tmp['Deterministic'] = seq_det[i][0,...,0]
     tmp['ecPoint mean'] = seq_ecpoint[i][0,...]
-    for j in range(ensemble_size):
+    for j in range(pred_ensemble_size):
         tmp[f"{mode} pred {j+1}"] = pred[i][j][0,...,0]
     sequences.append(tmp)
     
