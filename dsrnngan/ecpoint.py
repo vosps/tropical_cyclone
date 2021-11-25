@@ -333,10 +333,7 @@ def loadcdf(name, fixempty=True):
 
 def predict(raw_inputs=None, cdf=None, logout=False):
     assert raw_inputs is not None
-    sli = [slice(None)]*len(raw_inputs.shape)
-    sli[-1] = 1
-    sli = tuple(sli)
-    output = raw_inputs[sli]
+    output = raw_inputs[:, :, :, 1]
     proc_inputs = remapERA(raw_inputs.reshape((-1, raw_inputs.shape[-1])))
     bins = filtbreak(proc_inputs, breakpoints_hourly).astype(int)
     selection = np.random.choice(100,
@@ -353,12 +350,8 @@ def predict(raw_inputs=None, cdf=None, logout=False):
 def predictcdf(raw_inputs=None,
                cdf=None, logout=False):
     assert raw_inputs is not None
-    sli = [slice(None)]*len(raw_inputs.shape)
-    sli[-1] = 1
-    sli = tuple(sli)
-    output = raw_inputs[sli]
-    # non_zero = (output > 0.01)
-    inputs = raw_inputs.reshape((-1, raw_inputs.shape[-1]))  # [non_zero,:]
+    output = raw_inputs[:, :, :, 1]
+    inputs = raw_inputs.reshape((-1, raw_inputs.shape[-1]))
     proc_inputs = remapERA(inputs)
     bins = filtbreak(proc_inputs, breakpoints_hourly).astype(int)
     pred = cdf[bins, :].reshape(output.shape+(100,))
@@ -381,11 +374,7 @@ def predictupscale(raw_inputs=None,
     from numpy.random import default_rng
     rng = default_rng()
 
-    # previously only applied to pixels > 0.01, but code is much
-    # easier to follow if we calculate bins for all elements, then only
-    # apply to > 0.01 pixels at the end
-
-    # raw_inputs is batch_size x H x W x nfields(6)
+    # raw_inputs is batch_size x H x W x n_fields (6)
     proc_input = remapERA(raw_inputs[:, :, :, :])  # returns batch_size x H x W x 5
 
     # filtbreak expects pixels to be unrolled
@@ -394,20 +383,24 @@ def predictupscale(raw_inputs=None,
     # scale IFS precip up to 940x940
     imgout = np.repeat(np.repeat(raw_inputs[:, :, :, 1], 10, axis=1), 10, axis=2)
     binslarge = np.repeat(np.repeat(bins, 10, axis=1), 10, axis=2)
+
     # add ensemble dimension
     if data_format == 'channels_first':
-        output = np.repeat(imgout[:, np.newaxis, :, :], ensemble_size, axis=1)
-        binslarge = np.repeat(binslarge[:, np.newaxis, :, :], ensemble_size, axis=1)
+        output = np.zeros((imgout.shape[0], ensemble_size, imgout.shape[1], imgout.shape[2]))
+
+        for ii in range(ensemble_size):
+            selection = rng.integers(low=0, high=100, size=imgout.shape, endpoint=False)
+            pred = cdf[binslarge, selection]
+            output[:, ii, :, :] = imgout * (pred + 1.0)
+
     elif data_format == 'channels_last':
         output = np.repeat(imgout[:, :, :, np.newaxis], ensemble_size, axis=-1)
-        binslarge = np.repeat(binslarge[:, :, :, np.newaxis], ensemble_size, axis=-1)
+        # no need to repeat binslarge; numpy broadcasting will handle it
+        binslarge = binslarge[:, :, :, np.newaxis]
 
-    selection = rng.integers(low=0, high=100, size=output.shape, endpoint=False)
-    # array of FERs
-    pred = cdf[binslarge, selection]
-    # only apply ecPoint technique where rain is non-trivial
-    non_zero = (output > 0.01)
-    output[non_zero] *= (1.0 + pred[non_zero])
+        selection = rng.integers(low=0, high=100, size=output.shape, endpoint=False)
+        pred = cdf[binslarge, selection]
+        output *= (pred + 1.0)
 
     if logout:
         return np.log10(1+output)
@@ -416,7 +409,10 @@ def predictupscale(raw_inputs=None,
 
 
 def predictupscalecdf(raw_inputs=None,
-                      cdf=None, logout=False):
+                      cdf=None, logout=False,
+                      data_format='channels_last'):
+    assert data_format in ("channels_first", "channels_last")
+
     ans = predictcdf(raw_inputs=raw_inputs, cdf=cdf, logout=logout)
     upscaled_ans = np.repeat(np.repeat(ans, 10, axis=-3), 10, axis=-2)
     # upscaled_ans = upscaled_ans
@@ -424,7 +420,10 @@ def predictupscalecdf(raw_inputs=None,
 
 
 def predictthenupscale(raw_inputs=None,
-                       cdf=None, logout=False, ensemble_size=100):
+                       cdf=None, logout=False, ensemble_size=100,
+                       data_format='channels_last'):
+    assert data_format in ("channels_first", "channels_last")
+
     ans = predictcdf(raw_inputs=raw_inputs, cdf=cdf, logout=logout)
     small_output = np.zeros(ans.shape[:-1] + (ensemble_size,))
     # There is definitely a better way to do this sampling
