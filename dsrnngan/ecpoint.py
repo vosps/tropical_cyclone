@@ -137,7 +137,7 @@ def filtbreak(dta, breakp):
     # Assigns a bin based upon "breakpoints"
     nfields = (breakp.shape[1]-1)//2
     ngrid = dta.shape[0]
-    bins = -np.ones(ngrid)
+    bins = -np.ones(ngrid, dtype=int)
     for i in range(ngrid):
         for j in range(breakp.shape[0]):
             ksum = 0
