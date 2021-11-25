@@ -1,7 +1,10 @@
 import os
 import yaml
 import gc
+import copy
 import numpy as np
+import matplotlib as mpl
+#mpl.use('svg')
 import matplotlib.pyplot as plt
 from matplotlib import colorbar, colors, gridspec
 from matplotlib.backends.backend_pdf import PdfPages
@@ -17,24 +20,29 @@ import argparse
 from tfrecords_generator_ifs import create_fixed_dataset
 from data_generator_ifs import DataGenerator as DataGeneratorFull
 from data import get_dates, all_ifs_fields
-from plots import plot_img_log_coastlines
+from plots import plot_img_log_coastlines, truncate_colourmap
 from data import ifs_norm
 from rapsd import plot_spectrum1d, rapsd
 
 # plotting parameters
 value_range_precip = (0.1,30)
-value_range_lsm = (0,1)
-value_range_orog = (0,1)
-cmap = "viridis"
+value_range_lsm = (0,1.2)
+value_range_orog = (-0.05,1)
+cmap = copy.copy(mpl.cm.get_cmap("viridis"))
+cmap.set_under('white')
 linewidth = 0.4
-extent = [-7.5, 2, 59, 49.5]
+extent = [-7.5, 2, 49.5, 59] # (lon, lat)
 alpha = 0.8
-mask_threshold = 0.1
+dpi = 200
 
-#colorbar
+# colorbar
 units = "Rain rate [mm h$^{-1}$]"
 cb_tick_loc = np.array([0.1, 0.5, 1, 2, 5, 10, 30, 50])
 cb_tick_labels = [0.1, 0.5, 1, 2, 5, 10, 30, 50]
+
+# colormap for LSM -- removes the white end
+cmap_lsm = plt.get_cmap('terrain')
+cmap_lsm = truncate_colourmap(cmap_lsm, 0, 0.8)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--log_folder', type=str, 
@@ -43,9 +51,9 @@ parser.add_argument('--model_number', type=str,
                     help="model iteration to load", default='0313600')
 parser.add_argument('--predict_year', type=int,
                     help="year to predict on", default=2019)
-parser.add_argument('--num_predictions', type=int,
-                    help="number of images to predict on", default=5)
 parser.add_argument('--num_samples', type=int,
+                    help="number of images to generate predictions for", default=5)
+parser.add_argument('--ensemble_size', type=int,
                     help="size of prediction ensemble", default=3)
 parser.set_defaults(predict_full_image=False)
 parser.set_defaults(plot_rapsd=False)
@@ -70,8 +78,8 @@ args = parser.parse_args()
 log_folder = args.log_folder
 model_number = args.model_number
 predict_year = args.predict_year
-num_predictions = args.num_predictions
 num_samples = args.num_samples
+ensemble_size = args.ensemble_size
 
 config_path = os.path.join(log_folder, 'setup_params.yaml')
 with open(config_path, 'r') as f:
@@ -173,12 +181,12 @@ seq_det = []
 seq_ecpoint = []
 dummy = np.zeros((1, 940, 940))
 data_predict_iter = iter(data_predict)    
-for i in range(num_predictions):
+for i in range(num_samples):
     (inputs,outputs) = next(data_predict_iter)
     if problem_type == 'superresolution': # superresolution problem has only one input field
         inputs['lo_res_inputs'] = np.expand_dims(inputs['lo_res_inputs'][...,0], axis=-1)
     ## store denormalised inputs, outputs, predictions
-    seq_const.append(data.denormalise(inputs['hi_res_inputs']))
+    seq_const.append(inputs['hi_res_inputs'])
     input_conditions = inputs['lo_res_inputs'].copy()
     
     ##  denormalise precip inputs
@@ -203,7 +211,7 @@ for i in range(num_predictions):
 
     pred_ensemble = []
     if mode == 'det': # this is plotting det as a model
-        num_samples = 1 #can't generate an ensemble with deterministic method
+        ensemble_size = 1 # can't generate an ensemble with deterministic method
         pred_ensemble.append(data.denormalise(gen.predict(inputs))) #pretend it's an ensemble so dims match
         pred_ensemble = np.array(pred_ensemble)
         pred.append(pred_ensemble)
@@ -217,7 +225,7 @@ for i in range(num_predictions):
         if mode == 'VAEGAN':
             # call encoder once
             mean, logvar = gen.encoder([inputs['lo_res_inputs'], inputs['hi_res_inputs']])       
-        for j in range(num_samples):
+        for j in range(ensemble_size):
             inputs['noise_input'] = noise_gen()
             if mode == 'GAN':
                 gan_inputs = [inputs['lo_res_inputs'], inputs['hi_res_inputs'], inputs['noise_input']]
@@ -231,7 +239,7 @@ for i in range(num_predictions):
         pred.append(pred_ensemble)
 
 data_ecpoint_iter = iter(data_ecpoint)
-for i in range(num_predictions):
+for i in range(num_samples):
     (inp,outp) = next(data_ecpoint_iter)        
     ## ecPoint prediction
     if args.include_ecPoint:
@@ -247,23 +255,20 @@ for i in range(num_predictions):
     else:
         seq_lanczos.append(dummy)
 
-## plot input conditions and prediction example
-
-masked_imgs = {}
-## batch 0
-masked_imgs['IFS_total'] = seq_cond[0][0,...,0].copy() #total precip
+# plot input conditions and prediction example
+# len(seq) = num_predictions (iterations through data generator)
+# seq[0].shape = [NHWC], C=9 for cond, C=2 for const, C=1 for real, pred
+# list entry[0] - sample image 0
+IFS_total = seq_cond[0][0,...,0] #total precip
 if problem_type != 'superresolution':
-    masked_imgs['IFS_conv'] = seq_cond[0][0,...,1].copy() #convective precip
-constant_0 = seq_const[0][0,...,0].copy()
-constant_1 = seq_const[0][0,...,1].copy()
-masked_imgs['NIMROD'] = seq_real[0][0,...,0].copy()
-masked_imgs['pred_img'] = pred[0][0][0,...,0].copy()
-masked_imgs['pred_mean'] = np.squeeze(np.array(pred[0]).mean(axis=0))
-
-for key in masked_imgs.keys():
-    img_masked = masked_imgs[key]
-    img_masked[img_masked < mask_threshold] = 0
-    masked_imgs[key] = img_masked
+    IFS_conv = seq_cond[0][0,...,1] #convective precip
+    IFS_u700 = seq_cond[0][0,...,-2] #u700
+    IFS_v700 = seq_cond[0][0,...,-1] #v700
+constant_0 = seq_const[0][0,...,0] #orog
+constant_1 = seq_const[0][0,...,1] #lsm
+NIMROD = seq_real[0][0,...,0]
+pred_0_0 = pred[0][0][0,...,0] # [sample_images][ensemble_size][NHWC]
+pred_mean = pred[0][:,0,...,0].mean(axis=0) # mean of ensemble members for img 0
 
 ##colorbar
 cb = list(range(0,6))
@@ -281,47 +286,46 @@ ax5 = plt.subplot(gs[1, 1], projection=ccrs.PlateCarree())
 ax6 = plt.subplot(gs[1, 2], projection=ccrs.PlateCarree())
 ax = [ax1, ax2, ax3, ax4, ax5, ax6]
 
-IFS_total = ax[0].imshow(masked_imgs['IFS_total'], norm=colors.LogNorm(*value_range_precip), cmap=cmap, vmin=value_range_precip[0], 
-                  vmax=value_range_precip[1], origin='upper', extent=extent, transform=ccrs.PlateCarree(), alpha=0.8)
+IFS_total_ax = ax[0].imshow(IFS_total, norm=colors.LogNorm(*value_range_precip), cmap=cmap, origin='lower', extent=extent, 
+                            transform=ccrs.PlateCarree(), alpha=alpha)
 ax[0].set_title(plot_input_title)
 ax[0].coastlines(resolution='10m', color='black', linewidth=linewidth)
-cb[2] = plt.colorbar(IFS_total, ax=ax[0], norm=colors.LogNorm(*value_range_precip), orientation='horizontal',
+cb[2] = plt.colorbar(IFS_total_ax, ax=ax[0], norm=colors.LogNorm(*value_range_precip), orientation='horizontal',
                     fraction=0.035, pad=0.04)
 
 if problem_type != 'superresolution':
-    IFS_conv = ax[1].imshow(masked_imgs['IFS_conv'], norm=colors.LogNorm(*value_range_precip), cmap=cmap, vmin=value_range_precip[0], 
-                      vmax=value_range_precip[1], origin='upper', extent=extent, transform=ccrs.PlateCarree(), alpha=0.8)
+    IFS_conv_ax = ax[1].imshow(IFS_conv, norm=colors.LogNorm(*value_range_precip), cmap=cmap, origin='lower', extent=extent, 
+                               transform=ccrs.PlateCarree(), alpha=alpha)
     ax[1].set_title('IFS - convective precip')
     ax[1].coastlines(resolution='10m', color='black', linewidth=linewidth)
-    cb[1] = plt.colorbar(IFS_conv, ax=ax[1], norm=colors.LogNorm(*value_range_precip), orientation='horizontal',
+    cb[1] = plt.colorbar(IFS_conv_ax, ax=ax[1], norm=colors.LogNorm(*value_range_precip), orientation='horizontal',
                         fraction=0.035, pad=0.04)
 else:
-    LSM = ax[1].imshow(constant_1, norm=colors.Normalize(*value_range_lsm), cmap="terrain", alpha=0.8)
+    LSM = ax[1].imshow(constant_1, cmap=cmap_lsm, origin='lower', alpha=alpha)
     ax[1].set_title('Land sea mask')
-    cb[1] = plt.colorbar(LSM, ax=ax[1], norm=colors.Normalize(*value_range_lsm), orientation='horizontal',
-                        fraction=0.035, pad=0.04)
+    cb[1] = plt.colorbar(LSM, ax=ax[1], orientation='horizontal', fraction=0.035, pad=0.04)
 
-OROG = ax[2].imshow(constant_0, norm=colors.Normalize(*value_range_orog), cmap="terrain")
+OROG = ax[2].imshow(constant_0, cmap="terrain", origin='lower', alpha=alpha)
 ax[2].set_title('Orography')
 cb[0] = plt.colorbar(OROG, ax=ax[2], norm=colors.Normalize(*value_range_orog), orientation='horizontal',
                     fraction=0.04, pad=0.04)
 
-TRUTH = ax[3].imshow(masked_imgs['NIMROD'], norm=colors.LogNorm(*value_range_precip), cmap=cmap, vmin=value_range_precip[0], 
-                  vmax=value_range_precip[1], origin='upper', extent=extent, transform=ccrs.PlateCarree(), alpha=0.8)
+TRUTH = ax[3].imshow(NIMROD, norm=colors.LogNorm(*value_range_precip), cmap=cmap, origin='lower', extent=extent, 
+                     transform=ccrs.PlateCarree(), alpha=alpha)
 ax[3].set_title('NIMROD - ground truth')
 ax[3].coastlines(resolution='10m', color='black', linewidth=linewidth)
 cb[3] = plt.colorbar(TRUTH, ax=ax[3], norm=colors.LogNorm(*value_range_precip), orientation='horizontal',
                     fraction=0.035, pad=0.04)
 
-PRED = ax[4].imshow(masked_imgs['pred_img'], norm=colors.LogNorm(*value_range_precip), cmap=cmap, vmin=value_range_precip[0], 
-                  vmax=value_range_precip[1], origin='upper', extent=extent, transform=ccrs.PlateCarree(), alpha=0.8)
+PRED = ax[4].imshow(pred_0_0, norm=colors.LogNorm(*value_range_precip), cmap=cmap, origin='lower', extent=extent, 
+                    transform=ccrs.PlateCarree(), alpha=alpha)
 ax[4].set_title('GAN - example prediction')
 ax[4].coastlines(resolution='10m', color='black', linewidth=linewidth)
 cb[4] = plt.colorbar(PRED, ax=ax[4], norm=colors.LogNorm(*value_range_precip), orientation='horizontal',
                     fraction=0.035, pad=0.04)
 
-PRED_mean = ax[5].imshow(masked_imgs['pred_mean'], norm=colors.LogNorm(*value_range_precip), cmap=cmap, vmin=value_range_precip[0], 
-                  vmax=value_range_precip[1], origin='upper', extent=extent, transform=ccrs.PlateCarree(), alpha=0.8)
+PRED_mean = ax[5].imshow(pred_mean, norm=colors.LogNorm(*value_range_precip), cmap=cmap, origin='lower', extent=extent, 
+                         transform=ccrs.PlateCarree(), alpha=0.8)
 ax[5].set_title('GAN - mean prediction')
 ax[5].coastlines(resolution='10m', color='black', linewidth=linewidth)
 cb[5] = plt.colorbar(PRED_mean, ax=ax[5], norm=colors.LogNorm(*value_range_precip), orientation='horizontal',
@@ -329,7 +333,6 @@ cb[5] = plt.colorbar(PRED_mean, ax=ax[5], norm=colors.LogNorm(*value_range_preci
 
 for ax in ax:
     ax.tick_params(left=False, bottom=False,labelleft=False, labelbottom=False)
-    ax.invert_yaxis()
     
 if problem_type != "superresolution":
     for cb in cb[1:]:
@@ -345,7 +348,7 @@ else:
         cb.set_label(units, size=8)
 
 
-plt.savefig("{}/prediction-and-inputs-{}-{}-{}.pdf".format(log_folder, 
+plt.savefig("{}/prediction-and-inputs-{}-{}-{}.png".format(log_folder, #cannot save as pdf - will produce artefacts
                                                           model_number,
                                                           problem_type,
                                                           plot_label), bbox_inches='tight')
@@ -354,7 +357,7 @@ plt.close()
 
 ## generate labels for plots
 labels = [plot_input_title, "TRUTH"]
-for i in range(num_samples):
+for i in range(ensemble_size):
     labels.append(f"{mode} pred {i+1}")
 if args.include_RainFARM:
     labels.append("RainFARM")
@@ -368,7 +371,7 @@ if args.include_Lanczos:
     
 ## plot a range of prediction examples for different downscaling methods    
 sequences = []
-for i in range(num_predictions):
+for i in range(num_samples):
     tmp = {}
     tmp['TRUTH'] = seq_real[i][0,...,0]
     tmp[plot_input_title] = seq_cond[i][0,...,0]
@@ -376,26 +379,24 @@ for i in range(num_predictions):
     tmp['RainFARM'] = seq_rainfarm[i][0,...]
     tmp['Deterministic'] = seq_det[i][0,...,0]
     tmp['ecPoint mean'] = seq_ecpoint[i][0,...]
-    for j in range(num_samples):
+    for j in range(ensemble_size):
         tmp[f"{mode} pred {j+1}"] = pred[i][j][0,...,0]
     sequences.append(tmp)
     
-num_cols = num_predictions
+num_cols = num_samples
 num_rows = len(labels)+1
 plt.figure(figsize=(1.5*num_cols,1.5*num_rows), dpi=300)
 
 gs = gridspec.GridSpec(num_rows*num_rows,num_rows*num_cols,wspace=0.5,hspace=0.5)
 
-for k in range(num_predictions):
+for k in range(num_samples):
     for i in range(len(labels)):
-        img_masked = sequences[k][labels[i]].copy()
-        img_masked[img_masked < 0.1] = 0
         plt.subplot(gs[(num_rows*i):(num_rows+num_rows*i),(num_rows*k):(num_rows+num_rows*k)], 
                     projection=ccrs.PlateCarree())
         ax = plt.gca()
         ax.coastlines(resolution='10m', color='black', linewidth=linewidth)
-        plot_img_log_coastlines(img_masked, value_range_precip=value_range_precip, cmap=cmap,
-                                extent=extent, alpha=alpha)
+        plot_img_log_coastlines(sequences[k][labels[i]], value_range_precip=value_range_precip, 
+                                cmap=cmap, extent=extent, alpha=alpha)
         if i == 0:
             plt.title(k+1)
 
@@ -412,7 +413,7 @@ cb.set_ticklabels(cb_tick_labels)
 cax.tick_params(labelsize=12)
 cb.set_label(units, size=12)
             
-plt.savefig("{}/predictions-{}-{}-{}.pdf".format(log_folder,
+plt.savefig("{}/predictions-{}-{}-{}.png".format(log_folder, #cannot save as pdf - will produce artefacts
                                                  model_number,
                                                  problem_type,
                                                  plot_label), bbox_inches='tight')
@@ -428,7 +429,7 @@ if args.plot_rapsd:
                                                   problem_type,
                                                   plot_label))
 
-    for k in range(num_predictions):
+    for k in range(num_samples):
         fig, ax = plt.subplots()
         for i in range(len(labels)):
             if labels[i] == 'IFS':
