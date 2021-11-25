@@ -35,6 +35,7 @@ breakpoints_hourly[breakpoints_hourly==9999] = 9999999  # Extend bounds  # noqa:
 breakpoints_hourly[breakpoints_hourly==-9999] = -9999999  # Extend bounds  # noqa: E225
 breakpoints_hourly[:, [3, 4]] = breakpoints_hourly[:, [3, 4]]/12  # Rescale Cape & cdir  # noqa: E225
 # breakpoints_hourly[:, [3, 4]] = breakpoints_hourly[:, [3, 4]]
+breakpoints_hourly = breakpoints_hourly.astype(np.single)
 
 era_fields = ['prc', 'pr', 'u700', 'v700', 'cape', 'cdir']
 ifs_fields = ['cp', 'tp', 'u700', 'v700', 'cape', 'cdir']
@@ -154,7 +155,7 @@ def filtbreak(dta, breakp):
 
 def remapERA(dta, fields=5):
     # Move from raw ERA to ecPoint variables
-    filtered_era = np.zeros(dta.shape[:-1] + (5,))
+    filtered_era = np.zeros(dta.shape[:-1] + (5,), dtype=np.single)
     # Convective fraction
     filtered_era[dta[..., 1]==0, 0] = 0  # noqa: E225
     prgz = dta[..., 1] > 0
@@ -319,7 +320,7 @@ def savecdf(cdf, name):
 def loadcdf(name, fixempty=True):
     filename = f'/ppdata/ecPoint/Data/NIMROD/{name}'
     if fixempty:
-        cdfv2 = np.loadtxt(filename)
+        cdfv2 = np.loadtxt(filename).astype(np.single)
         zeros = (cdfv2[:, -1] == 0)
         nonzeros = (cdfv2[:, -1] != 0)
         cdfv3 = cdfv2.copy()
@@ -327,7 +328,7 @@ def loadcdf(name, fixempty=True):
         cdfv3[zeros, :] = av
         return cdfv3
     else:
-        return np.loadtxt(filename)
+        return np.loadtxt(filename).astype(np.single)
 
 
 def predict(raw_inputs=None, cdf=None, logout=False):
