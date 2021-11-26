@@ -15,12 +15,6 @@ import pickle
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--config", help="Path to configuration file")
-group = parser.add_mutually_exclusive_group()
-group.add_argument('--eval_full', dest='evalnum', action='store_const', const="full")
-group.add_argument('--eval_short', dest='evalnum', action='store_const', const="short")
-group.add_argument('--eval_tenth', dest='evalnum', action='store_const', const="tenth")
-group.add_argument('--eval_blitz', dest='evalnum', action='store_const', const="blitz")
-parser.set_defaults(evalnum=None)
 parser.add_argument('--start_time', type=int, 
                     help="lead time to start at", default='1')
 parser.add_argument('--stop_time', type=int, 
@@ -28,9 +22,6 @@ parser.add_argument('--stop_time', type=int,
 parser.add_argument('--model_number', type=int, 
                     help="model number for GAN", default='0147200')
 args = parser.parse_args()
-
-if args.evalnum is None and (args.rank_small or args.rank_full or args.qual_small or args.qual_full or args.plot_roc_small or args.plot_roc_full):
-    raise RuntimeError("You asked for evaluation to occur, but did not pass in '--eval_full', '--eval_short', '--eval_tenth', or '--eval_blitz' to specify length of evaluation")
 
 # read in the configurations
 if args.config is not None:
