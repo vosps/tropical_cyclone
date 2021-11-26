@@ -178,7 +178,7 @@ for benchmark in benchmark_methods:
                 crps_scores[benchmark][method].append(crps_score) 
                 gc.collect()
 
-            rmse_score = np.sqrt((sample_truth - sample_benchmark)**2).mean(axis=(1,2))
+            rmse_score = np.sqrt(((sample_truth - sample_benchmark)**2).mean(axis=(1,2)))
             mae_score = np.abs(sample_truth - sample_benchmark).mean(axis=(1,2))
             if benchmark == 'zeros':
                 rapsd_score = np.nan
