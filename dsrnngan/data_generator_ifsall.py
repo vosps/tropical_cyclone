@@ -3,7 +3,7 @@
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.utils import Sequence
-from data import get_long_dates,get_long_data
+from data import get_long_dates,get_long_data, load_hires_constants
 
 return_dic = True
 
