@@ -99,7 +99,7 @@ gen.load_weights(weights_fn)
 crps_scores_model = {}
 crps_scores_ecpoint = {}
 
-for hour in list(range(args.start_hour, args.stop_hour+1)): 
+for hour in range(args.start_hour, args.stop_hour+1):
     
     # load data generators for this hour
     data_gen = DataGenerator(year=eval_year,
