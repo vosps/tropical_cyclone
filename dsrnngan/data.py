@@ -566,21 +566,25 @@ def load_ifs_norm(year=2016, tag=''):
 
 
 def get_long_data(fields,start_date,start_hour,lead_time,
-                  log_precip=False, crop=None,norm=False,
+                  log_precip=False, crop=None, norm=False,
                  ):
 
     global IFS_PATH
     IFS_PATH = '/ppdata/IFSLong/'
     ifslong = xr.open_mfdataset(f'{IFS_PATH}sfc_{start_date}_{start_hour}.nc')
+    
+    if crop:
+        ifs_crop = (1, -1)
+        nim_crop = (5, -6)
 
     time = ifslong.time[lead_time] - pd.Timedelta(hours=1)
     # try: 
     nim=load_nimrod(time.dt.strftime('%Y%m%d').item(),time.dt.hour.item(),
-                    log_precip=log_precip, aggregate=1, crop = crop,
+                    log_precip=log_precip, aggregate=1, crop=nim_crop,
     )
     
     ifs = load_ifsstack_leadtime(fields,start_date,start_hour,lead_time,
-                                 log_precip=log_precip, norm=norm, crop = crop,                               
+                                 log_precip=log_precip, norm=norm, crop=ifs_crop,                               
     )
     ifslong.close()
     return ifs,nim    
