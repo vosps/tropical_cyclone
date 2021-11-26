@@ -64,11 +64,9 @@ def plot_fss_curves(*,
     if problem_type == "normal":
         downsample = False
         input_channels = 9
-        noise_channels = 4
     elif problem_type == "superresolution":
         downsample = True
         input_channels = 1
-        noise_channels = 2
     else:
         raise Exception("no such problem type, try again!")
 
@@ -83,7 +81,7 @@ def plot_fss_curves(*,
     if mode == 'det':
         ensemble_members = 1  # in this case, only used for printing
 
-    precip_values = np.array([0.5, 2.0, 10.0])
+    precip_values = np.array([0.5, 2.0, 5.0])
     spatial_scales = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512]
 
     # initialise model
@@ -127,14 +125,12 @@ def plot_fss_curves(*,
                                             shuffle=True,
                                             constants=True,
                                             hour="random",
-                                            ifs_norm=False,
-                                            downsample=downsample)
+                                            ifs_norm=False)
 
     # tidier to iterate over GAN checkpoints and ecPoint using joint code
     model_numbers_ec = model_numbers.copy()
     if plot_ecpoint:
-        # model_numbers_ec.extend(["ecPoint-nocorr", "ecPoint-partcorr", "ecPoint-fullcorr"])
-        model_numbers_ec.extend(["ecPoint-partcorr", "ecPoint-fullcorr"])  # nocorr is horrible slow rn
+        model_numbers_ec.extend(["ecPoint-nocorr", "ecPoint-partcorr", "ecPoint-fullcorr"])
 
     method1 = {}  # method 1 - "ensemble FSS"
     method2 = {}  # method 2 - "no-ensemble FSS"
@@ -212,34 +208,33 @@ def plot_fss_curves(*,
                 # list is large, so force garbage collect
                 gc.collect()
             else:
-                # pred_ensemble will be batch_size x H x W x 100
+                # pred_ensemble will be batch_size x ens x H x W
                 if model_number == "ecPoint-nocorr":
-                    pred_ensemble = benchmarks.ecpointmodel(inputs['lo_res_inputs'], ensemble_size=ensemble_members)
+                    pred_ensemble = benchmarks.ecpointmodel(inputs['lo_res_inputs'],
+                                                            ensemble_size=ensemble_members,
+                                                            data_format="channels_first")
                 elif model_number == "ecPoint-partcorr":
-                    pred_ensemble = benchmarks.ecpointboxensmodel(inputs['lo_res_inputs'], ensemble_size=ensemble_members)
+                    pred_ensemble = benchmarks.ecpointboxensmodel(inputs['lo_res_inputs'],
+                                                                  ensemble_size=ensemble_members,
+                                                                  data_format="channels_first")
                 elif model_number == "ecPoint-fullcorr":
-                    pred_ensemble = benchmarks.ecpointPDFmodel(inputs['lo_res_inputs'])
+                    # this has ens=100 every time
+                    pred_ensemble = benchmarks.ecpointPDFmodel(inputs['lo_res_inputs'],
+                                                               data_format="channels_first")
                 else:
                     raise RuntimeError('Unknown model_number {}' % model_number)
-                # change from NHWC to NCHW
-                pred_ensemble = np.moveaxis(pred_ensemble, -1, 1)  # returns view
-                pred_ensemble = np.ascontiguousarray(pred_ensemble)  # not a view!
-                gc.collect()
 
             for kk in range(batch_size):
                 for pv in precip_values:
                     for spasc in spatial_scales:
-                        # method 1: pass in entire ensemble at once
+                        # method 1: "ensemble skill"
                         fss_ens_accum(method1[model_number][pv][spasc]["fssobj"],
                                       pred_ensemble[kk, :, :, :],
                                       im_real[kk, :, :])
-                        # method 2: pass in each ensemble member separately
-                        # get shape from array because ecPoint arrays might
-                        # not have the expected number of ens members(!)
-                        for jj in range(pred_ensemble.shape[1]):
-                            fss_accum(method2[model_number][pv][spasc]["fssobj"],
-                                      pred_ensemble[kk, jj, :, :],
-                                      im_real[kk, :, :])
+                        # method 2: "ensemble member skill"
+                        fss_accumall(method2[model_number][pv][spasc]["fssobj"],
+                                     pred_ensemble[kk, :, :, :],
+                                     im_real[kk, :, :])
                 gc.collect()
 
             # pred_ensemble is pretty large
@@ -272,7 +267,7 @@ def plot_fss_curves(*,
         plt.xlabel('Spatial scale (km)')
         plt.ylabel('Fractions skill score (FSS)')
         plt.title(f'FSS curve for precip threshold {pv}')
-        plt.legend(loc="upper left")
+        plt.legend(loc="best")
         plt.savefig("{}/FSS-{}.pdf".format(log_folder, pv), bbox_inches='tight')
         plt.close()
 
@@ -328,27 +323,28 @@ def fss_init(thr, scale):
     return fss
 
 
-def fss_accum(fss, X_f, X_o):
-    """Accumulate forecast-observation pairs to an FSS object.
+def fss_accumall(fss, X_f, X_o):
+    """Accumulate ensemble forecast-observation pairs to an FSS object.
+    Does each ensemble member separately.
     Parameters
     -----------
     fss: dict
         The FSS object initialized with
         :py:func:`pysteps.verification.spatialscores.fss_init`.
     X_f: array_like
-        Array of shape (m, n) containing the forecast field.
+        Array of shape (c, m, n) containing an ensemble of c forecast fields.
     X_o: array_like
         Array of shape (m, n) containing the observation field.
     """
-    if len(X_f.shape) != 2 or len(X_o.shape) != 2 or X_f.shape != X_o.shape:
-        message = "X_f and X_o must be two-dimensional arrays"
-        message += " having the same shape"
+    if len(X_f.shape) != 3 or len(X_o.shape) != 2 or X_f.shape[-2:] != X_o.shape:
+        message = "X_f and X_o must be three- and two-dimensional arrays"
+        message += " having the same image dimensions"
         raise ValueError(message)
 
-    X_f = X_f.copy()
-    X_f[~np.isfinite(X_f)] = fss["thr"] - 1
-    X_o = X_o.copy()
-    X_o[~np.isfinite(X_o)] = fss["thr"] - 1
+#     X_f = X_f.copy()
+#     X_f[~np.isfinite(X_f)] = fss["thr"] - 1
+#     X_o = X_o.copy()
+#     X_o[~np.isfinite(X_o)] = fss["thr"] - 1
 
     # Convert to binary fields with the given intensity threshold
     I_f = (X_f >= fss["thr"]).astype(np.single)
@@ -357,19 +353,24 @@ def fss_accum(fss, X_f, X_o):
     # Compute fractions of pixels above the threshold within a square
     # neighboring area by applying a 2D moving average to the binary fields
     if fss["scale"] > 1:
-        S_f = uniform_filter(I_f, size=fss["scale"], mode="constant", cval=0.0)
         S_o = uniform_filter(I_o, size=fss["scale"], mode="constant", cval=0.0)
     else:
-        S_f = I_f
         S_o = I_o
 
-    fss["sum_obs_sq"] += np.nansum(S_o ** 2)
-    fss["sum_fct_obs"] += np.nansum(S_f * S_o)
-    fss["sum_fct_sq"] += np.nansum(S_f ** 2)
+    for ii in range(X_f.shape[0]):
+        if fss["scale"] > 1:
+            S_f = uniform_filter(I_f[ii, :, :], size=fss["scale"], mode="constant", cval=0.0)
+        else:
+            S_f = I_f[ii, :, :]
+
+        fss["sum_obs_sq"] += np.nansum(S_o ** 2)
+        fss["sum_fct_obs"] += np.nansum(S_f * S_o)
+        fss["sum_fct_sq"] += np.nansum(S_f ** 2)
 
 
 def fss_ens_accum(fss, X_f, X_o):
     """Accumulate ensemble forecast-observation pairs to an FSS object.
+    Does ensemble mean of thresholded arrays.
     Parameters
     -----------
     fss: dict
