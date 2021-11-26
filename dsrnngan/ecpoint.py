@@ -414,7 +414,12 @@ def predictupscalecdf(raw_inputs=None,
     assert data_format in ("channels_first", "channels_last")
 
     ans = predictcdf(raw_inputs=raw_inputs, cdf=cdf, logout=logout)
-    upscaled_ans = np.repeat(np.repeat(ans, 10, axis=-3), 10, axis=-2)
+    # ans is batch_size x 94 x 94 x 100
+    if data_format == "channels_first":
+        ans = np.moveaxis(ans, -1, 1)  # move to batch x 100 x 94 x 94
+        upscaled_ans = np.repeat(np.repeat(ans, 10, axis=-1), 10, axis=-2)
+    elif data_format == "channels_last":
+        upscaled_ans = np.repeat(np.repeat(ans, 10, axis=-2), 10, axis=-3)
     # upscaled_ans = upscaled_ans
     return upscaled_ans  # [:,4:-5:,4:-5,:]
 
@@ -425,17 +430,47 @@ def predictthenupscale(raw_inputs=None,
     assert data_format in ("channels_first", "channels_last")
 
     ans = predictcdf(raw_inputs=raw_inputs, cdf=cdf, logout=logout)
-    small_output = np.zeros(ans.shape[:-1] + (ensemble_size,))
-    # There is definitely a better way to do this sampling
-    # but Im not clever enough to do it
-    for i in range(ans.shape[0]):
-        for j in range(ans.shape[1]):
-            for k in range(ans.shape[2]):
-                selection = np.random.choice(ans.shape[3],
-                                             size=ensemble_size,
-                                             replace=True).astype(int)
-                small_output[i, j, k, :] = ans[i, j, k, selection]
-    upscaled_ans = np.repeat(np.repeat(small_output, 10, axis=-3), 10, axis=-2)
+    # ans is batch_size x 94 x 94 x 100
+
+    from numpy.random import default_rng
+    rng = default_rng()
+
+    if data_format == "channels_first":
+        selection = rng.integers(low=0, high=ans.shape[3],
+                                 size=(ans.shape[0], ensemble_size, ans.shape[1], ans.shape[2]),
+                                 endpoint=False)
+        # naive version of code is:
+        # for ii in range(ans.shape[0]):
+        #     for jj in range(ensemble_size):
+        #         for kk in range(ans.shape[1]):
+        #             for ll in range(ans.shape[2]):
+        #                 out[ii, jj, kk, ll] = ans[ii, kk, ll, selection[ii, jj, kk, ll]]
+        iarr = np.arange(ans.shape[0])
+        jarr = np.arange(1)
+        karr = np.arange(ans.shape[1])
+        larr = np.arange(ans.shape[2])
+        ix, _, kx, lx = np.ix_(iarr, jarr, karr, larr)
+        small_output = ans[ix, kx, lx, selection]
+        upscaled_ans = np.repeat(np.repeat(small_output, 10, axis=-1), 10, axis=-2)
+
+    elif data_format == "channels_last":
+        selection = rng.integers(low=0, high=ans.shape[3],
+                                 size=ans.shape[:-1] + (ensemble_size,),
+                                 endpoint=False)
+        # naive version of code is:
+        # for ii in range(ans.shape[0]):
+        #     for jj in range(ans.shape[1]):
+        #         for kk in range(ans.shape[2]):
+        #             for ll in range(ensemble_size):
+        #                 out[ii, jj, kk, ll] = ans[ii, jj, kk, selection[ii, jj, kk, ll]]
+        iarr = np.arange(ans.shape[0])
+        jarr = np.arange(ans.shape[1])
+        karr = np.arange(ans.shape[2])
+        larr = np.arange(1)
+        ix, jx, kx, _ = np.ix_(iarr, jarr, karr, larr)
+        small_output = ans[ix, jx, kx, selection]
+        upscaled_ans = np.repeat(np.repeat(small_output, 10, axis=-2), 10, axis=-3)
+
     return upscaled_ans
 
 
