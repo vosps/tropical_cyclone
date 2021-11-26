@@ -15,13 +15,20 @@ import pickle
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--config", help="Path to configuration file")
+parser.add_argument('--num_batches', type=int,
+                    help="number of batches", default='64')
+parser.add_argument('--rank_samples', type=int,
+                    help="ensemble size", default='10')
 parser.add_argument('--start_time', type=int, 
                     help="lead time to start at", default='1')
 parser.add_argument('--stop_time', type=int, 
                     help="lead time to stop at", default='72')
-parser.add_argument('--model_number', type=int, 
+parser.add_argument('--model_number', type=str, 
                     help="model number for GAN", default='0147200')
 args = parser.parse_args()
+
+num_batches = args.num_batches
+rank_samples = args.rank_samples
 
 # read in the configurations
 if args.config is not None:
@@ -62,8 +69,6 @@ downsample = False
 input_channels = 9
 eval_year = 2020 # only 2020 data is available
 all_ifs_fields = ['tp','cp' ,'sp' ,'tisr','cape','tclw','tcwv','u700','v700']
-num_batches = 256 # for now
-rank_samples = 100 # like ecPoint
 denormalise_data = True
 if mode == "det":
     rank_samples = 1  # can't generate an ensemble deterministically
@@ -90,8 +95,8 @@ gen.load_weights(weights_fn)
 crps_scores_model = {}
 crps_scores_ecpoint = {}
 
-for hour in range(args.start_hour, args.stop_hour+1):
-    
+for hour in range(args.start_time, args.stop_time+1):
+    print(f"calculating for hour {hour} of {args.stop_time}")
     # load data generators for this hour
     data_gen = DataGenerator(year=eval_year,
                             lead_time=hour,
@@ -142,7 +147,7 @@ for hour in range(args.start_hour, args.stop_hour+1):
             noise_dim_1, noise_dim_2 = sample_truth[0, ..., 0].shape
             noise = np.random.rand(batch_size, noise_dim_1, noise_dim_2, 1)*noise_factor
             sample_truth += noise
-            noise = np.random.rand(batch_size, noise_dim_1, noise_dim_2, 1)*noise_factor
+            noise = np.random.rand(batch_size, noise_dim_1, noise_dim_2)*noise_factor
             ecpoint_truth += noise
             noise = np.random.rand(batch_size, noise_dim_1, noise_dim_2, rank_samples)*noise_factor
             ecpoint_sample += noise
