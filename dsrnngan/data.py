@@ -567,16 +567,18 @@ def load_ifs_norm(year=2016, tag=''):
 
 def get_long_data(fields,start_date,start_hour,lead_time,
                   log_precip=False, crop=None, norm=False,
+                  nim_crop = 0, ifs_crop = 0,
                  ):
 
     global IFS_PATH
     IFS_PATH = '/ppdata/IFSLong/'
-    ifslong = xr.open_mfdataset(f'{IFS_PATH}sfc_{start_date}_{start_hour}.nc')
+    ifslong = xr.open_dataset(f'{IFS_PATH}sfc_{start_date}_{start_hour}.nc')
     
     if crop:
         ifs_crop = (1, -1)
         nim_crop = (5, -6)
 
+    #IFS labels time by the end of the hour rather than beginning
     time = ifslong.time[lead_time] - pd.Timedelta(hours=1)
     # try: 
     nim=load_nimrod(time.dt.strftime('%Y%m%d').item(),time.dt.hour.item(),
@@ -608,7 +610,7 @@ def get_long_dates(year,lead_time,
     while date < final_date:
         start_date = date.strftime('%Y%m%d')
         for start_hour in start_times:
-            ifslong = xr.open_mfdataset(f'{IFS_PATH}sfc_{start_date}_{start_hour}.nc')
+            ifslong = xr.open_dataset(f'{IFS_PATH}sfc_{start_date}_{start_hour}.nc')
             time = ifslong.time[lead_time] - pd.Timedelta(hours=1)
             try: 
                 nim=load_nimrod(time.dt.strftime('%Y%m%d').item(),time.dt.hour.item(),
