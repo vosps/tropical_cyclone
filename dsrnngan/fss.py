@@ -31,8 +31,9 @@
 
 import os
 import gc
+import pickle
 import numpy as np
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 from scipy.ndimage.filters import uniform_filter
 from tfrecords_generator_ifs import create_fixed_dataset
 from data_generator_ifs import DataGenerator as DataGeneratorFull
@@ -130,7 +131,7 @@ def plot_fss_curves(*,
     # tidier to iterate over GAN checkpoints and ecPoint using joint code
     model_numbers_ec = model_numbers.copy()
     if plot_ecpoint:
-        model_numbers_ec.extend(["ecPoint-nocorr", "ecPoint-partcorr", "ecPoint-fullcorr"])
+        model_numbers_ec.extend(["ecPoint-nocorr", "ecPoint-partcorr", "ecPoint-fullcorr", "ecPoint-mean"])
 
     method1 = {}  # method 1 - "ensemble FSS"
     method2 = {}  # method 2 - "no-ensemble FSS"
@@ -221,6 +222,12 @@ def plot_fss_curves(*,
                     # this has ens=100 every time
                     pred_ensemble = benchmarks.ecpointPDFmodel(inputs['lo_res_inputs'],
                                                                data_format="channels_first")
+                elif model_number == "ecPoint-mean":
+                    # this has ens=100 every time
+                    pred_ensemble = benchmarks.ecpointPDFmodel(inputs['lo_res_inputs'],
+                                                               data_format="channels_first")
+                    pred_ensemble = np.mean(pred_ensemble, axis=1)
+                    pred_ensemble = np.expand_dims(pred_ensemble, 1)  # batch_size x 1 x H x W
                 else:
                     raise RuntimeError('Unknown model_number {}' % model_number)
 
@@ -248,28 +255,42 @@ def plot_fss_curves(*,
                 method1[model_number][pv][spasc]["score"] = fss_compute(method1[model_number][pv][spasc]["fssobj"])
                 method2[model_number][pv][spasc]["score"] = fss_compute(method2[model_number][pv][spasc]["fssobj"])
 
-    # do plots, one for each precip_value
-    for pv in precip_values:
-        plt.figure(figsize=(7, 5))
-        lw = 1
-        colors = ['aqua', 'darkorange', 'cornflowerblue', 'deeppink', 'navy']
-        for modnum, color in zip(model_numbers_ec, colors):
-            m1_scores = [method1[modnum][pv][spasc]["score"] for spasc in spatial_scales]
-            m2_scores = [method2[modnum][pv][spasc]["score"] for spasc in spatial_scales]
-            plt.plot(spatial_scales, m1_scores, '-', color=color, lw=lw,
-                     label=f"{modnum} method 1")
-            plt.plot(spatial_scales, m2_scores, ':', color=color, lw=lw,
-                     label=f"{modnum} method 2")
+        if model_number in model_numbers:
+            fname1 = "FSS-GAN-" + str(model_number) + "-1.pickle"
+            fname2 = "FSS-GAN-" + str(model_number) + "-2.pickle"
+        else:
+            fname1 = "FSS-" + model_number + "-1.pickle"
+            fname2 = "FSS-" + model_number + "-2.pickle"
+        fnamefull1 = os.path.join(log_folder, fname1)
+        fnamefull2 = os.path.join(log_folder, fname2)
 
-        # plt.plot([0, 1], [0, 1], 'k--', lw=lw)  # no-skill
-        # plt.xlim([0.0, 1.0])
-        plt.ylim([0.0, 1.0])
-        plt.xlabel('Spatial scale (km)')
-        plt.ylabel('Fractions skill score (FSS)')
-        plt.title(f'FSS curve for precip threshold {pv}')
-        plt.legend(loc="best")
-        plt.savefig("{}/FSS-{}.pdf".format(log_folder, pv), bbox_inches='tight')
-        plt.close()
+        with open(fnamefull1, 'wb') as f:
+            pickle.dump(method1[model_number], f)
+        with open(fnamefull2, 'wb') as f:
+            pickle.dump(method2[model_number], f)
+
+#     # do plots, one for each precip_value
+#     for pv in precip_values:
+#         plt.figure(figsize=(7, 5))
+#         lw = 1
+#         colors = ['aqua', 'darkorange', 'cornflowerblue', 'deeppink', 'navy']
+#         for modnum, color in zip(model_numbers_ec, colors):
+#             m1_scores = [method1[modnum][pv][spasc]["score"] for spasc in spatial_scales]
+#             m2_scores = [method2[modnum][pv][spasc]["score"] for spasc in spatial_scales]
+#             plt.plot(spatial_scales, m1_scores, '-', color=color, lw=lw,
+#                      label=f"{modnum} method 1")
+#             plt.plot(spatial_scales, m2_scores, ':', color=color, lw=lw,
+#                      label=f"{modnum} method 2")
+
+#         # plt.plot([0, 1], [0, 1], 'k--', lw=lw)  # no-skill
+#         # plt.xlim([0.0, 1.0])
+#         plt.ylim([0.0, 1.0])
+#         plt.xlabel('Spatial scale (km)')
+#         plt.ylabel('Fractions skill score (FSS)')
+#         plt.title(f'FSS curve for precip threshold {pv}')
+#         plt.legend(loc="best")
+#         plt.savefig("{}/FSS-{}.pdf".format(log_folder, pv), bbox_inches='tight')
+#         plt.close()
 
 
 # Probably don't use this function directly -- ATTM
