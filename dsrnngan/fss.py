@@ -30,6 +30,7 @@
 
 
 import os
+# os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 import gc
 import pickle
 import numpy as np
@@ -73,7 +74,7 @@ def plot_fss_curves(*,
 
     if predict_full_image:
         batch_size = 2  # this will stop your computer having a strop
-        num_batches = 8
+        num_batches = 64
         ensemble_members = 40
     else:
         batch_size = 16
@@ -131,7 +132,7 @@ def plot_fss_curves(*,
     # tidier to iterate over GAN checkpoints and ecPoint using joint code
     model_numbers_ec = model_numbers.copy()
     if plot_ecpoint:
-        model_numbers_ec.extend(["ecPoint-nocorr", "ecPoint-partcorr", "ecPoint-fullcorr", "ecPoint-mean"])
+        model_numbers_ec.extend(["ecPoint-nocorr", "ecPoint-partcorr", "ecPoint-fullcorr", "ecPoint-mean", "constupsc"])
 
     method1 = {}  # method 1 - "ensemble FSS"
     method2 = {}  # method 2 - "no-ensemble FSS"
@@ -229,6 +230,9 @@ def plot_fss_curves(*,
                                                                data_format="channels_first")
                     pred_ensemble = np.mean(pred_ensemble, axis=1)
                     pred_ensemble = np.expand_dims(pred_ensemble, 1)  # batch_size x 1 x H x W
+                elif model_number == "constupsc":
+                    pred_ensemble = np.expand_dims(inputs['lo_res_inputs'][:, :, :, 1], 1)
+                    pred_ensemble = np.repeat(np.repeat(pred_ensemble, 10, axis=-1), 10, axis=-2)
                 else:
                     raise RuntimeError('Unknown model_number {}' % model_number)
 
