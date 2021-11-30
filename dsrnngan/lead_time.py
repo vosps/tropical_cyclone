@@ -53,12 +53,6 @@ noise_channels = setup_params["GENERATOR"]["noise_channels"]
 latent_variables = setup_params["GENERATOR"]["latent_variables"]
 filters_disc = setup_params["DISCRIMINATOR"]["filters_disc"]
 batch_size = setup_params["TRAIN"]["batch_size"]
-num_batches = setup_params["EVAL"]["num_batches"]
-add_noise = setup_params["EVAL"]["add_postprocessing_noise"]
-noise_factor = setup_params["EVAL"]["postprocessing_noise_factor"]
-
-# otherwise these are of type string, e.g. '1e-5'
-noise_factor = float(noise_factor)
 
 if mode not in ['GAN', 'VAEGAN', 'det']:
     raise ValueError("Mode type is restricted to 'GAN' 'VAEGAN' 'det'")
@@ -76,8 +70,11 @@ if mode == "det":
 ## where to find model weights
 weights_fn = os.path.join(log_folder, 'models', 'gen_weights-{}.h5'.format(args.model_number))
 ## where to save results
-lead_time_fname_model = os.path.join(log_folder, "model-lead-time.pickle")
-lead_time_fname_ecpoint = os.path.join(log_folder, "ecpoint-lead-time.pickle")
+lead_time_fname_model = os.path.join(log_folder, "model-lead-time-4.pickle")
+lead_time_fname_ecpoint = os.path.join(log_folder, "ecpoint-lead-time-4.pickle")
+lead_time_fname_ifs = os.path.join(log_folder, "ifs-lead-time.pickle")
+
+files_to_save = [lead_time_fname_model, lead_time_fname_ecpoint, lead_time_fname_ifs]
 
 ## initialise model
 model = setup_model(mode=mode,
@@ -94,21 +91,25 @@ gen.load_weights(weights_fn)
 
 crps_scores_model = {}
 crps_scores_ecpoint = {}
+mae_scores_ifs = {}
 
 for hour in range(args.start_time, args.stop_time+1):
     print(f"calculating for hour {hour} of {args.stop_time}")
+    random_seed = int(np.random.rand(1)*1e4) # different random seed for each hour
+    print(f"random_seed is {random_seed}")
     # load data generators for this hour
     data_gen = DataGenerator(year=eval_year,
-                            lead_time=hour,
-                            ifs_fields=all_ifs_fields,
-                            batch_size=batch_size,
-                            log_precip=True,
-                            crop=True,
-                            shuffle=True,
-                            constants=True,
-                            hour='random',
-                            ifs_norm=True,
-                            downsample=downsample)
+                             lead_time=hour,
+                             ifs_fields=all_ifs_fields,
+                             batch_size=batch_size,
+                             log_precip=True,
+                             crop=True,
+                             shuffle=True,
+                             constants=True,
+                             hour='random',
+                             ifs_norm=True,
+                             downsample=downsample,
+                             seed=random_seed)
 
     data_gen_iter = iter(data_gen)
     
@@ -121,7 +122,8 @@ for hour in range(args.start_time, args.stop_time+1):
                                     shuffle=True,
                                     constants=True,
                                     hour='random',
-                                    ifs_norm=False)
+                                    ifs_norm=False,
+                                    seed=random_seed)
     
     data_benchmarks_iter = iter(data_benchmarks)
     
@@ -133,25 +135,17 @@ for hour in range(args.start_time, args.stop_time+1):
         inputs, outputs = next(data_gen_iter)
         cond = inputs['lo_res_inputs']
         const = inputs['hi_res_inputs']
-        sample_truth = outputs['output']
+        sample_truth = outputs['output'] # NWH
+        sample_ifs = inputs['lo_res_inputs'][...,0] # first field is total precip [NWH]
         if denormalise_data:
             sample_truth = data.denormalise(sample_truth)
-            
-        sample_truth = np.expand_dims(np.array(sample_truth), axis=-1) # must be 4D tensor for pooling NHWC
+            sample_ifs = data.denormalise(sample_ifs)
+        
         # retrieve ecpoint data
         inp_benchmarks, outp_benchmarks = next(data_benchmarks_iter)
         ecpoint_sample = benchmarks.ecpointmodel(inp_benchmarks['lo_res_inputs'], ensemble_size=rank_samples)
         ecpoint_truth = outp_benchmarks['output']
-        
-        if add_noise:
-            noise_dim_1, noise_dim_2 = sample_truth[0, ..., 0].shape
-            noise = np.random.rand(batch_size, noise_dim_1, noise_dim_2, 1)*noise_factor
-            sample_truth += noise
-            noise = np.random.rand(batch_size, noise_dim_1, noise_dim_2)*noise_factor
-            ecpoint_truth += noise
-            noise = np.random.rand(batch_size, noise_dim_1, noise_dim_2, rank_samples)*noise_factor
-            ecpoint_sample += noise
-            
+                    
         # generate predictions, depending on model type
         samples_gen = []
         if mode == "GAN":
@@ -179,33 +173,42 @@ for hour in range(args.start_time, args.stop_time+1):
             #sample_gen shape should be [n, h, w] e.g. [1, 940, 940]
             if denormalise_data:
                 sample_gen = data.denormalise(sample_gen)
-            if add_noise:
-                (noise_dim_1, noise_dim_2) = sample_gen[0, ...].shape
-                noise = np.random.rand(batch_size, noise_dim_1, noise_dim_2)*noise_factor
-                sample_gen += noise
             samples_gen[ii] = sample_gen
         # turn list into array
         samples_gen = np.stack(samples_gen, axis=-1) #shape of samples_gen is [n, h, w, c] e.g. [1, 940, 940, 10]
         
+        # calculate MAE for IFS pred                                                                                                           
+        sample_ifs = np.repeat(sample_ifs, 10, axis=1)
+        sample_ifs = np.repeat(sample_ifs, 10, axis=2)
+        mae_score_ifs = np.abs(sample_truth - sample_ifs).mean(axis=(1,2))
+        del sample_ifs
+        gc.collect()
+
         # calculate CRPS score. Pooling not implemented here.     
         # crps_ensemble expects truth dims [N, H, W], pred dims [N, H, W, C]
-        crps_score_model = crps.crps_ensemble(np.squeeze(sample_truth, axis=-1), samples_gen).mean()
+        crps_score_model = crps.crps_ensemble(sample_truth, samples_gen).mean()
         crps_score_ecpoint = crps.crps_ensemble(ecpoint_truth, ecpoint_sample).mean()
         del sample_truth, samples_gen, ecpoint_truth, ecpoint_sample
         gc.collect()
 
+        # save results
         if hour not in crps_scores_model.keys():
             crps_scores_model[hour] = []
             crps_scores_ecpoint[hour] = []
+            mae_scores_ifs[hour] = []
         crps_scores_model[hour].append(crps_score_model)
         crps_scores_ecpoint[hour].append(crps_score_ecpoint)
-            
+        mae_scores_ifs[hour].append(mae_score_ifs)
+
         crps_mean = np.mean(crps_scores_model[hour])
         losses = [("CRPS", crps_mean)]
         progbar.add(1, values=losses)
 
-with open(lead_time_fname_model, 'wb') as handle:
-    pickle.dump(crps_scores_model, handle)
-    
-with open(lead_time_fname_ecpoint, 'wb') as handle:
-    pickle.dump(crps_scores_ecpoint, handle)
+for fn in files_to_save:
+    label = fn.split()[-1]
+    if label == 'model' or 'ecpoint':
+        label = 'crps_scores_' + label
+    elif label == 'ifs':
+        label == 'mae_scores_' + label
+    with open(fn, 'wb') as handle:
+        pickle.dump(label, handle)
