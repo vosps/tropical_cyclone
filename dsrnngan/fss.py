@@ -82,7 +82,7 @@ def plot_fss_curves(*,
     if mode == 'det':
         ensemble_members = 1  # in this case, only used for printing
 
-    precip_values = np.array([0.5, 2.0, 5.0])
+    precip_values = np.array([0.1, 0.5, 2.0, 5.0])
     spatial_scales = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512]
 
     # initialise model
@@ -169,14 +169,15 @@ def plot_fss_curves(*,
             if model_number in model_numbers:
                 # GAN, not ecPoint
                 inputs, outputs = next(data_pred_iter)
+                # need to denormalise
+                if predict_full_image:
+                    im_real = data.denormalise(outputs['output']).astype(np.single)  # shape: batch_size x H x W
+                else:
+                    im_real = (data.denormalise(outputs['output'])[..., 0]).astype(np.single)
             else:
-                # ecPoint
+                # ecPoint, no need to denormalise
                 inputs, outputs = next(data_benchmarks_iter)
-
-            if predict_full_image:
-                im_real = data.denormalise(outputs['output']).astype(np.single)  # shape: batch_size x H x W
-            else:
-                im_real = (data.denormalise(outputs['output'])[..., 0]).astype(np.single)
+                im_real = outputs['output'].astype(np.single)  # shape: batch_size x H x W
 
             if model_number in model_numbers:
                 # get GAN predictions
