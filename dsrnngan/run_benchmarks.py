@@ -1,7 +1,6 @@
 import argparse
 import os
 import gc
-import time
 from data import get_dates
 from data_generator_ifs import DataGenerator as DataGeneratorFull
 import ecpoint
@@ -16,6 +15,8 @@ parser.add_argument('--log_folder', type=str,
                     help="directory to store results")
 parser.add_argument('--predict_year', type=int,
                     help="year to predict on", default=2019)
+parser.add_argument('--ensemble_members', type=int,
+                    help="number of ensemble members", default=100)
 parser.add_argument('--num_batches', type=int,
                     help="number of images to predict on", default=256)
 parser.set_defaults(max_pooling=False)
@@ -45,6 +46,7 @@ parser.add_argument('--avg_pooling', dest='avg_pooling', action='store_true',
 args = parser.parse_args()
 
 predict_year = args.predict_year
+ensemble_members = args.ensemble_members
 num_batches = args.num_batches
 log_folder = args.log_folder
 batch_size = 1 # memory issues
@@ -68,7 +70,9 @@ if args.include_Lanczos:
 if args.include_RainFARM:
     benchmark_methods.append('rainfarm')
 if args.include_ecPoint:
-    benchmark_methods.append('ecpoint')
+    benchmark_methods.append('ecpoint_no-corr')
+    benchmark_methods.append('ecpoint_part-corr')
+    benchmark_methods.append('ecpoint_full-corr')
 if args.include_ecPoint_mean:
     benchmark_methods.append('ecpoint_mean')
 if args.include_constant:
@@ -110,18 +114,28 @@ for benchmark in benchmark_methods:
         sample_truth = np.expand_dims(outp['output'], axis=-1)
         if benchmark == 'lanczos':
             sample_benchmark = benchmarks.lanczosmodel(inp['lo_res_inputs'][...,1])
-        elif benchmark == 'rainfarm':
+        elif benchmark == 'rainfarm': # this has ens=100 every time
             sample_benchmark = benchmarks.rainfarmensemble(inp['lo_res_inputs'][...,1])
-        elif benchmark == 'ecpoint':
-            sample_benchmark = benchmarks.ecpointPDFmodel(inp['lo_res_inputs'])
-        elif benchmark == 'ecpoint_mean':
-            sample_benchmark = np.mean(benchmarks.ecpointPDFmodel(inp['lo_res_inputs']),axis=-1)
+        elif benchmark == 'ecpoint_no-corr': # pred_ensemble will be batch_size x H x W x ens
+            sample_benchmark = benchmarks.ecpointmodel(inp['lo_res_inputs'],
+                                                       ensemble_size=ensemble_members,
+                                                       data_format="channels_last")
+        elif benchmark == 'ecpoint_part-corr':
+            sample_benchmark = benchmarks.ecpointboxensmodel(inp['lo_res_inputs'],
+                                                             ensemble_size=ensemble_members,
+                                                             data_format="channels_last")
+        elif benchmark == 'ecpoint_full-corr': # this has ens=100 every time
+            sample_benchmark = benchmarks.ecpointPDFmodel(inp['lo_res_inputs'],
+                                                          data_format="channels_last")
+        elif benchmark == 'ecpoint_mean': # this has ens=100 every time
+            sample_benchmark = np.mean(benchmarks.ecpointPDFmodel(inp['lo_res_inputs'],
+                                                                  data_format="channels_last"), axis=-1)
         elif benchmark == 'constant':
             sample_benchmark = benchmarks.constantupscalemodel(inp['lo_res_inputs'][...,1])
         elif benchmark == 'zeros':
             sample_benchmark = benchmarks.zerosmodel(inp['lo_res_inputs'][...,1])
 
-        if benchmark in ['rainfarm', 'ecpoint']:
+        if benchmark in ['rainfarm', 'ecpoint_no-corr', 'ecpoint_part-corr', 'ecpoint_full-corr']:
             # these benchmarks produce an ensemble of samples
             for method in pooling_methods:
                 if method == 'no_pooling':
