@@ -74,8 +74,6 @@ lead_time_fname_model = os.path.join(log_folder, "model-lead-time-4.pickle")
 lead_time_fname_ecpoint = os.path.join(log_folder, "ecpoint-lead-time-4.pickle")
 lead_time_fname_ifs = os.path.join(log_folder, "ifs-lead-time.pickle")
 
-files_to_save = [lead_time_fname_model, lead_time_fname_ecpoint, lead_time_fname_ifs]
-
 ## initialise model
 model = setup_model(mode=mode,
                     arch=arch,
@@ -204,11 +202,11 @@ for hour in range(args.start_time, args.stop_time+1):
         losses = [("CRPS", crps_mean)]
         progbar.add(1, values=losses)
 
-for fn in files_to_save:
-    label = fn.split()[-1]
-    if label == 'model' or 'ecpoint':
-        label = 'crps_scores_' + label
-    elif label == 'ifs':
-        label == 'mae_scores_' + label
-    with open(fn, 'wb') as handle:
-        pickle.dump(label, handle)
+with open(lead_time_fname_model, 'wb') as handle:
+    pickle.dump(crps_scores_model, handle)
+
+with open(lead_time_fname_ecpoint, 'wb') as handle:
+    pickle.dump(crps_scores_ecpoint, handle)
+
+with open(lead_time_fname_ifs, 'wb') as handle:
+    pickle.dump(mae_scores_ifs, handle)
