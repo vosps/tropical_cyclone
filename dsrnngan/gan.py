@@ -102,7 +102,10 @@ class WGANGP(object):
                                          outputs=full_gen_out, 
                                          name='gen_trainer')
             elif self.mode == 'VAEGAN':
-                self.gen_trainer = VAE_trainer(self.gen, self.disc, self.kl_weight)
+                self.gen_trainer = VAE_trainer(self.gen, self.disc,
+                                               self.kl_weight,
+                                               self.ensemble_size,
+                                               self.content_loss_weight)
 
         # Create discriminator training network
         with Nontrainable(self.gen):
@@ -117,7 +120,7 @@ class WGANGP(object):
             elif self.mode == 'VAEGAN':
                 encoder_in = cond_in + const_in
                 (encoder_mean, encoder_log_var) = self.gen.encoder(encoder_in)
-                decoder_in = [encoder_mean,encoder_log_var,noise_in,const_in]
+                decoder_in = [encoder_mean, encoder_log_var, noise_in, const_in]
                 disc_in_fake = self.gen.decoder(decoder_in) 
             disc_in_avg = RandomWeightedAverage()([disc_in_real, disc_in_fake])
             disc_out_real = self.disc(cond_in + const_in + [disc_in_real])
@@ -180,6 +183,10 @@ class WGANGP(object):
 
         batch_gen_iter = iter(batch_gen)
 
+        if self.mode == 'VAEGAN':
+            for tracker in self.gen_trainer.metrics:
+                tracker.reset_states()
+
         for k in range(num_gen_batches):
         
             # train discriminator
@@ -205,21 +212,23 @@ class WGANGP(object):
 
             with Nontrainable(self.disc):
                 (cond, const, sample) = batch_gen_iter.get_next()
+                condconst = [cond, const]
+                if self.ensemble_size is None:
+                    gt_outputs = [gen_target]
+                    noise_list = [noise_gen()]
+                else:
+                    noise_list = [noise_gen()
+                                  for ii in range(self.ensemble_size + 1)]
+                    gt_outputs = [gen_target, sample]
+                gt_inputs = condconst + noise_list
+
                 if self.mode == 'GAN':
-                    condconst = [cond, const]
-                    if self.ensemble_size is None:
-                        gt_outputs = [gen_target]
-                        noise_list = [noise_gen()]
-                    else:
-                        noise_list = [noise_gen()
-                                      for ii in range(self.ensemble_size + 1)]
-                        gt_outputs = [gen_target, sample]
-                    gt_inputs = condconst + noise_list
                     gen_loss = self.gen_trainer.train_on_batch(
                         gt_inputs, gt_outputs)
                 elif self.mode == 'VAEGAN':
                     gen_loss = self.gen_trainer.train_step(
-                        [[cond,const,noise_gen()], gen_target])
+                        [gt_inputs, gt_outputs])
+
                 gen_loss = ensure_list(gen_loss)
                 del sample, cond, const
 
@@ -253,6 +262,8 @@ class WGANGP(object):
                 loss_log["gen_loss_total"] = gen_loss[0].numpy()
                 loss_log["gen_loss_disc"] = gen_loss[1].numpy()
                 loss_log["gen_loss_kl"] = gen_loss[2].numpy()
+                if self.ensemble_size is not None:
+                    loss_log["gen_loss_ct"] = gen_loss[3].numpy()
             gc.collect()
 
         return loss_log
