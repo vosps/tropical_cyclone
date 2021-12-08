@@ -23,6 +23,10 @@ parser.add_argument('--start_time', type=int,
                     help="lead time to start at", default='1')
 parser.add_argument('--stop_time', type=int, 
                     help="lead time to stop at", default='72')
+parser.add_argument('--stride', type=int,
+                    help="time stride", default='1')
+parser.add_argument('--name', type=str,
+                    help="name suffix for file save", default='1')
 parser.add_argument('--model_number', type=str, 
                     help="model number for GAN", default='0147200')
 args = parser.parse_args()
@@ -64,15 +68,17 @@ input_channels = 9
 eval_year = 2020 # only 2020 data is available
 all_ifs_fields = ['tp','cp' ,'sp' ,'tisr','cape','tclw','tcwv','u700','v700']
 denormalise_data = True
+start_times = ['00', '12']
+
 if mode == "det":
     rank_samples = 1  # can't generate an ensemble deterministically
 
 ## where to find model weights
 weights_fn = os.path.join(log_folder, 'models', 'gen_weights-{}.h5'.format(args.model_number))
 ## where to save results
-lead_time_fname_model = os.path.join(log_folder, "model-lead-time-4.pickle")
-lead_time_fname_ecpoint = os.path.join(log_folder, "ecpoint-lead-time-4.pickle")
-lead_time_fname_ifs = os.path.join(log_folder, "ifs-lead-time.pickle")
+lead_time_fname_model = os.path.join(log_folder, "model-lead-time-{}.pickle".format(args.name))
+lead_time_fname_ecpoint = os.path.join(log_folder, "ecpoint-lead-time-{}.pickle".format(args.name))
+lead_time_fname_ifs = os.path.join(log_folder, "ifs-lead-time-{}.pickle".format(args.name))
 
 ## initialise model
 model = setup_model(mode=mode,
@@ -91,87 +97,89 @@ crps_scores_model = {}
 crps_scores_ecpoint = {}
 mae_scores_ifs = {}
 
-for hour in range(args.start_time, args.stop_time+1):
-    print(f"calculating for hour {hour} of {args.stop_time}")
-    random_seed = int(np.random.rand(1)*1e4) # different random seed for each hour
-    print(f"random_seed is {random_seed}")
-    # load data generators for this hour
-    data_gen = DataGenerator(year=eval_year,
-                             lead_time=hour,
-                             ifs_fields=all_ifs_fields,
-                             batch_size=batch_size,
-                             log_precip=True,
-                             crop=True,
-                             shuffle=True,
-                             constants=True,
-                             hour='random',
-                             ifs_norm=True,
-                             downsample=downsample,
-                             seed=random_seed)
+for start_time in start_times:
+    for hour in range(args.start_time, args.stop_time+1, args.stride):
+        print(f"calculating for hour {hour} of {args.stop_time}")
+        random_seed = int(np.random.rand(1)*1e4) # different random seed for each hour
+        print(f"random_seed is {random_seed}")
+        # load data generators for this hour
+        data_gen = DataGenerator(year=eval_year,
+                                 lead_time=hour,
+                                 ifs_fields=all_ifs_fields,
+                                 batch_size=batch_size,
+                                 log_precip=True,
+                                 crop=True,
+                                 shuffle=True,
+                                 constants=True,
+                                 hour='random',
+                                 ifs_norm=True,
+                                 downsample=downsample,
+                                 seed=random_seed
+                                 start_times=start_time)
 
-    data_gen_iter = iter(data_gen)
-    
-    data_benchmarks = DataGenerator(year=eval_year,
-                                    lead_time=hour,
-                                    ifs_fields=ecpoint.ifs_fields,
-                                    batch_size=batch_size,
-                                    log_precip=False,
-                                    crop=True,
-                                    shuffle=True,
-                                    constants=True,
-                                    hour='random',
-                                    ifs_norm=False,
-                                    seed=random_seed)
-    
-    data_benchmarks_iter = iter(data_benchmarks)
-    
-    # Initialize progbar and batch counter
-    progbar = generic_utils.Progbar(num_batches)
-    
-    for k in range(num_batches):
-        # retrieve model data
-        inputs, outputs = next(data_gen_iter)
-        cond = inputs['lo_res_inputs']
-        const = inputs['hi_res_inputs']
-        sample_truth = outputs['output'] # NWH
-        sample_ifs = inputs['lo_res_inputs'][...,0] # first field is total precip [NWH]
-        if denormalise_data:
-            sample_truth = data.denormalise(sample_truth)
-            sample_ifs = data.denormalise(sample_ifs)
+        data_gen_iter = iter(data_gen)
         
-        # retrieve ecpoint data
-        inp_benchmarks, outp_benchmarks = next(data_benchmarks_iter)
-        ecpoint_sample = benchmarks.ecpointmodel(inp_benchmarks['lo_res_inputs'], ensemble_size=rank_samples)
-        ecpoint_truth = outp_benchmarks['output']
-                    
-        # generate predictions, depending on model type
-        samples_gen = []
-        if mode == "GAN":
-            noise_shape = np.array(cond)[0, ..., 0].shape + (noise_channels,)
-            noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size)
-            for i in range(rank_samples):
-                nn = noise_gen()
-                sample_gen = gen.predict([cond, const, nn])
-                samples_gen.append(sample_gen.astype("float32"))
-        elif mode == "det":
-            sample_gen = gen.predict([cond, const])
-            samples_gen.append(sample_gen.astype("float32"))
-        elif mode == 'VAEGAN':
-            # call encoder once
-            (mean, logvar) = gen.encoder([cond, const])
-            noise_shape = np.array(cond)[0, ..., 0].shape + (latent_variables,)
-            noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size)
-            for i in range(rank_samples):
-                nn = noise_gen()
-                # generate ensemble of preds with decoder
-                sample_gen = gen.decoder.predict([mean, logvar, nn, const])
-                samples_gen.append(sample_gen.astype("float32"))
-        for ii in range(len(samples_gen)):
-            sample_gen = np.squeeze(samples_gen[ii], axis=-1) # squeeze out trival dim
-            #sample_gen shape should be [n, h, w] e.g. [1, 940, 940]
+        data_benchmarks = DataGenerator(year=eval_year,
+                                        lead_time=hour,
+                                        ifs_fields=ecpoint.ifs_fields,
+                                        batch_size=batch_size,
+                                        log_precip=False,
+                                        crop=True,
+                                        shuffle=True,
+                                        constants=True,
+                                        hour='random',
+                                        ifs_norm=False,
+                                        seed=random_seed)
+    
+        data_benchmarks_iter = iter(data_benchmarks)
+    
+        # Initialize progbar and batch counter
+        progbar = generic_utils.Progbar(num_batches)
+        
+        for k in range(num_batches):
+            # retrieve model data
+            inputs, outputs = next(data_gen_iter)
+            cond = inputs['lo_res_inputs']
+            const = inputs['hi_res_inputs']
+            sample_truth = outputs['output'] # NWH
+            sample_ifs = inputs['lo_res_inputs'][...,0] # first field is total precip [NWH]
             if denormalise_data:
-                sample_gen = data.denormalise(sample_gen)
-            samples_gen[ii] = sample_gen
+                sample_truth = data.denormalise(sample_truth)
+                sample_ifs = data.denormalise(sample_ifs)
+        
+            # retrieve ecpoint data
+            inp_benchmarks, outp_benchmarks = next(data_benchmarks_iter)
+            ecpoint_sample = benchmarks.ecpointmodel(inp_benchmarks['lo_res_inputs'], ensemble_size=rank_samples)
+            ecpoint_truth = outp_benchmarks['output']
+                    
+            # generate predictions, depending on model type
+            samples_gen = []
+            if mode == "GAN":
+                noise_shape = np.array(cond)[0, ..., 0].shape + (noise_channels,)
+                noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size)
+                for i in range(rank_samples):
+                    nn = noise_gen()
+                    sample_gen = gen.predict([cond, const, nn])
+                    samples_gen.append(sample_gen.astype("float32"))
+            elif mode == "det":
+                sample_gen = gen.predict([cond, const])
+                samples_gen.append(sample_gen.astype("float32"))
+            elif mode == 'VAEGAN':
+                # call encoder once
+                (mean, logvar) = gen.encoder([cond, const])
+                noise_shape = np.array(cond)[0, ..., 0].shape + (latent_variables,)
+                noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size)
+                for i in range(rank_samples):
+                    nn = noise_gen()
+                    # generate ensemble of preds with decoder
+                    sample_gen = gen.decoder.predict([mean, logvar, nn, const])
+                    samples_gen.append(sample_gen.astype("float32"))
+                for ii in range(len(samples_gen)):
+                    sample_gen = np.squeeze(samples_gen[ii], axis=-1) # squeeze out trival dim
+                    #sample_gen shape should be [n, h, w] e.g. [1, 940, 940]
+                    if denormalise_data:
+                        sample_gen = data.denormalise(sample_gen)
+                    samples_gen[ii] = sample_gen
         # turn list into array
         samples_gen = np.stack(samples_gen, axis=-1) #shape of samples_gen is [n, h, w, c] e.g. [1, 940, 940, 10]
         
