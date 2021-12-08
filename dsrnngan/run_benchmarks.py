@@ -90,8 +90,8 @@ if args.avg_pooling:
     pooling_methods.append('avg_16')
     pooling_methods.append('avg_10_no_overlap')
 
-log_line(log_fname, "Number of samples {}".format(num_batches))
-log_line(log_fname, "Evaluation year {}".format(predict_year))
+#log_line(log_fname, "Number of samples {}".format(num_batches))
+#log_line(log_fname, "Evaluation year {}".format(predict_year))
 log_line(log_fname, "Model CRPS CRPS_max_4 CRPS_max_16 CRPS_max_10_no_overlap CRPS_avg_4 CRPS_avg_16 CRPS_avg_10_no_overlap RMSE MAE RAPSD")
 
 sample_crps = {}
