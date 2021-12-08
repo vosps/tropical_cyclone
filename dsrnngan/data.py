@@ -8,6 +8,7 @@ import xarray as xr
 # from dask.array.chunk import coarsen
 from datetime import datetime, timedelta
 import pandas as pd
+from meta import ensure_list
 
 ERA_PATH = '/ppdata/ERA5/'
 NIMROD_PATH = '/ppdata/NIMROD/'
@@ -601,7 +602,7 @@ def get_long_dates(year,lead_time,
                  ):
     global IFS_PATH
     IFS_PATH = '/ppdata/IFSLong/'
-
+    start_times = ensure_list(start_times) # otherwise if you have start_times='00' start_hour will be '0'
     date = datetime(year,1,1)
     dt = timedelta(days=1)
     final_date = datetime(year+1,1,1)
