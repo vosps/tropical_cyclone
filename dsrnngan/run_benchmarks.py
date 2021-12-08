@@ -50,7 +50,7 @@ ensemble_members = args.ensemble_members
 num_batches = args.num_batches
 log_folder = args.log_folder
 batch_size = 1 # memory issues
-log_fname = os.path.join(log_folder, "benchmarks.txt")
+log_fname = os.path.join(log_folder, "benchmarks_{}.txt".format(predict_year))
 
 # setup data
 dates=get_dates(predict_year)
