@@ -100,9 +100,10 @@ crps_scores_model = {}
 crps_scores_ecpoint = {}
 mae_scores_ifs = {}
 
-for start_time in start_times:
+for forecast_hour in start_times:
     for hour in range(args.start_time, args.stop_time+1):
         print(f"calculating for hour {hour} of {args.stop_time}")
+        print(f"forecast start hour is {forecast_hour}")
         random_seed = int(np.random.rand(1)*1e4) # different random seed for each hour
         print(f"random_seed is {random_seed}")
         # load data generators for this hour
@@ -118,7 +119,7 @@ for start_time in start_times:
                                  ifs_norm=True,
                                  downsample=downsample,
                                  seed=random_seed,
-                                 start_times=start_time)
+                                 start_times=forecast_hour)
     
         data_gen_iter = iter(data_gen)
         
@@ -133,7 +134,7 @@ for start_time in start_times:
                                         hour='random',
                                         ifs_norm=False,
                                         seed=random_seed,
-                                        start_times=start_time)
+                                        start_times=forecast_hour)
         
         data_benchmarks_iter = iter(data_benchmarks)
         
@@ -214,11 +215,11 @@ for start_time in start_times:
             losses = [("CRPS", crps_mean)]
             progbar.add(1, values=losses)
             
-    if start_time == '00':
+    if forecast_hour == '00':
         lead_time_fname_model = lead_time_fname_model_00
         lead_time_fname_ecpoint = lead_time_fname_ecpoint_00
         lead_time_fname_ifs = lead_time_fname_ifs_00
-    elif start_time == '12':
+    elif forecast_hour == '12':
         lead_time_fname_model = lead_time_fname_model_12
         lead_time_fname_ecpoint = lead_time_fname_ecpoint_12
         lead_time_fname_ifs = lead_time_fname_ifs_12
