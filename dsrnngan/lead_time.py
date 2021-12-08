@@ -76,9 +76,12 @@ if mode == "det":
 ## where to find model weights
 weights_fn = os.path.join(log_folder, 'models', 'gen_weights-{}.h5'.format(args.model_number))
 ## where to save results
-lead_time_fname_model = os.path.join(log_folder, "model-lead-time-{}.pickle".format(args.name))
-lead_time_fname_ecpoint = os.path.join(log_folder, "ecpoint-lead-time-{}.pickle".format(args.name))
-lead_time_fname_ifs = os.path.join(log_folder, "ifs-lead-time-{}.pickle".format(args.name))
+lead_time_fname_model_00 = os.path.join(log_folder, "model-lead-time-{}-00.pickle".format(args.name))
+lead_time_fname_ecpoint_00 = os.path.join(log_folder, "ecpoint-lead-time-{}-00.pickle".format(args.name))
+lead_time_fname_ifs_00 = os.path.join(log_folder, "ifs-lead-time-{}-00.pickle".format(args.name))
+lead_time_fname_model_12 = os.path.join(log_folder, "model-lead-time-{}-12.pickle".format(args.name))
+lead_time_fname_ecpoint_12 = os.path.join(log_folder, "ecpoint-lead-time-{}-12.pickle".format(args.name))
+lead_time_fname_ifs_12 = os.path.join(log_folder, "ifs-lead-time-{}-12.pickle".format(args.name))
 
 ## initialise model
 model = setup_model(mode=mode,
@@ -98,7 +101,7 @@ crps_scores_ecpoint = {}
 mae_scores_ifs = {}
 
 for start_time in start_times:
-    for hour in range(args.start_time, args.stop_time+1, args.stride):
+    for hour in range(args.start_time, args.stop_time+1):
         print(f"calculating for hour {hour} of {args.stop_time}")
         random_seed = int(np.random.rand(1)*1e4) # different random seed for each hour
         print(f"random_seed is {random_seed}")
@@ -114,9 +117,9 @@ for start_time in start_times:
                                  hour='random',
                                  ifs_norm=True,
                                  downsample=downsample,
-                                 seed=random_seed
+                                 seed=random_seed,
                                  start_times=start_time)
-
+    
         data_gen_iter = iter(data_gen)
         
         data_benchmarks = DataGenerator(year=eval_year,
@@ -129,10 +132,11 @@ for start_time in start_times:
                                         constants=True,
                                         hour='random',
                                         ifs_norm=False,
-                                        seed=random_seed)
-    
+                                        seed=random_seed,
+                                        start_times=start_time)
+        
         data_benchmarks_iter = iter(data_benchmarks)
-    
+        
         # Initialize progbar and batch counter
         progbar = generic_utils.Progbar(num_batches)
         
@@ -146,12 +150,12 @@ for start_time in start_times:
             if denormalise_data:
                 sample_truth = data.denormalise(sample_truth)
                 sample_ifs = data.denormalise(sample_ifs)
-        
+            
             # retrieve ecpoint data
             inp_benchmarks, outp_benchmarks = next(data_benchmarks_iter)
             ecpoint_sample = benchmarks.ecpointmodel(inp_benchmarks['lo_res_inputs'], ensemble_size=rank_samples)
             ecpoint_truth = outp_benchmarks['output']
-                    
+                        
             # generate predictions, depending on model type
             samples_gen = []
             if mode == "GAN":
@@ -174,47 +178,56 @@ for start_time in start_times:
                     # generate ensemble of preds with decoder
                     sample_gen = gen.decoder.predict([mean, logvar, nn, const])
                     samples_gen.append(sample_gen.astype("float32"))
-                for ii in range(len(samples_gen)):
-                    sample_gen = np.squeeze(samples_gen[ii], axis=-1) # squeeze out trival dim
-                    #sample_gen shape should be [n, h, w] e.g. [1, 940, 940]
-                    if denormalise_data:
-                        sample_gen = data.denormalise(sample_gen)
-                    samples_gen[ii] = sample_gen
-        # turn list into array
-        samples_gen = np.stack(samples_gen, axis=-1) #shape of samples_gen is [n, h, w, c] e.g. [1, 940, 940, 10]
+            for ii in range(len(samples_gen)):
+                sample_gen = np.squeeze(samples_gen[ii], axis=-1) # squeeze out trival dim
+                #sample_gen shape should be [n, h, w] e.g. [1, 940, 940]
+                if denormalise_data:
+                    sample_gen = data.denormalise(sample_gen)
+                samples_gen[ii] = sample_gen
+            # turn list into array
+            samples_gen = np.stack(samples_gen, axis=-1) #shape of samples_gen is [n, h, w, c] e.g. [1, 940, 940, 10]
+            
+            # calculate MAE for IFS pred                                                                                                           
+            sample_ifs = np.repeat(sample_ifs, 10, axis=1)
+            sample_ifs = np.repeat(sample_ifs, 10, axis=2)
+            mae_score_ifs = np.abs(sample_truth - sample_ifs).mean(axis=(1,2))
+            del sample_ifs
+            gc.collect()
+    
+            # calculate CRPS score. Pooling not implemented here.     
+            # crps_ensemble expects truth dims [N, H, W], pred dims [N, H, W, C]
+            crps_score_model = crps.crps_ensemble(sample_truth, samples_gen).mean()
+            crps_score_ecpoint = crps.crps_ensemble(ecpoint_truth, ecpoint_sample).mean()
+            del sample_truth, samples_gen, ecpoint_truth, ecpoint_sample
+            gc.collect()
+    
+            # save results
+            if hour not in crps_scores_model.keys():
+                crps_scores_model[hour] = []
+                crps_scores_ecpoint[hour] = []
+                mae_scores_ifs[hour] = []
+            crps_scores_model[hour].append(crps_score_model)
+            crps_scores_ecpoint[hour].append(crps_score_ecpoint)
+            mae_scores_ifs[hour].append(mae_score_ifs)
+    
+            crps_mean = np.mean(crps_scores_model[hour])
+            losses = [("CRPS", crps_mean)]
+            progbar.add(1, values=losses)
+            
+    if start_time == '00':
+        lead_time_fname_model = lead_time_fname_model_00
+        lead_time_fname_ecpoint = lead_time_fname_ecpoint_00
+        lead_time_fname_ifs = lead_time_fname_ifs_00
+    elif start_time == '12':
+        lead_time_fname_model = lead_time_fname_model_12
+        lead_time_fname_ecpoint = lead_time_fname_ecpoint_12
+        lead_time_fname_ifs = lead_time_fname_ifs_12
         
-        # calculate MAE for IFS pred                                                                                                           
-        sample_ifs = np.repeat(sample_ifs, 10, axis=1)
-        sample_ifs = np.repeat(sample_ifs, 10, axis=2)
-        mae_score_ifs = np.abs(sample_truth - sample_ifs).mean(axis=(1,2))
-        del sample_ifs
-        gc.collect()
-
-        # calculate CRPS score. Pooling not implemented here.     
-        # crps_ensemble expects truth dims [N, H, W], pred dims [N, H, W, C]
-        crps_score_model = crps.crps_ensemble(sample_truth, samples_gen).mean()
-        crps_score_ecpoint = crps.crps_ensemble(ecpoint_truth, ecpoint_sample).mean()
-        del sample_truth, samples_gen, ecpoint_truth, ecpoint_sample
-        gc.collect()
-
-        # save results
-        if hour not in crps_scores_model.keys():
-            crps_scores_model[hour] = []
-            crps_scores_ecpoint[hour] = []
-            mae_scores_ifs[hour] = []
-        crps_scores_model[hour].append(crps_score_model)
-        crps_scores_ecpoint[hour].append(crps_score_ecpoint)
-        mae_scores_ifs[hour].append(mae_score_ifs)
-
-        crps_mean = np.mean(crps_scores_model[hour])
-        losses = [("CRPS", crps_mean)]
-        progbar.add(1, values=losses)
-
-with open(lead_time_fname_model, 'wb') as handle:
-    pickle.dump(crps_scores_model, handle)
-
-with open(lead_time_fname_ecpoint, 'wb') as handle:
-    pickle.dump(crps_scores_ecpoint, handle)
-
-with open(lead_time_fname_ifs, 'wb') as handle:
-    pickle.dump(mae_scores_ifs, handle)
+    with open(lead_time_fname_model, 'wb') as handle:
+        pickle.dump(crps_scores_model, handle)
+    
+    with open(lead_time_fname_ecpoint, 'wb') as handle:
+        pickle.dump(crps_scores_ecpoint, handle)
+    
+    with open(lead_time_fname_ifs, 'wb') as handle:
+        pickle.dump(mae_scores_ifs, handle)
