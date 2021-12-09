@@ -228,14 +228,30 @@ def load_era_nimrod(nimrodfile=None, date=None, era_fields=['pr', 'prc'], hour=0
         load_nimrod(date, hour, log_precip=log_precip)
 
 
-def load_hires_constants(batch_size=1, crop=False):
+def load_hires_constants(batch_size=1, crop=False,
+                         new_oro = False
+                     ):
     df = xr.load_dataset('/ppdata/constants/hgj2_constants_0.01_degree.nc')
-    # Should rewrite this file to have increasing latitudes
-    z = np.array(df['Z'])[:, ::-1, :]
-    # Normalise orography by max
-    z = z/z.max()
     # LSM is already 0:1
     lsm = np.array(df['LSM'])[:, ::-1, :]
+    if new_oro:
+        df = xr.load_dataset('/ppdata/constants/topo_local_0.01.nc')
+        # Should rewrite this file to have increasing latitudes
+        z = df['z'].data
+        z = z[:,::-1, :]
+        z[z<5] = 5
+        # Normalise orography by max
+        z = z/z.max()        
+    else:
+        # Should rewrite this file to have increasing latitudes
+        z = df['Z'].data
+        z = z[:,::-1, :]
+        # z = np.array(df['Z'])[:, ::-1, :]
+        # Normalise orography by max
+        z = z/z.max()
+
+    df.close()
+    print(z.shape,lsm.shape)
     if crop:
         lsm = lsm[..., 5:-6, 5:-6]
         z = z[..., 5:-6, 5:-6]
