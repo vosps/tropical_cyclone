@@ -229,7 +229,7 @@ def load_era_nimrod(nimrodfile=None, date=None, era_fields=['pr', 'prc'], hour=0
 
 
 def load_hires_constants(batch_size=1, crop=False,
-                         new_oro = False
+                         new_oro = True
                      ):
     df = xr.load_dataset('/ppdata/constants/hgj2_constants_0.01_degree.nc')
     # LSM is already 0:1
