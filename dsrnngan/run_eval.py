@@ -6,8 +6,8 @@ import evaluation
 import plots
 
 # input parameters
-log_folder = '/ppdata/lucy-cGAN/logs/IFS/GAN/weights_natural'
-val_years = 2019
+log_folder = '/ppdata/andrew-output/VAEGAN-CL20fc-kl5lv10-neworog'
+val_years = 2020
 load_full_image = True
 
 model_weights_root = os.path.join(log_folder, "models")
@@ -20,26 +20,22 @@ with open(config_path, 'r') as f:
 
 mode = setup_params["GENERAL"]["mode"]
 arch = setup_params["MODEL"]["architecture"]
-padding = setup_params["MODEL"]["architecture"]
-batch_size = setup_params["TRAIN"]["batch_size"]
-steps_per_checkpoint = setup_params["TRAIN"]["steps_per_checkpoint"]
+padding = setup_params["MODEL"]["padding"]
+batch_size = 1 # setup_params["TRAIN"]["batch_size"]
+# steps_per_checkpoint = setup_params["TRAIN"]["steps_per_checkpoint"]
 problem_type = setup_params["GENERAL"]["problem_type"]
 filters_gen = setup_params["GENERATOR"]["filters_gen"]
 noise_channels = setup_params["GENERATOR"]["noise_channels"]
 latent_variables = setup_params["GENERATOR"]["latent_variables"]
 filters_disc = setup_params["DISCRIMINATOR"]["filters_disc"]
-num_batches = setup_params["EVAL"]["num_batches"]
+num_batches = 512  # setup_params["EVAL"]["num_batches"]
 add_noise = setup_params["EVAL"]["add_postprocessing_noise"]
 noise_factor = setup_params["EVAL"]["postprocessing_noise_factor"]
 noise_factor = float(noise_factor)
+max_pooling = setup_params["EVAL"]["max_pooling"]
+avg_pooling = setup_params["EVAL"]["avg_pooling"]
 
-##eval-short
-interval = steps_per_checkpoint * batch_size
-#model_numbers = [37*interval, 38*interval, 39*interval, 40*interval,
-                #59*interval, 
-model_numbers = [60*interval, 61*interval, 62*interval, 75*interval, 
-                 76*interval, 77*interval, 78*interval,
-                 97*interval, 98*interval, 99*interval, 100*interval]
+model_numbers = [160000]
 
 if problem_type == 'normal':
     input_channels = 9 
@@ -83,4 +79,6 @@ evaluation.rank_metrics_by_time(mode=mode,
                                 latent_variables=latent_variables,
                                 noise_channels=noise_channels,
                                 padding=padding,
-                                rank_samples=rank_samples)
+                                rank_samples=rank_samples,
+                                max_pooling=max_pooling,
+                                avg_pooling=avg_pooling)
