@@ -1,0 +1,25 @@
+/var/spool/pbs/mom_priv/jobs/3679256.bp1.SC: line 4: 
+https://towardsdatascience.com/u-net-b229b32b4a71
+https://wandb.ai/lavanyashukla/visualize-predictions/reports/Visualize-Model-Predictions--Vmlldzo1NjM4OA
+: No such file or directory
+/var/spool/pbs/mom_priv/jobs/3679256.bp1.SC: line 5: import: command not found
+/var/spool/pbs/mom_priv/jobs/3679256.bp1.SC: line 6: import: command not found
+/var/spool/pbs/mom_priv/jobs/3679256.bp1.SC: line 7: from: command not found
+/var/spool/pbs/mom_priv/jobs/3679256.bp1.SC: line 8: from: command not found
+/var/spool/pbs/mom_priv/jobs/3679256.bp1.SC: line 9: from: command not found
+/var/spool/pbs/mom_priv/jobs/3679256.bp1.SC: line 10: import: command not found
+/var/spool/pbs/mom_priv/jobs/3679256.bp1.SC: line 11: import: command not found
+/var/spool/pbs/mom_priv/jobs/3679256.bp1.SC: line 12: import: command not found
+/var/spool/pbs/mom_priv/jobs/3679256.bp1.SC: line 13: from: command not found
+/var/spool/pbs/mom_priv/jobs/3679256.bp1.SC: line 15: import: command not found
+/var/spool/pbs/mom_priv/jobs/3679256.bp1.SC: line 17: import: command not found
+/var/spool/pbs/mom_priv/jobs/3679256.bp1.SC: line 18: from: command not found
+/var/spool/pbs/mom_priv/jobs/3679256.bp1.SC: line 19: from: command not found
+/var/spool/pbs/mom_priv/jobs/3679256.bp1.SC: line 20: from: command not found
+/var/spool/pbs/mom_priv/jobs/3679256.bp1.SC: line 21: from: command not found
+/var/spool/pbs/mom_priv/jobs/3679256.bp1.SC: line 22: import: command not found
+/var/spool/pbs/mom_priv/jobs/3679256.bp1.SC: line 23: import: command not found
+/var/spool/pbs/mom_priv/jobs/3679256.bp1.SC: line 24: import: command not found
+/var/spool/pbs/mom_priv/jobs/3679256.bp1.SC: line 25: import: command not found
+/var/spool/pbs/mom_priv/jobs/3679256.bp1.SC: line 26: syntax error near unexpected token `"white"'
+/var/spool/pbs/mom_priv/jobs/3679256.bp1.SC: line 26: `sns.set_style("white")'

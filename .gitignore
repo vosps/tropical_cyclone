@@ -1,0 +1,10 @@
+*.sh.*
+*.npy
+wandb
+*.out
+__pycache__
+archive
+figs
+logs*
+*.mp4
+*.png
