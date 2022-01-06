@@ -51,11 +51,11 @@ def plot_predictions(real,pred,inputs):
         
         fig, axes = plt.subplots(4, 3, figsize=(15, 20), sharey=True)
         range_ = (-5, 20)
-        c = axes[0,0].imshow(real[99], interpolation='nearest', norm=colors.Normalize(*range_), extent=None,cmap='Blues')
+        c = axes[0,0].imshow(real[102], interpolation='nearest', norm=colors.Normalize(*range_), extent=None,cmap='Blues')
         axes[0,0].set_title('Real')
-        axes[0,1].imshow(pred[99], interpolation='nearest',norm=colors.Normalize(*range_), extent=None,cmap='Blues')
+        axes[0,1].imshow(pred[102], interpolation='nearest',norm=colors.Normalize(*range_), extent=None,cmap='Blues')
         axes[0,1].set_title('Pred')
-        axes[0,2].imshow(regrid(inputs[99]), interpolation='nearest',norm=colors.Normalize(*range_), extent=None,cmap='Blues')
+        axes[0,2].imshow(regrid(inputs[102]), interpolation='nearest',norm=colors.Normalize(*range_), extent=None,cmap='Blues')
         axes[0,2].set_title('Input')
         # plt.colorbar(c)
         axes[1,0].imshow(real[260], interpolation='nearest',norm=colors.Normalize(*range_), extent=None,cmap='Blues')
@@ -174,7 +174,7 @@ if generate_tcs == True:
 else:
         tcs_y = np.load('/user/work/al18709/tc_data/y.npy')
 
-print(tcs_y.shape)
+print('tcs_y shape: ',tcs_y.shape)
 nstorms,_,_ = tcs_y.shape
 peaks = []
 for i in range(nstorms):
@@ -183,25 +183,23 @@ for i in range(nstorms):
         peaks.append(peak)
 
 
-
-filepaths = glob.glob('/bp1store/geog-tropical/data/Obs/IMERG/half_hourly/final/*.HDF5')
-filepaths = glob.glob('/bp1store/geog-tropical/data/Obs/MSWEP/3hourly/*.nc')
-
-# print(filepaths)
+# save the max peak
+# filepaths = glob.glob('/bp1store/geog-tropical/data/Obs/IMERG/half_hourly/final/*.HDF5')
+# filepaths = glob.glob('/bp1store/geog-tropical/data/Obs/MSWEP/3hourly_invertlat/*.nc')
 # max_peaks = []
 # for filepath in filepaths[0:5000]:
-#         # print(filepath)
 #         d = Dataset(filepath, 'r')
-#         # print(d.variables)
 #         data = d.variables['precipitation']
-#         # print(data)
 #         max_peak = np.max(np.array(data))
 #         max_peaks.append(max_peak)
 #         d.close()
         
-# np.save('/user/work/al18709/tc_data/max_peaks_mswep.npy',max_peaks)      
+# np.save('/user/work/al18709/tc_data/max_peaks_mswep.npy',max_peaks)
+# load the max  
 max_peaks = np.load('/user/work/al18709/tc_data/max_peaks_mswep.npy')
-max_peaks = max_peaks[max_peaks<=500.0] 
+max_peaks = max_peaks[max_peaks<=500.0]
+print(max_peaks)
+
 imerg = np.load('/user/work/al18709/tc_data/max_peaks.npy')
 
 # plot peak histograms

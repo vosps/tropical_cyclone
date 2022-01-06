@@ -57,12 +57,11 @@ def process_apply(x):
 def process_apply_mswep(x):
 	# define variables
 	
-	print('doing other process')
 	result = 1
 	filepath = x.loc['filepath_mswep']
 
 	# remove filepaths which relate to timestamps we don't have in MSWEP
-	if filepath[55:57] not in ['00','03','06','09','12','15','18','21']:
+	if filepath[65:67] not in ['00','03','06','09','12','15','18','21']:
 		result = 0
 
 	if result == 1:
@@ -130,21 +129,22 @@ def process_apply_mswep(x):
 			data = d.variables['precipitation'][0,lat_lower_bound:lat_upper_bound,lon_lower_bound:lon_upper_bound]
 			lat = lat[lat_lower_bound:lat_upper_bound]
 			lon = lon[lon_lower_bound:lon_upper_bound]
-
 			d.close()
-			print('data shape',data.shape)
+			print(len(lon))
+			print(len(lat))
+			if (len(lon) != 100) or (len(lat) != 100): # TODO: figure out why this happens
+				print('dimensions dont match')
+			else:
+				# precip = np.transpose(precip)
 			
-
-			# precip = np.transpose(precip)
-		
-			da = xr.DataArray(data, 
-							dims=("x", "y"), 
-							coords={"x": lon, "y": lat},
-							attrs=dict(description="Total Precipitation",units="mm"),
-							name = 'precipitation')
-			da.to_netcdf('/user/work/al18709/tropical_cyclones/mswep/' + str(name) + '_' + str(sid) + '_hour-' + str(time) + '_idx-' + str(i) + '_cat-' + str(int(cat))+ '.nc')
-			print('%s saved!' % filepath)
-			# TODO: flip lats
+				da = xr.DataArray(data, 
+								dims=("x", "y"), 
+								coords={"x": lon, "y": lat},
+								attrs=dict(description="Total Precipitation",units="mm"),
+								name = 'precipitation')
+				da.to_netcdf('/user/work/al18709/tropical_cyclones/mswep/' + str(name) + '_' + str(sid) + '_hour-' + str(time) + '_idx-' + str(i) + '_cat-' + str(int(cat))+ '.nc')
+				print('%s saved!' % filepath)
+				# TODO: flip lats
 	else:
 		print('%s not saved!' % filepath)
 
