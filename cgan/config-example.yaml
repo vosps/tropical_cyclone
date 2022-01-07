@@ -29,7 +29,7 @@ TRAIN:
     # steps_per_epoch: 200
     # batch_size: 16
     steps_per_epoch: 100
-    batch_size: 16
+    batch_size: 8
     kl_weight: 1e-8 # used for VAEGAN
 
 VAL:

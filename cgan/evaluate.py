@@ -82,6 +82,8 @@ def plot_histogram(ax,max_rains,colour,binwidth,alpha):
 	return sns.histplot(ax=ax,data=max_rains, stat="density",binwidth=binwidth, fill=True,color=colour,element='step',alpha=alpha)
 
 mode = 'validation'
+# mode = 'train'
+mode = 'extreme_valid'
 generate_tcs = False
 print(mode)
 print('generate TCs? ', generate_tcs)
@@ -89,6 +91,8 @@ real = np.load('/user/home/al18709/work/cgan_predictions/%s_real.npy' % mode)[0]
 pred = np.load('/user/home/al18709/work/cgan_predictions/%s_pred.npy' % mode)[0][:,:,:,0]
 inputs = np.load('/user/home/al18709/work/cgan_predictions/%s_input.npy' % mode)[0][:,:,:,0]
 
+print("mode = ",mode)
+print("number of storms: ", real.shape)
 # remove low rainfall
 # real[real<=0.1] = np.nan
 # pred[pred<=0.1] = np.nan
@@ -204,14 +208,14 @@ imerg = np.load('/user/work/al18709/tc_data/max_peaks.npy')
 
 # plot peak histograms
 fig, ax = plt.subplots()
-# plot_histogram(ax,peak_reals,'#b5a1e2',5,0.7)
-# plot_histogram(ax,peak_preds,'#dc98a8',5,0.5)
+plot_histogram(ax,peak_reals,'#b5a1e2',5,0.7)
+plot_histogram(ax,peak_preds,'#dc98a8',5,0.5)
 # plot_histogram(ax,peaks,'#85ceb5',5,0.5)
-plot_histogram(ax,imerg,'#80c2de',5,0.5)
-plot_histogram(ax,max_peaks,'#85ceb5',5,0.5)
+# plot_histogram(ax,imerg,'#80c2de',5,0.5)
+# plot_histogram(ax,max_peaks,'#85ceb5',5,0.5)
 ax.set_xlabel('Peak rainfall (mm)')
-# plt.legend(labels=['real','pred','imerg max','mswep max'])
-plt.legend(labels=['imerg','mswep'])
+plt.legend(labels=['real','pred'])
+# plt.legend(labels=['imerg','mswep'])
 plt.savefig('logs/histogram_peak_og_2_%s.png' % mode)
 ks_peak = stats.ks_2samp(peak_reals, peak_preds)
 print(ks_peak)

@@ -34,7 +34,7 @@ def generate_predictions(*,
     input_channels = 1
     noise_channels = 4
     batch_size = 16
-    num_images = 190
+    num_images = 150
     
 
     # initialise model
@@ -50,6 +50,8 @@ def generate_predictions(*,
     # load appropriate dataset 
     plot_label = 'small'
     mode = 'validation'
+    # mode = 'train'
+    # mode = 'extreme_valid'
     data_predict = create_fixed_dataset(predict_year,
                                         batch_size=batch_size,
                                         # downsample=downsample) #remove this to see if it works

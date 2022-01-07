@@ -79,6 +79,7 @@ def process_apply_mswep(x):
 			cat = x.loc['sshs']
 			time = x.loc['hour']
 			sid = x.loc['sid']
+			basin = x.loc['basin']
 			i = x[0]
 
 			# open file
@@ -96,7 +97,41 @@ def process_apply_mswep(x):
 			"""
 			if lat_lower_bound - lat_upper_bound != 100:
 				lat_lower_bound = lat_upper_bound + 100
+			"""
 
+			# if lon lower bound is over centre, splice
+			print('centre lon: ',centre_lon)
+			print('lower bound: ',lon_lower_bound)
+			print('upper bound: ',lon_upper_bound)
+			if centre_lon > 175: 
+				print('goes over centre')
+				diff = lon_upper_bound - lon_lower_bound
+				second_upper_bound = 100 - diff
+
+				data1 = d.variables['precipitation'][0,lat_lower_bound:lat_upper_bound,lon_lower_bound:lon_upper_bound]
+				data2 = d.variables['precipitation'][0,lat_lower_bound:lat_upper_bound,0:second_upper_bound]
+				lat = lat[lat_lower_bound:lat_upper_bound]
+				lon1 = lon[lon_lower_bound:lon_upper_bound]
+				lon2 = lon[0:second_upper_bound]
+				data = np.concatenate((data1,data2),axis=1)
+				lon = np.concatenate((lon1,lon2))
+			elif centre_lon < -175:
+				diff = lon_upper_bound - lon_lower_bound
+				second_upper_bound = 100 - diff
+				data1 = d.variables['precipitation'][0,lat_lower_bound:lat_upper_bound,-second_upper_bound:-1]
+				data2 = d.variables['precipitation'][0,lat_lower_bound:lat_upper_bound,lon_lower_bound:lon_upper_bound]
+				lat = lat[lat_lower_bound:lat_upper_bound]
+				lon1 = lon[-second_upper_bound:-1]
+				lon2 = lon[lon_lower_bound:lon_upper_bound]
+				
+				data = np.concatenate((data1,data2),axis=1)
+				lon = np.concatenate((lon1,lon2))
+			else:
+				data = d.variables['precipitation'][0,lat_lower_bound:lat_upper_bound,lon_lower_bound:lon_upper_bound]
+				lat = lat[lat_lower_bound:lat_upper_bound]
+				lon = lon[lon_lower_bound:lon_upper_bound]
+
+			"""
 			lon_upper_og = lon_upper_bound
 			if lon_upper_bound - lon_lower_bound != 100:
 				lon_upper_og = lon_upper_bound
@@ -126,14 +161,12 @@ def process_apply_mswep(x):
 			else:
 				lon = lon[lon_lower_bound:lon_upper_bound]"""
 			
-			data = d.variables['precipitation'][0,lat_lower_bound:lat_upper_bound,lon_lower_bound:lon_upper_bound]
-			lat = lat[lat_lower_bound:lat_upper_bound]
-			lon = lon[lon_lower_bound:lon_upper_bound]
+			
 			d.close()
 			print(len(lon))
 			print(len(lat))
 			if (len(lon) != 100) or (len(lat) != 100): # TODO: figure out why this happens
-				print('dimensions dont match')
+				print('dimensions do not match')
 			else:
 				# precip = np.transpose(precip)
 			
@@ -142,7 +175,7 @@ def process_apply_mswep(x):
 								coords={"x": lon, "y": lat},
 								attrs=dict(description="Total Precipitation",units="mm"),
 								name = 'precipitation')
-				da.to_netcdf('/user/work/al18709/tropical_cyclones/mswep/' + str(name) + '_' + str(sid) + '_hour-' + str(time) + '_idx-' + str(i) + '_cat-' + str(int(cat))+ '.nc')
+				da.to_netcdf('/user/work/al18709/tropical_cyclones/mswep/' + str(name) + '_' + str(sid) + '_hour-' + str(time) + '_idx-' + str(i) + '_cat-' + str(int(cat)) + '_basin-' + str(basin) + '.nc')
 				print('%s saved!' % filepath)
 				# TODO: flip lats
 	else:
