@@ -1,3 +1,10 @@
+"""
+This script evaluates the model output against a series of metrics and plots them
+
+
+"""
+
+
 import numpy as np
 import seaborn as sns
 # import cartopy.crs as ccrs
@@ -13,10 +20,18 @@ import re
 import glob
 sns.set_style("white")
 
+def generate_tcs():
+        tc_dir = '/user/work/al18709/tropical_cyclones/*.nc'
+        filepaths = glob.glob(tc_dir)
+        # group by tc sid number
+        regex = r"/user/work/al18709/tropical_cyclones/.+?_(.+?)_.*?.nc"
+        keyf = lambda text: (re.findall(regex, text)+ [text])[0]
+        sids = [gr for gr, items in groupby(sorted(filepaths), key=keyf)]
+        tcs_X,tcs_y = create_set(sids)
+        np.save('/user/work/al18709/tc_data/y.npy',tcs_y)
+
 def regrid(array):
-        # print(array.shape)
         hr_array = np.zeros((100,100))
-        # print(hr_array)
         for i in range(10):
                 for j in range(10):
                         i1 = i*10
@@ -24,8 +39,6 @@ def regrid(array):
                         j1 = j*10
                         j2 = (j+1)*10
                         hr_array[i1:i2,j1:j2] = array[i,j]
-        
-
         return hr_array
 
 def create_set(tcs):	
@@ -48,16 +61,35 @@ def plot_predictions(real,pred,inputs):
         pred[pred<=0.1] = np.nan
         # inputs = regrid(inputs[99])
         inputs[inputs<=0.1] = np.nan
-        
-        fig, axes = plt.subplots(4, 3, figsize=(15, 20), sharey=True)
+        n = 4
+        m = 3
+        fig, axes = plt.subplots(n, m, figsize=(5*m, 5*n), sharey=True)
         range_ = (-5, 20)
-        c = axes[0,0].imshow(real[102], interpolation='nearest', norm=colors.Normalize(*range_), extent=None,cmap='Blues')
+
+        storms = [102,260,450,799]
         axes[0,0].set_title('Real')
-        axes[0,1].imshow(pred[102], interpolation='nearest',norm=colors.Normalize(*range_), extent=None,cmap='Blues')
         axes[0,1].set_title('Pred')
-        axes[0,2].imshow(regrid(inputs[102]), interpolation='nearest',norm=colors.Normalize(*range_), extent=None,cmap='Blues')
         axes[0,2].set_title('Input')
-        # plt.colorbar(c)
+        for i in range(m):
+                j = 0
+                storm = storms[i]
+                axes[i,j].imshow(real[storm], interpolation='nearest', norm=colors.Normalize(*range_), extent=None,cmap='Blues')
+                axes[i,j+1].imshow(pred[storm], interpolation='nearest',norm=colors.Normalize(*range_), extent=None,cmap='Blues')
+                axes[0,j+2].imshow(regrid(inputs[storm]), interpolation='nearest',norm=colors.Normalize(*range_), extent=None,cmap='Blues')
+                axes[i,j].set(xticklabels=[])
+                axes[i,j].set(yticklabels=[])
+                axes[i,j+1].set(xticklabels=[])
+                axes[i,j+1].set(yticklabels=[])
+                axes[i,j+2].set(xticklabels=[])
+                axes[i,j+2].set(yticklabels=[])
+
+        """
+        axes[0,0].imshow(real[102], interpolation='nearest', norm=colors.Normalize(*range_), extent=None,cmap='Blues')
+        
+        axes[0,1].imshow(pred[102], interpolation='nearest',norm=colors.Normalize(*range_), extent=None,cmap='Blues')
+        
+        axes[0,2].imshow(regrid(inputs[102]), interpolation='nearest',norm=colors.Normalize(*range_), extent=None,cmap='Blues')
+        
         axes[1,0].imshow(real[260], interpolation='nearest',norm=colors.Normalize(*range_), extent=None,cmap='Blues')
         axes[1,1].imshow(pred[260], interpolation='nearest',norm=colors.Normalize(*range_), extent=None,cmap='Blues')
         axes[1,2].imshow(regrid(inputs[260]), interpolation='nearest',norm=colors.Normalize(*range_), extent=None,cmap='Blues')
@@ -67,10 +99,12 @@ def plot_predictions(real,pred,inputs):
         axes[3,0].imshow(real[799], interpolation='nearest',norm=colors.Normalize(*range_), extent=None,cmap='Blues')
         axes[3,1].imshow(pred[799], interpolation='nearest',norm=colors.Normalize(*range_), extent=None,cmap='Blues')
         axes[3,2].imshow(regrid(inputs[799]), interpolation='nearest',norm=colors.Normalize(*range_), extent=None,cmap='Blues')
-        for i in range(4):
-                for j in range(3):
+        
+        for i in range(n):
+                for j in range(m):
                         axes[i,j].set(xticklabels=[])
                         axes[i,j].set(yticklabels=[])
+        """
         plt.savefig('logs/pred_images_%s.png' % mode,bbox_inches='tight')
         plt.clf()
 
@@ -81,21 +115,21 @@ def plot_histogram(ax,max_rains,colour,binwidth,alpha):
 	# ax = sns.histplot(data=penguins, x="flipper_length_mm", hue="species", element="step")
 	return sns.histplot(ax=ax,data=max_rains, stat="density",binwidth=binwidth, fill=True,color=colour,element='step',alpha=alpha)
 
+###
+# begin evaluation
+###
+
+# set mode
 mode = 'validation'
-# mode = 'train'
-mode = 'extreme_valid'
 generate_tcs = False
-print(mode)
-print('generate TCs? ', generate_tcs)
+
+# load datasets
 real = np.load('/user/home/al18709/work/cgan_predictions/%s_real.npy' % mode)[0][:,:,:,0]
 pred = np.load('/user/home/al18709/work/cgan_predictions/%s_pred.npy' % mode)[0][:,:,:,0]
 inputs = np.load('/user/home/al18709/work/cgan_predictions/%s_input.npy' % mode)[0][:,:,:,0]
 
 print("mode = ",mode)
-print("number of storms: ", real.shape)
-# remove low rainfall
-# real[real<=0.1] = np.nan
-# pred[pred<=0.1] = np.nan
+print("number of storms: ", real.shape[0])
 
 # initiate variables
 nstorms,nlats,nlons = real.shape
@@ -109,7 +143,7 @@ peak_inputs = []
 actual_valid = np.load('/user/work/al18709/tc_data/extreme_valid_y.npy')
 actual_reals = []
 
-# calculate scores
+# calculate fss scores
 for i in range(nstorms):
         fss = spatialscores.fss(pred[i],real[i],0.1,4) #to not get nan have to filter out low values?
         fss_scores.append(fss)
@@ -137,9 +171,9 @@ print([i for i in actual_reals if i >= 110.])
 # print(peak_inputs)
 
 
-# plot predictions
+# plot predictions and print score
 plot_predictions(real,pred,inputs)
-print(np.mean(fss_scores))
+print('fss scors: ',np.mean(fss_scores))
 
 
 # plot accumulated histograms
@@ -151,7 +185,7 @@ plt.legend(labels=['real','pred'])
 plt.savefig('logs/histogram_accumulated_%s.png' % mode)
 plt.clf()
 ks_accumulated = stats.ks_2samp(accumulated_reals, accumulated_preds)
-print(ks_accumulated)
+print('Ks test for accumulated rainfall: ',ks_accumulated)
 
 # plot peak histograms
 fig, ax = plt.subplots()
@@ -161,31 +195,27 @@ ax.set_xlabel('Peak rainfall (mm)')
 plt.legend(labels=['real','pred'])
 plt.savefig('logs/histogram_peak_%s.png' % mode)
 ks_peak = stats.ks_2samp(peak_reals, peak_preds)
-print(ks_peak)
+print('ks test for peak rainfall: ',ks_peak)
 plt.clf()
 
+
+
+
+
+"""
 # generate list of sids
-if generate_tcs == True:
-        tc_dir = '/user/work/al18709/tropical_cyclones/*.nc'
-        filepaths = glob.glob(tc_dir)
-        # group by tc sid number
-        regex = r"/user/work/al18709/tropical_cyclones/.+?_(.+?)_.*?.nc"
-        keyf = lambda text: (re.findall(regex, text)+ [text])[0]
-        sids = [gr for gr, items in groupby(sorted(filepaths), key=keyf)]
-        tcs_X,tcs_y = create_set(sids)
-        print(tcs_y.shape)
-        np.save('/user/work/al18709/tc_data/y.npy',tcs_y)
-else:
-        tcs_y = np.load('/user/work/al18709/tc_data/y.npy')
+# if generate_tcs == True:
+#         generate_tcs()
+# else:
+#         tcs_y = np.load('/user/work/al18709/tc_data/y.npy')
 
-print('tcs_y shape: ',tcs_y.shape)
-nstorms,_,_ = tcs_y.shape
-peaks = []
-for i in range(nstorms):
-        print(i,end='\r')
-        peak = np.max(tcs_y[i])
-        peaks.append(peak)
-
+# print('tcs_y shape: ',tcs_y.shape)
+# nstorms,_,_ = tcs_y.shape
+# peaks = []
+# for i in range(nstorms):
+#         print(i,end='\r')
+#         peak = np.max(tcs_y[i])
+#         peaks.append(peak)
 
 # save the max peak
 # filepaths = glob.glob('/bp1store/geog-tropical/data/Obs/IMERG/half_hourly/final/*.HDF5')
@@ -199,27 +229,13 @@ for i in range(nstorms):
 #         d.close()
         
 # np.save('/user/work/al18709/tc_data/max_peaks_mswep.npy',max_peaks)
+
 # load the max  
-max_peaks = np.load('/user/work/al18709/tc_data/max_peaks_mswep.npy')
-max_peaks = max_peaks[max_peaks<=500.0]
+mswep_max = np.load('/user/work/al18709/tc_data/max_peaks_mswep.npy')
+mswep_max = mswep_max[mswep_max<=500.0]
+imerg_max = np.load('/user/work/al18709/tc_data/max_peaks.npy')
 print(max_peaks)
 
-imerg = np.load('/user/work/al18709/tc_data/max_peaks.npy')
 
-# plot peak histograms
-fig, ax = plt.subplots()
-plot_histogram(ax,peak_reals,'#b5a1e2',5,0.7)
-plot_histogram(ax,peak_preds,'#dc98a8',5,0.5)
-# plot_histogram(ax,peaks,'#85ceb5',5,0.5)
-# plot_histogram(ax,imerg,'#80c2de',5,0.5)
-# plot_histogram(ax,max_peaks,'#85ceb5',5,0.5)
-ax.set_xlabel('Peak rainfall (mm)')
-plt.legend(labels=['real','pred'])
-# plt.legend(labels=['imerg','mswep'])
-plt.savefig('logs/histogram_peak_og_2_%s.png' % mode)
-ks_peak = stats.ks_2samp(peak_reals, peak_preds)
-print(ks_peak)
-plt.clf()
 
-print(np.max(max_peaks))
-
+"""
