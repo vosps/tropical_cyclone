@@ -26,7 +26,6 @@ def generate_predictions(*,
                     predict_year=2019,
                     predict_full_image=True,
                     ensemble_members=100,
-                    gcm = False,
                     # plot_ecpoint=True,
                     ):
         
@@ -36,10 +35,6 @@ def generate_predictions(*,
     noise_channels = 4
     batch_size = 16
     num_images = 150
-
-    if gcm == True:
-        batch_size = 1
-        num_images = 5
     
 
     # initialise model
@@ -57,8 +52,6 @@ def generate_predictions(*,
     mode = 'validation'
     # mode = 'train'
     # mode = 'extreme_valid'
-    if gcm == True:
-        mode = 'gcm'
     data_predict = create_fixed_dataset(predict_year,
                                         batch_size=batch_size,
                                         # downsample=downsample) #remove this to see if it works

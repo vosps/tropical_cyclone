@@ -174,6 +174,9 @@ def create_fixed_dataset(year=None,mode='validation',batch_size=16,
     elif mode == 'extreme_valid':
         x = np.expand_dims(np.load('/user/work/al18709/tc_data/extreme_valid_X.npy'),axis=3)
         y = np.expand_dims(np.load('/user/work/al18709/tc_data/extreme_valid_y.npy'),axis=3)
+    elif mode == 'gcm':
+        x = np.expand_dims(np.load('/user/work/al18709/tc_data/gcm_X.npy'),axis=3)
+        y = np.expand_dims(np.load('/user/work/al18709/tc_data/gcm_X.npy'),axis=3)
     
     ds = tf.data.Dataset.from_tensor_slices((x, y))
 

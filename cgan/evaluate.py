@@ -65,17 +65,23 @@ def plot_predictions(real,pred,inputs):
         m = 3
         fig, axes = plt.subplots(n, m, figsize=(5*m, 5*n), sharey=True)
         range_ = (-5, 20)
+        if mode == 'gcm':
+                range_ = (-5,30)
 
         storms = [102,260,450,799]
+        if mode == 'gcm':
+                storms = [0,4,2,3,4]
         axes[0,0].set_title('Real')
         axes[0,1].set_title('Pred')
         axes[0,2].set_title('Input')
-        for i in range(m):
+        for i in range(n):
                 j = 0
                 storm = storms[i]
+                print(storm)
+                print(regrid(inputs[storm]))
                 axes[i,j].imshow(real[storm], interpolation='nearest', norm=colors.Normalize(*range_), extent=None,cmap='Blues')
                 axes[i,j+1].imshow(pred[storm], interpolation='nearest',norm=colors.Normalize(*range_), extent=None,cmap='Blues')
-                axes[0,j+2].imshow(regrid(inputs[storm]), interpolation='nearest',norm=colors.Normalize(*range_), extent=None,cmap='Blues')
+                axes[i,j+2].imshow(regrid(inputs[storm]), interpolation='nearest',norm=colors.Normalize(*range_), extent=None,cmap='Blues')
                 axes[i,j].set(xticklabels=[])
                 axes[i,j].set(yticklabels=[])
                 axes[i,j+1].set(xticklabels=[])
@@ -83,28 +89,6 @@ def plot_predictions(real,pred,inputs):
                 axes[i,j+2].set(xticklabels=[])
                 axes[i,j+2].set(yticklabels=[])
 
-        """
-        axes[0,0].imshow(real[102], interpolation='nearest', norm=colors.Normalize(*range_), extent=None,cmap='Blues')
-        
-        axes[0,1].imshow(pred[102], interpolation='nearest',norm=colors.Normalize(*range_), extent=None,cmap='Blues')
-        
-        axes[0,2].imshow(regrid(inputs[102]), interpolation='nearest',norm=colors.Normalize(*range_), extent=None,cmap='Blues')
-        
-        axes[1,0].imshow(real[260], interpolation='nearest',norm=colors.Normalize(*range_), extent=None,cmap='Blues')
-        axes[1,1].imshow(pred[260], interpolation='nearest',norm=colors.Normalize(*range_), extent=None,cmap='Blues')
-        axes[1,2].imshow(regrid(inputs[260]), interpolation='nearest',norm=colors.Normalize(*range_), extent=None,cmap='Blues')
-        axes[2,0].imshow(real[450], interpolation='nearest',norm=colors.Normalize(*range_), extent=None,cmap='Blues')
-        axes[2,1].imshow(pred[450], interpolation='nearest',norm=colors.Normalize(*range_), extent=None,cmap='Blues')
-        axes[2,2].imshow(regrid(inputs[450]), interpolation='nearest',norm=colors.Normalize(*range_), extent=None,cmap='Blues')
-        axes[3,0].imshow(real[799], interpolation='nearest',norm=colors.Normalize(*range_), extent=None,cmap='Blues')
-        axes[3,1].imshow(pred[799], interpolation='nearest',norm=colors.Normalize(*range_), extent=None,cmap='Blues')
-        axes[3,2].imshow(regrid(inputs[799]), interpolation='nearest',norm=colors.Normalize(*range_), extent=None,cmap='Blues')
-        
-        for i in range(n):
-                for j in range(m):
-                        axes[i,j].set(xticklabels=[])
-                        axes[i,j].set(yticklabels=[])
-        """
         plt.savefig('logs/pred_images_%s.png' % mode,bbox_inches='tight')
         plt.clf()
 
@@ -120,7 +104,7 @@ def plot_histogram(ax,max_rains,colour,binwidth,alpha):
 ###
 
 # set mode
-mode = 'validation'
+mode = 'gcm'
 generate_tcs = False
 
 # load datasets
@@ -130,6 +114,8 @@ inputs = np.load('/user/home/al18709/work/cgan_predictions/%s_input.npy' % mode)
 
 print("mode = ",mode)
 print("number of storms: ", real.shape[0])
+print(inputs.shape)
+print(pred.shape)
 
 # initiate variables
 nstorms,nlats,nlons = real.shape
@@ -144,25 +130,25 @@ actual_valid = np.load('/user/work/al18709/tc_data/extreme_valid_y.npy')
 actual_reals = []
 
 # calculate fss scores
-for i in range(nstorms):
-        fss = spatialscores.fss(pred[i],real[i],0.1,4) #to not get nan have to filter out low values?
-        fss_scores.append(fss)
+# for i in range(nstorms):
+#         fss = spatialscores.fss(pred[i],real[i],0.1,4) #to not get nan have to filter out low values?
+#         fss_scores.append(fss)
       
-        accumulated_pred = np.sum(pred[i])
-        accumulated_real = np.sum(real[i])
+#         accumulated_pred = np.sum(pred[i])
+#         accumulated_real = np.sum(real[i])
 
-        accumulated_preds.append(accumulated_pred/1000)
-        accumulated_reals.append(accumulated_real/1000)
+#         accumulated_preds.append(accumulated_pred/1000)
+#         accumulated_reals.append(accumulated_real/1000)
 
-        peak_pred = np.max(pred[i])
-        peak_real = np.max(real[i])
-        peak_input = np.max(inputs[i])
-        actual_peak = np.max(actual_valid[i])
+#         peak_pred = np.max(pred[i])
+#         peak_real = np.max(real[i])
+#         peak_input = np.max(inputs[i])
+#         actual_peak = np.max(actual_valid[i])
 
-        peak_preds.append(peak_pred)
-        peak_reals.append(peak_real)
-        peak_inputs.append(peak_input)
-        actual_reals.append(actual_peak)
+#         peak_preds.append(peak_pred)
+#         peak_reals.append(peak_real)
+#         peak_inputs.append(peak_input)
+#         actual_reals.append(actual_peak)
 
         # peak_pred
 print([i for i in peak_reals if i >= 110.])
@@ -172,10 +158,13 @@ print([i for i in actual_reals if i >= 110.])
 
 
 # plot predictions and print score
-plot_predictions(real,pred,inputs)
-print('fss scors: ',np.mean(fss_scores))
+if mode == 'gcm':
+        plot_predictions(pred,pred,inputs)
+else:
+        plot_predictions(real,pred,inputs)
+# print('fss scors: ',np.mean(fss_scores))
 
-
+exit()
 # plot accumulated histograms
 fig, ax = plt.subplots()
 plot_histogram(ax,accumulated_reals,'#b5a1e2',1,0.7)

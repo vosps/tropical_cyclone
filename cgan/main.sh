@@ -27,3 +27,4 @@ python main.py --config config-example.yaml --eval_blitz
 # srun --nodes=1 --ntasks-per-node=1 --mem=16gb --gres=gpu:1 --partition mlcnu --time=03:00:00 --pty bash -i
 # srun --nodes=1 --ntasks-per-node=1 --mem=16gb --partition dmm --time=03:00:00 --pty bash -i
 # srun --nodes=2 --ntasks-per-node=1 --mem=16gb --partition dmm --time=03:00:00 --pty bash -i
+# module load cray-netcdf
