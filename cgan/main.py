@@ -452,20 +452,6 @@ if __name__ == "__main__":
                             )
 
 
-    # generate_predictions(mode=mode,
-    #                         arch=arch,
-    #                         log_folder=log_folder,
-    #                         weights_dir=model_weights_root,
-    #                         model_numbers=model_numbers,
-    #                         problem_type=problem_type,
-    #                         filters_gen=filters_gen,
-    #                         filters_disc=filters_disc,
-    #                         noise_channels=noise_channels,
-    #                         latent_variables=latent_variables,
-    #                         predict_year=val_years,
-    #                         predict_full_image=False,
-    #                         )
-
     generate_predictions(mode=mode,
                             arch=arch,
                             log_folder=log_folder,
@@ -478,5 +464,19 @@ if __name__ == "__main__":
                             latent_variables=latent_variables,
                             predict_year=val_years,
                             predict_full_image=False,
-                            gcm = True
                             )
+
+    # generate_predictions(mode=mode,
+    #                         arch=arch,
+    #                         log_folder=log_folder,
+    #                         weights_dir=model_weights_root,
+    #                         model_numbers=model_numbers,
+    #                         problem_type=problem_type,
+    #                         filters_gen=filters_gen,
+    #                         filters_disc=filters_disc,
+    #                         noise_channels=noise_channels,
+    #                         latent_variables=latent_variables,
+    #                         predict_year=val_years,
+    #                         predict_full_image=False,
+    #                         gcm = True
+    #                         )

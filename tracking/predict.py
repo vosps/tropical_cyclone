@@ -47,7 +47,7 @@ for i,t in enumerate(times):
 	
 	# crop data and convert to mm/hr
 	data = np.array(ds.pr[t+1,lower_lat:upper_lat,lower_lon:upper_lon]) * 86400
-	data = (60*(data - np.min(data))/np.ptp(data))
+	data = (40*(data - np.min(data))/np.ptp(data))
 	lats = lat[lower_lat:upper_lat]
 	lons = lon[lower_lon:upper_lon]
 	print(data.shape)

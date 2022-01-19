@@ -35,7 +35,7 @@ def get_max_rain(tcs):
 	for tc in tcs:
 		if glob.glob('/user/work/al18709/tc_Xy/X_%s.npy' % tc) == []:
 			continue
-		print('/user/work/al18709/tc_Xy/X_%s.npy' % tc)
+		# print('/user/work/al18709/tc_Xy/X_%s.npy' % tc)
 		X = np.load('/user/work/al18709/tc_Xy/X_%s.npy' % tc,allow_pickle = True)
 		
 		# isolate extreme TCs
@@ -62,12 +62,13 @@ def plot_histogram(ax,max_rains,colour):
 def create_set(tcs):	
 	# initialise arrays
 	n_tcs = len(tcs)
+	print("n_tcs = ",n_tcs)
 	set_X = np.zeros((1,10,10))
 	set_y = np.zeros((1,100,100))
 
 	# loop through each tc
 	for i,tc in enumerate(tcs):
-		if glob.glob('/user/work/al18709/tc_Xy/y_%s.npy' % tc) == []:
+		if glob.glob('/user/work/al18709/tc_Xy/y_%s.npy' % tc) == []: # TODO: this directory doesn't have much in it
 			continue
 		y = np.load('/user/work/al18709/tc_Xy/y_%s.npy' % tc,allow_pickle = True)
 		X = np.load('/user/work/al18709/tc_Xy/X_%s.npy' % tc,allow_pickle = True)
@@ -77,13 +78,15 @@ def create_set(tcs):
 
 
 # generate list of sids
-tc_dir = '/user/work/al18709/tropical_cyclones/*.nc'
+tc_dir = '/user/work/al18709/tropical_cyclones/mswep/*.nc'
 filepaths = glob.glob(tc_dir)
+print('number of filepaths = ',len(filepaths))
+
 # group by tc sid number
-regex = r"/user/work/al18709/tropical_cyclones/.+?_(.+?)_.*?.nc"
+regex = r"/user/work/al18709/tropical_cyclones/mswep/.+?_(.+?)_.*?.nc"
 keyf = lambda text: (re.findall(regex, text)+ [text])[0]
 sids = [gr for gr, items in groupby(sorted(filepaths), key=keyf)]
-
+print('number of sids = ',len(sids))
 # pick random 
 
 # find most extreme tcs
@@ -103,7 +106,7 @@ for tc in sids:
 	tcs.append(tc)
 	max_rains.append(max_rain)
 print(len(max_rains))
-print(len(sids))
+print('len sids = ',len(sids))
 
 
 max_idx = list(np.argpartition(max_rains, -100)[-100:])
@@ -111,10 +114,10 @@ extreme_tcs_test = [tcs[i] for i in max_idx]
 max_idx = list(np.argpartition(max_rains, -100)[-201:-101])
 extreme_tcs_valid = [tcs[i] for i in max_idx]
 
-print(extreme_tcs_test)
-print(extreme_tcs_valid)
+# print(extreme_tcs_test)
+# print(extreme_tcs_valid)
 extreme_tcs = extreme_tcs_test + extreme_tcs_valid
-print(extreme_tcs)
+# print(extreme_tcs)
 
 # remove extreme tcs from tc list, sort list so random workds
 tcs = sorted(list(set(sids).difference(set(extreme_tcs))))
@@ -214,5 +217,7 @@ np.save('/user/work/al18709/tc_data/extreme_test_X.npy',extreme_test_X)
 np.save('/user/work/al18709/tc_data/extreme_test_y.npy',extreme_test_y)
 np.save('/user/work/al18709/tc_data/extreme_valid_X.npy',extreme_valid_X)
 np.save('/user/work/al18709/tc_data/extreme_valid_y.npy',extreme_valid_y)
+
+print(extreme_valid_X)
 
 

@@ -55,10 +55,12 @@ def generate_predictions(*,
     # load appropriate dataset 
     plot_label = 'small'
     mode = 'validation'
+    
     # mode = 'train'
     # mode = 'extreme_valid'
     if gcm == True:
         mode = 'gcm'
+    
     data_predict = create_fixed_dataset(predict_year,
                                         batch_size=batch_size,
                                         # downsample=downsample) #remove this to see if it works
@@ -121,6 +123,7 @@ def generate_predictions(*,
     print(seq_real.shape)
     print(pred.shape)
     print(low_res_inputs.shape)
+    print(seq_real)
     np.save('/user/home/al18709/work/cgan_predictions/%s_real.npy' % mode,seq_real)
     np.save('/user/home/al18709/work/cgan_predictions/%s_pred.npy' % mode,pred)
     np.save('/user/home/al18709/work/cgan_predictions/%s_input.npy' % mode,low_res_inputs)

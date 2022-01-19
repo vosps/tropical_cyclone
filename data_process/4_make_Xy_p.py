@@ -78,7 +78,7 @@ def save_Xy(grouped_tcs):
 		tc_y = np.zeros((n_timesteps,100,100))
 		# loop though tc filepaths
 		for i,filepath in enumerate(tc):
-			array_flipped = np.zeros((1,100,100))
+			# array_flipped = np.zeros((1,100,100))
 			ds = xr.open_dataset(filepath)
 			array = ds.precipitation.values
 
@@ -104,12 +104,14 @@ def save_Xy(grouped_tcs):
 		# 	else:
 
 			# for now, remove irregularly shaped arrays
-		if array.shape != (100,100):
-			continue
+		
+		# if array.shape != (100,100):
+		# 	continue
+
 			# TODO: going to end up with some zero values here - fix that
 			
-		tc_X[i,:,:] = regridder(array)
-		tc_y[i,:,:] = array
+			tc_X[i,:,:] = regridder(array)
+			tc_y[i,:,:] = array
 		
 		np.save('/user/work/al18709/tc_Xy/X_%s.npy' % sid,tc_X)
 		np.save('/user/work/al18709/tc_Xy/y_%s.npy' % sid,tc_y)

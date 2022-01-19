@@ -175,6 +175,7 @@ def process_apply_mswep(x):
 								coords={"x": lon, "y": lat},
 								attrs=dict(description="Total Precipitation",units="mm"),
 								name = 'precipitation')
+				print(da)
 				da.to_netcdf('/user/work/al18709/tropical_cyclones/mswep/' + str(name) + '_' + str(sid) + '_hour-' + str(time) + '_idx-' + str(i) + '_cat-' + str(int(cat)) + '_basin-' + str(basin) + '.nc')
 				print('%s saved!' % filepath)
 				# TODO: flip lats

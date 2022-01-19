@@ -49,7 +49,7 @@ with writer.saving(fig, f_movie,dpi=300):
 		# plt.subplots_adjust(wspace=0.0, right=0.7)
 
 		# save frame
-		plt.savefig('figs/tc_mswep.png',bbox_inches='tight')
+		plt.savefig('figs/tc_mswep_.png',bbox_inches='tight')
 		# exit()
 
 		writer.grab_frame()

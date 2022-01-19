@@ -104,7 +104,7 @@ def plot_histogram(ax,max_rains,colour,binwidth,alpha):
 ###
 
 # set mode
-mode = 'gcm'
+mode = 'validation'
 generate_tcs = False
 
 # load datasets
@@ -116,6 +116,7 @@ print("mode = ",mode)
 print("number of storms: ", real.shape[0])
 print(inputs.shape)
 print(pred.shape)
+print(real.shape)
 
 # initiate variables
 nstorms,nlats,nlons = real.shape
@@ -126,45 +127,47 @@ accumulated_reals = []
 peak_preds = []
 peak_reals = []
 peak_inputs = []
-actual_valid = np.load('/user/work/al18709/tc_data/extreme_valid_y.npy')
+# actual_valid = np.load('/user/work/al18709/tc_data/extreme_valid_y.npy')
 actual_reals = []
 
 # calculate fss scores
-# for i in range(nstorms):
-#         fss = spatialscores.fss(pred[i],real[i],0.1,4) #to not get nan have to filter out low values?
-#         fss_scores.append(fss)
+print("calculating fss scores... ")
+for i in range(nstorms):
+        fss = spatialscores.fss(pred[i],real[i],0.1,4) #to not get nan have to filter out low values?
+        fss_scores.append(fss)
       
-#         accumulated_pred = np.sum(pred[i])
-#         accumulated_real = np.sum(real[i])
+        accumulated_pred = np.sum(pred[i])
+        accumulated_real = np.sum(real[i])
 
-#         accumulated_preds.append(accumulated_pred/1000)
-#         accumulated_reals.append(accumulated_real/1000)
+        accumulated_preds.append(accumulated_pred/1000)
+        accumulated_reals.append(accumulated_real/1000)
 
-#         peak_pred = np.max(pred[i])
-#         peak_real = np.max(real[i])
-#         peak_input = np.max(inputs[i])
-#         actual_peak = np.max(actual_valid[i])
+        peak_pred = np.max(pred[i])
+        peak_real = np.max(real[i])
+        peak_input = np.max(inputs[i])
+        # actual_peak = np.max(actual_valid[i])
 
-#         peak_preds.append(peak_pred)
-#         peak_reals.append(peak_real)
-#         peak_inputs.append(peak_input)
-#         actual_reals.append(actual_peak)
+        peak_preds.append(peak_pred)
+        peak_reals.append(peak_real)
+        peak_inputs.append(peak_input)
+        # actual_reals.append(actual_peak)
 
         # peak_pred
-print([i for i in peak_reals if i >= 110.])
-print([i for i in actual_reals if i >= 110.])
+# print([i for i in peak_reals if i >= 110.])
+# print([i for i in actual_reals if i >= 110.])
 # print([i for i in peak_preds if i >= 110.])
 # print(peak_inputs)
-
-
+print('fss scores: ',np.mean(fss_scores))
+print('pred',pred)
+print('real',real)
 # plot predictions and print score
 if mode == 'gcm':
         plot_predictions(pred,pred,inputs)
 else:
         plot_predictions(real,pred,inputs)
-# print('fss scors: ',np.mean(fss_scores))
 
-exit()
+
+
 # plot accumulated histograms
 fig, ax = plt.subplots()
 plot_histogram(ax,accumulated_reals,'#b5a1e2',1,0.7)
