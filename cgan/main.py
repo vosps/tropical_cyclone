@@ -13,9 +13,9 @@ import evaluation
 import plots
 import roc
 from generate_predictions import generate_predictions
-
 import tensorflow as tf
 from tensorflow.python.client import device_lib 
+
 print(device_lib.list_local_devices())
 print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 print("Is GPU available? ",tf.test.is_gpu_available())
@@ -23,8 +23,6 @@ if tf.test.is_built_with_cuda():
     print("The installed version of TensorFlow includes GPU support.")
 else:
     print("The installed version of TensorFlow does not include GPU support.")
-# exit()
-
 
 
 if __name__ == "__main__":
@@ -115,6 +113,7 @@ if __name__ == "__main__":
         raise ValueError("Problem type is restricted to 'normal' 'superresolution'")
 
     num_epochs = int(num_samples/(steps_per_epoch * batch_size))
+    # num_epochs = 100
     epoch = 1
 
     # create log folder and model save/load subfolder if they don't exist

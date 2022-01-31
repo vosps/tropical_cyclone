@@ -105,7 +105,7 @@ def load_precip_data(data='train'):
     elif data == 'extreme_valid':
         x = np.load('/user/home/al18709/work/tc_data/extreme_valid_X.npy')
         y = np.load('/user/home/al18709/work/tc_data/extreme_valid_y.npy')
-    # exit()
+
     return x, y
 
 # this function might be unecessary?

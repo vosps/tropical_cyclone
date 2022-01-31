@@ -76,7 +76,6 @@ def create_set(tcs):
 		set_y = np.vstack((set_y,y))
 	return set_X[1:,:,:],set_y[1:,:,:]
 
-
 # generate list of sids
 tc_dir = '/user/work/al18709/tropical_cyclones/mswep/*.nc'
 filepaths = glob.glob(tc_dir)

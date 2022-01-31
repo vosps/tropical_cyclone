@@ -140,7 +140,11 @@ def create_dataset(year,clss,era_shape=(10,10,9),con_shape=(100,100,2),out_shape
     # insert my code here
     # TODO: ensure ds is in the correct shape
     x = np.expand_dims(np.load('/user/work/al18709/tc_data/train_X.npy'),axis=3) # inputs this will eventually be (nimags,10,10,nfeatures)
-
+    # k = np.load('/user/work/al18709/tc_data/train_y.npy')
+    # print(k.shape)
+    print(x.shape)
+    k = np.load('/user/work/al18709/tc_data/train_y.npy')
+    print(k.shape)
     y = np.expand_dims(np.load('/user/work/al18709/tc_data/train_y.npy'),axis=3) # outputs
     # z = np.load('/user/work/al18709/tc_data/train_y.npy') # constants, this will eventually be (100,100,2)
     print(x.shape)

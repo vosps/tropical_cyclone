@@ -8,7 +8,7 @@ MODEL:
         
 SETUP:
     # log_folder: "/ppdata/lucy-cGAN/logs/IFS"
-    log_folder: "logs"
+    log_folder: "~/work/cgan_results/logs"
 
 GENERATOR:
     filters_gen: 128
@@ -25,11 +25,12 @@ DISCRIMINATOR:
 TRAIN:
     train_years: [2016, 2017, 2018] 
     training_weights: [0.4, 0.3, 0.2, 0.1]
-    num_samples: 320000
+    # num_samples: 320000
+    num_samples: 1640000
     # steps_per_epoch: 200
     # batch_size: 16
     steps_per_epoch: 100
-    batch_size: 8
+    batch_size: 64 # number of training samples to work through before model parameters are updated
     kl_weight: 1e-8 # used for VAEGAN
 
 VAL:
