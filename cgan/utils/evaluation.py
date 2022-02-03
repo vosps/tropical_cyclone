@@ -56,3 +56,46 @@ def regrid(array):
                         j2 = (j+1)*10
                         hr_array[i1:i2,j1:j2] = array[i,j]
         return hr_array
+
+def plot_anomaly(inputs,cmap,plot='save',vmin=-1,vmax=1,mode='validation'):  
+        fig, ax = plt.subplots(figsize=(5, 5))  
+        ax.set_title('Anomaly')
+        im = ax.imshow(inputs, interpolation='nearest', vmin=vmin,vmax=vmax,extent=None,cmap=cmap)
+        ax.set(xticklabels=[])
+        ax.set(yticklabels=[])
+        cax = fig.add_axes([ax.get_position().x1+0.01,ax.get_position().y0,0.02,ax.get_position().height])
+        plt.colorbar(im, cax=cax) # Similar to fig.colorbar(im, cax = cax)
+        # plt.colorbar(im)
+
+        if plot == 'save':
+                plt.savefig('figs/input_images_%s.png' % mode,bbox_inches='tight')
+                plt.clf()
+        else:
+                plt.show()
+
+def plot_histogram(real,pred,binwidth,alpha):
+        """
+        This function plots a histogram of the set in question
+        """
+        # ax = sns.histplot(data=penguins, x="flipper_length_mm", hue="species", element="step")
+        fig, ax = plt.subplots()
+        sns.histplot(ax=ax,data=real, stat="density", fill=True,color='#b5a1e2',element='step',alpha=alpha)
+        sns.histplot(ax=ax,data=pred, stat="density", fill=True,color='#dc98a8',element='step',alpha=alpha)
+        ax.set_xlabel('Accumulated rainfall (m)')
+        plt.legend(labels=['real','pred'])
+        plt.show()
+        # plt.savefig('figs/histogram_accumulated_%s.png' % mode)
+
+def calc_peak(array):
+        nstorms,_,_ = array.shape
+        peaks = np.zeros((nstorms))
+        for i in range(nstorms):
+                peaks[i] = np.nanmax(array[i])
+        return peaks
+
+def calc_mean(array):
+        nstorms,_,_ = array.shape
+        means = np.zeros((nstorms))
+        for i in range(nstorms):
+                means[i] = np.nanmean(array[i])
+        return means
