@@ -1,6 +1,7 @@
 import argparse
 import json
 import os
+import glob
 from pathlib import Path
 import matplotlib; matplotlib.use("Agg")  # noqa: E702
 import numpy as np
@@ -8,7 +9,9 @@ import pandas as pd
 import yaml
 import train
 import setupmodel
+import re
 import setupdata
+from itertools import groupby
 import evaluation
 import plots
 import roc
@@ -451,12 +454,21 @@ if __name__ == "__main__":
                             )
 
 
-    generate_predictions(mode=mode,
+    filepaths = glob.glob('/user/home/al18709/work/cgan/logs/models/*.h5')
+    regex = r"/user/home/al18709/work/cgan/logs/models/gen_weights-(.+?).h5"
+    keyf = lambda text: (re.findall(regex, text)+ [text])[0]
+    checkpoints = [gr for gr, items in groupby(sorted(filepaths), key=keyf)]
+    print(checkpoints)
+    
+
+    for checkpoint in checkpoints:
+        generate_predictions(mode=mode,
+                            checkpoint=checkpoint,
                             arch=arch,
                             log_folder=log_folder,
-                            weights_dir=model_weights_root,
-                            model_numbers=model_numbers,
-                            problem_type=problem_type,
+                            # weights_dir=model_weights_root,
+                            # model_numbers=model_numbers,
+                            # problem_type=problem_type,
                             filters_gen=filters_gen,
                             filters_disc=filters_disc,
                             noise_channels=noise_channels,

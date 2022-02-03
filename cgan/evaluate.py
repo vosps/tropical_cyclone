@@ -3,6 +3,8 @@ This script evaluates the model output against a series of metrics and plots the
 
 https://jonathan-hui.medium.com/gan-wasserstein-gan-wgan-gp-6a1a2aa1b490
 
+https://www.aspexit.com/variogram-and-spatial-autocorrelation/
+
 """
 
 
@@ -62,14 +64,18 @@ def create_set(tcs):
 	return set_X[1:,:,:],set_y[1:,:,:]
 
 
-def plot_predictions(real,pred,inputs):
+def plot_predictions(real,pred,inputs,plot='save'):
         real[real<=0.1] = np.nan
         pred[pred<=0.1] = np.nan
         # inputs = regrid(inputs[99])
         inputs[inputs<=0.1] = np.nan
         n = 4
         m = 3
-        fig, axes = plt.subplots(n, m, figsize=(5*m, 5*n), sharey=True)
+        if plot == 'save':
+                fig, axes = plt.subplots(n, m, figsize=(5*m, 5*n), sharey=True)
+        else:
+                print('show')
+                fig, axes = plt.subplots(n, m, figsize=(2*m, 2*n), sharey=True)
         range_ = (-5, 20)
         if mode == 'gcm':
                 range_ = (-5,30)
@@ -83,8 +89,6 @@ def plot_predictions(real,pred,inputs):
         for i in range(n):
                 j = 0
                 storm = storms[i]
-                print(storm)
-                print(regrid(inputs[storm]))
                 axes[i,j].imshow(real[storm], interpolation='nearest', norm=colors.Normalize(*range_), extent=None,cmap='Blues')
                 axes[i,j+1].imshow(pred[storm], interpolation='nearest',norm=colors.Normalize(*range_), extent=None,cmap='Blues')
                 axes[i,j+2].imshow(regrid(inputs[storm]), interpolation='nearest',norm=colors.Normalize(*range_), extent=None,cmap='Blues')
@@ -95,8 +99,11 @@ def plot_predictions(real,pred,inputs):
                 axes[i,j+2].set(xticklabels=[])
                 axes[i,j+2].set(yticklabels=[])
 
-        plt.savefig('logs/pred_images_%s.png' % mode,bbox_inches='tight')
-        plt.clf()
+        if plot == 'save':
+                plt.savefig('figs/pred_images_%s.png' % mode,bbox_inches='tight')
+                plt.clf()
+        else:
+                plt.show()
 
 def plot_histogram(ax,max_rains,colour,binwidth,alpha):
 	"""
@@ -106,13 +113,15 @@ def plot_histogram(ax,max_rains,colour,binwidth,alpha):
 	return sns.histplot(ax=ax,data=max_rains, stat="density",binwidth=binwidth, fill=True,color=colour,element='step',alpha=alpha)
 
 def generate_variogram(array):
-        all_pairs,all_distances = get_coords(array)
+        all_pairs,all_distances,all_coords = get_coords(array)
         c = np.var(array.ravel())
         # print('all_pairs',all_pairs)
         distances = [1.0,2.0,5.0,10.0,15.0,20.0,25.0,30.0,35.0,40.0,50.0,64.0,78.0,92.0,97.0]
         variogram = []
         for h in distances:
-                pairs,N = find_pairs(all_pairs,all_distances,h)
+                pairs,coords,N = find_pairs(all_pairs,all_distances,all_coords,h)
+                if h==97.0:
+                        plot_pairs(coords,h)
                 print('pairs',pairs)
                 v = calc_variance(pairs,N)
                 variogram.append(v)
@@ -120,7 +129,17 @@ def generate_variogram(array):
         print(distances)
         print(variogram)
         return distances,variogram
-        
+
+def plot_pairs(coords,h):
+        for xy in coords:
+                plt.scatter(xy[0][0],xy[0][1])
+                plt.scatter(xy[1][0],xy[1][1])
+        plt.savefig('figs/distances_%s.png' % h)
+        plt.clf()
+        print(coords)
+        print(h)
+        print(len(coords))
+        # exit()
 
 def calc_variance(pairs,N):
         # print(pairs)
@@ -132,6 +151,7 @@ def calc_variance(pairs,N):
 def get_coords(array):
         all_pairs = []
         all_distances = []
+        all_coords = []
         flat_array = array.ravel()
         lats,lons = range(100),range(100)
         coords = [(i,j) for i in lats for j in lons]
@@ -143,30 +163,31 @@ def get_coords(array):
                                 continue
                         else:
                                 all_pairs.append((flat_array[i],flat_array[j]))
+
                                 x = coords[i]
                                 y = coords[j]
-                                # print(x)
-                                # print(y)
+                                dist = np.sqrt((x[0] - y[0])**2 + (x[1] - y[1])**2)
+
+                                all_coords.append((x,y))
+                                # all_pairs.append((coords[i],coords[j]))
+                                # x = flat_array[i]
+                                # y = flat_array[j]
+                                # dist = (x - y)**2
                                 
-                                dist = np.sqrt( (x[0] - y[0])**2 + (x[1] - y[1])**2 )
-                                # print('distance: ',dist)
                                 all_distances.append(dist)
 
         # print(all_pairs)
         # print('all_pairs',all_pairs)
 
-        return all_pairs,all_distances
+        return all_pairs,all_distances,all_coords
 
 
-def find_pairs(all_pairs,all_distances,h):
+def find_pairs(all_pairs,all_distances,all_coords,h):
         print('h',h)
-        # print(all_distances)
-        filter = np.array(all_distances) == h
-        
+        filter = np.array(all_distances) == h       
         pairs = list(compress(all_pairs, filter))
-        # pairs = all_pairs[idx]
-        # print(pairs)
-        return pairs,len(pairs)
+        coords = list(compress(all_coords, filter))
+        return pairs,coords,len(pairs)
 
 def training_loss():
         return []
@@ -183,7 +204,7 @@ real = np.load('/user/home/al18709/work/cgan_predictions/%s_real.npy' % mode)[0]
 pred = np.load('/user/home/al18709/work/cgan_predictions/%s_pred.npy' % mode)[0][:,:,:,0]
 inputs = np.load('/user/home/al18709/work/cgan_predictions/%s_input.npy' % mode)[0][:,:,:,0]
 dtype={'gen_loss': 'float','disc_loss': 'float','training_samples': 'int'}
-loss_log = pd.read_csv('/user/home/al18709/work/cgan_results/logs/log.txt', sep=",", header=None,dtype=dtype)[1:]
+loss_log = pd.read_csv('/user/home/al18709/work/cgan/logs/log.txt', sep=",", header=None,dtype=dtype)[1:]
 loss_log.columns = ['training_samples','disc_loss','disc_loss_real','disc_loss_fake','disc_loss_gp','gen_loss']
 # loss_log = loss_log.convert_dtypes()
 loss_log['training_samples'] = pd.to_numeric(loss_log['training_samples'],errors='coerce')
@@ -217,6 +238,7 @@ plt.legend(labels=['real','pred'])
 plt.savefig('logs/variogram.png')
 plt.clf()
 """
+
 
 # w = ps.lat2W(real[0].shape[0],real[0].shape[1])
 # np.random.seed(12345)
@@ -297,7 +319,7 @@ plot_histogram(ax,accumulated_reals,'#b5a1e2',1,0.7)
 plot_histogram(ax,accumulated_preds,'#dc98a8',1,0.5)
 ax.set_xlabel('Accumulated rainfall (m)')
 plt.legend(labels=['real','pred'])
-plt.savefig('logs/histogram_accumulated_%s.png' % mode)
+plt.savefig('figs/histogram_accumulated_%s.png' % mode)
 plt.clf()
 ks_accumulated = stats.ks_2samp(accumulated_reals, accumulated_preds)
 print('Ks test for accumulated rainfall: ',ks_accumulated)
@@ -308,7 +330,7 @@ plot_histogram(ax,peak_reals,'#b5a1e2',5,0.7)
 plot_histogram(ax,peak_preds,'#dc98a8',5,0.5)
 ax.set_xlabel('Peak rainfall (mm)')
 plt.legend(labels=['real','pred'])
-plt.savefig('logs/histogram_peak_%s.png' % mode)
+plt.savefig('figs/histogram_peak_%s.png' % mode)
 ks_peak = stats.ks_2samp(peak_reals, peak_preds)
 print('ks test for peak rainfall: ',ks_peak)
 plt.clf()
