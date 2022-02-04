@@ -20,8 +20,8 @@ module load lib/cudnn/11.2
 module load lang/cuda/10.1.105
 conda activate alpine
 echo alpine environment activated
-python main.py --config config-example.yaml --eval_blitz
-# python main.py --config config-example.yaml --no_train --eval_blitz 
+# python main.py --config config-example.yaml --eval_blitz
+python main.py --config config-example.yaml --no_train --eval_blitz 
 # srun --nodes=1 --ntasks-per-node=1 --mem=16gb --partition mlcnu --time=03:00:00 --pty bash -i
 # srun --nodes=1 --ntasks-per-node=1 --gres=gpu:2 --mem=32gb --partition mlcnu --time=03:00:00 --pty bash -i
 # srun --nodes=1 --ntasks-per-node=1 --mem=16gb --gres=gpu:1 --partition mlcnu --time=03:00:00 --pty bash -i
