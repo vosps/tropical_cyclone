@@ -12,6 +12,8 @@
 	
 """
 
+# TODO: how to select same set of TCs for both datasets? especially when looking at most extreme. Define most extreme by MSWEP
+
 # import modules
 import random
 import matplotlib.pyplot as plt
@@ -23,7 +25,7 @@ from numpy.random import default_rng
 import seaborn as sns
 sns.set_style("white")
 
-def get_max_rain(tcs):
+def get_max_rain(tcs,dataset='imerg'):
 	"""
 	This function gets the max rain from a list of tc sids
 	"""
@@ -33,10 +35,10 @@ def get_max_rain(tcs):
 
 	# loop through each tc
 	for tc in tcs:
-		if glob.glob('/user/work/al18709/tc_Xy/X_%s.npy' % tc) == []:
+		if glob.glob('/user/work/al18709/tc_Xy_%s/X_%s.npy' % (dataset,tc)) == []:
 			continue
 		# print('/user/work/al18709/tc_Xy/X_%s.npy' % tc)
-		X = np.load('/user/work/al18709/tc_Xy/X_%s.npy' % tc,allow_pickle = True)
+		X = np.load('/user/work/al18709/tc_Xy_%s/X_%s.npy' % (dataset,tc),allow_pickle = True)
 		
 		# isolate extreme TCs
 		max_rain = np.max(X)
@@ -59,7 +61,7 @@ def plot_histogram(ax,max_rains,colour):
 	return sns.histplot(ax=ax,data=max_rains, stat="density",bins=20, fill=True,color=colour,element='step')
 	
 
-def create_set(tcs):	
+def create_set(tcs,datset='imerg'):	
 	# initialise arrays
 	n_tcs = len(tcs)
 	print("n_tcs = ",n_tcs)
@@ -68,10 +70,10 @@ def create_set(tcs):
 
 	# loop through each tc
 	for i,tc in enumerate(tcs):
-		if glob.glob('/user/work/al18709/tc_Xy/y_%s.npy' % tc) == []: # TODO: this directory doesn't have much in it
+		if glob.glob('/user/work/al18709/tc_Xy/%s/y_%s.npy' % (dataset,tc)) == []: # TODO: this directory doesn't have much in it
 			continue
-		y = np.load('/user/work/al18709/tc_Xy/y_%s.npy' % tc,allow_pickle = True)
-		X = np.load('/user/work/al18709/tc_Xy/X_%s.npy' % tc,allow_pickle = True)
+		y = np.load('/user/work/al18709/tc_Xy/%s/y_%s.npy' % (dataset,tc),allow_pickle = True)
+		X = np.load('/user/work/al18709/tc_Xy/%s/X_%s.npy' % (dataset,tc),allow_pickle = True)
 		set_X = np.vstack((set_X,X))
 		set_y = np.vstack((set_y,y))
 	return set_X[1:,:,:],set_y[1:,:,:]
@@ -92,18 +94,33 @@ print('number of sids = ',len(sids))
 tcs = []
 max_rains = []
 
+# define which dataset to look at
+dataset = 'imerg'
+
 # loop through each tc
 for tc in sids:
-	if glob.glob('/user/work/al18709/tc_Xy/X_%s.npy' % tc) == []:
-		continue
-	X = np.load('/user/work/al18709/tc_Xy/X_%s.npy' % tc,allow_pickle = True)
+	
 
-	# isolate extreme TCs
-	max_rain = np.max(X)
+	if glob.glob('/user/work/al18709/tc_Xy/mswep/X_%s.npy' % tc) != []:
+		mswep = np.load('/user/work/al18709/tc_Xy/mswep/X_%s.npy' % tc,allow_pickle = True)
+		# isolate extreme based on mswep
+		max_rain = np.max(mswep)
+	
+		tcs.append(tc)
+		max_rains.append(max_rain)
+	
+	else:
+		continue
+
+		# if glob.glob('/user/work/al18709/tc_Xy/%s/X_%s.npy' % (dataset,tc)) == []:
+		# 	continue
+		# 	X = np.load('/user/work/al18709/tc_Xy/%s/X_%s.npy' % (dataset,tc),allow_pickle = True)
+
+	
 
 	# append to lists
-	tcs.append(tc)
-	max_rains.append(max_rain)
+	
+
 print(len(max_rains))
 print('len sids = ',len(sids))
 

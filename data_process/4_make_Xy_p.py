@@ -41,7 +41,7 @@ def save_Xy(grouped_tcs):
 	# initial set up
 	if dataset == 'mswep':
 		regex = r"/user/work/al18709/tropical_cyclones/mswep/.+?_(.+?)_.*?(..).nc"
-	elif datase == 'imerg':
+	elif dataset == 'imerg':
 		regex = r"/user/work/al18709/tropical_cyclones/imerg/.+?_(.+?)_.*?(..).nc"
 	# regex = r"/user/work/al18709/tropical_cyclones/.+?_(.+?)_.*?.nc"
 	
@@ -81,6 +81,8 @@ def save_Xy(grouped_tcs):
 			# array_flipped = np.zeros((1,100,100))
 			ds = xr.open_dataset(filepath)
 			array = ds.precipitation.values
+			if array.shape != (100,100):
+				continue
 
 		# 	# flip if in SH
 		# 	if basin in ['SP','SA','SI']:
@@ -126,6 +128,7 @@ if __name__ == '__main__':
 	# set up
 	n_processes = 64
 	dataset = 'mswep'
+	dataset = 'imerg'
 	tc_dir = '/user/work/al18709/tropical_cyclones/%s/*.nc' % dataset
 	filepaths = glob.glob(tc_dir)
 	print(filepaths)

@@ -38,7 +38,7 @@ def generate_predictions(*,
     # batch_size = 32
     batch_size = 1
     num_images = 150
-    num_images,_,_ = np.load('/user/work/al18709/tc_data/valid_X.npy').shape
+    num_images,_,_ = np.load('/user/work/al18709/tc_data_mswep/valid_X.npy').shape
     print(num_images)
 
     if gcm == True:
@@ -72,8 +72,11 @@ def generate_predictions(*,
 
     
     # load model weights from main file
-    gen_weights_file = "/user/home/al18709/work/cgan/logs/models-gen_weights.h5"
-    gen_weights_file = "/user/home/al18709/work/cgan/logs/models/gen_weights-%s.h5" % checkpoint
+    print('checkpoint = ',checkpoint)
+    if checkpoint == 'opt':
+        gen_weights_file = "/user/home/al18709/work/cgan/logs/models-gen_weights.h5"
+    else:
+        gen_weights_file = "/user/home/al18709/work/cgan/logs/models/gen_weights-%s.h5" % checkpoint
     model.gen.load_weights(gen_weights_file)
 
     # define initial variables

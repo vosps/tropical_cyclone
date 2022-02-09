@@ -459,9 +459,10 @@ if __name__ == "__main__":
     keyf = lambda text: (re.findall(regex, text)+ [text])[0]
     checkpoints = [gr for gr, items in groupby(sorted(filepaths), key=keyf)]
     print(checkpoints)
-    
+    checkpoints = ['opt']
 
     for checkpoint in checkpoints:
+        print('checkpoint = ',checkpoint)
         generate_predictions(mode=mode,
                             checkpoint=checkpoint,
                             arch=arch,

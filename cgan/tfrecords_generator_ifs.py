@@ -128,7 +128,7 @@ def create_dataset(year,clss,era_shape=(10,10,9),con_shape=(100,100,2),out_shape
             fl+=glob.glob(f"{folder}/{y}_*.{clss}.tfrecords")
     else:
         assert False, f"TFRecords not configure for type {type(year)}"
-    fl = ['/user/work/al18709/tc_data/train_X.npy']
+    fl = ['/user/work/al18709/tc_data_mswep/train_X.npy']
     files_ds = tf.data.Dataset.list_files(fl)
     ds = tf.data.TFRecordDataset(files_ds,
                                  num_parallel_reads=AUTOTUNE)
@@ -139,9 +139,9 @@ def create_dataset(year,clss,era_shape=(10,10,9),con_shape=(100,100,2),out_shape
     print('ds 1 in normal format',ds)
     # insert my code here
     # TODO: ensure ds is in the correct shape
-    x = np.expand_dims(np.load('/user/work/al18709/tc_data/train_X.npy'),axis=3) # inputs this will eventually be (nimags,10,10,nfeatures)
+    x = np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/train_X.npy'),axis=3) # inputs this will eventually be (nimags,10,10,nfeatures)
 
-    y = np.expand_dims(np.load('/user/work/al18709/tc_data/train_y.npy'),axis=3) # outputs
+    y = np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/train_y.npy'),axis=3) # outputs
     # z = np.load('/user/work/al18709/tc_data/train_y.npy') # constants, this will eventually be (100,100,2)
     print(x.shape)
     print(y.shape)
@@ -165,17 +165,17 @@ def create_fixed_dataset(year=None,mode='validation',batch_size=16,
 
     # added this in
     if mode == 'train':
-        x = np.expand_dims(np.load('/user/work/al18709/tc_data/train_X.npy'),axis=3)
-        y = np.expand_dims(np.load('/user/work/al18709/tc_data/train_y.npy'),axis=3)
+        x = np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/train_X.npy'),axis=3)
+        y = np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/train_y.npy'),axis=3)
     elif mode == 'validation':
-        x = np.expand_dims(np.load('/user/work/al18709/tc_data/valid_X.npy'),axis=3)
-        y = np.expand_dims(np.load('/user/work/al18709/tc_data/valid_y.npy'),axis=3)
+        x = np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/valid_X.npy'),axis=3)
+        y = np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/valid_y.npy'),axis=3)
     elif mode == 'extreme_valid':
-        x = np.expand_dims(np.load('/user/work/al18709/tc_data/extreme_valid_X.npy'),axis=3)
-        y = np.expand_dims(np.load('/user/work/al18709/tc_data/extreme_valid_y.npy'),axis=3)
+        x = np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/extreme_valid_X.npy'),axis=3)
+        y = np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/extreme_valid_y.npy'),axis=3)
     elif mode == 'gcm':
-        x = np.expand_dims(np.load('/user/work/al18709/tc_data/gcm_X.npy'),axis=3)
-        y = np.expand_dims(np.load('/user/work/al18709/tc_data/gcm_X.npy'),axis=3)
+        x = np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/gcm_X.npy'),axis=3)
+        y = np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/gcm_X.npy'),axis=3)
     
     ds = tf.data.Dataset.from_tensor_slices((x, y))
 

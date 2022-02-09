@@ -26,6 +26,7 @@ def process_apply(x):
 	cat = x.loc['sshs']
 	time = x.loc['hour']
 	sid = x.loc['sid']
+	basin = x.loc['basin']
 	i = x[0]
 
 	# open file
@@ -39,10 +40,41 @@ def process_apply(x):
 	lon_lower_bound = (np.abs(lon-centre_lon+5.)).argmin()
 	lon_upper_bound = (np.abs(lon-centre_lon-5.)).argmin()
 
-	data = d['Grid'].variables['precipitationCal'][0,lon_lower_bound:lon_upper_bound,lat_lower_bound:lat_upper_bound]
-	lat = lat[lat_lower_bound:lat_upper_bound]
-	lon = lon[lon_lower_bound:lon_upper_bound]
-	d.close()
+	if centre_lon > 175: 
+				print('goes over centre')
+				diff = lon_upper_bound - lon_lower_bound
+				second_upper_bound = 100 - diff
+
+				data1 = d.variables['precipitation'][0,lat_lower_bound:lat_upper_bound,lon_lower_bound:lon_upper_bound]
+				data2 = d.variables['precipitation'][0,lat_lower_bound:lat_upper_bound,0:second_upper_bound]
+				lat = lat[lat_lower_bound:lat_upper_bound]
+				lon1 = lon[lon_lower_bound:lon_upper_bound]
+				lon2 = lon[0:second_upper_bound]
+				data = np.concatenate((data1,data2),axis=1)
+				lon = np.concatenate((lon1,lon2))
+			elif centre_lon < -175:
+				diff = lon_upper_bound - lon_lower_bound
+				second_upper_bound = 100 - diff
+				data1 = d.variables['precipitation'][0,lat_lower_bound:lat_upper_bound,-second_upper_bound:-1]
+				data2 = d.variables['precipitation'][0,lat_lower_bound:lat_upper_bound,lon_lower_bound:lon_upper_bound]
+				lat = lat[lat_lower_bound:lat_upper_bound]
+				lon1 = lon[-second_upper_bound:-1]
+				lon2 = lon[lon_lower_bound:lon_upper_bound]
+				
+				data = np.concatenate((data1,data2),axis=1)
+				lon = np.concatenate((lon1,lon2))
+			else:
+				data = d.variables['precipitationCal'][0,lat_lower_bound:lat_upper_bound,lon_lower_bound:lon_upper_bound]
+				lat = lat[lat_lower_bound:lat_upper_bound]
+				lon = lon[lon_lower_bound:lon_upper_bound]
+				d.close()
+
+
+
+	# data = d['Grid'].variables['precipitationCal'][0,lon_lower_bound:lon_upper_bound,lat_lower_bound:lat_upper_bound]
+	# lat = lat[lat_lower_bound:lat_upper_bound]
+	# lon = lon[lon_lower_bound:lon_upper_bound]
+	
 
 	# precip = np.transpose(precip)
 	da = xr.DataArray(data, 
@@ -51,7 +83,8 @@ def process_apply(x):
 					  attrs=dict(description="Total Precipitation",units="mm"),
 					  name = 'precipitation')
 
-	da.to_netcdf('/user/work/al18709/tropical_cyclones/imerg' + str(name) + '_' + str(sid) + '_hour-' + str(time) + '_idx-' + str(i) + '_cat-' + str(int(cat))+ '.nc')
+	# da.to_netcdf('/user/work/al18709/tropical_cyclones/imerg' + str(name) + '_' + str(sid) + '_hour-' + str(time) + '_idx-' + str(i) + '_cat-' + str(int(cat))+ '.nc')
+	da.to_netcdf('/user/work/al18709/tropical_cyclones/imerg/' + str(name) + '_' + str(sid) + '_hour-' + str(time) + '_idx-' + str(i) + '_cat-' + str(int(cat)) + '_basin-' + str(basin) + '.nc')
 	print('%s saved!' % filepath)
 
 def process_apply_mswep(x):
@@ -194,6 +227,7 @@ def process_mswep(df):
 
 if __name__ == '__main__':
 	dataset = 'mswep' # or imerg
+	dataset = 'imerg'
 	df = pd.read_csv('/user/work/al18709/ibtracks/tc_files.csv')
 	df_split = np.array_split(df, 32)
 	p = Pool(processes=32)
