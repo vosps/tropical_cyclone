@@ -75,13 +75,10 @@ for k in range(num_batches):
     else:
         cond, const, sample = next(batch_gen_iter)
         sample_truth = sample.numpy()
+    
     if denormalise_data:
         sample_truth = data.denormalise(sample_truth)
-    if add_noise:
-        noise_dim_1, noise_dim_2 = sample_truth[0, ..., 0].shape
-        noise = np.random.rand(batch_size, noise_dim_1, noise_dim_2, 1)*noise_factor
-        sample_truth += noise
-        
+    
     # generate predictions
     samples_ecpoint = []
     
@@ -99,34 +96,42 @@ for k in range(num_batches):
     elif ecpoint_model == 'ecpoint_mean': # this has ens=100 every time
         sample_ecpoint = np.mean(benchmarks.ecpointPDFmodel(inputs['lo_res_inputs'],
                                                             data_format="channels_last"), axis=-1)
+      
+    if add_noise:
+        noise_dim_1, noise_dim_2 = sample_truth[0, ..., 0].shape
+        noise = np.random.rand(batch_size, noise_dim_1, noise_dim_2, 1)*noise_factor
+        sample_truth += noise
+        sample_ecpoint += noise
         
-    # turn list into array
-    samples_ecpoint = np.stack(samples_ecpoint, axis=-1) #shape of samples_ecpoint is [n, h, w, c] e.g. [1, 940, 940, 10]
-    
-    # calculate ranks
-    # currently ranks only calculated without pooling
-    # probably fine but may want to threshold in the future, e.g. <1mm, >5mm
-    sample_truth_ranks = sample_truth.ravel() # unwrap into one long array, then unwrap samples_gen in same format
-    samples_ecpoint_ranks = samples_ecpoint.reshape((-1, rank_samples)) # unknown batch size/img dims, known number of samples
-    rank = np.count_nonzero(sample_truth_ranks[:, None] >= samples_ecpoint_ranks, axis=-1) # mask array where truth > samples gen, count
-    ranks.append(rank)
-    del samples_ecpoint_ranks, sample_truth_ranks
-    gc.collect()
-    
-    # calculate CRPS score
-    # crps_ensemble expects truth dims [N, H, W], pred dims [N, H, W, C]
-    crps = crps.crps_ensemble(np.squeeze(sample_truth, axis=-1), samples_ecpoint).mean()
-    
-    if show_progress:
-            losses = [("CRPS", np.mean(crps))]
-            progbar.add(1, values=losses)
-        
+    samples_ecpoint.append(sample_ecpoint.astype("float32"))
+      
+# turn list into array
+samples_ecpoint = np.stack(samples_ecpoint, axis=-1) #shape of samples_ecpoint is [n, h, w, c] e.g. [1, 940, 940, 10]
 
-    ranks = np.concatenate(ranks)
+# calculate ranks
+# currently ranks only calculated without pooling
+# probably fine but may want to threshold in the future, e.g. <1mm, >5mm
+sample_truth_ranks = sample_truth.ravel() # unwrap into one long array, then unwrap samples_gen in same format
+samples_ecpoint_ranks = samples_ecpoint.reshape((-1, rank_samples)) # unknown batch size/img dims, known number of samples
+rank = np.count_nonzero(sample_truth_ranks[:, None] >= samples_ecpoint_ranks, axis=-1) # mask array where truth > samples gen, count
+ranks.append(rank)
+del samples_ecpoint_ranks, sample_truth_ranks
+gc.collect()
+
+# calculate CRPS score
+# crps_ensemble expects truth dims [N, H, W], pred dims [N, H, W, C]
+crps = crps.crps_ensemble(np.squeeze(sample_truth, axis=-1), samples_ecpoint).mean()
+
+if show_progress:
+        losses = [("CRPS", np.mean(crps))]
+        progbar.add(1, values=losses)
+    
+
+ranks = np.concatenate(ranks)
+gc.collect()
+if normalize_ranks:
+    ranks = ranks / rank_samples
     gc.collect()
-    if normalize_ranks:
-        ranks = ranks / rank_samples
-        gc.collect()
 
 # calculate mean and standard deviation
 mean = ranks.mean()
