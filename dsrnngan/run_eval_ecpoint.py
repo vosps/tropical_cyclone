@@ -82,21 +82,23 @@ for k in range(num_batches):
     # generate predictions
     samples_ecpoint = []
     
-    if ecpoint_model == 'ecpoint_no-corr': # pred_ensemble will be batch_size x H x W x ens
+    if ecpoint_model == 'no-corr': # pred_ensemble will be batch_size x H x W x ens
         sample_ecpoint = benchmarks.ecpointmodel(inputs['lo_res_inputs'],
                                                  ensemble_size=ensemble_members,
                                                  data_format="channels_last")
-    elif ecpoint_model == 'ecpoint_part-corr':
+    elif ecpoint_model == 'part-corr':
         sample_ecpoint = benchmarks.ecpointboxensmodel(inputs['lo_res_inputs'],
                                                        ensemble_size=ensemble_members,
                                                        data_format="channels_last")
-    elif ecpoint_model == 'ecpoint_full-corr': # this has ens=100 every time
+    elif ecpoint_model == 'full-corr': # this has ens=100 every time
         sample_ecpoint = benchmarks.ecpointPDFmodel(inputs['lo_res_inputs'],
                                                           data_format="channels_last")
-    elif ecpoint_model == 'ecpoint_mean': # this has ens=100 every time
+    elif ecpoint_model == 'mean': # this has ens=100 every time
         sample_ecpoint = np.mean(benchmarks.ecpointPDFmodel(inputs['lo_res_inputs'],
                                                             data_format="channels_last"), axis=-1)
-      
+    else:
+        raise Exception("Please correctly specify ecpoint model!")
+
     if add_noise:
         noise_dim_1, noise_dim_2 = sample_truth[0, ..., 0].shape
         noise = np.random.rand(batch_size, noise_dim_1, noise_dim_2, 1)*noise_factor
@@ -106,7 +108,7 @@ for k in range(num_batches):
     samples_ecpoint.append(sample_ecpoint.astype("float32"))
       
 # turn list into array
-samples_ecpoint = np.stack(samples_ecpoint, axis=-1) #shape of samples_ecpoint is [n, h, w, c] e.g. [1, 940, 940, 10]
+samples_ecpoint = np.stack(samples_ecpoint, axis=-1) #shape of samples_ecpoint is [n, h, w, c] e.g. [1, 940, 940, 100]
 
 # calculate ranks
 # currently ranks only calculated without pooling
