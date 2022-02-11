@@ -43,8 +43,7 @@ show_progress = True
 normalize_ranks = True
 batch_size = 1 # memory issues
 
-#evaluation.log_line(out_fn, "Method CRPS mean std")
-evaluation.log_line(out_fn, "Method mean std") 
+evaluation.log_line(out_fn, "Method CRPS mean std")
 
 # setup data
 dates=get_dates(eval_year)
@@ -61,6 +60,8 @@ data_ecpoint = DataGeneratorFull(dates=dates,
 ranks = []
 samples_ecpoint = []
 batch_gen_iter  = iter(data_ecpoint)
+rank_scores = []
+crps_scores = []
 
 if show_progress:
     # Initialize progbar and batch counter
@@ -75,8 +76,7 @@ for k in range(num_batches):
         sample_truth = outputs['output']
         sample_truth = np.expand_dims(np.array(sample_truth), axis=-1) # must be 4D tensor for pooling NHWC
     else:
-        cond, const, sample = next(batch_gen_iter)
-        sample_truth = sample.numpy()
+        raise RuntimeError("Small image evaluation not implemented")
     
     if denormalise_data:
         sample_truth = data.denormalise(sample_truth)
@@ -98,50 +98,52 @@ for k in range(num_batches):
                                                             data_format="channels_last"), axis=-1)
     else:
         raise Exception("Please correctly specify ecpoint model!")
-
+    
     if add_noise:
         noise_dim_1, noise_dim_2 = sample_truth[0, ..., 0].shape
         noise = np.random.rand(batch_size, noise_dim_1, noise_dim_2, 1)*noise_factor
         sample_truth += noise
         sample_ecpoint += noise
-
+    
     samples_ecpoint.append(sample_ecpoint.astype("float32"))
+    print(samples_ecpoint.shape)
+    
+    # turn list into array
+    samples_ecpoint = np.stack(samples_ecpoint, axis=-1) #shape of samples_ecpoint is [n, h, w, c] e.g. [1, 940, 940, 100]
+    print(samples_ecpoint.shape)    
+    
+    # calculate ranks
+    # currently ranks only calculated without pooling
+    # probably fine but may want to threshold in the future, e.g. <1mm, >5mm
+    sample_truth_ranks = sample_truth.ravel() # unwrap into one long array, then unwrap samples_gen in same format
+    samples_ecpoint_ranks = samples_ecpoint.reshape((-1, rank_samples)) # unknown batch size/img dims, known number of samples
+    rank = np.count_nonzero(sample_truth_ranks[:, None] >= samples_ecpoint_ranks, axis=-1) # mask array where truth > samples gen, count
+    ranks.append(rank)
+    del samples_ecpoint_ranks, sample_truth_ranks
+    gc.collect()
 
-# turn list into array
-samples_ecpoint = np.stack(samples_ecpoint, axis=-1) #shape of samples_ecpoint is [n, h, w, c] e.g. [1, 940, 940, 100]
-print(samples_ecpoint.shape)
-
-# calculate ranks
-# currently ranks only calculated without pooling
-# probably fine but may want to threshold in the future, e.g. <1mm, >5mm
-sample_truth_ranks = sample_truth.ravel() # unwrap into one long array, then unwrap samples_gen in same format
-samples_ecpoint_ranks = samples_ecpoint.reshape((-1, rank_samples)) # unknown batch size/img dims, known number of samples
-rank = np.count_nonzero(sample_truth_ranks[:, None] >= samples_ecpoint_ranks, axis=-1) # mask array where truth > samples gen, count
-ranks.append(rank)
-del samples_ecpoint_ranks, sample_truth_ranks
-gc.collect()
-
-# calculate CRPS score
-# crps_ensemble expects truth dims [N, H, W], pred dims [N, H, W, C]
-#crps = crps.crps_ensemble(np.squeeze(sample_truth, axis=-1), samples_ecpoint).mean()
-
-#if show_progress:
-    #losses = [("CRPS", np.mean(crps))]
-    #progbar.add(1, values=losses)
+    # calculate CRPS score
+    # crps_ensemble expects truth dims [N, H, W], pred dims [N, H, W, C]
+    crps = crps.crps_ensemble(np.squeeze(sample_truth, axis=-1), samples_ecpoint).mean()
+    crps_scores = []
+    
+    if show_progress:
+        losses = [("CRPS", np.mean(crps))]
+        progbar.add(1, values=losses)
     
 
-ranks = np.concatenate(ranks)
-gc.collect()
-if normalize_ranks:
-    ranks = ranks / rank_samples
+    ranks = np.concatenate(ranks)
+    gc.collect()
+    if normalize_ranks:
+        ranks = ranks / rank_samples
+    rank.append(ranks)
     gc.collect()
 
 # calculate mean and standard deviation
 mean = ranks.mean()
 std = ranks.std()
 
-#evaluation.log_line(out_fn, "{} {:.6f} {:.6f} {:.6f} ".format(ecpoint_model, crps, mean, std))
-evaluation.log_line(out_fn, "{} {:.6f} {:.6f} {:.6f} ".format(ecpoint_model, mean, std))
+evaluation.log_line(out_fn, "{} {:.6f} {:.6f} {:.6f} ".format(ecpoint_model, crps, mean, std))
 
 # save one directory up from model weights, in same dir as logfile
 ranks_folder = os.path.dirname(out_fn)
