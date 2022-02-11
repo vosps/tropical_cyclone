@@ -57,8 +57,6 @@ data_ecpoint = DataGeneratorFull(dates=dates,
                                     hour='random',
                                     ifs_norm=False)
 
-ranks = []
-samples_ecpoint = []
 batch_gen_iter  = iter(data_ecpoint)
 rank_scores = []
 crps_scores = []
@@ -82,6 +80,7 @@ for k in range(num_batches):
         sample_truth = data.denormalise(sample_truth)
     
     # generate predictions
+    samples_ecpoint = []
     if ecpoint_model == 'no-corr': # pred_ensemble will be batch_size x H x W x ens
         sample_ecpoint = benchmarks.ecpointmodel(inputs['lo_res_inputs'],
                                                  ensemble_size=ensemble_members,
@@ -104,15 +103,17 @@ for k in range(num_batches):
         noise = np.random.rand(batch_size, noise_dim_1, noise_dim_2, 1)*noise_factor
         sample_truth += noise
         sample_ecpoint += noise
-    
+    print(f"sample_ecpoint shape is {sample_ecpoint.shape}")
     samples_ecpoint.append(sample_ecpoint.astype("float32"))
-    print(samples_ecpoint.shape)
     
     # turn list into array
     samples_ecpoint = np.stack(samples_ecpoint, axis=-1) #shape of samples_ecpoint is [n, h, w, c] e.g. [1, 940, 940, 100]
-    print(samples_ecpoint.shape)    
+    print(f"samples_ecpoint shape is {samples_ecpoint.shape}")
+    samples_ecpoint = np.squeeze(samples_ecpoint, axis=-1)
+    print(f"samples_ecpoint shape is {samples_ecpoint.shape}")
     
     # calculate ranks
+    ranks = []
     # currently ranks only calculated without pooling
     # probably fine but may want to threshold in the future, e.g. <1mm, >5mm
     sample_truth_ranks = sample_truth.ravel() # unwrap into one long array, then unwrap samples_gen in same format
@@ -124,19 +125,20 @@ for k in range(num_batches):
 
     # calculate CRPS score
     # crps_ensemble expects truth dims [N, H, W], pred dims [N, H, W, C]
-    crps = crps.crps_ensemble(np.squeeze(sample_truth, axis=-1), samples_ecpoint).mean()
-    crps_scores = []
+    print(f"sample_truth shape is {sample_truth.shape}")
+    print(f"samples_ecpoint shape is {samples_ecpoint.shape}")
+    crps_score = crps.crps_ensemble(np.squeeze(sample_truth, axis=-1), samples_ecpoint).mean()
+    crps_scores.append(crps_score)
     
     if show_progress:
-        losses = [("CRPS", np.mean(crps))]
+        losses = [("CRPS", np.mean(crps_scores))]
         progbar.add(1, values=losses)
     
-
     ranks = np.concatenate(ranks)
     gc.collect()
     if normalize_ranks:
         ranks = ranks / rank_samples
-    rank.append(ranks)
+    rank_scores.append(ranks)
     gc.collect()
 
 # calculate mean and standard deviation
