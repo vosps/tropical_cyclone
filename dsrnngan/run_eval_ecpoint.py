@@ -38,7 +38,6 @@ load_full_image = True
 add_noise = True
 noise_factor = 1e-3
 rank_samples = 100
-denormalise_data = True
 show_progress = True
 normalize_ranks = True
 batch_size = 1 # memory issues
@@ -58,7 +57,6 @@ data_ecpoint = DataGeneratorFull(dates=dates,
                                     ifs_norm=False)
 
 batch_gen_iter  = iter(data_ecpoint)
-rank_scores = []
 crps_scores = []
 
 if show_progress:
@@ -75,9 +73,6 @@ for k in range(num_batches):
         sample_truth = np.expand_dims(np.array(sample_truth), axis=-1) # must be 4D tensor for pooling NHWC
     else:
         raise RuntimeError("Small image evaluation not implemented")
-    
-    if denormalise_data:
-        sample_truth = data.denormalise(sample_truth)
     
     # generate predictions
     samples_ecpoint = []
@@ -103,14 +98,11 @@ for k in range(num_batches):
         noise = np.random.rand(batch_size, noise_dim_1, noise_dim_2, 1)*noise_factor
         sample_truth += noise
         sample_ecpoint += noise
-    print(f"sample_ecpoint shape is {sample_ecpoint.shape}")
     samples_ecpoint.append(sample_ecpoint.astype("float32"))
     
     # turn list into array
     samples_ecpoint = np.stack(samples_ecpoint, axis=-1) #shape of samples_ecpoint is [n, h, w, c] e.g. [1, 940, 940, 100]
-    print(f"samples_ecpoint shape is {samples_ecpoint.shape}")
     samples_ecpoint = np.squeeze(samples_ecpoint, axis=-1)
-    print(f"samples_ecpoint shape is {samples_ecpoint.shape}")
     
     # calculate ranks
     ranks = []
@@ -125,8 +117,6 @@ for k in range(num_batches):
 
     # calculate CRPS score
     # crps_ensemble expects truth dims [N, H, W], pred dims [N, H, W, C]
-    print(f"sample_truth shape is {sample_truth.shape}")
-    print(f"samples_ecpoint shape is {samples_ecpoint.shape}")
     crps_score = crps.crps_ensemble(np.squeeze(sample_truth, axis=-1), samples_ecpoint).mean()
     crps_scores.append(crps_score)
     
@@ -134,28 +124,20 @@ for k in range(num_batches):
         losses = [("CRPS", np.mean(crps_scores))]
         progbar.add(1, values=losses)
     
-    ranks = np.concatenate(ranks)
-    gc.collect()
-    if normalize_ranks:
-        ranks = ranks / rank_samples
-    rank_scores.append(ranks)
+ranks = np.concatenate(ranks)
+gc.collect()
+if normalize_ranks:
+    ranks = ranks / rank_samples
     gc.collect()
 
 # calculate mean and standard deviation
 mean = ranks.mean()
 std = ranks.std()
 
-evaluation.log_line(out_fn, "{} {:.6f} {:.6f} {:.6f} ".format(ecpoint_model, crps, mean, std))
+crps_score = np.asarray(crps_scores).mean()
+evaluation.log_line(out_fn, "{} {:.6f} {:.6f} {:.6f} ".format(ecpoint_model, crps_score, mean, std))
 
 # save one directory up from model weights, in same dir as logfile
 ranks_folder = os.path.dirname(out_fn)
-
-if add_noise is False and load_full_image is False:
-    fname = 'ranks-small_image-{}.npz'.format(ecpoint_model)
-elif add_noise is True and load_full_image is False:
-    fname = 'ranks-small_image-noise-{}.npz'.format(ecpoint_model)
-elif add_noise is False and load_full_image is True:
-    fname = 'ranks-full_image-{}.npz'.format(ecpoint_model)
-elif add_noise is True and load_full_image is True:
-    fname = 'ranks-full_image-noise-{}.npz'.format(ecpoint_model)
+fname = 'ranks-full_image-noise-{}.npz'.format(ecpoint_model)
 np.savez(os.path.join(ranks_folder, fname), ranks)
