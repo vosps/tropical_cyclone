@@ -27,6 +27,9 @@ if tf.test.is_built_with_cuda():
 else:
     print("The installed version of TensorFlow does not include GPU support.")
 
+# try this for memory issue?
+# tf.config.gpu_options.allow_growth = True
+os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
 if __name__ == "__main__":
 

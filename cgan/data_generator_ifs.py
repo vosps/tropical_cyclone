@@ -51,7 +51,8 @@ class DataGenerator(Sequence): #TODO: this class needs to include my dataset
         
         # normalise the data
         data_x_batch = np.log10(1+data_x_batch)
-        data_y_batch = np.log10(1+data_x_batch)
+        # data_y_batch = np.log10(1+data_x_batch) #TODO: should this not be data_y_batch?
+        data_y_batch = np.log10(1+data_y_batch) 
 
         if self.downsample:
             data_x_batch = self._dataset_downsampler(data_y_batch[..., np.newaxis])

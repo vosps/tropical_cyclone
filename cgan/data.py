@@ -95,16 +95,14 @@ def load_and_preprocess_masks(mask_paths, lat_limit=UK_LAT_LIMIT, lon_limit=UK_L
 def load_precip_data(data='train'):
     # load in X and y arrays and hope for the best
     if data=='train':
-        # x = np.load('/OLD/work/al18709/tc_data/train_X.npy')
-        # y = np.load('/OLD/work/al18709/tc_data/train_y.npy')
-        x = np.load('/user/home/al18709/work/tc_data/train_X.npy')
-        y = np.load('/user/home/al18709/work/tc_data/train_y.npy')
+        x = np.load('/user/home/al18709/work/tc_data_mswep/train_X.npy')
+        y = np.load('/user/home/al18709/work/tc_data_mswep/train_y.npy')
     elif data == 'valid':
-        x = np.load('/user/home/al18709/work/tc_data/valid_X.npy')
-        y = np.load('/user/home/al18709/work/tc_data/valid_y.npy')
+        x = np.load('/user/home/al18709/work/tc_data_mswep/valid_X.npy')
+        y = np.load('/user/home/al18709/work/tc_data_mswep/valid_y.npy')
     elif data == 'extreme_valid':
-        x = np.load('/user/home/al18709/work/tc_data/extreme_valid_X.npy')
-        y = np.load('/user/home/al18709/work/tc_data/extreme_valid_y.npy')
+        x = np.load('/user/home/al18709/work/tc_data_mswep/extreme_valid_X.npy')
+        y = np.load('/user/home/al18709/work/tc_data_mswep/extreme_valid_y.npy')
 
     return x, y
 

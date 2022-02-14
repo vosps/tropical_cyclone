@@ -7,7 +7,8 @@ records_folder = '/ppdata/tfrecordsIFS_fixed/'
 return_dic = True
 
 def DataGenerator(year,batch_size,repeat=True,downsample = False, weights = None):
-    return create_mixed_dataset(year,batch_size,repeat=repeat, downsample = downsample, weights = weights)
+    # return create_mixed_dataset(year,batch_size,repeat=repeat, downsample = downsample, weights = weights)
+    return create_fixed_dataset(year,mode='train',batch_size=batch_size,downsample=downsample)
 
 def create_random_dataset(year,batch_size,era_shape=(10,10,9),con_shape=(100,100,2),
                          out_shape=(100,100,1),repeat=True,
@@ -118,33 +119,33 @@ def create_dataset(year,clss,era_shape=(10,10,9),con_shape=(100,100,2),out_shape
     I need to change it so that right now it only takes one variable, and we don't need the constant field yet
 
     """
-    AUTOTUNE = tf.data.experimental.AUTOTUNE
-    # generate list of files that relate to the specified years
-    if type(year)==str or type(year) == int:
-        fl = glob.glob(f"{folder}/{year}_*.{clss}.tfrecords")
-    elif type(year)==list:
-        fl = []
-        for y in year:
-            fl+=glob.glob(f"{folder}/{y}_*.{clss}.tfrecords")
-    else:
-        assert False, f"TFRecords not configure for type {type(year)}"
-    fl = ['/user/work/al18709/tc_data_mswep/train_X.npy']
-    files_ds = tf.data.Dataset.list_files(fl)
-    ds = tf.data.TFRecordDataset(files_ds,
-                                 num_parallel_reads=AUTOTUNE)
+    # AUTOTUNE = tf.data.experimental.AUTOTUNE
+    # # generate list of files that relate to the specified years
+    # if type(year)==str or type(year) == int:
+    #     fl = glob.glob(f"{folder}/{year}_*.{clss}.tfrecords")
+    # elif type(year)==list:
+    #     fl = []
+    #     for y in year:
+    #         fl+=glob.glob(f"{folder}/{y}_*.{clss}.tfrecords")
+    # else:
+    #     assert False, f"TFRecords not configure for type {type(year)}"
+    # fl = ['/user/work/al18709/tc_data_mswep/train_X.npy']
+    # files_ds = tf.data.Dataset.list_files(fl)
+    # ds = tf.data.TFRecordDataset(files_ds,
+    #                              num_parallel_reads=AUTOTUNE)
 
     # ds = ds.shuffle(shuffle_size)
     
 
-    print('ds 1 in normal format',ds)
+    # print('ds 1 in normal format',ds)
     # insert my code here
     # TODO: ensure ds is in the correct shape
     x = np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/train_X.npy'),axis=3) # inputs this will eventually be (nimags,10,10,nfeatures)
-
     y = np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/train_y.npy'),axis=3) # outputs
     # z = np.load('/user/work/al18709/tc_data/train_y.npy') # constants, this will eventually be (100,100,2)
-    print(x.shape)
-    print(y.shape)
+    print(x)
+    print(y)
+    print('repeat is: ', repeat)
     
     ds = tf.data.Dataset.from_tensor_slices((x, y))
     # ds = tf.data.Dataset((x, y))

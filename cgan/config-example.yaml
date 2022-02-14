@@ -9,13 +9,13 @@ SETUP:
     log_folder: "/user/home/al18709/work/cgan/logs"
 
 GENERATOR:
-    filters_gen: 128
+    filters_gen: 128 # 128
     noise_channels: 4 # used for GAN
     latent_variables: 1 # used for VAEGAN
     learning_rate_gen: 1e-5
 
 DISCRIMINATOR:
-    filters_disc: 512
+    filters_disc: 512 #512
     learning_rate_disc: 1e-5
 
 TRAIN:
@@ -25,7 +25,7 @@ TRAIN:
     num_samples: 320000
     # steps_per_epoch: 200
     # batch_size: 16
-    steps_per_epoch: 100
+    steps_per_epoch: 200
     batch_size: 16 # number of training samples to work through before model parameters are updated
     kl_weight: 1e-8 # used for VAEGAN
 

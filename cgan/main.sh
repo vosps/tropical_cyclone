@@ -20,6 +20,7 @@ module load lib/cudnn/11.2
 module load lang/cuda/10.1.105
 conda activate alpine
 echo alpine environment activated
+echo running cgan
 python main.py --config config-example.yaml --eval_blitz
 # python main.py --config config-example.yaml --no_train --eval_blitz 
 # srun --nodes=1 --ntasks-per-node=1 --mem=16gb --partition mlcnu --time=03:00:00 --pty bash -i

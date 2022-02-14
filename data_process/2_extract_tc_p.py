@@ -1,9 +1,11 @@
 """
 	2. this script takes the filepaths generated in 1. and locates the eye of the TC in IMERG or MSWEP to extract the tc
 
-MSWEP latitude data needs to be flipped in advance in order for lats to be in ascending order
-
 https://disc.gsfc.nasa.gov/information/howto?title=How%20to%20Read%20IMERG%20Data%20Using%20Python
+
+inputs: csv with filepaths to rainfall and centre lat lon points
+
+outputs: netcdf file for each storm snapshot, metadata saved within filename
 """
 print('running')
 import glob

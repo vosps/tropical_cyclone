@@ -1,4 +1,6 @@
-
+"""
+This dataset flips the latitude and logitude of mswep data
+"""
 
 import glob
 import pandas as pd
@@ -17,7 +19,7 @@ d.close()
 print(lat)
 print(lon)
 
-filepath = '/bp1store/geog-tropical/data/Obs/MSWEP/3hourly/2012220.06.nc'
+filepath = '/bp1store/geog-tropical/data/Obs/MSWEP/3hourly_invertlat/2012220.06.nc' #changing to invertlat might have fixed the mswep issue
 d = Dataset(filepath, 'r')
 lat = d.variables['lat'][:] #lat
 lon = d.variables['lon'][:] #lon

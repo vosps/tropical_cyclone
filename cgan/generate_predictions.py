@@ -122,7 +122,7 @@ def generate_predictions(*,
     print(seq_real.shape)
     print(pred.shape)
     print(low_res_inputs.shape)
-    print(seq_real)
+    # print(seq_real)
     np.save('/user/home/al18709/work/cgan_predictions/%s_real-%s.npy' % (mode,checkpoint),seq_real)
     np.save('/user/home/al18709/work/cgan_predictions/%s_pred-%s.npy' % (mode,checkpoint),pred)
     np.save('/user/home/al18709/work/cgan_predictions/%s_input-%s.npy' % (mode,checkpoint),low_res_inputs)
