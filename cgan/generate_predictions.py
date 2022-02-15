@@ -86,16 +86,17 @@ def generate_predictions(*,
     
     # loop through images and get model to predict them
     for i in range(num_images):
-        print('image ',i,end='\r')
+        print('image ',i)
         inputs, outputs = next(data_pred_iter)
         img_real = outputs
         img_pred = []       
         noise_shape = inputs[0,...,0].shape + (noise_channels,)
-        noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size)
+        noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size) # does noise gen need to be outside of the for loop?
         
         # generate ensemble noise channels
-        noise_gen *= 1.0
-        noise_gen -= 0.0
+        # nn = noise_gen()
+        # nn *= 1.0
+        # nn -= 0.0
 
 
         # img_pred = np.array(data.denormalise(model.gen.predict([inputs,noise_gen()]))[...,0])
@@ -103,8 +104,18 @@ def generate_predictions(*,
 
 
         # make prediction
-        img_pred = np.array(model.gen.predict([inputs,noise_gen()]))
+        # img_pred = np.array(model.gen.predict([inputs,noise_gen()]))
+        # print('nn: ',nn)
+        # print('nn shape: ',nn.shape)
+        img_pred = np.zeros((1,100,100,4))
+        for j in range(4):
+            nn = noise_gen()
+            pred_single = np.array(model.gen.predict([inputs,nn]))[:,:,:,0]
+            print(pred_single.shape)
+            img_pred[:,:,:,j] = pred_single
         
+
+        print('img pred shape: ',img_pred.shape)
         # append to relevant array
         if i == 0:
             seq_real.append(img_real)
