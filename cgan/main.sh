@@ -5,7 +5,7 @@
 #SBATCH --gres=gpu:2
 #SBATCH --ntasks-per-node=1
 #SBATCH --job-name=cgan
-#SBATCH --partition mlcnu
+#SBATCH --partition cnu
 source ~/.bashrc
 cd $SLURM_SUBMIT_DIR
 echo Running on host `hostname`
@@ -17,6 +17,8 @@ echo $SLURM_JOB_NODELIST
 module load lang/python/anaconda/3.7-2019.03
 module load lang/cdo/1.9.8-gcc
 module load lib/cudnn/11.2
+# module load lang/cuda/10.1.105 GPU RTX 3090 might not be able to use this version of cuda
+# module --ignore-cache load "lang/cuda/11.2"
 module load lang/cuda/10.1.105
 conda activate alpine
 echo alpine environment activated

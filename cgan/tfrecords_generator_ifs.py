@@ -7,8 +7,8 @@ records_folder = '/ppdata/tfrecordsIFS_fixed/'
 return_dic = True
 
 def DataGenerator(year,batch_size,repeat=True,downsample = False, weights = None):
-    # return create_mixed_dataset(year,batch_size,repeat=repeat, downsample = downsample, weights = weights)
-    return create_fixed_dataset(year,mode='train',batch_size=batch_size,downsample=downsample)
+    return create_mixed_dataset(year,batch_size,repeat=repeat, downsample = downsample, weights = weights)
+    # return create_fixed_dataset(year,mode='train',batch_size=batch_size,downsample=downsample)
 
 def create_random_dataset(year,batch_size,era_shape=(10,10,9),con_shape=(100,100,2),
                          out_shape=(100,100,1),repeat=True,
@@ -18,29 +18,31 @@ def create_random_dataset(year,batch_size,era_shape=(10,10,9),con_shape=(100,100
                                shuffle_size = shuffle_size)
     return dataset.batch(batch_size).prefetch(2)
 
-def create_mixed_dataset(year,batch_size,era_shape=(10,10,9),con_shape=(100,100,2),
+# def create_mixed_dataset(year,batch_size,era_shape=(10,10,9),con_shape=(100,100,2),
+#                          out_shape=(100,100,1),repeat=True,downsample = False,
+#                          folder=records_folder, shuffle_size = 1024,
+#                          weights = None):
+
+def create_mixed_dataset(year,batch_size,era_shape=(10,10,1),
                          out_shape=(100,100,1),repeat=True,downsample = False,
                          folder=records_folder, shuffle_size = 1024,
                          weights = None):
-
     classes = 4
     # classes = 1
     if weights is None:
         weights = [1./classes]*classes
     print('repeat',repeat)
     datasets = [create_dataset(year, i, era_shape=era_shape,
-                               con_shape=con_shape,
+                            #    con_shape=con_shape,
                                out_shape=out_shape,folder=folder,
                                shuffle_size = shuffle_size,repeat=repeat)
                 for i in range(classes)]
-    print('datasets',datasets)
+
     # randomly sample dataset
-    # print('weights',weights)
-    # do i need to randomly sample?
     sampled_ds=tf.data.experimental.sample_from_datasets(datasets,
                                                          weights=weights).batch(batch_size)
-    # sampled_ds = datasets.batch(batch_size)
-    print('sampled_ds',sampled_ds)
+    print('downsample is: ',downsample)
+    print('return dic is: ',return_dic)
     if downsample and return_dic:
         sampled_ds=sampled_ds.map(_dataset_downsampler)
     elif downsample and not return_dic:
@@ -68,34 +70,39 @@ def _dataset_downsampler_list(inputs,outputs):
     """
     
     image = outputs
-    print('outputs',outputs)
-    print('inputs',inputs)
-    # print('constants',constants)
     # kernel_tf = tf.constant(0.01,shape=(10,10,1,1), dtype=tf.float32)
     kernel_tf = tf.constant(0.01,shape=(10,10,1,1), dtype=tf.float64) # i think my data input is float 64
     # image = tf.nn.conv2d(image, filters=kernel_tf, strides=[1, 10, 10, 1], padding='VALID', name='conv_debug',data_format='NHWC')
     image = tf.nn.conv2d(image, filters=kernel_tf, strides=[1, 10, 10,1], padding='VALID', name='conv_debug',data_format='NHWC')
     inputs = image
-    print(inputs)
     # return inputs, constants, outputs
     return inputs,outputs
 
-def _parse_batch(record_batch,insize=(10,10,9),consize=(100,100,2),
+# def _parse_batch(record_batch,insize=(10,10,9),consize=(100,100,2),
+#                  outsize=(100,100,1)):
+
+def _parse_batch(record_batch,insize=(10,10,1),
                  outsize=(100,100,1)):
     # Create a description of the features
     feature_description = {
-        'generator_input': tf.io.FixedLenFeature(insize, tf.float32),
-        'constants': tf.io.FixedLenFeature(consize, tf.float32),
-        'generator_output': tf.io.FixedLenFeature(outsize, tf.float32),
+        'generator_input': tf.io.FixedLenFeature(insize, tf.float64),
+        # 'constants': tf.io.FixedLenFeature(consize, tf.float32),
+        'generator_output': tf.io.FixedLenFeature(outsize, tf.float64), #float32
     }
 
     # Parse the input `tf.Example` proto using the dictionary above
+    # insize = tf.cast(insize, tf.float32)
+    # outsize = tf.cast(outsize, tf.float32)
+
     example = tf.io.parse_example(record_batch, feature_description)
     if return_dic:
-        return {'generator_input':example['generator_input'], 'constants':example['constants']},\
+        # return {'generator_input':example['generator_input'], 'constants':example['constants']},\
+        #     {'generator_output':example['generator_output']}
+        return {'generator_input':example['generator_input']},\
             {'generator_output':example['generator_output']}
     else:
-        return example['generator_input'], example['constants'], example['generator_output']
+        # return example['generator_input'], example['constants'], example['generator_output']
+        return example['generator_input'], example['generator_output']
 
 
 def read_npy_file(item):
@@ -103,7 +110,9 @@ def read_npy_file(item):
     data = np.load(item.decode())
     return data.astype(np.float32)
 
-def create_dataset(year,clss,era_shape=(10,10,9),con_shape=(100,100,2),out_shape=(100,100,1),
+# def create_dataset(year,clss,era_shape=(10,10,9),con_shape=(100,100,2),out_shape=(100,100,1),
+#                    folder=records_folder, shuffle_size = 1024, repeat=True):
+def create_dataset(year,clss,era_shape=(10,10,1),out_shape=(100,100,1),
                    folder=records_folder, shuffle_size = 1024, repeat=True):
     """
     this function creates the dataset in the format input, constants, output
@@ -119,36 +128,39 @@ def create_dataset(year,clss,era_shape=(10,10,9),con_shape=(100,100,2),out_shape
     I need to change it so that right now it only takes one variable, and we don't need the constant field yet
 
     """
-    # AUTOTUNE = tf.data.experimental.AUTOTUNE
-    # # generate list of files that relate to the specified years
-    # if type(year)==str or type(year) == int:
-    #     fl = glob.glob(f"{folder}/{year}_*.{clss}.tfrecords")
-    # elif type(year)==list:
-    #     fl = []
-    #     for y in year:
-    #         fl+=glob.glob(f"{folder}/{y}_*.{clss}.tfrecords")
-    # else:
-    #     assert False, f"TFRecords not configure for type {type(year)}"
-    # fl = ['/user/work/al18709/tc_data_mswep/train_X.npy']
-    # files_ds = tf.data.Dataset.list_files(fl)
-    # ds = tf.data.TFRecordDataset(files_ds,
-    #                              num_parallel_reads=AUTOTUNE)
+    AUTOTUNE = tf.data.experimental.AUTOTUNE
+    # generate list of files that relate to the specified years
+    if type(year)==str or type(year) == int:
+        fl = glob.glob(f"{folder}/{year}_*.{clss}.tfrecords")
+    elif type(year)==list:
+        fl = []
+        for y in year:
+            fl+=glob.glob(f"{folder}/{y}_*.{clss}.tfrecords")
+    else:
+        assert False, f"TFRecords not configure for type {type(year)}"
+    
+    fl = ['/user/work/al18709/tc_data_mswep/train_X.npy']
+    files_ds = tf.data.Dataset.list_files(fl)
+    ds = tf.data.TFRecordDataset(files_ds,
+                                 num_parallel_reads=AUTOTUNE)
 
     # ds = ds.shuffle(shuffle_size)
     
-
-    # print('ds 1 in normal format',ds)
     # insert my code here
     # TODO: ensure ds is in the correct shape
     x = np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/train_X.npy'),axis=3) # inputs this will eventually be (nimags,10,10,nfeatures)
     y = np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/train_y.npy'),axis=3) # outputs
     # z = np.load('/user/work/al18709/tc_data/train_y.npy') # constants, this will eventually be (100,100,2)
-    print(x)
-    print(y)
+    print('x shape: ',x.shape)
+    print('y shape: ',y.shape)
     print('repeat is: ', repeat)
-    
+    print('number of nans in x: ',np.count_nonzero(np.isnan(x)))
+    print('number of nans in y: ',np.count_nonzero(np.isnan(y)))
     ds = tf.data.Dataset.from_tensor_slices((x, y))
-    # ds = tf.data.Dataset((x, y))
+
+    # shuffle, map, then repeat
+    ds = ds.shuffle(shuffle_size)
+    # ds = ds.map(lambda x: _parse_batch(x, insize=era_shape, outsize=out_shape))
 
     print('ds in new format',ds)
 
@@ -158,9 +170,13 @@ def create_dataset(year,clss,era_shape=(10,10,9),con_shape=(100,100,2),out_shape
         return ds
 
 
+# def create_fixed_dataset(year=None,mode='validation',batch_size=16,
+#                          downsample=False,
+#                          era_shape=(10,10,9),con_shape=(100,100,2),out_shape=(100,100,1),
+#                          name=None,folder=records_folder):
 def create_fixed_dataset(year=None,mode='validation',batch_size=16,
                          downsample=False,
-                         era_shape=(10,10,9),con_shape=(100,100,2),out_shape=(100,100,1),
+                         era_shape=(10,10,1),out_shape=(100,100,1),
                          name=None,folder=records_folder):
 
 

@@ -205,12 +205,19 @@ class WGANGP(object):
                 # generate some real samples
                 # (cond,const,sample) = batch_gen_iter.get_next()
                 (cond,sample) = batch_gen_iter.get_next() # remove const as we don't have the constant features here
-                print('training ratio', training_ratio)
-                print('rep', rep)
-                print('cond',cond.shape)
-                print('sample',sample.shape)
+                
+                # print('training ratio', training_ratio)
+                # print('rep', rep)
+                # print('cond',cond.shape)
+                # print('sample',sample.shape)
+                # b,_,_,_ = cond.shape
+                # if b != batch_size:
+                #     print('batch size doesn\'t match? Skipping samples...')
+                #     print(b)
+                #     print(batch_size)
+                    
                 # print('disc_target',disc_target)
-                print('noise gen',noise_gen)
+                # print('noise gen',noise_gen)
                 with Nontrainable(self.gen):   
                     dl = self.disc_trainer.train_on_batch(
                         # [cond,const,noise_gen(),sample], disc_target) #TODO: figure out what const is

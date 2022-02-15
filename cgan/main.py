@@ -119,7 +119,7 @@ if __name__ == "__main__":
         raise ValueError("Problem type is restricted to 'normal' 'superresolution'")
 
     num_epochs = int(num_samples/(steps_per_epoch * batch_size))
-    # num_epochs = 100
+    # num_epochs = 200
     epoch = 1
 
     # create log folder and model save/load subfolder if they don't exist

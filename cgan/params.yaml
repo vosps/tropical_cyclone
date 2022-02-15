@@ -1,0 +1,36 @@
+DISCRIMINATOR:
+  filters_disc: 512
+  learning_rate_disc: 1e-5
+EVAL:
+  add_postprocessing_noise: true
+  num_batches: 64
+  postprocessing_noise_factor: 1e-6
+GENERAL:
+  mode: GAN
+  problem_type: superresolution
+GENERATOR:
+  filters_gen: 128
+  latent_variables: 1
+  learning_rate_gen: 1e-5
+  noise_channels: 4
+MODEL:
+  architecture: normal
+SETUP:
+  log_folder: /user/home/al18709/work/cgan/logs
+TRAIN:
+  batch_size: 16
+  kl_weight: 1e-8
+  num_samples: 320000
+  steps_per_epoch: 100
+  train_years:
+  - 2016
+  - 2017
+  - 2018
+  training_weights:
+  - 0.4
+  - 0.3
+  - 0.2
+  - 0.1
+VAL:
+  val_size: 8
+  val_years: 2019

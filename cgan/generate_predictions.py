@@ -58,13 +58,12 @@ def generate_predictions(*,
 
     # load appropriate dataset 
     # plot_label = 'small'
+    # set initial variables
     mode = 'validation'
-    
-    # mode = 'train'
-    # mode = 'extreme_valid'
     if gcm == True:
         mode = 'gcm'
     
+    # load relevant data
     data_predict = create_fixed_dataset(predict_year,
                                         batch_size=batch_size,
                                         downsample=False,
@@ -94,13 +93,19 @@ def generate_predictions(*,
         noise_shape = inputs[0,...,0].shape + (noise_channels,)
         noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size)
         
-        # do for 1 ensemble member to start?
+        # generate ensemble noise channels
+        noise_gen *= 1.0
+        noise_gen -= 0.0
+
+
         # img_pred = np.array(data.denormalise(model.gen.predict([inputs,noise_gen()]))[...,0])
+        # pred = data.denormalise(model.gen.predict([inputs,noise_gen()]))[0][0]
+
+
         # make prediction
         img_pred = np.array(model.gen.predict([inputs,noise_gen()]))
         
-        # pred = data.denormalise(model.gen.predict([inputs,noise_gen()]))[0][0]
-        
+        # append to relevant array
         if i == 0:
             seq_real.append(img_real)
             pred.append(img_pred)
