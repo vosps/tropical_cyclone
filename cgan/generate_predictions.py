@@ -101,8 +101,6 @@ def generate_predictions(*,
 
         # img_pred = np.array(data.denormalise(model.gen.predict([inputs,noise_gen()]))[...,0])
         # pred = data.denormalise(model.gen.predict([inputs,noise_gen()]))[0][0]
-
-
         # make prediction
         # img_pred = np.array(model.gen.predict([inputs,noise_gen()]))
         # print('nn: ',nn)
