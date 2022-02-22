@@ -8,18 +8,19 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib import colorbar, colors, gridspec
 from matplotlib.backends.backend_pdf import PdfPages
-import cartopy
-import cartopy.crs as ccrs
+# import cartopy
+# import cartopy.crs as ccrs
 from noise import NoiseGenerator
 from setupmodel import setup_model
-import ecpoint
+# import ecpoint
 import data
 import models
 import benchmarks
 import argparse
 from tfrecords_generator_ifs import create_fixed_dataset
 from data_generator_ifs import DataGenerator as DataGeneratorFull
-from data import get_dates, all_ifs_fields
+# from data import get_dates, all_ifs_fields
+from data import all_ifs_fields
 from plots import plot_img_log_coastlines, truncate_colourmap
 from data import ifs_norm
 from rapsd import plot_spectrum1d, rapsd

@@ -1,5 +1,6 @@
 import numpy as np
-from data import ifs_hours, load_ifs_nimrod_batch, get_dates
+# from data import ifs_hours, load_ifs_nimrod_batch, get_dates
+from data import ifs_hours, load_ifs_nimrod_batch
 
 DEFAULT_FER_BINS = [
         -1.1,

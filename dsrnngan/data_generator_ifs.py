@@ -2,7 +2,7 @@
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.utils import Sequence
-from data import load_ifs_nimrod_batch, load_hires_constants, ifs_hours
+from data import load_hires_constants,load_tc_batch
 
 return_dic = True
 
@@ -15,23 +15,23 @@ class DataGenerator(Sequence):
 ):
         self.dates = dates
 
-        if isinstance(hour, str):
-            if hour == 'random':
-                self.hours = np.repeat(ifs_hours, len(self.dates))
-                self.dates = np.tile(self.dates, len(ifs_hours))
-            else:
-                assert False, f"Unsupported hour {hour}"
+        # if isinstance(hour, str):
+        #     if hour == 'random':
+        #         self.hours = np.repeat(ifs_hours, len(self.dates))
+        #         self.dates = np.tile(self.dates, len(ifs_hours))
+        #     else:
+        #         assert False, f"Unsupported hour {hour}"
 
-        elif isinstance(hour, (int, np.integer)):
-            self.hours = np.repeat(hour, len(self.dates))
-            self.dates = np.tile(self.dates, 1)  # lol
+        # elif isinstance(hour, (int, np.integer)):
+        #     self.hours = np.repeat(hour, len(self.dates))
+        #     self.dates = np.tile(self.dates, 1)  # lol
 
-        elif isinstance(hour, (list, np.ndarray)):
-            self.hours = np.repeat(hour, len(self.dates))
-            self.dates = np.tile(self.dates, len(hour))
+        # elif isinstance(hour, (list, np.ndarray)):
+        #     self.hours = np.repeat(hour, len(self.dates))
+        #     self.dates = np.tile(self.dates, len(hour))
 
-        else:
-            assert False, f"Unsupported hour {hour}"
+        # else:
+        #     assert False, f"Unsupported hour {hour}"
 
         self.shuffle = shuffle
         if self.shuffle:
@@ -66,18 +66,15 @@ class DataGenerator(Sequence):
         return image
 
     def __getitem__(self, idx):
-        # Get batch at index idx
-        dates_batch = self.dates[idx*self.batch_size:(idx+1)*self.batch_size]
-        hours_batch = self.hours[idx*self.batch_size:(idx+1)*self.batch_size]
 
-        # Load and return this batch of images
-        data_x_batch, data_y_batch = load_ifs_nimrod_batch(
-            dates_batch,
-            ifs_fields=self.ifs_fields,
-            log_precip=self.log_precip,
-            hour=hours_batch,
-            crop=self.crop,
-            norm=self.ifs_norm)
+        # Load and return this batch of images (ev)
+        data_x_batch, data_y_batch = load_tc_batch(
+            range(idx*self.batch_size,(idx+1)*self.batch_size))
+        
+        # normalise the data (ev) TODO: check this is nec
+        data_x_batch = np.log10(1+data_x_batch)
+        data_y_batch = np.log10(1+data_y_batch) 
+
         if self.downsample:
             data_x_batch = self._dataset_downsampler(data_y_batch[..., np.newaxis])
 

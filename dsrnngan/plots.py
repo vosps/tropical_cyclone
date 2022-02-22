@@ -5,7 +5,7 @@ from matplotlib import colors, gridspec
 import numpy as np
 import pandas as pd
 import data
-import cartopy.crs as ccrs
+# import cartopy.crs as ccrs
 from noise import NoiseGenerator
 import matplotlib as mpl
 
@@ -45,7 +45,8 @@ def plot_sequences(gen,
                    num_instances=4, 
                    out_fn=None):
     
-    for cond, const, seq_real in batch_gen.as_numpy_iterator():
+    # for cond, const, seq_real in batch_gen.as_numpy_iterator():
+    for cond, seq_real in batch_gen.as_numpy_iterator():
         batch_size = cond.shape[0]
 
     seq_gen = []
@@ -53,18 +54,22 @@ def plot_sequences(gen,
         for i in range(num_instances):
             noise_shape = cond[0,...,0].shape + (noise_channels,)
             noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size)
-            seq_gen.append(gen.predict([cond, const, noise_gen()]))
+            # seq_gen.append(gen.predict([cond, const, noise_gen()]))
+            seq_gen.append(gen.predict([cond, noise_gen()]))
     elif mode == 'det':
         for i in range(num_instances):
-            seq_gen.append(gen.predict([cond, const]))
+            # seq_gen.append(gen.predict([cond, const]))
+            seq_gen.append(gen.predict([cond]))
     elif mode == 'VAEGAN':
         ## call encoder
-        (mean, logvar) = gen.encoder([cond, const])
+        # (mean, logvar) = gen.encoder([cond, const])
+        (mean, logvar) = gen.encoder([cond])
         ## run decoder n times
         for i in range(num_instances):
             noise_shape = cond[0,...,0].shape + (latent_variables,)
             noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size)
-            seq_gen.append(gen.decoder.predict([mean, logvar, noise_gen(), const]))
+            # seq_gen.append(gen.decoder.predict([mean, logvar, noise_gen(), const]))
+            seq_gen.append(gen.decoder.predict([mean, logvar, noise_gen()]))
 
     seq_real = data.denormalise(seq_real)
     cond = data.denormalise(cond)

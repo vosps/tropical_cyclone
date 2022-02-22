@@ -93,63 +93,83 @@ def load_and_preprocess_masks(mask_paths, lat_limit=UK_LAT_LIMIT, lon_limit=UK_L
     masks = load_masks_data(mask_paths)
     return preprocess_masks(masks, lat_limit, lon_limit)
 
+# def load_precip_data(data_path, upscaling_factor, data='train',lat_limit=UK_LAT_LIMIT, lon_limit=UK_LON_LIMIT, masks=[]):
+def load_precip_data(data='train'):
+    # load in X and y arrays and hope for the best
+    # TODO: do I need to add another channel to this data?
+    x = np.float32(np.load('/user/home/al18709/work/tc_data_mswep/%s_X.npy' % data))
+    y = np.float32(np.load('/user/home/al18709/work/tc_data_mswep/%s_y.npy' % data))
 
-def load_precip_data(data_path, upscaling_factor, lat_limit=UK_LAT_LIMIT, lon_limit=UK_LON_LIMIT, masks=[]):
+    # if data=='train':
+    #     x = np.load('/user/home/al18709/work/tc_data_mswep/train_X.npy')
+    #     y = np.load('/user/home/al18709/work/tc_data_mswep/train_y.npy')
+    # elif data == 'valid':
+    #     x = np.load('/user/home/al18709/work/tc_data_mswep/valid_X.npy')
+    #     y = np.load('/user/home/al18709/work/tc_data_mswep/valid_y.npy')
+    # elif data == 'extreme_valid':
+    #     x = np.load('/user/home/al18709/work/tc_data_mswep/extreme_valid_X.npy')
+    #     y = np.load('/user/home/al18709/work/tc_data_mswep/extreme_valid_y.npy')
 
-    data = xr.open_dataset(data_path)
+
+    # data = xr.open_dataset(data_path)
 
     # Get a reference to the precip data
-    precip = data['precipitationcal']
+    # precip = data['precipitationcal']
 
-    # Select region according to latitude and longitude limits
-    data_region = select_precip_region(precip, lat_limit, lon_limit)
+    # # Select region according to latitude and longitude limits
+    # data_region = select_precip_region(precip, lat_limit, lon_limit)
 
-    # Add 'channel' axis to the data
-    data_region = np.expand_dims(np.array(data_region), axis=-1)
+    # # Add 'channel' axis to the data
+    # data_region = np.expand_dims(np.array(data_region), axis=-1)
 
-    # Add the masks to the data channels
-    data_region = add_masks(data_region, masks)
+    # # Add the masks to the data channels
+    # data_region = add_masks(data_region, masks)
 
-    # Upscale data by the upscaling factor to provide input to network at first time instance
-    # TODO: change time indexing when working with recurrent network
-    # TODO: allow for more complex/noisy upscaling
-    x = np.array(data_region[0, ::upscaling_factor, ::upscaling_factor])
-    y = np.array(data_region[0])
+    # # Upscale data by the upscaling factor to provide input to network at first time instance
+    # # TODO: change time indexing when working with recurrent network
+    # # TODO: allow for more complex/noisy upscaling
+    # x = np.array(data_region[0, ::upscaling_factor, ::upscaling_factor])
+    # y = np.array(data_region[0])
 
     return (x, y)
 
+def load_tc_batch(idx,data='train'):
+    (x,y) = load_precip_data(data='train')
+    batch_x = x[idx]
+    batch_y = y[idx]
+    return batch_x,batch_y
 
-def load_precip_data_batch(batch_data_paths, upscaling_factor, lat_limit=UK_LAT_LIMIT, lon_limit=UK_LON_LIMIT, masks=[]):
-    batch_x = []
-    batch_y = []
+# def load_precip_data_batch(batch_data_paths, upscaling_factor, lat_limit=UK_LAT_LIMIT, lon_limit=UK_LON_LIMIT, masks=[]):
+#     batch_x = []
+#     batch_y = []
 
-    for data_path in batch_data_paths:
-        x, y = load_precip_data(data_path, upscaling_factor, lat_limit, lon_limit, masks)
-        batch_x.append(x)
-        batch_y.append(y)
+#     for data_path in batch_data_paths:
+#         x, y = load_precip_data(data_path, upscaling_factor, lat_limit, lon_limit, masks)
+#         batch_x.append(x)
+#         batch_y.append(y)
 
-    batch_x = np.array(batch_x, dtype="float32")
-    batch_y = np.array(batch_y, dtype="float32")
+#     batch_x = np.array(batch_x, dtype="float32")
+#     batch_y = np.array(batch_y, dtype="float32")
 
-    return batch_x, batch_y
-
-
-def gather_files_in_dir(file_dir):
-    """ Collect the paths of all the files in a given directory """
-    file_ids = os.listdir(file_dir)
-    file_paths = [os.path.join(file_dir, file_id) for file_id in file_ids]
-    file_paths = [file_path for file_path in file_paths if ".nc" in file_path]
-
-    return file_paths
+#     return batch_x, batch_y
 
 
-def get_dates(year):
-    from glob import glob
-    files = glob(f"/ppdata/NIMROD/{year}/*.nc")
-    dates = []
-    for f in files:
-        dates.append(f[:-3].split('_')[-1])
-    return dates
+# def gather_files_in_dir(file_dir):
+#     """ Collect the paths of all the files in a given directory """
+#     file_ids = os.listdir(file_dir)
+#     file_paths = [os.path.join(file_dir, file_id) for file_id in file_ids]
+#     file_paths = [file_path for file_path in file_paths if ".nc" in file_path]
+
+#     return file_paths
+
+
+# def get_dates(year):
+#     from glob import glob
+#     files = glob(f"/ppdata/NIMROD/{year}/*.nc")
+#     dates = []
+#     for f in files:
+#         dates.append(f[:-3].split('_')[-1])
+#     return dates
 
 def load_nimrod(date, hour, log_precip=False, aggregate=1, crop=None):
     year = date[:4]
@@ -220,12 +240,12 @@ def load_erastack(fields, date, hour, log_precip=False, norm=False, crop=2,
     return np.stack(field_arrays, -1)
 
 
-def load_era_nimrod(nimrodfile=None, date=None, era_fields=['pr', 'prc'], hour=0,
-                    log_precip=False, norm=False, era_crop=2):
-    if nimrodfile is not None:
-        date = nimrodfile[:-3].split('_')[-1]
-    return load_erastack(era_fields, date, hour, log_precip=log_precip, norm=norm, crop=era_crop),\
-        load_nimrod(date, hour, log_precip=log_precip)
+# def load_era_nimrod(nimrodfile=None, date=None, era_fields=['pr', 'prc'], hour=0,
+#                     log_precip=False, norm=False, era_crop=2):
+#     if nimrodfile is not None:
+#         date = nimrodfile[:-3].split('_')[-1]
+#     return load_erastack(era_fields, date, hour, log_precip=log_precip, norm=norm, crop=era_crop),\
+#         load_nimrod(date, hour, log_precip=log_precip)
 
 
 def load_hires_constants(batch_size=1, crop=False,
@@ -258,108 +278,108 @@ def load_hires_constants(batch_size=1, crop=False,
     return np.repeat(np.stack([z, lsm], -1), batch_size, axis=0)
 
 
-def load_era_nimrod_batch(batch_dates, era_fields, log_precip=False,
-                          constants=False, hour=0, norm=False, era_crop=2):
-    batch_x = []
-    batch_y = []
-    if hour == 'random':
-        hours = np.random.randint(24, size=[len(batch_dates)])
-    elif type(hour) == int:
-        hours = len(batch_dates)*[hour]
+# def load_era_nimrod_batch(batch_dates, era_fields, log_precip=False,
+#                           constants=False, hour=0, norm=False, era_crop=2):
+#     batch_x = []
+#     batch_y = []
+#     if hour == 'random':
+#         hours = np.random.randint(24, size=[len(batch_dates)])
+#     elif type(hour) == int:
+#         hours = len(batch_dates)*[hour]
 
-    for i, date in enumerate(batch_dates):
-        h = hours[i]
-        batch_x.append(load_erastack(era_fields, date, h, log_precip=log_precip, norm=norm))
-        batch_y.append(load_nimrod(date, h, log_precip=log_precip))
+#     for i, date in enumerate(batch_dates):
+#         h = hours[i]
+#         batch_x.append(load_erastack(era_fields, date, h, log_precip=log_precip, norm=norm))
+#         batch_y.append(load_nimrod(date, h, log_precip=log_precip))
 
-    if not constants:
-        return np.array(batch_x), np.array(batch_y)
-    else:
-        return [np.array(batch_x), load_hires_constants(len(batch_dates))], np.array(batch_y)
-
-
-def load_ifs_nimrod_batch(batch_dates, ifs_fields=all_ifs_fields, log_precip=False,
-                          constants=False, hour=0, norm=False,
-                          crop=False,
-                          nim_crop=0,
-                          ifs_crop=0):
-    batch_x = []
-    batch_y = []
-    if crop:
-        ifs_crop = (1, -1)
-        nim_crop = (5, -6)
-
-    if type(hour) == str:
-        if hour == 'random':
-            hours = ifs_hours[np.random.randint(22, size=[len(batch_dates)])]
-        else:
-            assert False, f"Not configured for {hour}"
-    elif np.issubdtype(type(hour), np.integer):
-        hours = len(batch_dates)*[hour]
-    else:
-        hours = hour
-
-    for i, date in enumerate(batch_dates):
-        h = hours[i]
-        batch_x.append(load_ifsstack(ifs_fields, date, h, log_precip=log_precip, norm=norm, crop=ifs_crop))
-        batch_y.append(load_nimrod(date, h, log_precip=log_precip, crop=nim_crop))
-
-    if (not constants):
-        return np.array(batch_x), np.array(batch_y)
-    else:
-        return [np.array(batch_x), load_hires_constants(len(batch_dates))], np.array(batch_y)
+#     if not constants:
+#         return np.array(batch_x), np.array(batch_y)
+#     else:
+#         return [np.array(batch_x), load_hires_constants(len(batch_dates))], np.array(batch_y)
 
 
+# def load_ifs_nimrod_batch(batch_dates, ifs_fields=all_ifs_fields, log_precip=False,
+#                           constants=False, hour=0, norm=False,
+#                           crop=False,
+#                           nim_crop=0,
+#                           ifs_crop=0):
+#     batch_x = []
+#     batch_y = []
+#     if crop:
+#         ifs_crop = (1, -1)
+#         nim_crop = (5, -6)
 
-def load_ifs_nimrod_leadtime_batch(batch_dates, ifs_fields=all_ifs_fields, log_precip=False,
-                                   constants=False, leadtime=0, norm=False,
-                                   crop=False,
-                                   nim_crop=0,
-                                   ifs_crop=0):
-    batch_x = []
-    batch_y = []
-    if crop:
-        ifs_crop = (1, -1)
-        nim_crop = (5, -6)
+#     if type(hour) == str:
+#         if hour == 'random':
+#             hours = ifs_hours[np.random.randint(22, size=[len(batch_dates)])]
+#         else:
+#             assert False, f"Not configured for {hour}"
+#     elif np.issubdtype(type(hour), np.integer):
+#         hours = len(batch_dates)*[hour]
+#     else:
+#         hours = hour
 
-    if type(leadtime) == str:
-        assert False, f"Not configured for {leadtime}"
-    elif np.issubdtype(type(leadtime), np.integer):
-        leadtimes = len(batch_dates)*[leadtime]
-    else:
-        leadtimes = leadtime
+#     for i, date in enumerate(batch_dates):
+#         h = hours[i]
+#         batch_x.append(load_ifsstack(ifs_fields, date, h, log_precip=log_precip, norm=norm, crop=ifs_crop))
+#         batch_y.append(load_nimrod(date, h, log_precip=log_precip, crop=nim_crop))
 
-    for i, date in enumerate(batch_dates):
-        h = leadtimes[i]
-        batch_x.append(load_ifsstack(ifs_fields, date, h, log_precip=log_precip, norm=norm, crop=ifs_crop))
-        batch_y.append(load_nimrod(date, h, log_precip=log_precip, crop=nim_crop))
-
-    if (not constants):
-        return np.array(batch_x), np.array(batch_y)
-    else:
-        return [np.array(batch_x), load_hires_constants(len(batch_dates))], np.array(batch_y)
+#     if (not constants):
+#         return np.array(batch_x), np.array(batch_y)
+#     else:
+#         return [np.array(batch_x), load_hires_constants(len(batch_dates))], np.array(batch_y)
 
 
-def load_nimrod_nimrod_batch(batch_dates, log_precip=False,
-                             constants=False, hour=0, aggregate=1):
-    batch_x = []
-    batch_y = []
-    if hour == 'random':
-        hours = np.random.randint(25 - aggregate, size=[len(batch_dates)])
-    elif type(hour) == int:
-        hours = len(batch_dates)*[hour]
 
-    for i, date in enumerate(batch_dates):
-        h = hours[i]
-        dta = load_nimrod(date, h, log_precip=False, aggregate=aggregate)
-        crs = coarsen_nimrod(dta)
-        batch_x.append(logprec(crs, log_precip=log_precip))
-        batch_y.append(logprec(dta, log_precip=log_precip))
+# def load_ifs_nimrod_leadtime_batch(batch_dates, ifs_fields=all_ifs_fields, log_precip=False,
+#                                    constants=False, leadtime=0, norm=False,
+#                                    crop=False,
+#                                    nim_crop=0,
+#                                    ifs_crop=0):
+#     batch_x = []
+#     batch_y = []
+#     if crop:
+#         ifs_crop = (1, -1)
+#         nim_crop = (5, -6)
 
-    if not constants:
-        return np.array(batch_x), np.array(batch_y)
-    else:
-        return [np.array(batch_x), load_hires_constants(len(batch_dates))], np.array(batch_y)
+#     if type(leadtime) == str:
+#         assert False, f"Not configured for {leadtime}"
+#     elif np.issubdtype(type(leadtime), np.integer):
+#         leadtimes = len(batch_dates)*[leadtime]
+#     else:
+#         leadtimes = leadtime
+
+#     for i, date in enumerate(batch_dates):
+#         h = leadtimes[i]
+#         batch_x.append(load_ifsstack(ifs_fields, date, h, log_precip=log_precip, norm=norm, crop=ifs_crop))
+#         batch_y.append(load_nimrod(date, h, log_precip=log_precip, crop=nim_crop))
+
+#     if (not constants):
+#         return np.array(batch_x), np.array(batch_y)
+#     else:
+#         return [np.array(batch_x), load_hires_constants(len(batch_dates))], np.array(batch_y)
+
+
+# def load_nimrod_nimrod_batch(batch_dates, log_precip=False,
+#                              constants=False, hour=0, aggregate=1):
+#     batch_x = []
+#     batch_y = []
+#     if hour == 'random':
+#         hours = np.random.randint(25 - aggregate, size=[len(batch_dates)])
+#     elif type(hour) == int:
+#         hours = len(batch_dates)*[hour]
+
+#     for i, date in enumerate(batch_dates):
+#         h = hours[i]
+#         dta = load_nimrod(date, h, log_precip=False, aggregate=aggregate)
+#         crs = coarsen_nimrod(dta)
+#         batch_x.append(logprec(crs, log_precip=log_precip))
+#         batch_y.append(logprec(dta, log_precip=log_precip))
+
+#     if not constants:
+#         return np.array(batch_x), np.array(batch_y)
+#     else:
+#         return [np.array(batch_x), load_hires_constants(len(batch_dates))], np.array(batch_y)
 
 
 def load_ifs(ifield, date, hour, log_precip=False, norm=False, crop=0):
@@ -481,11 +501,11 @@ def load_ifs_leadtime(ifield, date, forecasttime, leadtime, log_precip=False, no
         return y
 
 
-def load_ifsstack(fields, date, hour, log_precip=False, norm=False, crop=0.):
-    field_arrays = []
-    for f in fields:
-        field_arrays.append(load_ifs(f, date, hour, log_precip=log_precip, norm=norm, crop=crop))
-    return np.stack(field_arrays, -1)
+# def load_ifsstack(fields, date, hour, log_precip=False, norm=False, crop=0.):
+#     field_arrays = []
+#     for f in fields:
+#         field_arrays.append(load_ifs(f, date, hour, log_precip=log_precip, norm=norm, crop=crop))
+#     return np.stack(field_arrays, -1)
 
 def load_ifsstack_leadtime(fields, date, start_hour, lead_time, log_precip=False, norm=False, crop=0.):
     field_arrays = []
@@ -537,37 +557,37 @@ def getifsstats(field, year=2018):
     return mi, mx, mn, sd
 
 
-def gen_norm(year=2016):
-    # Save stats for specific year
-    import pickle
-    stats_dic = {}
-    for f in all_era_fields:
-        stats = getstats(f, year)
-        if f == 'psl':
-            stats_dic[f] = [stats[2], stats[3]]
-        elif f == "u700" or f == "v700":
-            stats_dic[f] = [0, max(-stats[0], stats[1])]
-        else:
-            stats_dic[f] = [0, stats[1]]
-    with open(f'/ppdata/constants/ERANorm{year}.pkl', 'wb') as f:
-        pickle.dump(stats_dic, f, 0)
-    return
+# def gen_norm(year=2016):
+#     # Save stats for specific year
+#     import pickle
+#     stats_dic = {}
+#     for f in all_era_fields:
+#         stats = getstats(f, year)
+#         if f == 'psl':
+#             stats_dic[f] = [stats[2], stats[3]]
+#         elif f == "u700" or f == "v700":
+#             stats_dic[f] = [0, max(-stats[0], stats[1])]
+#         else:
+#             stats_dic[f] = [0, stats[1]]
+#     with open(f'/ppdata/constants/ERANorm{year}.pkl', 'wb') as f:
+#         pickle.dump(stats_dic, f, 0)
+#     return
 
 
-def gen_ifs_norm(year=2018):
-    import pickle
-    stats_dic = {}
-    for f in all_ifs_fields:
-        stats = getifsstats(f, year)
-        if f == 'sp':
-            stats_dic[f] = [stats[2], stats[3]]
-        elif f == "u700" or f == "v700":
-            stats_dic[f] = [0, max(-stats[0], stats[1])]
-        else:
-            stats_dic[f] = [0, stats[1]]
-    with open(f'/ppdata/constants/IFSNorm{year}F.pkl', 'wb') as f:
-        pickle.dump(stats_dic, f, 0)
-    return
+# def gen_ifs_norm(year=2018):
+#     import pickle
+#     stats_dic = {}
+#     for f in all_ifs_fields:
+#         stats = getifsstats(f, year)
+#         if f == 'sp':
+#             stats_dic[f] = [stats[2], stats[3]]
+#         elif f == "u700" or f == "v700":
+#             stats_dic[f] = [0, max(-stats[0], stats[1])]
+#         else:
+#             stats_dic[f] = [0, stats[1]]
+#     with open(f'/ppdata/constants/IFSNorm{year}F.pkl', 'wb') as f:
+#         pickle.dump(stats_dic, f, 0)
+#     return
 
 
 def load_norm(year=2016):
@@ -582,64 +602,64 @@ def load_ifs_norm(year=2016, tag=''):
         return pickle.load(f)
 
 
-def get_long_data(fields,start_date,start_hour,lead_time,
-                  log_precip=False, crop=None, norm=False,
-                  nim_crop = 0, ifs_crop = 0,
-                 ):
+# def get_long_data(fields,start_date,start_hour,lead_time,
+#                   log_precip=False, crop=None, norm=False,
+#                   nim_crop = 0, ifs_crop = 0,
+#                  ):
 
-    global IFS_PATH
-    IFS_PATH = '/ppdata/IFSLong/'
-    ifslong = xr.open_dataset(f'{IFS_PATH}sfc_{start_date}_{start_hour}.nc')
+#     global IFS_PATH
+#     IFS_PATH = '/ppdata/IFSLong/'
+#     ifslong = xr.open_dataset(f'{IFS_PATH}sfc_{start_date}_{start_hour}.nc')
     
-    if crop:
-        ifs_crop = (1, -1)
-        nim_crop = (5, -6)
+#     if crop:
+#         ifs_crop = (1, -1)
+#         nim_crop = (5, -6)
 
-    #IFS labels time by the end of the hour rather than beginning
-    time = ifslong.time[lead_time] - pd.Timedelta(hours=1)
-    # try: 
-    nim=load_nimrod(time.dt.strftime('%Y%m%d').item(),time.dt.hour.item(),
-                    log_precip=log_precip, aggregate=1, crop=nim_crop,
-    )
+#     #IFS labels time by the end of the hour rather than beginning
+#     time = ifslong.time[lead_time] - pd.Timedelta(hours=1)
+#     # try: 
+#     nim=load_nimrod(time.dt.strftime('%Y%m%d').item(),time.dt.hour.item(),
+#                     log_precip=log_precip, aggregate=1, crop=nim_crop,
+#     )
     
-    ifs = load_ifsstack_leadtime(fields,start_date,start_hour,lead_time,
-                                 log_precip=log_precip, norm=norm, crop=ifs_crop,                               
-    )
-    ifslong.close()
-    return ifs,nim    
-    # except:
-    #     print("Warning NIMROD, no data found")
-    #     ifslong.close()
-    #     return None,None
+#     ifs = load_ifsstack_leadtime(fields,start_date,start_hour,lead_time,
+#                                  log_precip=log_precip, norm=norm, crop=ifs_crop,                               
+#     )
+#     ifslong.close()
+#     return ifs,nim    
+#     # except:
+#     #     print("Warning NIMROD, no data found")
+#     #     ifslong.close()
+#     #     return None,None
 
 
-def get_long_dates(year,lead_time,
-                   start_times = ['00','12'],
-                 ):
-    global IFS_PATH
-    IFS_PATH = '/ppdata/IFSLong/'
-    start_times = ensure_list(start_times) # otherwise if you have start_times='00' start_hour will be '0'
-    date = datetime(year,1,1)
-    dt = timedelta(days=1)
-    final_date = datetime(year+1,1,1)
-    all_dates = []
-    all_starts = []
-    while date < final_date:
-        start_date = date.strftime('%Y%m%d')
-        for start_hour in start_times:
-            ifslong = xr.open_dataset(f'{IFS_PATH}sfc_{start_date}_{start_hour}.nc')
-            time = ifslong.time[lead_time] - pd.Timedelta(hours=1)
-            try: 
-                nim=load_nimrod(time.dt.strftime('%Y%m%d').item(),time.dt.hour.item(),
-                            )
-                all_dates.append(start_date)
-                all_starts.append(start_hour)
-            except:
-                pass
-            ifslong.close()
-        date+=dt
+# def get_long_dates(year,lead_time,
+#                    start_times = ['00','12'],
+#                  ):
+#     global IFS_PATH
+#     IFS_PATH = '/ppdata/IFSLong/'
+#     start_times = ensure_list(start_times) # otherwise if you have start_times='00' start_hour will be '0'
+#     date = datetime(year,1,1)
+#     dt = timedelta(days=1)
+#     final_date = datetime(year+1,1,1)
+#     all_dates = []
+#     all_starts = []
+#     while date < final_date:
+#         start_date = date.strftime('%Y%m%d')
+#         for start_hour in start_times:
+#             ifslong = xr.open_dataset(f'{IFS_PATH}sfc_{start_date}_{start_hour}.nc')
+#             time = ifslong.time[lead_time] - pd.Timedelta(hours=1)
+#             try: 
+#                 nim=load_nimrod(time.dt.strftime('%Y%m%d').item(),time.dt.hour.item(),
+#                             )
+#                 all_dates.append(start_date)
+#                 all_starts.append(start_hour)
+#             except:
+#                 pass
+#             ifslong.close()
+#         date+=dt
 
-    return np.array(all_dates),np.array(all_starts)
+#     return np.array(all_dates),np.array(all_starts)
 
 
 try:

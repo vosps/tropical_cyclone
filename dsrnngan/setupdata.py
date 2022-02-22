@@ -37,7 +37,7 @@ def setup_full_image_dataset(years,
                              downsample=False):
 
     from data_generator_ifs import DataGenerator as DataGeneratorFull
-    from data import get_dates
+    # from data import get_dates
 
     dates = get_dates(years)
     data_full = DataGeneratorFull(dates=dates,

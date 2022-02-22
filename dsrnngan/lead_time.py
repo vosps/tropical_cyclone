@@ -10,7 +10,7 @@ from noise import NoiseGenerator
 import crps
 import gc
 import benchmarks
-import ecpoint
+# import ecpoint
 import pickle
 
 parser = argparse.ArgumentParser()

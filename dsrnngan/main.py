@@ -2,7 +2,8 @@ import argparse
 import json
 import os
 from pathlib import Path
-
+import glob
+import re
 import matplotlib; matplotlib.use("Agg")  # noqa: E702
 import numpy as np
 import pandas as pd
@@ -11,8 +12,24 @@ import train
 import setupmodel
 import setupdata
 import evaluation
+from itertools import groupby
 import plots
 import roc
+from generate_predictions import generate_predictions
+
+import tensorflow as tf
+from tensorflow.python.client import device_lib 
+
+print(device_lib.list_local_devices())
+print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
+print("Is GPU available? ",tf.test.is_gpu_available())
+if tf.test.is_built_with_cuda():
+    print("The installed version of TensorFlow includes GPU support.")
+else:
+    print("The installed version of TensorFlow does not include GPU support.")
+
+# try this for memory issue?
+os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
 
 # model iterations to save full rank data to disk for during evaluations;
@@ -379,3 +396,43 @@ if __name__ == "__main__":
                             padding=padding,
                             predict_year=val_years,
                             predict_full_image=predict_full_image)
+
+    filepaths = glob.glob('/user/home/al18709/work/cgan/logs/models/*.h5')
+    regex = r"/user/home/al18709/work/cgan/logs/models/gen_weights-(.+?).h5"
+    keyf = lambda text: (re.findall(regex, text)+ [text])[0]
+    checkpoints = [gr for gr, items in groupby(sorted(filepaths), key=keyf)]
+    print(checkpoints)
+    checkpoints = ['opt']
+
+    for checkpoint in checkpoints:
+        print('checkpoint = ',checkpoint)
+        generate_predictions(mode=mode,
+                            checkpoint=checkpoint,
+                            arch=arch,
+                            log_folder=log_folder,
+                            padding=padding,
+                            # weights_dir=model_weights_root,
+                            # model_numbers=model_numbers,
+                            # problem_type=problem_type,
+                            filters_gen=filters_gen,
+                            filters_disc=filters_disc,
+                            noise_channels=noise_channels,
+                            latent_variables=latent_variables,
+                            predict_year=val_years,
+                            predict_full_image=False,
+                            )
+
+    # generate_predictions(mode=mode,
+    #                         arch=arch,
+    #                         log_folder=log_folder,
+    #                         weights_dir=model_weights_root,
+    #                         model_numbers=model_numbers,
+    #                         problem_type=problem_type,
+    #                         filters_gen=filters_gen,
+    #                         filters_disc=filters_disc,
+    #                         noise_channels=noise_channels,
+    #                         latent_variables=latent_variables,
+    #                         predict_year=val_years,
+    #                         predict_full_image=False,
+    #                         gcm = True
+    #                         )

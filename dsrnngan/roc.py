@@ -9,10 +9,11 @@ from tfrecords_generator_ifs import create_fixed_dataset
 from data_generator_ifs import DataGenerator as DataGeneratorFull
 import setupmodel
 import data
-import ecpoint
+# import ecpoint
 import benchmarks
 from noise import NoiseGenerator
-from data import get_dates, all_ifs_fields
+# from data import get_dates, all_ifs_fields
+from data import all_ifs_fields
 from pooling import pool
 
 

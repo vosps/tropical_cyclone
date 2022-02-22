@@ -18,16 +18,16 @@ def DataGenerator(year, batch_size, repeat=True, downsample=False, weights=None)
 #     return dataset.batch(batch_size).prefetch(2)
 
 
-def create_mixed_dataset(year, batch_size, era_shape=(20,20,9), con_shape=(200,200,2),
-                         out_shape=(200,200,1), repeat=True, downsample=False,
-                         folder=records_folder, shuffle_size=1024,
-                         weights=None):
+def create_mixed_dataset(year,batch_size,era_shape=(10,10,1),
+                         out_shape=(100,100,1),repeat=True,downsample = False,
+                         folder=records_folder, shuffle_size = 1024,
+                         weights = None):
 
     classes = 4
     if weights is None:
         weights = [1./classes]*classes
     datasets = [create_dataset(year, i, era_shape=era_shape,
-                               con_shape=con_shape,
+                            #    con_shape=con_shape,
                                out_shape=out_shape, folder=folder,
                                shuffle_size=shuffle_size, repeat=repeat)
                 for i in range(classes)]
@@ -53,12 +53,15 @@ def _dataset_downsampler(inputs,outputs):
     inputs['lo_res_inputs'] = image
     return inputs,outputs
 
-def _dataset_downsampler_list(inputs, constants, outputs):
+# def _dataset_downsampler_list(inputs, constants, outputs):
+def _dataset_downsampler_list(inputs, outputs):
     image = outputs
     kernel_tf = tf.constant(0.01,shape=(10,10,1,1), dtype=tf.float32)
+    # kernel_tf = tf.constant(0.01,shape=(10,10,1,1), dtype=tf.float64)
     image = tf.nn.conv2d(image, filters=kernel_tf, strides=[1, 10, 10, 1], padding='VALID', name='conv_debug',data_format='NHWC')
     inputs = image
-    return inputs, constants, outputs
+    # return inputs, constants, outputs
+    return inputs, outputs
 
 def _parse_batch(record_batch,insize=(10,10,9),consize=(100,100,2),
                  outsize=(100,100,1)):
@@ -79,51 +82,124 @@ def _parse_batch(record_batch,insize=(10,10,9),consize=(100,100,2),
         return example['generator_input'], example['constants'], example['generator_output']
 
 
-def create_dataset(year,clss,era_shape=(10,10,9),con_shape=(100,100,2),out_shape=(100,100,1),
+# def create_dataset(year,clss,era_shape=(10,10,9),con_shape=(100,100,2),out_shape=(100,100,1),
+#                    folder=records_folder, shuffle_size = 1024, repeat=True):
+def create_dataset(year,clss,era_shape=(10,10,1),out_shape=(100,100,1),
                    folder=records_folder, shuffle_size = 1024, repeat=True):
+    """
+    this function creates the dataset in the format input, constants, output
+
+    variables
+                input : (10,10,9)
+                low resolution input data with all the 9 data variables
+                constant : (100,100,2)
+                the two constant variables in high resolution; LSM and orography
+                output : (100,100,1)
+                real or fake image in high resolution
+
+    I need to change it so that right now it only takes one variable, and we don't need the constant field yet
+
+    """
     AUTOTUNE = tf.data.experimental.AUTOTUNE
-    if type(year)==str or type(year) == int:
-        fl = glob.glob(f"{folder}/{year}_*.{clss}.tfrecords")
-    elif type(year)==list:
-        fl = []
-        for y in year:
-            fl+=glob.glob(f"{folder}/{y}_*.{clss}.tfrecords")
-    else:
-        assert False, f"TFRecords not configure for type {type(year)}"
+    # TODO: not sure if this should be commented out.
+    # if type(year)==str or type(year) == int:
+    #     fl = glob.glob(f"{folder}/{year}_*.{clss}.tfrecords")
+    # elif type(year)==list:
+    #     fl = []
+    #     for y in year:
+    #         fl+=glob.glob(f"{folder}/{y}_*.{clss}.tfrecords")
+    # else:
+    #     assert False, f"TFRecords not configure for type {type(year)}"
+    # files_ds = tf.data.Dataset.list_files(fl)
+    # ds = tf.data.TFRecordDataset(files_ds,
+    #                              num_parallel_reads=AUTOTUNE)
+    # ds = ds.shuffle(shuffle_size)
+    # ds = ds.map(lambda x: _parse_batch(x, insize=era_shape,consize=con_shape,
+    #                                    outsize=out_shape))
+
+    fl = ['/user/work/al18709/tc_data_mswep/train_X.npy']
     files_ds = tf.data.Dataset.list_files(fl)
     ds = tf.data.TFRecordDataset(files_ds,
                                  num_parallel_reads=AUTOTUNE)
+
+    # ds = ds.shuffle(shuffle_size)
+    
+    # insert my code here
+    # TODO: ensure ds is in the correct shape
+    x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/train_X.npy'),axis=3)) # inputs this will eventually be (nimags,10,10,nfeatures)
+    y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/train_y.npy'),axis=3)) # outputs
+    # z = np.load('/user/work/al18709/tc_data/train_y.npy') # constants, this will eventually be (100,100,2)
+    print('x shape: ',x.shape)
+    print('y shape: ',y.shape)
+    print('repeat is: ', repeat)
+    print('number of nans in x: ',np.count_nonzero(np.isnan(x)))
+    print('number of nans in y: ',np.count_nonzero(np.isnan(y)))
+    ds = tf.data.Dataset.from_tensor_slices((x, y))
+
+    # shuffle, map, then repeat
     ds = ds.shuffle(shuffle_size)
-    ds = ds.map(lambda x: _parse_batch(x, insize=era_shape,consize=con_shape,
-                                       outsize=out_shape))
+    # ds = ds.map(lambda x: _parse_batch(x, insize=era_shape, outsize=out_shape))
+
+    print('ds in new format',ds)
+
     if repeat:
         return ds.repeat()
     else:
         return ds
 
+# def create_fixed_dataset(year=None,mode='validation',batch_size=16,
+#                          downsample=False,
+#                          era_shape=(20,20,9),con_shape=(200,200,2),out_shape=(200,200,1),
+#                          name=None,folder=records_folder):
+#     assert year is not None or name is not None, "Must specify year or file name"
+#     if folder[-1] != '/':
+#         folder = folder + '/'
+#     if name is None:
+#         name = f"{folder}{mode}{year}.tfrecords"
+#     else:
+#         if name[0] != '/':
+#             name = folder + name
+#     fl = glob.glob(name)
+#     files_ds = tf.data.Dataset.list_files(fl)
+#     ds = tf.data.TFRecordDataset(files_ds,
+#                                  num_parallel_reads=1)
+#     ds = ds.map(lambda x: _parse_batch(x, insize=era_shape,consize=con_shape,
+#                                        outsize=out_shape))
+#     ds = ds.batch(batch_size)
+#     if downsample and return_dic:
+#         ds=ds.map(_dataset_downsampler)
+#     elif downsample and not return_dic:
+#         ds=ds.map(_dataset_downsampler_list)
+#     return ds
+
 def create_fixed_dataset(year=None,mode='validation',batch_size=16,
                          downsample=False,
-                         era_shape=(20,20,9),con_shape=(200,200,2),out_shape=(200,200,1),
+                         era_shape=(10,10,1),out_shape=(100,100,1),
                          name=None,folder=records_folder):
-    assert year is not None or name is not None, "Must specify year or file name"
-    if folder[-1] != '/':
-        folder = folder + '/'
-    if name is None:
-        name = f"{folder}{mode}{year}.tfrecords"
-    else:
-        if name[0] != '/':
-            name = folder + name
-    fl = glob.glob(name)
-    files_ds = tf.data.Dataset.list_files(fl)
-    ds = tf.data.TFRecordDataset(files_ds,
-                                 num_parallel_reads=1)
-    ds = ds.map(lambda x: _parse_batch(x, insize=era_shape,consize=con_shape,
-                                       outsize=out_shape))
+
+    # added this in
+    if mode == 'train':
+        x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/train_X.npy'),axis=3))
+        y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/train_y.npy'),axis=3))
+    elif mode == 'validation':
+        x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/valid_X.npy'),axis=3))
+        y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/valid_y.npy'),axis=3))
+    elif mode == 'extreme_valid':
+        x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/extreme_valid_X.npy'),axis=3))
+        y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/extreme_valid_y.npy'),axis=3))
+    elif mode == 'gcm':
+        x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/gcm_X.npy'),axis=3))
+        y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/gcm_X.npy'),axis=3))
+    
+    ds = tf.data.Dataset.from_tensor_slices((x, y))
     ds = ds.batch(batch_size)
+    # return_dic=False #adding this in to get roc curve to work
     if downsample and return_dic:
         ds=ds.map(_dataset_downsampler)
     elif downsample and not return_dic:
         ds=ds.map(_dataset_downsampler_list)
+    print('ds in new format',ds)
+
     return ds
         
 
@@ -139,7 +215,7 @@ def write_data(year,
                log_precip=True,
                ifs_norm=True
 ):
-    from data import get_dates
+    # from data import get_dates
     from data_generator_ifs import DataGenerator
 
     dates = get_dates(year)

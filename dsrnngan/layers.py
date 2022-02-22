@@ -15,7 +15,16 @@ class GradientPenalty(Layer):
 
     def call(self, inputs):
         target, wrt = inputs
+        # with tf.GradientTape() as tape:
+            
+        #     tape.watch(wrt)
+        #     grad = tape.gradient(target, wrt)
         grad = K.gradients(target, wrt)[0]
+        print('target',target)
+        print('wrt',wrt)
+        print('grad',grad)
+        # exit()
+            # return K.sqrt(K.sum(K.batch_flatten(K.square(grad)), axis=1, keepdims=True))-1 if grad is not None else [tf.zeros_like(var) for var in zip(inputs)]
         return K.sqrt(K.sum(K.batch_flatten(K.square(grad)), axis=1, keepdims=True))-1
 
     def compute_output_shape(self, input_shapes):

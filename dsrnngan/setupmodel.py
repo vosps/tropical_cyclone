@@ -31,6 +31,7 @@ def setup_model(*,
                       "forceconv": models.generator}[arch]
 
     if mode == 'GAN':
+        print('padding is: ',padding)
         gen = gen_to_use(mode=mode,
                          arch=arch,
                          input_channels=input_channels,

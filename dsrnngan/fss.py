@@ -43,7 +43,8 @@ import data
 import ecpoint
 import benchmarks
 from noise import NoiseGenerator
-from data import get_dates, all_ifs_fields
+# from data import get_dates, all_ifs_fields
+from data import all_ifs_fields
 
 
 def plot_fss_curves(*,

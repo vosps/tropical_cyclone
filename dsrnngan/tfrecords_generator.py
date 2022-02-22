@@ -114,7 +114,7 @@ def write_data(year,
                num_class=8,
                log_precip=True,
                era_norm=True):
-    from data import get_dates
+    # from data import get_dates
     import data_generator
     dates = get_dates(year)
 

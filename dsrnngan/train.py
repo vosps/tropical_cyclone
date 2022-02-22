@@ -14,7 +14,8 @@ def train_model(*,
                 plot_samples=8,
                 plot_fn=None):
 
-    for cond, _, _ in batch_gen_train.take(1).as_numpy_iterator():
+    # for cond, _, _ in batch_gen_train.take(1).as_numpy_iterator():
+    for cond, _ in batch_gen_train.take(1).as_numpy_iterator():
         img_shape = cond.shape[1:-1]
         batch_size = cond.shape[0]
     del cond

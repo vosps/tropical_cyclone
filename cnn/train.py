@@ -23,8 +23,8 @@ from tqdm import tqdm
 from torch.utils.data import TensorDataset
 import matplotlib.pyplot as plt
 import seaborn as sns
-import cartopy.crs as ccrs
-import cartopy.feature as cfeature
+# import cartopy.crs as ccrs
+# import cartopy.feature as cfeature
 sns.set_style("white")
 
 from unet_model import UNet
