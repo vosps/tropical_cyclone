@@ -9,6 +9,9 @@
 		random selection of tcs in chunks of 10 timesteps
 	extreme : 
 		top the top 100 of most heaviest rainfall tcs based on highest value in X
+
+input: each tc X and y file
+output: numpy arrays for each set
 	
 """
 
@@ -19,6 +22,7 @@ import random
 import matplotlib.pyplot as plt
 import numpy as np
 import glob
+import pandas as pd
 from itertools import groupby
 import re
 from numpy.random import default_rng
@@ -67,16 +71,26 @@ def create_set(tcs,datset='imerg'):
 	print("n_tcs = ",n_tcs)
 	set_X = np.zeros((1,10,10))
 	set_y = np.zeros((1,100,100))
+	set_meta = pd.DataFrame()
 
 	# loop through each tc
 	for i,tc in enumerate(tcs):
-		if glob.glob('/user/work/al18709/tc_Xy/%s/y_%s.npy' % (dataset,tc)) == []: # TODO: this directory doesn't have much in it
+		# if glob.glob('/user/work/al18709/tc_Xy/%s/y_%s.npy' % (dataset,tc)) == []: # TODO: this directory doesn't have much in it
+		# 	continue
+		# y = np.load('/user/work/al18709/tc_Xy/%s/y_%s.npy' % (dataset,tc),allow_pickle = True)
+		# X = np.load('/user/work/al18709/tc_Xy/%s/X_%s.npy' % (dataset,tc),allow_pickle = True)
+		# meta = pd.read_csv('/user/work/al18709/tc_Xy/%s/meta_%s.npy' % (dataset,tc))
+		if glob.glob('/user/work/al18709/tc_Xy/y_%s.npy' % tc) == []: # TODO: this directory doesn't have much in it
 			continue
-		y = np.load('/user/work/al18709/tc_Xy/%s/y_%s.npy' % (dataset,tc),allow_pickle = True)
-		X = np.load('/user/work/al18709/tc_Xy/%s/X_%s.npy' % (dataset,tc),allow_pickle = True)
+		y = np.load('/user/work/al18709/tc_Xy/y_%s.npy' % tc,allow_pickle = True)
+		X = np.load('/user/work/al18709/tc_Xy/X_%s.npy' % tc,allow_pickle = True)
+		meta = pd.read_csv('/user/work/al18709/tc_Xy/meta_%s.csv' % tc)
+		print(meta)
 		set_X = np.vstack((set_X,X))
 		set_y = np.vstack((set_y,y))
-	return set_X[1:,:,:],set_y[1:,:,:]
+		set_meta = set_meta.append(meta)
+	print(set_meta)
+	return set_X[1:,:,:],set_y[1:,:,:],set_meta
 
 # generate list of sids
 tc_dir = '/user/work/al18709/tropical_cyclones/mswep/*.nc'
@@ -95,14 +109,14 @@ tcs = []
 max_rains = []
 
 # define which dataset to look at
-dataset = 'imerg'
+dataset = 'mswep'
 
 # loop through each tc
 for tc in sids:
 	
 
-	if glob.glob('/user/work/al18709/tc_Xy/mswep/X_%s.npy' % tc) != []:
-		mswep = np.load('/user/work/al18709/tc_Xy/mswep/X_%s.npy' % tc,allow_pickle = True)
+	if glob.glob('/user/work/al18709/tc_Xy/X_%s.npy' % tc) != []:
+		mswep = np.load('/user/work/al18709/tc_Xy/X_%s.npy' % tc,allow_pickle = True)
 		# isolate extreme based on mswep
 		max_rain = np.max(mswep)
 	
@@ -204,11 +218,11 @@ plt.savefig('figs/total_histogram.png',bbox_inches='tight')
 
 
 # index the relevant arrays
-valid_X,valid_y = create_set(valid_tcs)
-train_X,train_y = create_set(train_tcs)
-test_X,test_y = create_set(test_tcs)
-extreme_test_X,extreme_test_y = create_set(extreme_tcs_test)
-extreme_valid_X,extreme_valid_y = create_set(extreme_tcs_valid)
+valid_X,valid_y,valid_meta = create_set(valid_tcs)
+train_X,train_y,train_meta = create_set(train_tcs)
+test_X,test_y,test_meta = create_set(test_tcs)
+extreme_test_X,extreme_test_y,extreme_test_meta = create_set(extreme_tcs_test)
+extreme_valid_X,extreme_valid_y,extreme_valid_meta = create_set(extreme_tcs_valid)
 
 # print shapes
 print(valid_X.shape)
@@ -225,15 +239,20 @@ print(extreme_valid_y.shape)
 
 np.save('/user/work/al18709/tc_data/valid_X.npy',valid_X)
 np.save('/user/work/al18709/tc_data/valid_y.npy',valid_y)
+valid_meta.to_csv('/user/work/al18709/tc_data/valid_meta.csv')
 np.save('/user/work/al18709/tc_data/train_X.npy',train_X)
 np.save('/user/work/al18709/tc_data/train_y.npy',train_y)
+train_meta.to_csv('/user/work/al18709/tc_data/train_meta.csv')
 np.save('/user/work/al18709/tc_data/test_X.npy',test_X)
 np.save('/user/work/al18709/tc_data/test_y.npy',test_y)
+test_meta.to_csv('/user/work/al18709/tc_data/test_meta.csv')
 np.save('/user/work/al18709/tc_data/extreme_test_X.npy',extreme_test_X)
 np.save('/user/work/al18709/tc_data/extreme_test_y.npy',extreme_test_y)
+extreme_test_meta.to_csv('/user/work/al18709/tc_data/extreme_test_meta.csv')
 np.save('/user/work/al18709/tc_data/extreme_valid_X.npy',extreme_valid_X)
 np.save('/user/work/al18709/tc_data/extreme_valid_y.npy',extreme_valid_y)
+extreme_valid_meta.to_csv('/user/work/al18709/tc_data/extreme_valid_meta.csv')
 
-print(extreme_valid_X)
+print(extreme_valid_meta)
 
 

@@ -29,6 +29,8 @@ def process_apply(x):
 	time = x.loc['hour']
 	sid = x.loc['sid']
 	basin = x.loc['basin']
+	# centre_lat = x.loc['centre_lat']
+	# centre_lon = x.loc['centre_lon']
 	i = x[0]
 
 	# open file
@@ -54,7 +56,7 @@ def process_apply(x):
 				lon2 = lon[0:second_upper_bound]
 				data = np.concatenate((data1,data2),axis=1)
 				lon = np.concatenate((lon1,lon2))
-			elif centre_lon < -175:
+	elif centre_lon < -175:
 				diff = lon_upper_bound - lon_lower_bound
 				second_upper_bound = 100 - diff
 				data1 = d.variables['precipitation'][0,lat_lower_bound:lat_upper_bound,-second_upper_bound:-1]
@@ -65,7 +67,7 @@ def process_apply(x):
 				
 				data = np.concatenate((data1,data2),axis=1)
 				lon = np.concatenate((lon1,lon2))
-			else:
+	else:
 				data = d.variables['precipitationCal'][0,lat_lower_bound:lat_upper_bound,lon_lower_bound:lon_upper_bound]
 				lat = lat[lat_lower_bound:lat_upper_bound]
 				lon = lon[lon_lower_bound:lon_upper_bound]
@@ -86,7 +88,8 @@ def process_apply(x):
 					  name = 'precipitation')
 
 	# da.to_netcdf('/user/work/al18709/tropical_cyclones/imerg' + str(name) + '_' + str(sid) + '_hour-' + str(time) + '_idx-' + str(i) + '_cat-' + str(int(cat))+ '.nc')
-	da.to_netcdf('/user/work/al18709/tropical_cyclones/imerg/' + str(name) + '_' + str(sid) + '_hour-' + str(time) + '_idx-' + str(i) + '_cat-' + str(int(cat)) + '_basin-' + str(basin) + '.nc')
+	# da.to_netcdf('/user/work/al18709/tropical_cyclones/imerg/' + str(name) + '_' + str(sid) + '_hour-' + str(time) + '_idx-' + str(i) + '_cat-' + str(int(cat)) + '_basin-' + str(basin) + '.nc')
+	# da.to_netcdf('/user/work/al18709/tropical_cyclones/imerg/' + str(name) + '_' + str(sid) + '_hour-' + str(time) + '_idx-' + str(i) + '_cat-' + str(int(cat)) + '_basin-' + str(basin) + '_centrelat-' + str(centre_lat) + '_centrelon-' + str(centre_lon) '.nc')
 	print('%s saved!' % filepath)
 
 def process_apply_mswep(x):
@@ -115,6 +118,8 @@ def process_apply_mswep(x):
 			time = x.loc['hour']
 			sid = x.loc['sid']
 			basin = x.loc['basin']
+			# centre_lat = x.loc['centre_lat']
+			# centre_lon = x.loc['centre_lon']
 			i = x[0]
 
 			# open file
@@ -211,7 +216,9 @@ def process_apply_mswep(x):
 								attrs=dict(description="Total Precipitation",units="mm"),
 								name = 'precipitation')
 				print(da)
-				da.to_netcdf('/user/work/al18709/tropical_cyclones/mswep/' + str(name) + '_' + str(sid) + '_hour-' + str(time) + '_idx-' + str(i) + '_cat-' + str(int(cat)) + '_basin-' + str(basin) + '.nc')
+				# da.to_netcdf('/user/work/al18709/tropical_cyclones/mswep/' + str(name) + '_' + str(sid) + '_hour-' + str(time) + '_idx-' + str(i) + '_cat-' + str(int(cat)) + '_basin-' + str(basin) + '.nc')
+				# da.to_netcdf('/user/work/al18709/tropical_cyclones/mswep/' + str(name) + '_' + str(sid) + '_hour-' + str(time) + '_idx-' + str(i) + '_cat-' + str(int(cat)) + '_basin-' + str(basin) + '.nc')
+				da.to_netcdf('/user/work/al18709/tropical_cyclones/mswep/' + str(name) + '_' + str(sid) + '_hour-' + str(time) + '_idx-' + str(i) + '_cat-' + str(int(cat)) + '_basin-' + str(basin) + '_centrelat-' + str(centre_lat) + '_centrelon-' + str(centre_lon) + '.nc')
 				print('%s saved!' % filepath)
 				# TODO: flip lats
 	else:
@@ -229,7 +236,7 @@ def process_mswep(df):
 
 if __name__ == '__main__':
 	dataset = 'mswep' # or imerg
-	dataset = 'imerg'
+	# dataset = 'imerg'
 	df = pd.read_csv('/user/work/al18709/ibtracks/tc_files.csv')
 	df_split = np.array_split(df, 32)
 	p = Pool(processes=32)

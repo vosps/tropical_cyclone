@@ -15,6 +15,7 @@ import glob
 import xarray as xr
 import numpy as np
 import xesmf as xe
+import pandas as pd
 from itertools import groupby
 from multiprocessing import Pool
 import seaborn as sns
@@ -40,7 +41,8 @@ def save_Xy(grouped_tcs):
 
 	# initial set up
 	if dataset == 'mswep':
-		regex = r"/user/work/al18709/tropical_cyclones/mswep/.+?_(.+?)_.*?(..).nc"
+		# regex = r"/user/work/al18709/tropical_cyclones/mswep/.+?_(.+?)_.*?(..).nc"
+		regex = r"/user/work/al18709/tropical_cyclones/mswep/.+?_(.+?)_.*?_centrelat-(.+?)_centrelon-(.+?).nc"
 	elif dataset == 'imerg':
 		regex = r"/user/work/al18709/tropical_cyclones/imerg/.+?_(.+?)_.*?(..).nc"
 	# regex = r"/user/work/al18709/tropical_cyclones/.+?_(.+?)_.*?.nc"
@@ -70,16 +72,28 @@ def save_Xy(grouped_tcs):
 	# loop through tcs and make an X and y array for each
 	for tc in grouped_tcs:
 		sid = re.match(regex,tc[0]).groups()[0]
-		basin = re.match(regex,tc[0]).groups()[1] # select second group which is either NH or SH
-		print(sid)
-		print(basin)
+		# basin = re.match(regex,tc[0]).groups()[1] # select second group which is either NH or SH
+
+		# centre_lats = re.match(regex,tc[i]).groups()[1]
+		# centre_lons = re.match(regex,tc[i]).groups()[2]
+		
+		
+
 		n_timesteps = len(tc)
 		tc_X = np.zeros((n_timesteps,10,10))
 		tc_y = np.zeros((n_timesteps,100,100))
+		meta_lats = np.zeros((n_timesteps))
+		meta_lons = np.zeros((n_timesteps))
+		meta_sids = []
+
 		# loop though tc filepaths
 		for i,filepath in enumerate(tc):
 			# array_flipped = np.zeros((1,100,100))
 			ds = xr.open_dataset(filepath)
+			centre_lat = re.match(regex,tc[i]).groups()[1]
+			centre_lon = re.match(regex,tc[i]).groups()[2]
+
+
 			array = ds.precipitation.values
 			if array.shape != (100,100):
 				continue
@@ -114,9 +128,16 @@ def save_Xy(grouped_tcs):
 			
 			tc_X[i,:,:] = regridder(array)
 			tc_y[i,:,:] = array
-		
+			meta_lats[i] = centre_lat
+			meta_lons[i] = centre_lon
+			meta_sids.append(str(sid))
+
+
+		# meta = np.dtype(float, metadata={"dataset": dataset,"sid":meta_sids,"centre_lat": meta_lats,"centre_lons": meta_lons})
+		meta = pd.DataFrame({'sid' : meta_sids,'centre_lat' : meta_lats,'centre_lon' : meta_lons})
 		np.save('/user/work/al18709/tc_Xy/X_%s.npy' % sid,tc_X)
 		np.save('/user/work/al18709/tc_Xy/y_%s.npy' % sid,tc_y)
+		meta.to_csv('/user/work/al18709/tc_Xy/meta_%s.csv' % sid)
 	
 def process(filepaths):
 	print('doing process...')
@@ -128,7 +149,7 @@ if __name__ == '__main__':
 	# set up
 	n_processes = 64
 	dataset = 'mswep'
-	dataset = 'imerg'
+	# dataset = 'imerg'
 	tc_dir = '/user/work/al18709/tropical_cyclones/%s/*.nc' % dataset
 	filepaths = glob.glob(tc_dir)
 	print(filepaths)

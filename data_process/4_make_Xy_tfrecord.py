@@ -13,21 +13,29 @@ saved in : /user/work/al18709/tc_data/
 
 """
 import numpy as np
-import tensorflow as tf
+# import tensorflow as tf
 import glob
+import pandas as pd
 
-data = np.load('/user/home/al18709/work/tc_Xy/imerg/X_2014068S16169.npy')
-print('data shape', data.shape)
-time = -1
-X = np.zeros((8,10,10))
-for array in data:
-	print(array.shape)
-	time = time + 1
-	meta = np.dtype(float, metadata={"dataset": "imerg","time": time})
-	array.dtype=meta
-	print(array.dtype.metadata)
-	X[time,:,:] = array
+# data = np.load('/user/home/al18709/work/tc_Xy/imerg/X_2014068S16169.npy')
+# print('data shape', data.shape)
+# time = -1
+# X = np.zeros((8,10,10))
+# for array in data:
+# 	print(array.shape)
+# 	time = time + 1
+# 	meta = np.dtype(float, metadata={"dataset": "imerg","time": time})
+# 	array.dtype=meta
+# 	print(array.dtype.metadata)
+# 	X[time,:,:] = array
 
-meta = np.dtype(float, metadata={"dataset": "imerg","time": [0,1,2,3,4,5,6,7,8]})
-X.dtype=meta
-print(X.dtype.metadata)
+# meta = np.dtype(float, metadata={"dataset": "imerg","time": [0,1,2,3,4,5,6,7,8]})
+# X.dtype=meta
+# print(X.dtype.metadata)
+# time = X.dtype.metadata['time']
+# print(time)
+
+meta = pd.read_csv('/user/work/al18709/tc_data/train_meta.csv')
+print(meta)
+# print(y.shape)
+# print(y.dtype.metadata['centre_lat'])
