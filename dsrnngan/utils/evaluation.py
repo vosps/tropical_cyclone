@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 from matplotlib import colors
 import cartopy.feature as cfeature
 import cartopy.crs as ccrs
+from global_land_mask import globe
+import xarray as xr
 
 sns.set_style("white")
 
@@ -127,7 +129,7 @@ def segment_diff(real_im,pred_im,rain):
         
         # seg = np.where(im<1.,np.where(),0)
 
-def plot_accumulated(data,lats,lons,vmin=0,vmax=200,plot='show',cmap='Blues'):
+def plot_accumulated(data,lats,lons,vmin=0,vmax=200,plot='show',cmap='Blues',title='Accumulated Rainfall'):
         """
         Plots the accumulated rainfall of a tropical cyclone while it's at tropical cyclone strength
         """
@@ -137,16 +139,93 @@ def plot_accumulated(data,lats,lons,vmin=0,vmax=200,plot='show',cmap='Blues'):
         ax.add_feature(cfeature.LAND) # TODO: fix this as it doesn't work
         ax.add_feature(cfeature.COASTLINE)
         ax.outline_patch.set_linewidth(0.3)
-        # gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,
-        #                   linewidth=2, color='gray', alpha=0.5, linestyle='--')
-        # cbar = plt.colorbar(c, shrink=0.54)
-        # cbar.outline.set_linewidth(0.5)
-        # cbar.ax.tick_params(labelsize=6,width=0.5)
-        # plt.title('Extreme')
+        cbar = plt.colorbar(c, shrink=0.54)
+        cbar.outline.set_linewidth(0.5)
+        cbar.ax.tick_params(labelsize=6,width=0.5)
+        plt.title(title)
 
-        print(accumulated_ds)
-        real_accumulated = accumulated_ds
-        if plot='show':
+        if plot=='show':
                 plt.show()
         else:
                 plt.savefig('figs/accumulated_rainfall')
+
+def find_landfalling_tcs(meta):
+        """
+        Grabs all tcs that ever make landfall at tc strength
+
+                inputs : meta csv
+        """
+        nstorms,_ = meta.shape
+        landfall_sids = []
+        for i in range(nstorms):
+                centre_lat = meta['centre_lat'][i]
+                centre_lon = meta['centre_lon'][i]
+                if centre_lon > 180:
+                        centre_lon = centre_lon - 180
+                landfall = globe.is_land(centre_lat, centre_lon)
+                if landfall:
+                        sid = meta['sid'][i]
+                        landfall_sids.append(sid)
+
+        # find indices of all landfalling snapshots
+        landfall_sids = list(dict.fromkeys(landfall_sids))
+        return landfall_sids
+
+def tc_region(meta,sid_i,lat,lon):
+        """
+        find region which contains all points/ranfinall data of tc track
+                inputs
+                        meta : csv with metadata
+                        sid_i : list of sid indices
+                        lat : mswep grid
+                        lon : mswep grid
+        """
+        lat_lower_bounds = []
+        lat_upper_bounds = []
+        lon_lower_bounds = []
+        lon_upper_bounds = []
+
+        for i in sid_i:
+                lat_lower_bounds.append((np.abs(lat-meta['centre_lat'][i]+5.)).argmin())
+                lat_upper_bounds.append((np.abs(lat-meta['centre_lat'][i]-5.)).argmin())
+                lon_lower_bounds.append((np.abs(lon-meta['centre_lon'][i]+5.)).argmin())
+                lon_upper_bounds.append((np.abs(lon-meta['centre_lon'][i]-5.)).argmin())
+
+        lat_lower_bound = min(lat_lower_bounds)
+        lat_upper_bound = max(lat_upper_bounds)
+        lon_lower_bound = min(lon_lower_bounds)
+        lon_upper_bound = max(lon_upper_bounds)
+
+        lats = lat[lat_lower_bound:lat_upper_bound]
+        # lats = np.flip(lats)
+        lons = lon[lon_lower_bound:lon_upper_bound]
+
+        return lats,lons
+
+def create_xarray(lats,lons,data):
+        accumulated_ds = xr.Dataset(
+                data_vars=dict(
+                        precipitation=(["x", "y"], data)),
+                coords=dict(
+                        lon=("x", lons),
+                        lat=("y", lats),
+                ))
+        return accumulated_ds
+
+def get_storm_coords(lat,lon,meta,i):
+        """
+        returns lat and longitude of rainfall from one storm
+        """
+        lat_lower_bound = (np.abs(lat-meta['centre_lat'][i]+5.)).argmin()
+        lat_upper_bound = (np.abs(lat-meta['centre_lat'][i]-5.)).argmin()
+        lon_lower_bound = (np.abs(lon-meta['centre_lon'][i]+5.)).argmin()
+        lon_upper_bound = (np.abs(lon-meta['centre_lon'][i]-5.)).argmin()
+        storm_lats = lat[lat_lower_bound:lat_upper_bound]
+        # storm_lats = np.flip(storm_lats)
+        storm_lons = lon[lon_lower_bound:lon_upper_bound]
+        return storm_lats,storm_lons
+
+
+
+
+
