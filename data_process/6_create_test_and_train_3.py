@@ -227,6 +227,7 @@ extreme_valid_X,extreme_valid_y,extreme_valid_meta = create_set(extreme_tcs_vali
 # print shapes
 print(valid_X.shape)
 print(valid_y.shape)
+print('meta shape',valid_meta.shape)
 print(train_X.shape)
 print(train_y.shape)
 print(test_X.shape)
@@ -253,6 +254,7 @@ np.save('/user/work/al18709/tc_data/extreme_valid_X.npy',extreme_valid_X)
 np.save('/user/work/al18709/tc_data/extreme_valid_y.npy',extreme_valid_y)
 extreme_valid_meta.to_csv('/user/work/al18709/tc_data/extreme_valid_meta.csv')
 
-print(extreme_valid_meta)
+
+
 
 

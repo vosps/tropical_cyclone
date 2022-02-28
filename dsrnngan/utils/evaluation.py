@@ -2,6 +2,8 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib import colors
+import cartopy.feature as cfeature
+import cartopy.crs as ccrs
 
 sns.set_style("white")
 
@@ -124,3 +126,27 @@ def segment_diff(real_im,pred_im,rain):
         return correct,no,light,medium,heavy
         
         # seg = np.where(im<1.,np.where(),0)
+
+def plot_accumulated(data,lats,lons,vmin=0,vmax=200,plot='show',cmap='Blues'):
+        """
+        Plots the accumulated rainfall of a tropical cyclone while it's at tropical cyclone strength
+        """
+        lat2d,lon2d = np.meshgrid(lats,lons)
+        fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()})
+        c = ax.contourf(lon2d,lat2d,data,vmin=vmin,vmax=vmax,cmap = cmap, transform=ccrs.PlateCarree())
+        ax.add_feature(cfeature.LAND) # TODO: fix this as it doesn't work
+        ax.add_feature(cfeature.COASTLINE)
+        ax.outline_patch.set_linewidth(0.3)
+        # gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,
+        #                   linewidth=2, color='gray', alpha=0.5, linestyle='--')
+        # cbar = plt.colorbar(c, shrink=0.54)
+        # cbar.outline.set_linewidth(0.5)
+        # cbar.ax.tick_params(labelsize=6,width=0.5)
+        # plt.title('Extreme')
+
+        print(accumulated_ds)
+        real_accumulated = accumulated_ds
+        if plot='show':
+                plt.show()
+        else:
+                plt.savefig('figs/accumulated_rainfall')
