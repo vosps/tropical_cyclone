@@ -139,8 +139,9 @@ def plot_accumulated(data,lats,lons,vmin=0,vmax=200,plot='show',cmap='Blues',tit
         ax.add_feature(cfeature.LAND) # TODO: fix this as it doesn't work
         ax.add_feature(cfeature.COASTLINE)
         ax.outline_patch.set_linewidth(0.3)
-        cbar = plt.colorbar(c, shrink=0.54)
-        cbar.outline.set_linewidth(0.5)
+        cbar = plt.colorbar(c)
+        # cbar = plt.colorbar(c, shrink=0.54)
+        # cbar.outline.set_linewidth(0.5)
         cbar.ax.tick_params(labelsize=6,width=0.5)
         plt.title(title)
 
