@@ -26,9 +26,9 @@ ibtracks['SEASON'] = pd.to_numeric(ibtracks['SEASON'])
 # subset storms since 2000
 ibtracks = ibtracks[ibtracks['SEASON'] > 2000] #TODO: change so doesn't include 1999
 
-# select tropical storms
+# select tropical storms that reach TC strength
 ibtracks = ibtracks[ibtracks['NATURE'] == 'TS']
-ibtracks = ibtracks[ibtracks['USA_SSHS'] >= 1]
+# ibtracks = ibtracks[ibtracks['USA_SSHS'] >= 1] # TODO: change
 
 # extract datetime data
 ibtracks['ISO_TIME'] = pd.to_datetime(ibtracks['ISO_TIME'])
@@ -81,5 +81,6 @@ print(tc_files)
 tc_files.to_csv('/user/work/al18709/ibtracks/tc_files.csv')
 print(tc_files['filepath_imerg'][86])
 print(tc_files['filepath_mswep'][86])
+print(tc_files.shape)
 
 

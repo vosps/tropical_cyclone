@@ -108,6 +108,10 @@ def process_apply_mswep(x):
 			with open('logs/error_filepaths.txt', 'w') as f:
 					f.write(filepath)
 					f.write('\n')
+		elif 'precipitation' not in Dataset(filepath, 'r').variables:
+			with open('logs/error_filepaths.txt', 'w') as f:
+					f.write(filepath + ' precipitation variable not included')
+					f.write('\n')
 
 		else:
 			filepath = glob.glob(filepath)[0]
@@ -126,6 +130,9 @@ def process_apply_mswep(x):
 			d = Dataset(filepath, 'r')
 			lat = d.variables['lat'][:] #lat
 			lon = d.variables['lon'][:] #lon
+
+			# check if variable exists
+			
 			
 			# clip to location
 			lat_lower_bound = (np.abs(lat-centre_lat+5.)).argmin()
@@ -140,9 +147,10 @@ def process_apply_mswep(x):
 			"""
 
 			# if lon lower bound is over centre, splice
-			print('centre lon: ',centre_lon)
-			print('lower bound: ',lon_lower_bound)
-			print('upper bound: ',lon_upper_bound)
+			# print('centre lon: ',centre_lon)
+			# print('lower bound: ',lon_lower_bound)
+			# print('upper bound: ',lon_upper_bound)
+
 			if centre_lon > 175: 
 				print('goes over centre')
 				diff = lon_upper_bound - lon_lower_bound
@@ -215,7 +223,10 @@ def process_apply_mswep(x):
 								coords={"x": lon, "y": lat},
 								attrs=dict(description="Total Precipitation",units="mm"),
 								name = 'precipitation')
-				print(da)
+				# print(da)
+				if cat not in [1,2,3,4,5]:
+					cat = 0
+				
 				# da.to_netcdf('/user/work/al18709/tropical_cyclones/mswep/' + str(name) + '_' + str(sid) + '_hour-' + str(time) + '_idx-' + str(i) + '_cat-' + str(int(cat)) + '_basin-' + str(basin) + '.nc')
 				# da.to_netcdf('/user/work/al18709/tropical_cyclones/mswep/' + str(name) + '_' + str(sid) + '_hour-' + str(time) + '_idx-' + str(i) + '_cat-' + str(int(cat)) + '_basin-' + str(basin) + '.nc')
 				da.to_netcdf('/user/work/al18709/tropical_cyclones/mswep/' + str(name) + '_' + str(sid) + '_hour-' + str(time) + '_idx-' + str(i) + '_cat-' + str(int(cat)) + '_basin-' + str(basin) + '_centrelat-' + str(centre_lat) + '_centrelon-' + str(centre_lon) + '.nc')
