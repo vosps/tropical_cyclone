@@ -30,12 +30,11 @@ import numpy as np
 
 
 def calculate_crps(observation, forecasts):
-	forecasts = forecasts[...,None]
+	# forecasts = forecasts[...,None]
 	fc = forecasts.copy()
 	fc.sort(axis=-1)
 	obs = observation
 	fc_below = fc < obs[..., None]
-	# fc_below = fc < obs
 	crps = np.zeros_like(obs)
 
 	for i in range(fc.shape[-1]):

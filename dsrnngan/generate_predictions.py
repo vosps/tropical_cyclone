@@ -33,6 +33,7 @@ def generate_predictions(*,
                     ):
         
     # define initial variables
+    print('generating predictions...')
     # downsample = True
     input_channels = 1
     noise_channels = 4

@@ -10,8 +10,8 @@ import xarray as xr
 sns.set_style("white")
 
 def plot_predictions(real,pred,inputs,plot='save',mode='validation'):
-        real[real<=0.1] = np.nan
-        pred[pred<=0.1] = np.nan
+        # real[real<=0.1] = np.nan
+        # pred[pred<=0.1] = np.nan
         # inputs = regrid(inputs[99])
         inputs[inputs<=0.1] = np.nan
         n = 4
@@ -80,7 +80,7 @@ def plot_anomaly(inputs,cmap,plot='save',vmin=-1,vmax=1,levels = False,mode='val
         else:
                 plt.show()
 
-def plot_histogram(real,pred,binwidth,alpha):
+def plot_histogram(real,pred,binwidth,alpha,type='Mean'):
         """
         This function plots a histogram of the set in question
         """
@@ -89,6 +89,7 @@ def plot_histogram(real,pred,binwidth,alpha):
         sns.histplot(ax=ax,data=real, stat="density", fill=True,color='#b5a1e2',element='step',alpha=alpha)
         sns.histplot(ax=ax,data=pred, stat="density", fill=True,color='#dc98a8',element='step',alpha=alpha)
         ax.set_xlabel('Mean or Peak rainfall (mm/h)')
+        ax.set_xlabel('%s Rainfall (mm/h)' % type)
         plt.legend(labels=['real','pred'])
         plt.show()
         # plt.savefig('figs/histogram_accumulated_%s.png' % mode)
