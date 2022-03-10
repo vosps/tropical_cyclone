@@ -7,7 +7,7 @@ MODEL:
     padding: "reflect"  # convolution padding: 'same', 'reflect', or 'symmetric'
         
 SETUP:
-    log_folder: "/user/home/al18709/work/dsrnngan/logs"
+    log_folder: "/user/home/al18709/work/dsrnngan/logs_TS-0plus"
 
 GENERATOR:
     filters_gen: 128 #128
@@ -23,12 +23,13 @@ TRAIN:
     train_years: [2016, 2017, 2018] 
     training_weights: [0.4, 0.3, 0.2, 0.1]
     # num_samples: 320000
-    num_samples: 500000
-    steps_per_checkpoint: 3200
-    batch_size: 2  # can use 400x16 without CL, or 3200x2 with CL
+    num_samples: 320000
+    # steps_per_checkpoint: 3200 # perhaps this needs to be looked at. 200 too low, 3200 too slow. number of images is around 40,000
+    steps_per_checkpoint: 200 # this affects number of training samples trained on before saving? so when this was 3,200 it took a long time to train as there were 52,000 samples to go through each checkpoint
+    batch_size: 16  # can use 400x16 without CL, or 3200x2 with CL
     kl_weight: 1e-8  # used for VAEGAN
-    ensemble_size: 8  # size of pred ensemble for content loss, set to 1 for no content loss
-    content_loss_weight: 1000.0 # set to zero for no content loss
+    ensemble_size: 1  # size of pred ensemble for content loss, set to 1 for no content loss or 8 as the highest
+    content_loss_weight: 0 # set to zero for no content loss or 1000.0 for content loss
 
 VAL:
     val_years: 2019 # cannot pass a list if using create_fixed_dataset

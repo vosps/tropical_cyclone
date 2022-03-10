@@ -9,6 +9,7 @@ return_dic = True
 def DataGenerator(year, batch_size, repeat=True, downsample=False, weights=None):
     return create_mixed_dataset(year, batch_size, repeat=repeat, downsample=downsample, weights=weights)
 
+# TODO: swap create_mixed_dataset for this commented out code
 # def create_random_dataset(year,batch_size,era_shape=(10,10,9),con_shape=(100,100,2),
 #                          out_shape=(100,100,1),repeat=True,
 #                          folder=records_folder, shuffle_size = 1024):
@@ -26,13 +27,16 @@ def create_mixed_dataset(year,batch_size,era_shape=(10,10,1),
     classes = 4
     if weights is None:
         weights = [1./classes]*classes
+    # create a list of 4 datasets
     datasets = [create_dataset(year, i, era_shape=era_shape,
                             #    con_shape=con_shape,
                                out_shape=out_shape, folder=folder,
                                shuffle_size=shuffle_size, repeat=repeat)
                 for i in range(classes)]
+    # randomly sample this list with weights
     sampled_ds=tf.data.experimental.sample_from_datasets(datasets,
                                                          weights=weights).batch(batch_size)
+    # TODO: so these steps aren't properly needed, so I need to replace these lines with perhaps just sampled_ds = create_dataset 
     
     if downsample and return_dic:
         sampled_ds=sampled_ds.map(_dataset_downsampler)
@@ -126,8 +130,9 @@ def create_dataset(year,clss,era_shape=(10,10,1),out_shape=(100,100,1),
     
     # insert my code here
     # TODO: ensure ds is in the correct shape
-    x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/train_X.npy'),axis=3)) # inputs this will eventually be (nimags,10,10,nfeatures)
-    y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/train_y.npy'),axis=3)) # outputs
+    # TODO: only open 8000 images to save time.
+    x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/train_X.npy')[:8000,:,:],axis=3)) # inputs this will eventually be (nimags,10,10,nfeatures)
+    y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/train_y.npy')[:8000,:,:],axis=3)) # outputs
     # z = np.load('/user/work/al18709/tc_data/train_y.npy') # constants, this will eventually be (100,100,2)
     print('x shape: ',x.shape)
     print('y shape: ',y.shape)

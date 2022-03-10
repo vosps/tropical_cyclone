@@ -24,11 +24,29 @@ ibtracks['USA_SSHS'] = pd.to_numeric(ibtracks['USA_SSHS'])
 ibtracks['SEASON'] = pd.to_numeric(ibtracks['SEASON'])
 
 # subset storms since 2000
-ibtracks = ibtracks[ibtracks['SEASON'] > 2000] #TODO: change so doesn't include 1999
+# ibtracks = ibtracks[ibtracks['SEASON'] > 2000] #TODO: change so doesn't include 1999
+ibtracks = ibtracks[ibtracks['SEASON'] >= 1979] # changed for mswep data
 
 # select tropical storms that reach TC strength
 ibtracks = ibtracks[ibtracks['NATURE'] == 'TS']
 # ibtracks = ibtracks[ibtracks['USA_SSHS'] >= 1] # TODO: change
+# select only storms that strengthen to TC strength at any point
+TCs = ibtracks[ibtracks['USA_SSHS'] >= 1]['SID']
+TCs = TCs.drop_duplicates()
+print('number of TCs: ', len(TCs))
+# reference ibtracks with TCs
+ibtracks = pd.merge(ibtracks, 
+                      TCs, 
+                      on ='SID', 
+                      how ='inner')
+# TODO: add another filter so you only collect storms that are tropical so -1+ we're not interested in sub or extra tropical storms
+ibtracks = ibtracks[ibtracks['USA_SSHS'] >= 0]
+# if no filter on track strength then we have 134,400 images
+# if >= -1 then we have 131,377 images
+# if >=0 then we have 99,741 images
+# if >= 1 then we have ~50,000 images
+
+
 
 # extract datetime data
 ibtracks['ISO_TIME'] = pd.to_datetime(ibtracks['ISO_TIME'])

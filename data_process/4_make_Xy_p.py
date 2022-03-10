@@ -7,7 +7,8 @@ Each tc will have it's own X and y npy file
 	X shape : (n_timesteps, 10, 10)
 	y shape : (n_timesteps,100,100)
 
-saved in : /user/work/al18709/tc_data/
+# saved in : /user/work/al18709/tc_data/
+/user/work/al18709/tc_Xy/
 
 """
 

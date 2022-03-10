@@ -6,6 +6,7 @@ https://disc.gsfc.nasa.gov/information/howto?title=How%20to%20Read%20IMERG%20Dat
 inputs: csv with filepaths to rainfall and centre lat lon points
 
 outputs: netcdf file for each storm snapshot, metadata saved within filename
+saved in /user/work/al18709/tropical_cyclones/mswep/
 """
 print('running')
 import glob
