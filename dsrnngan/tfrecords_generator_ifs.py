@@ -17,6 +17,7 @@ def DataGenerator(year, batch_size, repeat=True, downsample=False, weights=None)
 #                                out_shape=out_shape,folder=folder,repeat=repeat,
 #                                shuffle_size = shuffle_size)
 #     return dataset.batch(batch_size).prefetch(2)
+# 
 
 
 def create_mixed_dataset(year,batch_size,era_shape=(10,10,1),
