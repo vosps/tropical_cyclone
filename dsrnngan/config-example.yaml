@@ -3,7 +3,7 @@ GENERAL:
     problem_type: "superresolution" # choices 'normal' 'superresolution'
     
 MODEL:
-    architecture: "normal"
+    architecture: "normal" # check if force_1d_conv is true is false
     padding: "reflect"  # convolution padding: 'same', 'reflect', or 'symmetric'
         
 SETUP:

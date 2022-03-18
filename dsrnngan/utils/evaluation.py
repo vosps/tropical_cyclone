@@ -21,19 +21,26 @@ def plot_predictions(real,pred,inputs,plot='save',mode='validation'):
         else:
                 print('show')
                 fig, axes = plt.subplots(n, m, figsize=(2*m, 2*n), sharey=True)
-        range_ = (-5, 20)
+        if mode == 'extreme_valid':
+                range_ = (-5, 30)
+        else:
+                range_ = (-5, 20)
         if mode == 'gcm':
                 range_ = (-5,30)
 
         storms = [102,260,450,799]
+        storms = [1200,260,1799,20]
         if mode == 'gcm':
                 storms = [0,4,2,3,4]
-        axes[0,0].set_title('Real')
-        axes[0,1].set_title('Pred')
-        axes[0,2].set_title('Input')
+        axes[0,0].set_title('Real',size=24)
+        axes[0,1].set_title('Predicted',size=24)
+        axes[0,2].set_title('Input',size=24)
         for i in range(n):
                 j = 0
                 storm = storms[i]
+                print(real[storm].max())
+                print(pred[storm].max())
+                print(np.nanmax(inputs[storm]))
                 axes[i,j].imshow(real[storm], interpolation='nearest', norm=colors.Normalize(*range_), extent=None,cmap='Blues')
                 axes[i,j+1].imshow(pred[storm], interpolation='nearest',norm=colors.Normalize(*range_), extent=None,cmap='Blues')
                 axes[i,j+2].imshow(regrid(inputs[storm]), interpolation='nearest',norm=colors.Normalize(*range_), extent=None,cmap='Blues')
@@ -85,12 +92,13 @@ def plot_histogram(real,pred,binwidth,alpha,type='Mean'):
         This function plots a histogram of the set in question
         """
         # ax = sns.histplot(data=penguins, x="flipper_length_mm", hue="species", element="step")
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=(15, 5))
         sns.histplot(ax=ax,data=real, stat="density", fill=True,color='#b5a1e2',element='step',alpha=alpha)
         sns.histplot(ax=ax,data=pred, stat="density", fill=True,color='#dc98a8',element='step',alpha=alpha)
-        ax.set_xlabel('Mean or Peak rainfall (mm/h)')
-        ax.set_xlabel('%s Rainfall (mm/h)' % type)
-        plt.legend(labels=['real','pred'])
+        ax.set_xlabel('Mean or Peak rainfall (mm/h)',size=18)
+        ax.set_xlabel('%s Rainfall (mm/h)' % type,size=18)
+        ax.set_ylabel('Density',size=18)
+        plt.legend(labels=['real','pred'],fontsize=24)
         plt.show()
         # plt.savefig('figs/histogram_accumulated_%s.png' % mode)
 
@@ -130,13 +138,13 @@ def segment_diff(real_im,pred_im,rain):
         
         # seg = np.where(im<1.,np.where(),0)
 
-def plot_accumulated(data,lats,lons,vmin=0,vmax=200,plot='show',cmap='Blues',title='Accumulated Rainfall'):
+def plot_accumulated(data,lats,lons,vmin=0,vmax=200,plot='show',cmap='Blues',title='Accumulated Rainfall',levels=[0,50,100,150,200,250,300]):
         """
         Plots the accumulated rainfall of a tropical cyclone while it's at tropical cyclone strength
         """
         lat2d,lon2d = np.meshgrid(lats,lons)
         fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()})
-        c = ax.contourf(lon2d,lat2d,data,vmin=vmin,vmax=vmax,cmap = cmap, transform=ccrs.PlateCarree())
+        c = ax.contourf(lon2d,lat2d,data,vmin=vmin,vmax=vmax,levels=levels,cmap = cmap, transform=ccrs.PlateCarree())
         ax.add_feature(cfeature.LAND) # TODO: fix this as it doesn't work
         ax.add_feature(cfeature.COASTLINE)
         ax.outline_patch.set_linewidth(0.3)

@@ -39,10 +39,12 @@ def get_max_rain(tcs,dataset='imerg'):
 
 	# loop through each tc
 	for tc in tcs:
-		if glob.glob('/user/work/al18709/tc_Xy_%s/X_%s.npy' % (dataset,tc)) == []:
+		# if glob.glob('/user/work/al18709/tc_Xy%s/X_%s.npy' % (dataset,tc)) == []:
+		if glob.glob('/user/work/al18709/tc_Xy/X_%s.npy' % tc) == []:
 			continue
 		# print('/user/work/al18709/tc_Xy/X_%s.npy' % tc)
-		X = np.load('/user/work/al18709/tc_Xy_%s/X_%s.npy' % (dataset,tc),allow_pickle = True)
+		# X = np.load('/user/work/al18709/tc_Xy%s/X_%s.npy' % (dataset,tc),allow_pickle = True)
+		X = np.load('/user/work/al18709/tc_Xy/X_%s.npy' % tc,allow_pickle = True)
 		
 		# isolate extreme TCs
 		max_rain = np.max(X)
@@ -63,6 +65,7 @@ def plot_histogram(ax,max_rains,colour):
 	"""
 	# ax = sns.histplot(data=penguins, x="flipper_length_mm", hue="species", element="step")
 	return sns.histplot(ax=ax,data=max_rains, stat="density",bins=20, fill=True,color=colour,element='step')
+	# return sns.histplot(ax=ax,data=max_rains,bins=20, fill=True,color=colour,element='step')
 	
 
 def create_set(tcs,datset='imerg'):	
@@ -184,7 +187,8 @@ fig, axes = plt.subplots(2, 3, figsize=(15, 10), sharey=True)
 # 							  figsize=(10, 10), 
 # 							  sharey=True)
 
-
+# plot distributions
+print(max_rain_train)
 plot_histogram(axes[0,0],max_rain_train,'#dc98a8')
 axes[0,0].set_title('Train')
 axes[0,0].set_ylim([0, 0.175])
@@ -199,6 +203,7 @@ axes[0,2].set_title('Extreme Validation')
 
 plt.savefig('figs/peak_histogram.png',bbox_inches='tight')
 plt.clf()
+
 
 fig, axes = plt.subplots(2, 3, figsize=(15, 10), sharey=True,sharex=True)
 plot_histogram(axes[0,0],max_total_rain_train,'#dc98a8')
@@ -215,6 +220,13 @@ axes[0,2].set_title('Extreme Validation')
 
 plt.savefig('figs/total_histogram.png',bbox_inches='tight')
 
+
+# print shapes
+print(len(valid_tcs))
+print(len(train_tcs))
+print(len(test_tcs))
+print(len(extreme_tcs_test))
+print(len(extreme_tcs_valid))
 
 
 # index the relevant arrays
@@ -236,7 +248,7 @@ print(extreme_test_X.shape)
 print(extreme_test_y.shape)
 print(extreme_valid_X.shape)
 print(extreme_valid_y.shape)
-
+exit()
 
 np.save('/user/work/al18709/tc_data/valid_X.npy',valid_X)
 np.save('/user/work/al18709/tc_data/valid_y.npy',valid_y)

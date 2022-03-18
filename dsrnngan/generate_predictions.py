@@ -63,7 +63,7 @@ def generate_predictions(*,
     # load appropriate dataset 
     # plot_label = 'small'
     # set initial variables
-    mode = 'validation'
+    mode = 'extreme_valid'
     if gcm == True:
         mode = 'gcm'
     
