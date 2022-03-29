@@ -40,7 +40,7 @@ class Conv2DPadding(Layer):
 def residual_block(x, filters, conv_size=(3, 3), stride=1, relu_alpha=0.2, norm=None, dropout_rate=None, padding=None, force_1d_conv=False):
     in_channels = int(x.shape[-1])
     x_in = x
-
+    print('force 1d conv is: ',force_1d_conv)
     x_in = AveragePooling2D(pool_size=(stride, stride))(x_in)
     if force_1d_conv or (filters != in_channels):
         x_in = Conv2D(filters=filters, kernel_size=(1, 1))(x_in)

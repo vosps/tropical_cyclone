@@ -92,7 +92,7 @@ def plot_histogram(real,pred,binwidth,alpha,type='Mean'):
         This function plots a histogram of the set in question
         """
         # ax = sns.histplot(data=penguins, x="flipper_length_mm", hue="species", element="step")
-        fig, ax = plt.subplots(figsize=(15, 5))
+        fig, ax = plt.subplots(figsize=(10, 5))
         sns.histplot(ax=ax,data=real, stat="density", fill=True,color='#b5a1e2',element='step',alpha=alpha)
         sns.histplot(ax=ax,data=pred, stat="density", fill=True,color='#dc98a8',element='step',alpha=alpha)
         ax.set_xlabel('Mean or Peak rainfall (mm/h)',size=18)

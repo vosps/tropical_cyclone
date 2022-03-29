@@ -396,7 +396,7 @@ if __name__ == "__main__":
                             padding=padding,
                             predict_year=val_years,
                             predict_full_image=predict_full_image)
-
+    print('making predictions...')
     filepaths = glob.glob('/user/home/al18709/work/cgan/logs/models/*.h5')
     regex = r"/user/home/al18709/work/cgan/logs/models/gen_weights-(.+?).h5"
     keyf = lambda text: (re.findall(regex, text)+ [text])[0]

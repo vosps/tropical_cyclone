@@ -41,8 +41,8 @@ def generate_predictions(*,
     batch_size = 1
     num_images = 150
     num_images,_,_ = np.load('/user/work/al18709/tc_data_mswep/valid_X.npy').shape
-    num_images = 2000
-    print(num_images)
+    # num_images = 2000
+    print('number of images: ',num_images)
 
     if gcm == True:
         batch_size = 1
@@ -64,6 +64,7 @@ def generate_predictions(*,
     # plot_label = 'small'
     # set initial variables
     mode = 'extreme_valid'
+    mode = 'validation'
     if gcm == True:
         mode = 'gcm'
     
@@ -109,8 +110,9 @@ def generate_predictions(*,
         # img_pred = np.array(model.gen.predict([inputs,noise_gen()]))
         # print('nn: ',nn)
         # print('nn shape: ',nn.shape)
-        img_pred = np.zeros((1,100,100,4))
-        for j in range(4):
+        # number of ensembles
+        img_pred = np.zeros((1,100,100,10))
+        for j in range(10):
             nn = noise_gen()
             pred_single = np.array(model.gen.predict([inputs,nn]))[:,:,:,0]
             print(pred_single.shape)

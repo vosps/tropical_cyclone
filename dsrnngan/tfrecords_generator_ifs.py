@@ -105,7 +105,9 @@ def create_dataset(year,clss,era_shape=(10,10,1),out_shape=(100,100,1),
     I need to change it so that right now it only takes one variable, and we don't need the constant field yet
 
     """
+    print('doing autotune...')
     AUTOTUNE = tf.data.experimental.AUTOTUNE
+    print('autotune done!')
     # TODO: not sure if this should be commented out.
     # if type(year)==str or type(year) == int:
     #     fl = glob.glob(f"{folder}/{year}_*.{clss}.tfrecords")
@@ -121,34 +123,39 @@ def create_dataset(year,clss,era_shape=(10,10,1),out_shape=(100,100,1),
     # ds = ds.shuffle(shuffle_size)
     # ds = ds.map(lambda x: _parse_batch(x, insize=era_shape,consize=con_shape,
     #                                    outsize=out_shape))
-
+    print('making ds the first time...')
     fl = ['/user/work/al18709/tc_data_mswep/train_X.npy']
     files_ds = tf.data.Dataset.list_files(fl)
     ds = tf.data.TFRecordDataset(files_ds,
                                  num_parallel_reads=AUTOTUNE)
-
+    print('made ds!')
     # ds = ds.shuffle(shuffle_size)
     
     # insert my code here
     # TODO: ensure ds is in the correct shape
-    # TODO: only open 8000 images to save time.
-    x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/train_X.npy')[:8000,:,:],axis=3)) # inputs this will eventually be (nimags,10,10,nfeatures)
-    y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/train_y.npy')[:8000,:,:],axis=3)) # outputs
+    # TODO: only open 8000 images to save time. done
+    print('loading in actual data...')
+    x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/train_X.npy'),axis=3)) # inputs this will eventually be (nimags,10,10,nfeatures)
+    y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/train_y.npy'),axis=3)) # outputs
     # z = np.load('/user/work/al18709/tc_data/train_y.npy') # constants, this will eventually be (100,100,2)
     print('x shape: ',x.shape)
     print('y shape: ',y.shape)
     print('repeat is: ', repeat)
     print('number of nans in x: ',np.count_nonzero(np.isnan(x)))
     print('number of nans in y: ',np.count_nonzero(np.isnan(y)))
+    print('making ds from data...')
     ds = tf.data.Dataset.from_tensor_slices((x, y))
-
+    print('ds made!')
     # shuffle, map, then repeat
+    print('shufflinf dataset...')
     ds = ds.shuffle(shuffle_size)
+    print('ds shuffled!')
     # ds = ds.map(lambda x: _parse_batch(x, insize=era_shape, outsize=out_shape))
 
     print('ds in new format',ds)
 
     if repeat:
+        print('repeating... ')
         return ds.repeat()
     else:
         return ds
@@ -182,7 +189,7 @@ def create_fixed_dataset(year=None,mode='validation',batch_size=16,
                          downsample=False,
                          era_shape=(10,10,1),out_shape=(100,100,1),
                          name=None,folder=records_folder):
-
+    print('opening fixed dataset...')
     # added this in
     if mode == 'train':
         x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/train_X.npy'),axis=3))
