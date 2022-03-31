@@ -20,12 +20,20 @@ class GradientPenalty(Layer):
         #     tape.watch(wrt)
         #     grad = tape.gradient(target, wrt)
         grad = K.gradients(target, wrt)[0]
+
+        # try to fix grad penalty error
+        # print('grad',grad)
+        # with tf.GradientTape() as tape:
+        #     grad = tape.gradient(target, wrt)
+
         print('target',target)
         print('wrt',wrt)
         print('grad',grad)
-        # exit()
-            # return K.sqrt(K.sum(K.batch_flatten(K.square(grad)), axis=1, keepdims=True))-1 if grad is not None else [tf.zeros_like(var) for var in zip(inputs)]
+        if grad == None:
+            grad = float(0)
+
         return K.sqrt(K.sum(K.batch_flatten(K.square(grad)), axis=1, keepdims=True))-1
+
 
     def compute_output_shape(self, input_shapes):
         return (input_shapes[1][0], 1)
