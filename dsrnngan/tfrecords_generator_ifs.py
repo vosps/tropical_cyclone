@@ -203,7 +203,10 @@ def create_fixed_dataset(year=None,mode='validation',batch_size=16,
     elif mode == 'gcm':
         x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/gcm_X.npy'),axis=3))
         y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/gcm_X.npy'),axis=3))
-    
+    elif mode == 'cmip':
+        x = np.float32(np.expand_dims(np.load('/user/home/al18709/work/CMIP6/HighResMIP/EC-Earth3p/historical/storm_rain.npy')[-1000:,:,:],axis=3))
+        y = np.float32(np.expand_dims(np.load('/user/home/al18709/work/CMIP6/HighResMIP/EC-Earth3p/historical/storm_rain.npy')[-1000:,:,:],axis=3))
+
     ds = tf.data.Dataset.from_tensor_slices((x, y))
     ds = ds.batch(batch_size)
     # return_dic=False #adding this in to get roc curve to work

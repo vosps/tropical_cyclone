@@ -27,9 +27,12 @@ def plot_predictions(real,pred,inputs,plot='save',mode='validation'):
                 range_ = (-5, 20)
         if mode == 'gcm':
                 range_ = (-5,30)
+        if mode == 'cmip':
+                range_ = (-5,60)
 
         storms = [102,260,450,799]
         storms = [1200,260,1799,20]
+        storms = [32,70,20,60]
         if mode == 'gcm':
                 storms = [0,4,2,3,4]
         axes[0,0].set_title('Real',size=24)
@@ -148,11 +151,12 @@ def plot_accumulated(data,lats,lons,vmin=0,vmax=200,plot='show',cmap='Blues',tit
         ax.add_feature(cfeature.LAND) # TODO: fix this as it doesn't work
         ax.add_feature(cfeature.COASTLINE)
         ax.outline_patch.set_linewidth(0.3)
-        cbar = plt.colorbar(c)
+        # cbar = plt.colorbar(c)
         # cbar = plt.colorbar(c, shrink=0.54)
+        cbar = plt.colorbar(c, shrink=0.68)
         # cbar.outline.set_linewidth(0.5)
         cbar.ax.tick_params(labelsize=6,width=0.5)
-        plt.title(title)
+        # plt.title(title)
 
         if plot=='show':
                 plt.show()
@@ -180,6 +184,17 @@ def find_landfalling_tcs(meta):
         # find indices of all landfalling snapshots
         landfall_sids = list(dict.fromkeys(landfall_sids))
         return landfall_sids
+
+def is_near_land(centre_lat, centre_lon):
+        lats = [centre_lat + i for i in range(-3,3)]
+        lons = [centre_lon + i for i in range(-3,3)]
+        for lat in lats:
+                for lon in lons:
+                        if globe.is_land(lat, lon):
+                                return True
+        return False
+
+
 
 def tc_region(meta,sid_i,lat,lon):
         """

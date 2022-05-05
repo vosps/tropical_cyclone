@@ -1,3 +1,4 @@
+print('running main')
 import argparse
 import json
 import os
@@ -8,21 +9,32 @@ import matplotlib; matplotlib.use("Agg")  # noqa: E702
 import numpy as np
 import pandas as pd
 import yaml
+print('train')
 import train
+print('setup model')
 import setupmodel
+print('setup data')
 import setupdata
+print('evaluation')
 import evaluation
 from itertools import groupby
 import plots
-import roc
+# import roc
+print('generate predictions')
 from generate_predictions import generate_predictions
 
+print('importing tensorflow...')
 import tensorflow as tf
+print('tensorflow imported!')
+print('importing device lib...')
 from tensorflow.python.client import device_lib 
+print('device lib imported!')
 
 print(device_lib.list_local_devices())
+print(tf.config.list_physical_devices('GPU'))
 print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
-print("Is GPU available? ",tf.test.is_gpu_available())
+# print("Is GPU available? ",tf.test.is_gpu_available())
+
 if tf.test.is_built_with_cuda():
     print("The installed version of TensorFlow includes GPU support.")
 else:
@@ -30,6 +42,7 @@ else:
 
 # try this for memory issue?
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+
 
 
 

@@ -41,7 +41,7 @@ def generate_predictions(*,
     batch_size = 1
     num_images = 150
     num_images,_,_ = np.load('/user/work/al18709/tc_data_mswep/valid_X.npy').shape
-    # num_images = 2000
+    num_images = 1000
     print('number of images: ',num_images)
 
     if gcm == True:
@@ -65,6 +65,7 @@ def generate_predictions(*,
     # set initial variables
     mode = 'extreme_valid'
     mode = 'validation'
+    mode = 'cmip'
     if gcm == True:
         mode = 'gcm'
     
