@@ -241,13 +241,35 @@ def get_storm_coords(lat,lon,meta,i):
         """
         returns lat and longitude of rainfall from one storm
         """
+
         lat_lower_bound = (np.abs(lat-meta['centre_lat'][i]+5.)).argmin()
         lat_upper_bound = (np.abs(lat-meta['centre_lat'][i]-5.)).argmin()
         lon_lower_bound = (np.abs(lon-meta['centre_lon'][i]+5.)).argmin()
         lon_upper_bound = (np.abs(lon-meta['centre_lon'][i]-5.)).argmin()
-        storm_lats = lat[lat_lower_bound:lat_upper_bound]
-        # storm_lats = np.flip(storm_lats)
-        storm_lons = lon[lon_lower_bound:lon_upper_bound]
+        # storm_lats = lat[lat_lower_bound:lat_upper_bound]
+        # # storm_lats = np.flip(storm_lats)
+        # storm_lons = lon[lon_lower_bound:lon_upper_bound]
+
+        if meta['centre_lon'][i] > 175: 
+                diff = lon_upper_bound - lon_lower_bound
+                second_upper_bound = 100 - diff
+                storm_lats = lat[lat_lower_bound:lat_upper_bound]
+                lon1 = lon[lon_lower_bound:lon_upper_bound]
+                lon2 = lon[0:second_upper_bound]
+                storm_lons = np.concatenate((lon1,lon2))
+        elif meta['centre_lon'][i] < -175:
+                diff = lon_upper_bound - lon_lower_bound
+                second_upper_bound = 100 - diff
+                storm_lats = lat[lat_lower_bound:lat_upper_bound]
+                lon1 = lon[-second_upper_bound:-1]
+                lon2 = lon[lon_lower_bound:lon_upper_bound]
+                storm_lons = np.concatenate((lon1,lon2))
+        else:
+                storm_lats = lat[lat_lower_bound:lat_upper_bound]
+                storm_lons = lon[lon_lower_bound:lon_upper_bound]
+
+
+
         return storm_lats,storm_lons
 
 
