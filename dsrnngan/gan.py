@@ -69,7 +69,7 @@ class WGANGP(object):
             noise_shapes = input_shapes(self.gen, "noise_input")
         elif self.mode == 'VAEGAN':
             cond_shapes = input_shapes(self.gen.encoder, "lo_res_inputs")
-            const_shapes = input_shapes(self.gen.encoder, "hi_res_inputs")
+            # const_shapes = input_shapes(self.gen.encoder, "hi_res_inputs")
             noise_shapes = input_shapes(self.gen.decoder, "noise_input")
         sample_shapes = input_shapes(self.disc, "output")
         
@@ -124,9 +124,11 @@ class WGANGP(object):
             if self.mode == 'GAN':
                 disc_in_fake = self.gen(gen_in) 
             elif self.mode == 'VAEGAN':
-                encoder_in = cond_in + const_in
+                # encoder_in = cond_in + const_in
+                encoder_in = cond_in
                 (encoder_mean, encoder_log_var) = self.gen.encoder(encoder_in)
-                decoder_in = [encoder_mean, encoder_log_var, noise_in, const_in]
+                # decoder_in = [encoder_mean, encoder_log_var, noise_in, const_in]
+                decoder_in = [encoder_mean, encoder_log_var, noise_in]
                 disc_in_fake = self.gen.decoder(decoder_in) 
             disc_in_avg = RandomWeightedAverage()([disc_in_real, disc_in_fake])
             # disc_out_real = self.disc(cond_in + const_in + [disc_in_real])

@@ -225,7 +225,8 @@ for i in range(num_samples):
             noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size)
         if mode == 'VAEGAN':
             # call encoder once
-            mean, logvar = gen.encoder([inputs['lo_res_inputs'], inputs['hi_res_inputs']])       
+            # mean, logvar = gen.encoder([inputs['lo_res_inputs'], inputs['hi_res_inputs']])
+            mean, logvar = gen.encoder([inputs['lo_res_inputs']])         
         for j in range(pred_ensemble_size):
             inputs['noise_input'] = noise_gen()
             if mode == 'GAN':

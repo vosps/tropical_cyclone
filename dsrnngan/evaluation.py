@@ -157,7 +157,8 @@ def ensemble_ranks(*,
             samples_gen.append(sample_gen.astype("float32"))
         elif mode == 'VAEGAN':
             # call encoder once
-            (mean, logvar) = gen.encoder([cond, const])
+            # (mean, logvar) = gen.encoder([cond, const])
+            (mean, logvar) = gen.encoder([cond])
             noise_shape = np.array(cond)[0, ..., 0].shape + (latent_variables,)
             noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size)
             for i in range(rank_samples):
@@ -607,7 +608,8 @@ def image_quality(*,
             noise_shape = np.array(cond)[0, ..., 0].shape + (latent_variables,)
             noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size)
             # call encoder once
-            mean, logvar = gen.encoder([cond, const])
+            # mean, logvar = gen.encoder([cond, const])
+            mean, logvar = gen.encoder([cond])
 
         for i in range(num_instances):
             if mode == "GAN":

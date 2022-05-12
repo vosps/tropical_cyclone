@@ -6,7 +6,7 @@ Plot the outputs from the train.py script to see if output is sensible
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-# import cartopy.crs as ccrs
+import cartopy.crs as ccrs
 sns.set_style("white")
 
 def plot_tc(data,lat_2d,lon_2d,ax):
@@ -74,7 +74,7 @@ fig.tight_layout()
 fig.subplots_adjust(hspace=-0.575)
 
 # subplots_adjust(left=None, bottom=None, right=None, top=None, wspace=None, hspace=None)
-plt.savefig('predictions_new_new.png',dpi=600,bbox_inches='tight')
+plt.savefig('predictions_100_epochs.png',dpi=600,bbox_inches='tight')
 plt.clf()
 
 

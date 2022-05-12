@@ -168,7 +168,8 @@ def plot_roc_curves(*,
                     noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size)
                     if mode == 'VAEGAN':
                         # call encoder once
-                        mean, logvar = model.gen.encoder([inputs['lo_res_inputs'], inputs['hi_res_inputs']])
+                        # mean, logvar = model.gen.encoder([inputs['lo_res_inputs'], inputs['hi_res_inputs']])
+                        mean, logvar = model.gen.encoder([inputs['lo_res_inputs']])
                     for j in range(ensemble_members):
                         inputs['noise_input'] = noise_gen()
                         if mode == 'GAN':
@@ -176,7 +177,8 @@ def plot_roc_curves(*,
                                                                                      inputs['hi_res_inputs'],
                                                                                      inputs['noise_input']]))[..., 0])
                         elif mode == 'VAEGAN':
-                            dec_inputs = [mean, logvar, inputs['noise_input'], inputs['hi_res_inputs']]
+                            # dec_inputs = [mean, logvar, inputs['noise_input'], inputs['hi_res_inputs']]
+                            dec_inputs = [mean, logvar, inputs['noise_input']]
                             pred_ensemble.append(data.denormalise(model.gen.decoder.predict(dec_inputs))[..., 0])
 
                 # turn accumulated list into numpy array

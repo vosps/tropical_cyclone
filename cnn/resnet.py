@@ -47,6 +47,8 @@ class ConvolutionalBlock(nn.Module):
             layers.append(nn.LeakyReLU(0.2))
         elif activation == 'tanh':
             layers.append(nn.Tanh())
+        elif activation == 'relu':
+            layers.append(nn.Relu())
 
         # Put together the convolutional block as a sequence of the layers in this container
         self.conv_block = nn.Sequential(*layers)
@@ -109,7 +111,7 @@ class ResidualBlock(nn.Module):
 
         # The first convolutional block
         self.conv_block1 = ConvolutionalBlock(in_channels=n_channels, out_channels=n_channels, kernel_size=kernel_size,
-                                              batch_norm=True, activation='PReLu')
+                                              batch_norm=True, activation='ReLu')
 
         # The second convolutional block
         self.conv_block2 = ConvolutionalBlock(in_channels=n_channels, out_channels=n_channels, kernel_size=kernel_size,
@@ -150,7 +152,7 @@ class SRResNet(nn.Module):
 
         # The first convolutional block
         self.conv_block1 = ConvolutionalBlock(in_channels=3, out_channels=n_channels, kernel_size=large_kernel_size,
-                                              batch_norm=False, activation='PReLu')
+                                              batch_norm=False, activation='ReLu')
 
         # A sequence of n_blocks residual blocks, each containing a skip-connection across the block
         self.residual_blocks = nn.Sequential(
@@ -169,7 +171,7 @@ class SRResNet(nn.Module):
 
         # The last convolutional block
         self.conv_block3 = ConvolutionalBlock(in_channels=n_channels, out_channels=3, kernel_size=large_kernel_size,
-                                              batch_norm=False, activation='Tanh')
+                                              batch_norm=False, activation='Relu') #tanh the others were prelu
 
     def forward(self, lr_imgs):
         """
@@ -253,7 +255,7 @@ class Discriminator(nn.Module):
             out_channels = (n_channels if i is 0 else in_channels * 2) if i % 2 is 0 else in_channels
             conv_blocks.append(
                 ConvolutionalBlock(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size,
-                                   stride=1 if i % 2 is 0 else 2, batch_norm=i is not 0, activation='LeakyReLu'))
+                                   stride=1 if i % 2 is 0 else 2, batch_norm=i is not 0, activation='ReLu')) #leakyrelu
             in_channels = out_channels
         self.conv_blocks = nn.Sequential(*conv_blocks)
 

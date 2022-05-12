@@ -171,13 +171,16 @@ for forecast_hour in start_times:
                 samples_gen.append(sample_gen.astype("float32"))
             elif mode == 'VAEGAN':
                 # call encoder once
-                (mean, logvar) = gen.encoder([cond, const])
-                noise_shape = np.array(cond)[0, ..., 0].shape + (latent_variables,)
+                # (mean, logvar) = gen.encoder([cond, const])
+                (mean, logvar) = gen.encoder([cond])
+                # noise_shape = np.array(cond)[0, ..., 0].shape + (latent_variables,)
+                noise_shape = np.array(cond)[0, ..., 0].shape
                 noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size)
                 for i in range(rank_samples):
                     nn = noise_gen()
                     # generate ensemble of preds with decoder
-                    sample_gen = gen.decoder.predict([mean, logvar, nn, const])
+                    # sample_gen = gen.decoder.predict([mean, logvar, nn, const])
+                    sample_gen = gen.decoder.predict([mean, logvar, nn])
                     samples_gen.append(sample_gen.astype("float32"))
             for ii in range(len(samples_gen)):
                 sample_gen = np.squeeze(samples_gen[ii], axis=-1) # squeeze out trival dim

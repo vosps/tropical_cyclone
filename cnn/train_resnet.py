@@ -19,6 +19,7 @@ scaling_factor = 4  # the scaling factor for the generator; the input LR images 
 large_kernel_size = 9  # kernel size of the first and last convolutions which transform the inputs and outputs
 small_kernel_size = 3  # kernel size of all convolutions in-between, i.e. those in the residual and subpixel convolutional blocks
 n_channels = 64  # number of channels in-between, i.e. the input and output channels for the residual and subpixel convolutional blocks
+n_channels = 128 # increase to 128
 n_blocks = 16  # number of residual blocks
 
 # Learning parameters
@@ -28,7 +29,8 @@ start_epoch = 0  # start at this epoch
 iterations = 1e6  # number of training iterations
 workers = 4  # number of workers for loading data in the DataLoader
 print_freq = 500  # print training status once every __ batches
-lr = 1e-4  # learning rate
+# lr = 1e-4  # learning rate
+lr = 1e-5
 grad_clip = None  # clip if gradients are exploding
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

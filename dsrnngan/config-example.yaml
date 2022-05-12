@@ -1,5 +1,5 @@
 GENERAL:
-    mode: "GAN" # choices 'det' 'GAN' 'VAEGAN'
+    mode: "VAEGAN" # choices 'det' 'GAN' 'VAEGAN'
     problem_type: "superresolution" # choices 'normal' 'superresolution'
     
 MODEL:
@@ -7,7 +7,7 @@ MODEL:
     padding: "reflect"  # convolution padding: 'same', 'reflect', or 'symmetric'
         
 SETUP:
-    log_folder: "/user/home/al18709/work/dsrnngan/logs_basic"
+    log_folder: "/user/home/al18709/work/vaegan/logs"
 
 GENERATOR:
     filters_gen: 128 #128

@@ -5,10 +5,11 @@ https://wandb.ai/lavanyashukla/visualize-predictions/reports/Visualize-Model-Pre
 https://www.essoar.org/pdfjs/10.1002/essoar.10507812.1
 """
 import torch
+import torchvision
 import numpy as np
-from fastai.data.core import DataLoaders
-from fastai.vision import *
-from fastai.metrics import error_rate, accuracy
+# from fastai.data.core import DataLoaders
+# from fastai.vision import *
+# from fastai.metrics import error_rate, accuracy
 import argparse
 import logging
 import sys
@@ -34,16 +35,16 @@ def train_net(net,
 			  epochs: int = 5,
 			#   batch_size: int = 100,
 			  batch_size: int = 1,
-			  learning_rate: float = 0.001,
+			  learning_rate: float = 0.0001,
 			  val_percent: float = 0.1,
 			  save_checkpoint: bool = True,
 			  img_scale: float = 0.5,
 			  amp: bool = False):
 	# 1. Create dataset
-	valid_X = torch.tensor(np.load('/OLD/work/al18709/tc_data/valid_X.npy')).unsqueeze(1)
-	valid_y = torch.tensor(np.load('/OLD/work/al18709/tc_data/valid_y.npy')).unsqueeze(1)
-	train_X = torch.tensor(np.load('/OLD/work/al18709/tc_data/train_X.npy')).unsqueeze(1)
-	train_y = torch.tensor(np.load('/OLD/work/al18709/tc_data/train_y.npy')).unsqueeze(1)
+	valid_X = torch.tensor(np.load('/user/work/al18709/tc_data_mswep/valid_X.npy')).unsqueeze(1)
+	valid_y = torch.tensor(np.load('/user/work/al18709/tc_data_mswep/valid_y.npy')).unsqueeze(1)
+	train_X = torch.tensor(np.load('/user/work/al18709/tc_data_mswep/train_X.npy')).unsqueeze(1)
+	train_y = torch.tensor(np.load('/user/work/al18709/tc_data_mswep/train_y.npy')).unsqueeze(1)
 
 	# 1.5 regrid to 256 x 256
 	scale = nn.Upsample(size=(64,64), mode='nearest')
@@ -59,8 +60,8 @@ def train_net(net,
 	val_set = valid_X
 	n_train,_,_,_ = train_set.shape
 	n_val,_,_,_ = val_set.shape
-	batch_size=100
-	epochs = 50
+	batch_size = 100
+	epochs = 100
 	# batch_size=1
 
 	# 3. Create data loaders
@@ -120,9 +121,9 @@ def train_net(net,
 					loss = criterion(masks_pred, true_masks)
 
 					# save data
-					y_pred = masks_pred[:,0,:,:].detach().numpy()
-					y_true = true_masks[:,:,:].detach().numpy()
-					X = images[:,0,:,:]
+					y_pred = masks_pred[:,0,:,:].detach().cpu().numpy() #added the .cpu part
+					y_true = true_masks[:,:,:].detach().cpu().numpy()
+					X = images[:,0,:,:].cpu()
 					np.save('data/y_pred.npy',y_pred)
 					np.save('data/y_true.npy',y_true)
 					np.save('data/X.npy',X)

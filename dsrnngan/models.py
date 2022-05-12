@@ -36,7 +36,8 @@ def generator(mode,
 
     if mode in ('det', 'VAEGAN'):
         # Concatenate all inputs together
-        generator_output = concatenate([generator_input, upscaled_const_input])
+        # generator_output = concatenate([generator_input, upscaled_const_input])
+        generator_output = concatenate([generator_input])
     elif mode == 'GAN':
         # noise
         # noise_input = Input(shape=(None, None, noise_channels), name="noise_input") 
@@ -57,7 +58,8 @@ def generator(mode,
         # encoder model and outputs
         means = Conv2D(filters=latent_variables, kernel_size=1, activation=LeakyReLU(alpha=relu_alpha), padding="valid")(generator_output)
         logvars = Conv2D(filters=latent_variables, kernel_size=1, activation=LeakyReLU(alpha=relu_alpha), padding="valid")(generator_output)
-        encoder_model = Model(inputs=[generator_input, const_input], outputs=[means, logvars], name='encoder')
+        # encoder_model = Model(inputs=[generator_input, const_input], outputs=[means, logvars], name='encoder')
+        encoder_model = Model(inputs=[generator_input], outputs=[means, logvars], name='encoder')
         # decoder model and inputs
         mean_input = tf.keras.layers.Input(shape=(None, None, latent_variables), name="mean_input")
         logvar_input = tf.keras.layers.Input(shape=(None, None, latent_variables), name="logvar_input")
@@ -93,14 +95,16 @@ def generator(mode,
     print(f"Output shape: {generator_output.shape}")
 
     if mode == 'VAEGAN':
-        decoder_model = Model(inputs=[mean_input, logvar_input, noise_input, const_input], outputs=generator_output, name='decoder')
+        # decoder_model = Model(inputs=[mean_input, logvar_input, noise_input, const_input], outputs=generator_output, name='decoder')
+        decoder_model = Model(inputs=[mean_input, logvar_input, noise_input], outputs=generator_output, name='decoder')
         return (encoder_model, decoder_model)
     elif mode == 'GAN':
         # model = Model(inputs=[generator_input, const_input, noise_input], outputs=generator_output, name='gen')
         model = Model(inputs=[generator_input, noise_input], outputs=generator_output, name='gen')
         return model
     elif mode == 'det':
-        model = Model(inputs=[generator_input, const_input], outputs=generator_output, name='gen')
+        # model = Model(inputs=[generator_input, const_input], outputs=generator_output, name='gen')
+        model = Model(inputs=[generator_input], outputs=generator_output, name='gen')
         return model
 
 

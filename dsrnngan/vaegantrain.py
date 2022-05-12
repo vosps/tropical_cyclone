@@ -50,7 +50,8 @@ class VAE_trainer(keras.Model):
     @tf.function
     def train_step(self, data):
         gt_inputs, gt_outputs = data
-        cond, const, *noise = gt_inputs
+        # cond, const, *noise = gt_inputs
+        cond, *noise = gt_inputs
         if self.ensemble_size is None:
             gen_target, = gt_outputs
         else:
@@ -59,10 +60,13 @@ class VAE_trainer(keras.Model):
         batch_size = cond.shape[0]
 
         with tf.GradientTape() as tape:
-            z_mean, z_log_var = self.VAE.encoder([cond, const])
-            pred = self.VAE.decoder([z_mean, z_log_var, noise[0], const])
+            # z_mean, z_log_var = self.VAE.encoder([cond, const])
+            z_mean, z_log_var = self.VAE.encoder([cond])
+            # pred = self.VAE.decoder([z_mean, z_log_var, noise[0], const])
+            pred = self.VAE.decoder([z_mean, z_log_var, noise[0]])
             # apply disc to decoder predictions
-            y_pred = self.disc([cond, const, pred])
+            # y_pred = self.disc([cond, const, pred])
+            y_pred = self.disc([cond, pred])
 
             # target vector of ones used for wasserstein loss
             vaegen_loss = wasserstein_loss(gen_target, y_pred)
@@ -79,7 +83,9 @@ class VAE_trainer(keras.Model):
                 pass
             else:
                 # generate ensemble of predictions for content loss
-                preds = [self.VAE.decoder([z_mean, z_log_var, noise[ii+1], const])
+                # preds = [self.VAE.decoder([z_mean, z_log_var, noise[ii+1], const])
+                #          for ii in range(self.ensemble_size)]
+                preds = [self.VAE.decoder([z_mean, z_log_var, noise[ii+1]])
                          for ii in range(self.ensemble_size)]
                 preds = tf.stack(preds, axis=0)
                 pred_mean = tf.reduce_mean(preds, axis=0)
