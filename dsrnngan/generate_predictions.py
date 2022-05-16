@@ -41,8 +41,8 @@ def generate_predictions(*,
     batch_size = 1
     num_images = 150
     num_images,_,_ = np.load('/user/work/al18709/tc_data_mswep/valid_X.npy').shape
-    num_images = 1000
-    num_images,_,_ = np.load('/user/work/al18709/tc_data_mswep/train_X.npy').shape
+    # num_images = 3000
+    # num_images,_,_ = np.load('/user/work/al18709/tc_data_mswep/train_X.npy').shape
     print('number of images: ',num_images)
 
     if gcm == True:

@@ -11,18 +11,18 @@ import torch.nn.functional as F
 class DoubleConv(nn.Module):
 	"""(convolution => [BN] => ReLU) * 2"""
 
-	def __init__(self, in_channels, out_channels, mid_channels=None):
-		# print('in channels: ',in_channels)
-		# print('mid channels: ', mid_channels)
-		# print('out channels: ',out_channels)
+	def __init__(self, in_channels, out_channels,kernel=3, mid_channels=None):
+		print('in channels: ',in_channels)
+		print('mid channels: ', mid_channels)
+		print('out channels: ',out_channels)
 		super().__init__()
 		if not mid_channels:
 			mid_channels = out_channels
 		self.double_conv = nn.Sequential(
-			nn.Conv2d(in_channels, mid_channels, kernel_size=3, padding=1), # kernel size is size of convolving kernel
+			nn.Conv2d(in_channels, mid_channels,kernel_size=3, padding=1), # kernel size is size of convolving kernel
 			nn.BatchNorm2d(mid_channels),
 			nn.ReLU(inplace=True),
-			nn.Conv2d(mid_channels, out_channels, kernel_size=3, padding=1),
+			nn.Conv2d(mid_channels, out_channels,kernel_size=3, padding=1),
 			nn.BatchNorm2d(out_channels),
 			nn.ReLU(inplace=True)
 		)
@@ -37,7 +37,7 @@ class Down(nn.Module):
 		super().__init__()
 		self.maxpool_conv = nn.Sequential(
 			nn.MaxPool2d(2),
-			DoubleConv(in_channels, out_channels)
+			DoubleConv(in_channels, out_channels) # to run normally change kernel to 3
 		)
 
 	def forward(self, x):
@@ -47,13 +47,14 @@ class Down(nn.Module):
 class Up(nn.Module):
 	"""Upscaling then double conv"""
 
-	def __init__(self, in_channels, out_channels, bilinear=True):
+	def __init__(self, in_channels, out_channels, bilinear=True,scale_factor=2):
 		super().__init__()
 
 		# if bilinear, use the normal convolutions to reduce the number of channels
 		if bilinear:
 			# self.up = nn.Upsample(scale_factor=10, mode='bilinear', align_corners=True)
-			self.up = nn.Upsample(size = 2, mode='bilinear', align_corners=True)
+			# self.up = nn.Upsample(size = 2, mode='bilinear', align_corners=True)
+			self.up = nn.Upsample(scale_factor=scale_factor, mode='bilinear', align_corners=True)
 			self.conv = DoubleConv(in_channels, out_channels, in_channels // 2)
 			# would a Transpose Convolutional layer be good here?
 		else:
@@ -74,15 +75,30 @@ class Up(nn.Module):
 		x = torch.cat([x2, x1], dim=1)
 		return self.conv(x)
 
+class UpUp(nn.Module):
+	"""Upscaling then double conv"""
+
+	def __init__(self, in_channels, out_channels, bilinear=True,scale_factor=2):
+		super().__init__()
+
+		# if bilinear, use the normal convolutions to reduce the number of channels
+		self.up = nn.Upsample(scale_factor=scale_factor, mode='bilinear', align_corners=True)
+		self.conv = DoubleConv(in_channels, out_channels, in_channels // 2)
+
+	def forward(self, x):
+		x = self.up(x)
+		# TODO: should this just be upscaled or should I try to use pixel shuffle here?
+		return self.conv(x)
 
 class OutConv(nn.Module):
-	def __init__(self, in_channels, out_channels):
+	def __init__(self, in_channels, out_channels,scale_factor=2):
 		super(OutConv, self).__init__()
 		self.pixel_shuffle = nn.PixelShuffle(upscale_factor=10)
-		self.prelu = nn.PReLU() #change to relu and see what happens
+		# self.prelu = nn.PReLU() #change to relu and see what happens
+		self.prelu = nn.ReLU() #change to relu and see what happens
 		# self.relu = nn.ReLU() # do relu to stop the negative? Seems to be more blurrier and still negative - though this was with 5 epochs
 		# self.up = nn.Upsample(scale_factor=4, mode='bilinear', align_corners=True) # TODO: change to scale factor 2 maybe?
-		self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
+		self.up = nn.Upsample(scale_factor=scale_factor, mode='bilinear', align_corners=True)
 		self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=1)
 
 	def forward(self, x):
