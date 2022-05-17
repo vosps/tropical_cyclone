@@ -227,6 +227,8 @@ if __name__ == '__main__':
 				  img_scale=args.scale,
 				  val_percent=args.val / 100,
 				  amp=args.amp)
+		torch.save(net.state_dict(), '/user/home/al18709/work/cnn/unet.pth')
+		logging.info('Saved model!')
 	except KeyboardInterrupt:
 		torch.save(net.state_dict(), 'INTERRUPTED.pth')
 		logging.info('Saved interrupt')
