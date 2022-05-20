@@ -41,7 +41,7 @@ def generate_predictions(*,
     batch_size = 1
     num_images = 150
     num_images,_,_ = np.load('/user/work/al18709/tc_data_mswep/valid_X.npy').shape
-    # num_images = 3000
+    # num_images = 1000
     # num_images,_,_ = np.load('/user/work/al18709/tc_data_mswep/train_X.npy').shape
     print('number of images: ',num_images)
 
@@ -85,10 +85,12 @@ def generate_predictions(*,
     else:
         gen_weights_file = "/user/home/al18709/work/dsrnngan/logs/models/gen_weights-%s.h5" % checkpoint
 
-    # if vaegan then:
-    gen_weights_file = "/user/home/al18709/work/vaegan/logs/models-gen_weights.h5"
-    model.gen.built = True
+    vaegan = False
+    if vaegan:
+        gen_weights_file = "/user/home/al18709/work/vaegan/logs/models-gen_weights.h5"
     
+    gen_weights_file = "/user/home/al18709/work/dsrnngan/logs/models-gen_weights.h5"
+    model.gen.built = True
     model.gen.load_weights(gen_weights_file)
 
 
@@ -123,13 +125,15 @@ def generate_predictions(*,
         img_pred = np.zeros((1,100,100,10))
         for j in range(10):
             # if gan
-            # nn = noise_gen()
-            # pred_single = np.array(model.gen.predict([inputs,nn]))[:,:,:,0]
-            # if vaegan
-            noise_shape = np.array(inputs)[0, ..., 0].shape + (latent_variables,)
-            noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size)
-            mean, logvar = model.gen.encoder([inputs])
-            pred_single = np.array(model.gen.decoder.predict([mean, logvar, noise_gen()]))[:,:,:,0]
+            # 
+            if vaegan:
+                noise_shape = np.array(inputs)[0, ..., 0].shape + (latent_variables,)
+                noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size)
+                mean, logvar = model.gen.encoder([inputs])
+                pred_single = np.array(model.gen.decoder.predict([mean, logvar, noise_gen()]))[:,:,:,0]
+            else:
+                nn = noise_gen()
+                pred_single = np.array(model.gen.predict([inputs,nn]))[:,:,:,0]
             print(pred_single.shape)
             img_pred[:,:,:,j] = pred_single
         
