@@ -1,16 +1,8 @@
-# import os
+
 import numpy as np
-# from sklearn.metrics import roc_curve, auc
-# import matplotlib.pyplot as plt
 from tfrecords_generator_ifs import create_fixed_dataset
-# from data_generator_ifs import DataGenerator as DataGeneratorFull
 import setupmodel
-# import data
-# import ecpoint
-# import benchmarks
 from noise import NoiseGenerator
-# from data import get_dates
-# from tensorflow.keras.layers import Input
 
 def generate_predictions(*,
                     mode,
@@ -39,6 +31,7 @@ def generate_predictions(*,
     noise_channels = 4
     # batch_size = 32
     batch_size = 1
+    # TODO: highest batch size possible
     num_images = 150
     num_images,_,_ = np.load('/user/work/al18709/tc_data_mswep/valid_X.npy').shape
     # num_images = 1000
@@ -122,8 +115,9 @@ def generate_predictions(*,
         # print('nn: ',nn)
         # print('nn shape: ',nn.shape)
         # number of ensembles
-        img_pred = np.zeros((1,100,100,10))
-        for j in range(10):
+        img_pred = np.zeros((1,100,100,50))
+
+        for j in range(50): #do 50 ensemble members
             # if gan
             # 
             if vaegan:
@@ -136,6 +130,7 @@ def generate_predictions(*,
                 pred_single = np.array(model.gen.predict([inputs,nn]))[:,:,:,0]
             print(pred_single.shape)
             img_pred[:,:,:,j] = pred_single
+            print(img_pred.shape)
         
 
         print('img pred shape: ',img_pred.shape)
@@ -162,9 +157,9 @@ def generate_predictions(*,
     print(pred.shape)
     print(low_res_inputs.shape)
     # print(seq_real)
-    np.save('/user/home/al18709/work/dsrnngan_predictions/%s_real-%s.npy' % (mode,checkpoint),seq_real)
-    np.save('/user/home/al18709/work/dsrnngan_predictions/%s_pred-%s.npy' % (mode,checkpoint),pred)
-    np.save('/user/home/al18709/work/dsrnngan_predictions/%s_input-%s.npy' % (mode,checkpoint),low_res_inputs)
+    np.save('/user/home/al18709/work/gan_predictions_50/%s_real-%s.npy' % (mode,checkpoint),seq_real)
+    np.save('/user/home/al18709/work/gan_predictions_50/%s_pred-%s.npy' % (mode,checkpoint),pred)
+    np.save('/user/home/al18709/work/gan_predictions_50/%s_input-%s.npy' % (mode,checkpoint),low_res_inputs)
 
 
 
