@@ -21,7 +21,7 @@ from itertools import groupby
 import plots
 # import roc
 print('generate predictions')
-from generate_predictions import generate_predictions
+from generate_predictions_2 import generate_predictions
 
 print('importing tensorflow...')
 import tensorflow as tf

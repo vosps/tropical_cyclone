@@ -29,8 +29,8 @@ def generate_predictions(*,
     # downsample = True
     input_channels = 1
     noise_channels = 4
-    # batch_size = 32
-    batch_size = 1
+    batch_size = 2560
+    # batch_size = 1
     # TODO: highest batch size possible
     num_images = 150
     num_images,_,_ = np.load('/user/work/al18709/tc_data_mswep/valid_X.npy').shape
@@ -115,9 +115,10 @@ def generate_predictions(*,
         # print('nn: ',nn)
         # print('nn shape: ',nn.shape)
         # number of ensembles
-        img_pred = np.zeros((1,100,100,50))
+        # img_pred = np.zeros((1,100,100,20))
+        img_pred = np.zeros((batch_size,100,100,20))
 
-        for j in range(50): #do 50 ensemble members
+        for j in range(20): #do 50 ensemble members
             # if gan
             # 
             if vaegan:
