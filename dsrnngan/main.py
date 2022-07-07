@@ -34,6 +34,12 @@ print(device_lib.list_local_devices())
 print(tf.config.list_physical_devices('GPU'))
 print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 # print("Is GPU available? ",tf.test.is_gpu_available())
+# tf.config.experimental.set_memory_growth(gpus[0], True)
+
+# fix random memory issue
+# TF_GPU_ALLOCATOR=cuda_malloc_async
+# tf.config.experimental.set_memory_growth(physical_devices[0], True)
+
 
 if tf.test.is_built_with_cuda():
     print("The installed version of TensorFlow includes GPU support.")

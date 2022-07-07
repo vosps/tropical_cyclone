@@ -1,5 +1,5 @@
 GENERAL:
-    mode: "GAN" # choices 'det' 'GAN' 'VAEGAN'
+    mode: "VAEGAN" # choices 'det' 'GAN' 'VAEGAN'
     problem_type: "superresolution" # choices 'normal' 'superresolution'
     
 MODEL:
@@ -7,8 +7,8 @@ MODEL:
     padding: "reflect"  # convolution padding: 'same', 'reflect', or 'symmetric'
         
 SETUP:
-    # log_folder: "/user/home/al18709/work/vaegan/logs"
-    log_folder: "/user/home/al18709/work/dsrnngan/logs"
+    log_folder: "/user/home/al18709/work/vaegan/logs_improve"
+    # log_folder: "/user/home/al18709/work/dsrnngan/logs"
 
 GENERATOR:
     filters_gen: 128 #128
@@ -17,14 +17,15 @@ GENERATOR:
     learning_rate_gen: 1e-5
 
 DISCRIMINATOR:
-    filters_disc: 512 #512
+    # filters_disc: 512 #512
+    filters_disc: 640 #512
     learning_rate_disc: 1e-5
 
 TRAIN:
     train_years: [2016, 2017, 2018] 
     training_weights: [0.4, 0.3, 0.2, 0.1]
     # num_samples: 320000
-    num_samples: 640000
+    num_samples: 960000 #640000
     # steps_per_checkpoint: 3200 # perhaps this needs to be looked at. 200 too low, 3200 too slow. number of images is around 40,000
     steps_per_checkpoint: 200 # this affects number of training samples trained on before saving? so when this was 3,200 it took a long time to train as there were 52,000 samples to go through each checkpoint
     batch_size: 16  # can use 400x16 without CL, or 3200x2 with CL

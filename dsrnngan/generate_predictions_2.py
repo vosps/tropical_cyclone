@@ -77,7 +77,7 @@ def generate_predictions(*,
 	else:
 		gen_weights_file = "/user/home/al18709/work/dsrnngan/logs/models/gen_weights-%s.h5" % checkpoint
 
-	vaegan = False
+	vaegan = True
 	if vaegan:
 		gen_weights_file = "/user/home/al18709/work/vaegan/logs/models-gen_weights.h5"
 	else:
@@ -194,9 +194,13 @@ def generate_predictions(*,
 	print(pred.shape)
 	print(low_res_inputs.shape)
 	# print(seq_real)
-	np.save('/user/home/al18709/work/gan_predictions_20/%s_real-%s.npy' % (mode,checkpoint),seq_real)
-	np.save('/user/home/al18709/work/gan_predictions_20/%s_pred-%s.npy' % (mode,checkpoint),pred)
-	np.save('/user/home/al18709/work/gan_predictions_20/%s_input-%s.npy' % (mode,checkpoint),low_res_inputs)
+	if vaegan == True:
+		model = 'vaegan'
+	else:
+		model = 'gan'
+	np.save('/user/home/al18709/work/%s_predictions_20/%s_real-%s_improve_2.npy' % (model,mode,checkpoint),seq_real)
+	np.save('/user/home/al18709/work/%s_predictions_20/%s_pred-%s_improve_2.npy' % (model,mode,checkpoint),pred)
+	np.save('/user/home/al18709/work/%s_predictions_20/%s_input-%s_improve_2.npy' % (model,mode,checkpoint),low_res_inputs)
 
 
 
