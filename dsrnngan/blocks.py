@@ -11,7 +11,7 @@ class Conv2DPadding(Layer):
         if padding is None:
             raise ValueError("padding should not be None")
 
-    def build(self, x):
+    def build(self, x): #TODO: change to zero padding
         if self.padding in ('reflect', 'symmetric'):
             pad = tuple((s-1)//2 for s in self.kernel_size)  # only works if s is odd!
             if self.padding == 'reflect':

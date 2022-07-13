@@ -71,17 +71,22 @@ def generate_predictions(*,
 
 		
 	# load model weights from main file
-	print('checkpoint = ',checkpoint)
-	if checkpoint == 'opt':
-		gen_weights_file = "/user/home/al18709/work/dsrnngan/logs/models-gen_weights.h5"
-	else:
-		gen_weights_file = "/user/home/al18709/work/dsrnngan/logs/models/gen_weights-%s.h5" % checkpoint
+	# TODO: update logs file locations
+	# print('checkpoint = ',checkpoint)
+	# if checkpoint == 'opt':
+	# 	gen_weights_file = "/user/home/al18709/work/dsrnngan/logs/models-gen_weights.h5"
+	# else:
+	# 	gen_weights_file = "/user/home/al18709/work/dsrnngan/logs/models/gen_weights-%s.h5" % checkpoint
 
 	vaegan = True
-	if vaegan:
-		gen_weights_file = "/user/home/al18709/work/vaegan/logs/models-gen_weights.h5"
-	else:
-		gen_weights_file = "/user/home/al18709/work/dsrnngan/logs/models-gen_weights.h5"
+	# if vaegan:
+	# 	gen_weights_file = "/user/home/al18709/work/vaegan/logs/models-gen_weights.h5"
+	# else:
+	# 	gen_weights_file = "/user/home/al18709/work/dsrnngan/logs/models-gen_weights.h5"
+	print('log folder is:',log_folder)
+	print(vaegan)
+	gen_weights_file = log_folder + '/models-gen_weights.h5'
+	# gen_weights_file = log_folder + '/models-gen_opt_weights.h5' # TODO: this has different construction to gen_weights - ask andrew and lucy
 	model.gen.built = True
 	model.gen.load_weights(gen_weights_file)
 
@@ -198,9 +203,9 @@ def generate_predictions(*,
 		model = 'vaegan'
 	else:
 		model = 'gan'
-	np.save('/user/home/al18709/work/%s_predictions_20/%s_real-%s_improve_2.npy' % (model,mode,checkpoint),seq_real)
-	np.save('/user/home/al18709/work/%s_predictions_20/%s_pred-%s_improve_2.npy' % (model,mode,checkpoint),pred)
-	np.save('/user/home/al18709/work/%s_predictions_20/%s_input-%s_improve_2.npy' % (model,mode,checkpoint),low_res_inputs)
+	np.save('/user/home/al18709/work/%s_predictions_20/%s_real-%s_improve_5.npy' % (model,mode,checkpoint),seq_real)
+	np.save('/user/home/al18709/work/%s_predictions_20/%s_pred-%s_improve_5.npy' % (model,mode,checkpoint),pred)
+	np.save('/user/home/al18709/work/%s_predictions_20/%s_input-%s_improve_5.npy' % (model,mode,checkpoint),low_res_inputs)
 
 
 

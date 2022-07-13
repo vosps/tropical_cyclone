@@ -7,7 +7,7 @@ def residual_block(x, filters, conv_size=(3, 3), stride=1, relu_alpha=0.2, norm=
 
     x_in = AveragePooling2D(pool_size=(stride, stride))(x_in)
     if (filters != in_channels):
-        x_in = Conv2D(filters=filters, kernel_size=(1, 1), padding="same")(x_in)
+        x_in = Conv2D(filters=filters, kernel_size=(1, 1), padding="same")(x_in) #TODO: could change this to zero padding?
 
     # first block of activation and 3x3 convolution
     x = LeakyReLU(relu_alpha)(x)

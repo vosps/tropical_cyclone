@@ -252,7 +252,7 @@ class SNDense(Dense):
 class ReflectionPadding2D(Layer):
     def __init__(self, padding=(1, 1), **kwargs):
         self.padding = tuple(padding)
-        super(ReflectionPadding2D, self).__init__(**kwargs)
+        super(ReflectionPadding2D, self).__init__(**kwargs) #TODO: change to zero padding?
 
     def compute_output_shape(self, s):
         return (
