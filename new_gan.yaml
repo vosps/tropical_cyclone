@@ -1,0 +1,41 @@
+DISCRIMINATOR:
+  filters_disc: 512
+  learning_rate_disc: 1e-5
+EVAL:
+  add_postprocessing_noise: true
+  avg_pooling: true
+  max_pooling: true
+  num_batches: 256
+  postprocessing_noise_factor: 1e-3
+GENERAL:
+  mode: GAN
+  problem_type: superresolution
+GENERATOR:
+  filters_gen: 128
+  latent_variables: 1
+  learning_rate_gen: 1e-5
+  noise_channels: 2
+MODEL:
+  architecture: normal
+  padding: same
+SETUP:
+  log_folder: /user/home/al18709/work/gan/logs_8
+TRAIN:
+  batch_size: 16
+  content_loss_weight: 0
+  ensemble_size: 1
+  kl_weight: 1e-2
+  num_samples: 1320000
+  steps_per_checkpoint: 200
+  train_years:
+  - 2016
+  - 2017
+  - 2018
+  training_weights:
+  - 0.4
+  - 0.3
+  - 0.2
+  - 0.1
+VAL:
+  val_size: 8
+  val_years: 2019

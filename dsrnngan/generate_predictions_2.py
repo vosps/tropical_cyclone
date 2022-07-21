@@ -1,10 +1,32 @@
 
 from ast import Continue
 import numpy as np
+import pandas as pd
 from tfrecords_generator_ifs import create_fixed_dataset
 import setupmodel
 from noise import NoiseGenerator
 import gc
+
+def flip(tc):
+		tc_flipped = np.flip(tc,axis=0)
+		return tc_flipped
+
+def find_and_flip(data,meta):
+	print(data.shape)
+	print(meta)
+
+	sh_indices = meta[meta['centre_lat'] < 0].index
+	nh_indices = meta[meta['centre_lat'] > 0].index
+	print(np.sum(meta['centre_lat'] < 0))
+	print(np.sum(meta['centre_lat'] > 0))
+
+	# flip the nh tcs so they are rotating anticlockwise (in the raw data array)
+	# in mswep they can be plotted correctly with the mswep lats and lons, but the raw data shows them flipped as mswep has descending latitudes
+	for i in nh_indices:
+		X_flipped = flip(data[i])
+		data[i] = X_flipped
+	
+	return data
 
 
 def generate_predictions(*,
@@ -31,12 +53,12 @@ def generate_predictions(*,
 	print('generating predictions...')
 	# downsample = True
 	input_channels = 1
-	noise_channels = 4
+	noise_channels = 2 #4
 	batch_size = 512
 	num_images = 150
-	num_images,_,_ = np.load('/user/work/al18709/tc_data_mswep/valid_X.npy').shape
+	num_images,_,_ = np.load('/user/work/al18709/tc_data_flipped/valid_X.npy').shape
 	# num_images = 1000
-	num_images,_,_ = np.load('/user/work/al18709/tc_data_mswep/extreme_valid_X.npy').shape
+	num_images,_,_ = np.load('/user/work/al18709/tc_data_flipped/extreme_valid_X.npy').shape
 	print('number of images: ',num_images)
 
 	if gcm == True:
@@ -78,7 +100,7 @@ def generate_predictions(*,
 	# else:
 	# 	gen_weights_file = "/user/home/al18709/work/dsrnngan/logs/models/gen_weights-%s.h5" % checkpoint
 
-	vaegan = True
+	vaegan = False
 	# if vaegan:
 	# 	gen_weights_file = "/user/home/al18709/work/vaegan/logs/models-gen_weights.h5"
 	# else:
@@ -198,14 +220,28 @@ def generate_predictions(*,
 	print(seq_real.shape)
 	print(pred.shape)
 	print(low_res_inputs.shape)
+
+	
+
 	# print(seq_real)
+	flip = True
+
+	if flip == True:
+		meta = pd.read_csv('/user/work/al18709/tc_data_mswep/%s_meta.csv' % mode)
+		seq_real = find_and_flip(seq_real,meta)
+		pred = find_and_flip(pred,meta)
+		low_res_inputs = find_and_flip(low_res_inputs,meta)
+
+
+
+
 	if vaegan == True:
 		model = 'vaegan'
 	else:
 		model = 'gan'
-	np.save('/user/home/al18709/work/%s_predictions_20/%s_real-%s_improve_5.npy' % (model,mode,checkpoint),seq_real)
-	np.save('/user/home/al18709/work/%s_predictions_20/%s_pred-%s_improve_5.npy' % (model,mode,checkpoint),pred)
-	np.save('/user/home/al18709/work/%s_predictions_20/%s_input-%s_improve_5.npy' % (model,mode,checkpoint),low_res_inputs)
+	np.save('/user/home/al18709/work/%s_predictions_20/%s_real-%s_improve_8.npy' % (model,mode,checkpoint),seq_real)
+	np.save('/user/home/al18709/work/%s_predictions_20/%s_pred-%s_improve_8.npy' % (model,mode,checkpoint),pred)
+	np.save('/user/home/al18709/work/%s_predictions_20/%s_input-%s_improve_8.npy' % (model,mode,checkpoint),low_res_inputs)
 
 
 

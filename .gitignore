@@ -15,7 +15,7 @@ test-det/
 test-logs/
 *.pdf
 *.sh
-*.yaml
+# *.yaml
 
 
 # Byte-compiled / optimized / DLL files

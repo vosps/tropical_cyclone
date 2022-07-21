@@ -21,6 +21,10 @@ class Conv2DPadding(Layer):
             self.convval = Conv2D(filters=self.filters,
                                   kernel_size=self.kernel_size,
                                   padding='valid')
+        elif self.padding == 1:
+            self.convsam = Conv2D(filters=self.filters,
+                                  kernel_size=self.kernel_size,
+                                  padding=1)
         else:
             self.convsam = Conv2D(filters=self.filters,
                                   kernel_size=self.kernel_size,

@@ -32,6 +32,8 @@ def setup_model(*,
 
     if mode == 'GAN':
         print('padding is: ',padding)
+        print('input_channel is: ',input_channels)
+        print('noise_channels is: ',noise_channels)
         gen = gen_to_use(mode=mode,
                          arch=arch,
                          input_channels=input_channels,

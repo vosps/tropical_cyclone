@@ -29,6 +29,7 @@ class WGANGP(object):
         self.content_loss_weight = content_loss_weight
         self.build_wgan_gp()
 
+
     def filenames_from_root(self, root):
         fn = {
             "gen_weights": root+"-gen_weights.h5",
@@ -82,10 +83,14 @@ class WGANGP(object):
                 if self.ensemble_size is None:
                     noise_in = [Input(shape=noise_shapes[0])]
                 else:
-                    noise_in = [Input(shape=noise_shapes[0])
-                                for ii in range(self.ensemble_size + 1)]
+                    # noise_in = [Input(shape=noise_shapes[0])
+                    #             for ii in range(self.ensemble_size + 1)]
+                    noise_in = [Input(shape=noise_shapes[0])]
                 # gen_in = cond_in + const_in + noise_in
+                # print('noise shape non trainable',len(noise_in))
                 gen_in = cond_in + noise_in
+                # print('model expecting this many inputs: ',len(gen_in))
+                # print(gen_in)
 
                 gen_out = self.gen(gen_in[0:3])  # only use cond/const/noise
                 # gen_out = self.gen(gen_in[0:2])  # this might be getting rid of const but if it thows back an error then got back?
@@ -94,15 +99,19 @@ class WGANGP(object):
                 disc_in_gen = cond_in + gen_out
                 disc_out_gen = self.disc(disc_in_gen)
                 full_gen_out = [disc_out_gen]
-                if self.ensemble_size is not None:
-                    # generate ensemble of predictions and add mean to gen_trainer output
-                    # preds = [self.gen([gen_in[0], gen_in[1], gen_in[3+ii]])
-                    #          for ii in range(self.ensemble_size)]
-                    preds = [self.gen([gen_in[0], gen_in[1], gen_in[2+ii]])
-                             for ii in range(self.ensemble_size)]
-                    preds = tf.stack(preds)
-                    pred_mean = tf.reduce_mean(preds, axis=0)
-                    full_gen_out.append(pred_mean)
+                # if self.ensemble_size is not None:
+                #     # generate ensemble of predictions and add mean to gen_trainer output
+                #     # preds = [self.gen([gen_in[0], gen_in[1], gen_in[3+ii]])
+                #     #          for ii in range(self.ensemble_size)]
+
+                #     preds = [self.gen([gen_in[0], gen_in[1], gen_in[2+ii]])
+                #              for ii in range(self.ensemble_size)]
+                #     preds = tf.stack(preds)
+                #     pred_mean = tf.reduce_mean(preds, axis=0)
+                #     full_gen_out.append(pred_mean)
+                
+                # print('len of gen_in... again?',len(gen_in))
+                # print(gen_in)
                 self.gen_trainer = Model(inputs=gen_in, 
                                          outputs=full_gen_out, 
                                          name='gen_trainer')
@@ -137,8 +146,8 @@ class WGANGP(object):
             disc_out_real = self.disc(cond_in + [disc_in_real])
             disc_out_fake = self.disc(cond_in + [disc_in_fake])
             disc_out_avg = self.disc(cond_in + [disc_in_avg])
-            print(disc_out_avg)
-            print(disc_in_avg)
+            # print(disc_out_avg)
+            # print(disc_in_avg)
             disc_gp = GradientPenalty()([disc_out_avg, disc_in_avg])
             # self.disc_trainer = Model(inputs=cond_in + const_in + noise_in + sample_in,
             #                           outputs=[disc_out_real, disc_out_fake, disc_gp], 
@@ -235,19 +244,31 @@ class WGANGP(object):
                 (cond, sample) = batch_gen_iter.get_next()
                 # condconst = [cond, const]
                 condconst = [cond]
+                # print('ensemble size',self.ensemble_size)
                 if self.ensemble_size is None:
                     gt_outputs = [gen_target]
                     noise_list = [noise_gen()]
                 else:
-                    noise_list = [noise_gen()
-                                  for ii in range(self.ensemble_size + 1)]
+                    # noise_list = [noise_gen()
+                    #               for ii in range(self.ensemble_size + 1)]
+                    noise_list = [noise_gen()]
                     gt_outputs = [gen_target, sample]
+                # print('condconst',len(condconst))
+                # print('noise list',len(noise_list))
                 gt_inputs = condconst + noise_list
 
                 if self.mode == 'GAN':
+                    # print(len(gt_inputs)) # list of size 3, should be 2?
+                    # print(len(gt_outputs))
                     gen_loss = self.gen_trainer.train_on_batch(
                         gt_inputs, gt_outputs)
+                    
+
+                    # gen_loss = self.gen_trainer.train_on_batch(
+                    #     [gt_inputs, gt_outputs]) # added square brackets like the vaegan to see if that fixes the shape error in train - ended up with 5 inputs but only need 3
                 elif self.mode == 'VAEGAN':
+                    # print(len(gt_inputs)) # list of size 3, should be 2?
+                    # print(len(gt_outputs))
                     gen_loss = self.gen_trainer.train_step(
                         [gt_inputs, gt_outputs])
 
@@ -275,9 +296,9 @@ class WGANGP(object):
                 loss_log["disc_loss_fake"] = disc_loss[2]
                 loss_log["disc_loss_gp"] = disc_loss[3]
                 loss_log["gen_loss_total"] = gen_loss[0]
-                if self.ensemble_size is not None:
-                    loss_log["gen_loss_disc"] = gen_loss[1]
-                    loss_log["gen_loss_ct"] = gen_loss[2]
+                # if self.ensemble_size is not None:
+                #     loss_log["gen_loss_disc"] = gen_loss[1]
+                #     loss_log["gen_loss_ct"] = gen_loss[2]
             elif self.mode == "VAEGAN":
                 loss_log["disc_loss"] = disc_loss[0]
                 loss_log["disc_loss_real"] = disc_loss[1]

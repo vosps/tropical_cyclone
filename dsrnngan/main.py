@@ -23,6 +23,7 @@ import plots
 print('generate predictions')
 from generate_predictions_2 import generate_predictions
 
+
 print('importing tensorflow...')
 import tensorflow as tf
 print('tensorflow imported!')
@@ -39,6 +40,7 @@ print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 # fix random memory issue
 # TF_GPU_ALLOCATOR=cuda_malloc_async
 # tf.config.experimental.set_memory_growth(physical_devices[0], True)
+
 
 
 if tf.test.is_built_with_cuda():
@@ -177,6 +179,8 @@ if __name__ == "__main__":
 
     if args.do_training:
         # initialize GAN
+        print('mode',mode)
+        print('arch',arch)
         model = setupmodel.setup_model(
             mode=mode,
             arch=arch,
@@ -226,6 +230,8 @@ if __name__ == "__main__":
             print("Checkpoint {}/{}".format(checkpoint, num_checkpoints))
 
             # train for some number of batches
+            print('model: ',model)
+            print('mode',mode)
             loss_log = train.train_model(model=model,
                                          mode=mode,
                                          batch_gen_train=batch_gen_train,
