@@ -15,12 +15,12 @@ import os
 import queue
 import threading
 
-import cv2
+# import cv2
 import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
 
-import imgproc
+# import imgproc
 
 __all__ = [
     "TrainValidImageDataset", "TestImageDataset",
@@ -102,17 +102,21 @@ class TestImageDataset(Dataset):
 
     def __getitem__(self, batch_index: int) -> [torch.Tensor, torch.Tensor]:
         # Read a batch of image data
-        lr_image = cv2.imread(self.lr_image_file_names[batch_index], cv2.IMREAD_UNCHANGED).astype(np.float32) / 255.
-        hr_image = cv2.imread(self.hr_image_file_names[batch_index], cv2.IMREAD_UNCHANGED).astype(np.float32) / 255.
+        # lr_image = cv2.imread(self.lr_image_file_names[batch_index], cv2.IMREAD_UNCHANGED).astype(np.float32) / 255.
+        # hr_image = cv2.imread(self.hr_image_file_names[batch_index], cv2.IMREAD_UNCHANGED).astype(np.float32) / 255.
 
-        # BGR convert to RGB
-        lr_image = cv2.cvtColor(lr_image, cv2.COLOR_BGR2RGB)
-        hr_image = cv2.cvtColor(hr_image, cv2.COLOR_BGR2RGB)
+        # # BGR convert to RGB
+        # lr_image = cv2.cvtColor(lr_image, cv2.COLOR_BGR2RGB)
+        # hr_image = cv2.cvtColor(hr_image, cv2.COLOR_BGR2RGB)
 
-        # Convert image data into Tensor stream format (PyTorch).
-        # Note: The range of input and output is between [0, 1]
-        lr_tensor = imgproc.image_to_tensor(lr_image, False, False)
-        hr_tensor = imgproc.image_to_tensor(hr_image, False, False)
+        # # Convert image data into Tensor stream format (PyTorch).
+        # # Note: The range of input and output is between [0, 1]
+        # lr_tensor = imgproc.image_to_tensor(lr_image, False, False)
+        # hr_tensor = imgproc.image_to_tensor(hr_image, False, False)
+
+
+        lr_tensor = torch.tensor(self.test_X).unsqueeze(1)
+        hr_tensor = torch.tensor(self.test_y).unsqueeze(1)
 
         return {"lr": lr_tensor, "hr": hr_tensor}
 

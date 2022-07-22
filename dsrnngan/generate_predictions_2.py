@@ -239,9 +239,9 @@ def generate_predictions(*,
 		model = 'vaegan'
 	else:
 		model = 'gan'
-	np.save('/user/home/al18709/work/%s_predictions_20/%s_real-%s_improve_8.npy' % (model,mode,checkpoint),seq_real)
-	np.save('/user/home/al18709/work/%s_predictions_20/%s_pred-%s_improve_8.npy' % (model,mode,checkpoint),pred)
-	np.save('/user/home/al18709/work/%s_predictions_20/%s_input-%s_improve_8.npy' % (model,mode,checkpoint),low_res_inputs)
+	np.save('/user/home/al18709/work/%s_predictions_20/%s_real-%s_improve_9.npy' % (model,mode,checkpoint),seq_real)
+	np.save('/user/home/al18709/work/%s_predictions_20/%s_pred-%s_improve_9.npy' % (model,mode,checkpoint),pred)
+	np.save('/user/home/al18709/work/%s_predictions_20/%s_input-%s_improve_9.npy' % (model,mode,checkpoint),low_res_inputs)
 
 
 

@@ -15,7 +15,7 @@ import math
 import random
 from typing import Any
 
-import cv2
+# import cv2
 import numpy as np
 import torch
 from torchvision.transforms import functional as F
