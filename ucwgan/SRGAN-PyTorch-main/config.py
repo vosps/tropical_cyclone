@@ -40,6 +40,8 @@ if mode == "train_srresnet":
     valid_X = "/user/home/al18709/work/tc_data_flipped/valid_X.npy"
     train_y = "/user/home/al18709/work/tc_data_flipped/train_y.npy"
     valid_y = "/user/home/al18709/work/tc_data_flipped/valid_y.npy"
+    train_image_dir = "/user/home/al18709/work/tc_data_flipped/train_"
+    valid_image_dir = "/user/home/al18709/work/tc_data_flipped/valid_"
     test_lr_image_dir = f"./data/Set5/LRbicx{upscale_factor}"
     test_hr_image_dir = f"./data/Set5/GTmod12"
 
@@ -48,7 +50,8 @@ if mode == "train_srresnet":
     num_workers = 4
 
     # The address to load the pretrained model
-    pretrained_model_path = "./results/pretrained_models/SRResNet_x4-ImageNet-2096ee7f.pth.tar"
+    pretrained_model_path = "./user/home/al18709/work/SRResNet/SRResNet_x4-ImageNet-2096ee7f.pth.tar"
+    pretrained_model_path = False
 
     # Incremental training and migration training
     resume = ""
@@ -76,7 +79,7 @@ if mode == "train_srgan":
 
     # The address to load the pretrained model
     pretrained_d_model_path = ""
-    pretrained_g_model_path = "./results/SRResNet_baseline/g_best.pth.tar"
+    pretrained_g_model_path = "./user/home/al18709/work/SRResNet/g_best.pth.tar"
 
     # Incremental training and migration training
     resume_d = ""
@@ -111,4 +114,4 @@ if mode == "test":
     sr_dir = f"./results/test/{exp_name}"
     hr_dir = f"./data/Set5/GTmod12"
 
-    model_path = "./results/pretrained_models/SRResNet_x4-ImageNet-2096ee7f.pth.tar"
+    model_path = "/user/home/al18709/work/SRResNet/SRResNet_x4-ImageNet-2096ee7f.pth.tar"

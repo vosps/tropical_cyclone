@@ -41,10 +41,13 @@ class TrainValidImageDataset(Dataset):
     def __init__(self, image_dir: str, image_size: int, upscale_factor: int, mode: str) -> None:
         super(TrainValidImageDataset, self).__init__()
         # Get all image file names in folder
-        self.image_file_names = [os.path.join(image_dir, image_file_name) for image_file_name in os.listdir(image_dir)]
+        # self.image_file_names = [os.path.join(image_dir, image_file_name) for image_file_name in os.listdir(image_dir)]
         # TODO: change this as it lists a group of files, whereas all my data is in one file
+        self.X = np.load(image_dir + 'X.npy').astype(np.float32)
+        self.y = np.load(image_dir + 'y.npy').astype(np.float32)
+        self.n_samples,_,_ = self.X.shape
         # Specify the high-resolution image size, with equal length and width
-        self.image_size = image_size
+        # self.image_size = image_size
         # How many times the high-resolution image is the low-resolution image
         self.upscale_factor = upscale_factor
         # Load training dataset or test dataset
@@ -75,15 +78,22 @@ class TrainValidImageDataset(Dataset):
         # lr_tensor = imgproc.image_to_tensor(lr_image, False, False)
         # hr_tensor = imgproc.image_to_tensor(hr_image, False, False)
 
-        valid_X = torch.tensor(valid_X).unsqueeze(1)
-        valid_y = torch.tensor(valid_y).unsqueeze(1)
-        lr_tensor = torch.tensor(self.train_X).unsqueeze(1)
-        hr_tensor = torch.tensor(self.train_y).unsqueeze(1)
+        # valid_X = torch.tensor(valid_X).unsqueeze(1)
+        # valid_y = torch.tensor(valid_y).unsqueeze(1)
+        print('batch index',batch_index)
+        lr_tensor = torch.tensor(self.X).unsqueeze(1)
+        hr_tensor = torch.tensor(self.y).unsqueeze(1)
 
         return {"lr": lr_tensor, "hr": hr_tensor}
 
     def __len__(self) -> int:
-        return len(self.image_file_names)
+        # len = self._num_samples
+        # print(self)
+        # return len(self.n_samples)
+        return self.n_samples
+        # print(self)
+        # len,_,_ = self.shape
+        # return len
 
 
 class TestImageDataset(Dataset):
@@ -219,9 +229,21 @@ class CUDAPrefetcher:
             return None
 
         with torch.cuda.stream(self.stream):
-            for k, v in self.batch_data.items():
-                if torch.is_tensor(v):
-                    self.batch_data[k] = self.batch_data[k].to(self.device, non_blocking=True)
+            print('batch data',self.batch_data)
+            print('batch data',len(self.batch_data))
+            print('batch data',self.batch_data[0].shape)
+            print('batch data',self.batch_data[1].shape)
+            # load low res data???
+            # self.batch_data = self.batch_data[0].to(self.device,non_blocking=True)
+            self.gui_done = False
+            # change to 16 bit torch.half to match weigths but maybe they both need to be 64 r 32
+            self.batch_data[0] = self.batch_data[0].to(self.device,non_blocking=True)
+            self.batch_data[1] = self.batch_data[1].to(self.device,non_blocking=True)
+            self.batch_data[0] = self.batch_data[0].half()
+            self.batch_data[1] = self.batch_data[1].half()
+            # for k, v in self.batch_data.items():
+            #     if torch.is_tensor(v):
+            #         self.batch_data[k] = self.batch_data[k].to(self.device, non_blocking=True)
 
     def next(self):
         torch.cuda.current_stream().wait_stream(self.stream)

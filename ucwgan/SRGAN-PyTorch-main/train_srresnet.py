@@ -16,11 +16,14 @@ import os
 import shutil
 import time
 from enum import Enum
+import numpy as np
+
 
 import torch
 from torch import nn
 from torch import optim
 from torch.cuda import amp
+from torch.utils.data import TensorDataset
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
@@ -38,7 +41,39 @@ def main():
     best_psnr = 0.0
     best_ssim = 0.0
 
-    train_prefetcher, valid_prefetcher, test_prefetcher = load_dataset()
+    # train_prefetcher, valid_prefetcher, test_prefetcher = load_dataset()
+    # train_prefetcher, valid_prefetcher = load_dataset()
+
+    # 1. Create dataset
+    valid_X = torch.tensor(np.load('/user/work/al18709/tc_data_mswep/valid_X.npy')).unsqueeze(1)
+    valid_y = torch.tensor(np.load('/user/work/al18709/tc_data_mswep/valid_y.npy')).unsqueeze(1)
+    train_X = torch.tensor(np.load('/user/work/al18709/tc_data_mswep/train_X.npy')).unsqueeze(1)
+    train_y = torch.tensor(np.load('/user/work/al18709/tc_data_mswep/train_y.npy')).unsqueeze(1)
+
+    # 2. Split into train / validation partitions
+    train_set = train_X
+    val_set = valid_X
+    n_train,_,_,_ = train_set.shape
+    n_val,_,_,_ = val_set.shape
+    # batch_size = 16
+    # epochs = 100
+    # img_scale = 10
+
+    # 3. Create data loaders
+    loader_args = dict(batch_size=config.batch_size, num_workers=4, pin_memory=True)
+    train_dataset = TensorDataset(train_X, train_y)
+    print('train_dataset',train_dataset)
+    # print('train_dataset',train_dataset.shape)
+    train_dataloader = DataLoader(train_dataset, **loader_args)
+    print('train_dataloader',train_dataloader)
+    # print('train_dataloader',train_dataloader.shape)
+    val = TensorDataset(valid_X, valid_y)
+    valid_dataloader = DataLoader(val, **loader_args)
+    train_prefetcher = CUDAPrefetcher(train_dataloader, config.device)
+    print('train_prefetcher',train_prefetcher)
+    valid_prefetcher = CUDAPrefetcher(valid_dataloader, config.device)
+
+
     print("Load all datasets successfully.")
 
     model = build_model()
@@ -51,41 +86,41 @@ def main():
     print("Define all optimizer functions successfully.")
 
     print("Check whether to load pretrained model weights...")
-    if config.pretrained_model_path:
-        # Load checkpoint model
-        checkpoint = torch.load(config.pretrained_model_path, map_location=lambda storage, loc: storage)
-        # Load model state dict. Extract the fitted model weights
-        model_state_dict = model.state_dict()
-        state_dict = {k: v for k, v in checkpoint["state_dict"].items() if
-                      k in model_state_dict.keys() and v.size() == model_state_dict[k].size()}
-        # Overwrite the model weights to the current model
-        model_state_dict.update(state_dict)
-        model.load_state_dict(model_state_dict)
-        print(f"Loaded `{config.pretrained_model_path}` pretrained model weights successfully.")
-    else:
-        print("Pretrained model weights not found.")
+    # if config.pretrained_model_path:
+    #     # Load checkpoint model
+    #     checkpoint = torch.load(config.pretrained_model_path, map_location=lambda storage, loc: storage)
+    #     # Load model state dict. Extract the fitted model weights
+    #     model_state_dict = model.state_dict()
+    #     state_dict = {k: v for k, v in checkpoint["state_dict"].items() if
+    #                   k in model_state_dict.keys() and v.size() == model_state_dict[k].size()}
+    #     # Overwrite the model weights to the current model
+    #     model_state_dict.update(state_dict)
+    #     model.load_state_dict(model_state_dict)
+    #     print(f"Loaded `{config.pretrained_model_path}` pretrained model weights successfully.")
+    # else:
+    #     print("Pretrained model weights not found.")
 
-    print("Check whether the pretrained model is restored...")
-    if config.resume:
-        # Load checkpoint model
-        checkpoint = torch.load(config.resume, map_location=lambda storage, loc: storage)
-        # Restore the parameters in the training node to this point
-        start_epoch = checkpoint["epoch"]
-        best_psnr = checkpoint["best_psnr"]
-        best_ssim = checkpoint["best_ssim"]
-        # Load checkpoint state dict. Extract the fitted model weights
-        model_state_dict = model.state_dict()
-        new_state_dict = {k: v for k, v in checkpoint["state_dict"].items() if
-                      k in model_state_dict.keys() and v.size() == model_state_dict[k].size()}
-        # Overwrite the pretrained model weights to the current model
-        model_state_dict.update(new_state_dict)
-        model.load_state_dict(model_state_dict)
-        # Load the optimizer model
-        optimizer.load_state_dict(checkpoint["optimizer"])
-        print(f"Loaded `{config.resume}` resume model weights successfully. "
-              f"Resume training from epoch {start_epoch + 1}.")
-    else:
-        print("Resume training model not found. Start training from scratch.")
+    # print("Check whether the pretrained model is restored...")
+    # if config.resume:
+    #     # Load checkpoint model
+    #     checkpoint = torch.load(config.resume, map_location=lambda storage, loc: storage)
+    #     # Restore the parameters in the training node to this point
+    #     start_epoch = checkpoint["epoch"]
+    #     best_psnr = checkpoint["best_psnr"]
+    #     best_ssim = checkpoint["best_ssim"]
+    #     # Load checkpoint state dict. Extract the fitted model weights
+    #     model_state_dict = model.state_dict()
+    #     new_state_dict = {k: v for k, v in checkpoint["state_dict"].items() if
+    #                   k in model_state_dict.keys() and v.size() == model_state_dict[k].size()}
+    #     # Overwrite the pretrained model weights to the current model
+    #     model_state_dict.update(new_state_dict)
+    #     model.load_state_dict(model_state_dict)
+    #     # Load the optimizer model
+    #     optimizer.load_state_dict(checkpoint["optimizer"])
+    #     print(f"Loaded `{config.resume}` resume model weights successfully. "
+    #           f"Resume training from epoch {start_epoch + 1}.")
+    # else:
+    #     print("Resume training model not found. Start training from scratch.")
 
     # Create a folder of super-resolution experiment results
     samples_dir = os.path.join("samples", config.exp_name)
@@ -111,8 +146,9 @@ def main():
 
     for epoch in range(start_epoch, config.epochs):
         train(model, train_prefetcher, pixel_criterion, optimizer, epoch, scaler, writer)
-        _, _ = validate(model, valid_prefetcher, epoch, writer, psnr_model, ssim_model, "Valid")
-        psnr, ssim = validate(model, test_prefetcher, epoch, writer, psnr_model, ssim_model, "Test")
+        # _, _ = validate(model, valid_prefetcher, epoch, writer, psnr_model, ssim_model, "Valid")
+        # psnr, ssim = validate(model, test_prefetcher, epoch, writer, psnr_model, ssim_model, "Test")
+        psnr, ssim = validate(model, valid_prefetcher, epoch, writer, psnr_model, ssim_model, "Valid")
         print("\n")
 
         # Automatically save the model with the highest index
@@ -135,39 +171,63 @@ def main():
 
 def load_dataset() -> [CUDAPrefetcher, CUDAPrefetcher, CUDAPrefetcher]:
     # Load train, test and valid datasets
-    train_datasets = TrainValidImageDataset(config.train_image_dir, config.image_size, config.upscale_factor, "Train")
-    valid_datasets = TrainValidImageDataset(config.valid_image_dir, config.image_size, config.upscale_factor, "Valid")
-    test_datasets = TestImageDataset(config.test_lr_image_dir, config.test_hr_image_dir)
+    # train_datasets = TrainValidImageDataset(config.train_image_dir, config.image_size, config.upscale_factor, "Train")
+    # valid_datasets = TrainValidImageDataset(config.valid_image_dir, config.image_size, config.upscale_factor, "Valid")
+    # test_datasets = TestImageDataset(config.test_lr_image_dir, config.test_hr_image_dir)
 
     # Generator all dataloader
-    train_dataloader = DataLoader(train_datasets,
-                                  batch_size=config.batch_size,
-                                  shuffle=True,
-                                  num_workers=config.num_workers,
-                                  pin_memory=True,
-                                  drop_last=True,
-                                  persistent_workers=True)
-    valid_dataloader = DataLoader(valid_datasets,
-                                  batch_size=1,
-                                  shuffle=False,
-                                  num_workers=1,
-                                  pin_memory=True,
-                                  drop_last=False,
-                                  persistent_workers=True)
-    test_dataloader = DataLoader(test_datasets,
-                                 batch_size=1,
-                                 shuffle=False,
-                                 num_workers=1,
-                                 pin_memory=True,
-                                 drop_last=False,
-                                 persistent_workers=True)
+    # train_dataloader = DataLoader(train_datasets,
+    #                               batch_size=config.batch_size,
+    #                               shuffle=True,
+    #                               num_workers=config.num_workers,
+    #                               pin_memory=True,
+    #                               drop_last=True,
+    #                               persistent_workers=True)
+    # valid_dataloader = DataLoader(valid_datasets,
+    #                               batch_size=1,
+    #                               shuffle=False,
+    #                               num_workers=1,
+    #                               pin_memory=True,
+    #                               drop_last=False,
+    #                               persistent_workers=True)
+    # test_dataloader = DataLoader(test_datasets,
+    #                              batch_size=1,
+    #                              shuffle=False,
+    #                              num_workers=1,
+    #                              pin_memory=True,
+    #                              drop_last=False,
+    #                              persistent_workers=True)
+
+    # 1. Create dataset
+    valid_X = torch.tensor(np.load('/user/work/al18709/tc_data_mswep/valid_X.npy')).unsqueeze(1)
+    valid_y = torch.tensor(np.load('/user/work/al18709/tc_data_mswep/valid_y.npy')).unsqueeze(1)
+    train_X = torch.tensor(np.load('/user/work/al18709/tc_data_mswep/train_X.npy')).unsqueeze(1)
+    train_y = torch.tensor(np.load('/user/work/al18709/tc_data_mswep/train_y.npy')).unsqueeze(1)
+
+    # 2. Split into train / validation partitions
+    train_set = train_X
+    val_set = valid_X
+    n_train,_,_,_ = train_set.shape
+    n_val,_,_,_ = val_set.shape
+    # batch_size = 16
+    # epochs = 100
+    # img_scale = 10
+
+    # 3. Create data loaders
+    loader_args = dict(batch_size=config.batch_size, num_workers=4, pin_memory=True)
+    train_dataset = TensorDataset(train_X, train_y)
+    train_dataloader = DataLoader(train_dataset, **loader_args)
+    val = TensorDataset(valid_X, valid_y)
+    valid_dataloader = DataLoader(val, **loader_args)
 
     # Place all data on the preprocessing data loader
+    # train_prefetcher = CUDAPrefetcher(train_dataloader, config.device)
+    # valid_prefetcher = CUDAPrefetcher(valid_dataloader, config.device)
+    # test_prefetcher = CUDAPrefetcher(test_dataloader, config.device)
     train_prefetcher = CUDAPrefetcher(train_dataloader, config.device)
     valid_prefetcher = CUDAPrefetcher(valid_dataloader, config.device)
-    test_prefetcher = CUDAPrefetcher(test_dataloader, config.device)
 
-    return train_prefetcher, valid_prefetcher, test_prefetcher
+    return train_prefetcher, valid_prefetcher #, test_prefetcher
 
 
 def build_model() -> nn.Module:
@@ -235,8 +295,14 @@ def train(model: nn.Module,
         data_time.update(time.time() - end)
 
         # Transfer in-memory data to CUDA devices to speed up training
-        lr = batch_data["lr"].to(device=config.device, memory_format=torch.channels_last, non_blocking=True)
-        hr = batch_data["hr"].to(device=config.device, memory_format=torch.channels_last, non_blocking=True)
+        # lr = batch_data["lr"].to(device=config.device, memory_format=torch.channels_last, non_blocking=True)
+        # hr = batch_data["hr"].to(device=config.device, memory_format=torch.channels_last, non_blocking=True)
+        # print('batch data',batch_data)
+        print('batch data len',len(batch_data))
+        # print('batch data shape',batch_data.shape)
+        print('channels last', torch.channels_last)
+        lr = batch_data[0].to(device=config.device, memory_format=torch.channels_last, non_blocking=True)
+        hr = batch_data[1].to(device=config.device, memory_format=torch.channels_last, non_blocking=True)
 
         # Initialize generator gradients
         model.zero_grad(set_to_none=True)
@@ -244,6 +310,10 @@ def train(model: nn.Module,
         # Mixed precision training
         with amp.autocast():
             sr = model(lr)
+            print(sr)
+            print(hr)
+            print(sr.shape)
+            print(hr.shape)
             loss = pixel_criterion(sr, hr)
 
         # Backpropagation
@@ -314,8 +384,10 @@ def validate(model: nn.Module,
     with torch.no_grad():
         while batch_data is not None:
             # Transfer the in-memory data to the CUDA device to speed up the test
-            lr = batch_data["lr"].to(device=config.device, memory_format=torch.channels_last, non_blocking=True)
-            hr = batch_data["hr"].to(device=config.device, memory_format=torch.channels_last, non_blocking=True)
+            # lr = batch_data["lr"].to(device=config.device, memory_format=torch.channels_last, non_blocking=True)
+            # hr = batch_data["hr"].to(device=config.device, memory_format=torch.channels_last, non_blocking=True)
+            lr = batch_data[0].astype(np.float32).to(device=config.device, memory_format=torch.channels_last, non_blocking=True)
+            hr = batch_data[1].astype(np.float32).to(device=config.device, memory_format=torch.channels_last, non_blocking=True)
 
             # Use the generator model to generate a fake sample
             with amp.autocast():

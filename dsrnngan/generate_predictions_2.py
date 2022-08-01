@@ -58,7 +58,7 @@ def generate_predictions(*,
 	num_images = 150
 	num_images,_,_ = np.load('/user/work/al18709/tc_data_flipped/valid_X.npy').shape
 	# num_images = 1000
-	num_images,_,_ = np.load('/user/work/al18709/tc_data_flipped/extreme_valid_X.npy').shape
+	# num_images,_,_ = np.load('/user/work/al18709/tc_data_flipped/extreme_valid_X.npy').shape
 	print('number of images: ',num_images)
 
 	if gcm == True:
@@ -79,7 +79,7 @@ def generate_predictions(*,
 
 	# set initial variables
 	mode = 'extreme_valid'
-	# mode = 'validation'
+	mode = 'validation'
 	# mode = 'cmip'
 	# mode = 'train'
 	if gcm == True:
@@ -227,7 +227,10 @@ def generate_predictions(*,
 	flip = True
 
 	if flip == True:
-		meta = pd.read_csv('/user/work/al18709/tc_data_mswep/%s_meta.csv' % mode)
+		if mode == 'validation':
+			meta = pd.read_csv('/user/work/al18709/tc_data_mswep/valid_meta.csv')
+		else:
+			meta = pd.read_csv('/user/work/al18709/tc_data_mswep/%s_meta.csv' % mode)
 		seq_real = find_and_flip(seq_real,meta)
 		pred = find_and_flip(pred,meta)
 		low_res_inputs = find_and_flip(low_res_inputs,meta)
@@ -239,9 +242,9 @@ def generate_predictions(*,
 		model = 'vaegan'
 	else:
 		model = 'gan'
-	np.save('/user/home/al18709/work/%s_predictions_20/%s_real-%s_improve_9.npy' % (model,mode,checkpoint),seq_real)
-	np.save('/user/home/al18709/work/%s_predictions_20/%s_pred-%s_improve_9.npy' % (model,mode,checkpoint),pred)
-	np.save('/user/home/al18709/work/%s_predictions_20/%s_input-%s_improve_9.npy' % (model,mode,checkpoint),low_res_inputs)
+	np.save('/user/home/al18709/work/%s_predictions_20/%s_real-%s_improve_10.npy' % (model,mode,checkpoint),seq_real)
+	np.save('/user/home/al18709/work/%s_predictions_20/%s_pred-%s_improve_10.npy' % (model,mode,checkpoint),pred)
+	np.save('/user/home/al18709/work/%s_predictions_20/%s_input-%s_improve_10.npy' % (model,mode,checkpoint),low_res_inputs)
 
 
 
