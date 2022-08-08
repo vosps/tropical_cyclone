@@ -13,6 +13,7 @@ import cdsapi
 import subprocess
 # import utils 
 
+"""
 regrid = 'True'
 variable = 'u'
 level = '200'
@@ -122,4 +123,50 @@ for yrmonth in yrmonths:
 	# delete tmpfile
 	os.remove(tmpfile)
 	print('Finished')
-			
+"""
+
+c = cdsapi.Client()
+directory = '/bp1store/geog-tropical/data/ERA-5/hour/precipitation/'
+request = {
+        'product_type': 'reanalysis',
+        'format': 'netcdf',
+        'variable': 'total_precipitation',
+        'year': [
+            '1979', '1980', '1981',
+            '1982', '1983', '1984',
+            '1985', '1986', '1987',
+            '1988', '1989', '1990',
+            '1991', '1992', '1993',
+            '1994', '1995', '1996',
+            '1997', '1998', '1999',
+            
+        ],
+        'month': [
+            '01', '02', '03',
+            '04', '05', '06',
+            '07', '08', '09',
+            '10', '11', '12',
+        ],
+        'day': [
+            '01', '02', '03',
+            '04', '05', '06',
+            '07', '08', '09',
+            '10', '11', '12',
+            '13', '14', '15',
+            '16', '17', '18',
+            '19', '20', '21',
+            '22', '23', '24',
+            '25', '26', '27',
+            '28', '29', '30',
+            '31',
+        ],
+        'time': [
+            '00:00', '03:00', '06:00',
+            '09:00', '12:00', '15:00',
+            '18:00', '21:00',
+        ],
+    }
+
+c.retrieve('reanalysis-era5-single-levels',request,directory)
+
+	
