@@ -81,28 +81,29 @@ class VAE_trainer(keras.Model):
 
             if self.ensemble_size is None:
                 pass
-            else:
-                # generate ensemble of predictions for content loss
-                # preds = [self.VAE.decoder([z_mean, z_log_var, noise[ii+1], const])
-                #          for ii in range(self.ensemble_size)]
-                preds = [self.VAE.decoder([z_mean, z_log_var, noise[ii+1]])
-                         for ii in range(self.ensemble_size)]
-                preds = tf.stack(preds, axis=0)
-                pred_mean = tf.reduce_mean(preds, axis=0)
-                content_loss = tf.reduce_mean(tf.square(tf.subtract(pred_mean, truthimg)))
+            # else:
+            #     # generate ensemble of predictions for content loss
+            #     # preds = [self.VAE.decoder([z_mean, z_log_var, noise[ii+1], const])
+            #     #          for ii in range(self.ensemble_size)]
+            #     preds = [self.VAE.decoder([z_mean, z_log_var, noise[ii+1]])
+            #              for ii in range(self.ensemble_size)]
+            #     preds = tf.stack(preds, axis=0)
+            #     pred_mean = tf.reduce_mean(preds, axis=0)
+            #     content_loss = tf.reduce_mean(tf.square(tf.subtract(pred_mean, truthimg)))
 
             # calculate weighted compound loss
             if self.ensemble_size is None:
                 total_loss = vaegen_loss + kl_loss*tf.constant(self.kl_weight)
             else:
-                total_loss = vaegen_loss + kl_loss*tf.constant(self.kl_weight) + content_loss*tf.constant(self.content_loss_weight)
+                # total_loss = vaegen_loss + kl_loss*tf.constant(self.kl_weight) + content_loss*tf.constant(self.content_loss_weight)
+                total_loss = vaegen_loss + kl_loss*tf.constant(self.kl_weight)
         grads = tape.gradient(total_loss, self.trainable_weights)
         self.optimizer.apply_gradients(zip(grads, self.trainable_weights))
         self.total_loss_tracker.update_state(total_loss)
         self.vaegen_loss_tracker.update_state(vaegen_loss)
         self.kl_loss_tracker.update_state(kl_loss)
-        if self.ensemble_size is not None:
-            self.content_loss_tracker.update_state(content_loss)
+        # if self.ensemble_size is not None:
+        #     self.content_loss_tracker.update_state(content_loss)
         return [tracker.result() for tracker in self.metrics]
         # tf.print(self.total_loss_tracker.result(), self.vaegen_loss_tracker.result(), self.kl_loss_tracker.result())
 #         return {

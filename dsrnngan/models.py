@@ -70,6 +70,15 @@ def generator(mode,
     else:
         pass
 
+    if mode == "VAEGAN":
+        # basically the vaegan had poor ensemble spread and this was because the noise was passed in too late in the process. Therefore 
+        # we add three residual blocks so that the noise gets a change to diverge a bit
+        # Pass through 3 more residual blocks
+        for i in range(3):
+            generator_output = residual_block(generator_output, filters=filters_gen, conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate, padding=padding, force_1d_conv=forceconv)
+        print('End of extra low-res residual blocks')
+        print(f"Shape after extra low-res residual blocks: {generator_output.shape}")
+
     # Upsampling from (10,10) to (100,100) with alternating residual blocks
     block_channels = [2*filters_gen, filters_gen]
     generator_output = UpSampling2D(size=(5, 5), interpolation='bilinear')(generator_output)
