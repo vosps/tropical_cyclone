@@ -79,7 +79,7 @@ def generate_predictions(*,
 
 	# set initial variables
 	mode = 'extreme_valid'
-	mode = 'validation'
+	# mode = 'validation'
 	# mode = 'cmip'
 	# mode = 'train'
 	if gcm == True:
@@ -242,9 +242,9 @@ def generate_predictions(*,
 		model = 'vaegan'
 	else:
 		model = 'gan'
-	np.save('/user/home/al18709/work/%s_predictions_20/%s_real-%s_1_better-noise.npy' % (model,mode,checkpoint),seq_real)
-	np.save('/user/home/al18709/work/%s_predictions_20/%s_pred-%s_1_better-noise.npy' % (model,mode,checkpoint),pred)
-	np.save('/user/home/al18709/work/%s_predictions_20/%s_input-%s_1_better-noise.npy' % (model,mode,checkpoint),low_res_inputs)
+	np.save('/user/home/al18709/work/%s_predictions_20/%s_real-%s_2_better-noise.npy' % (model,mode,checkpoint),seq_real)
+	np.save('/user/home/al18709/work/%s_predictions_20/%s_pred-%s_2_better-noise.npy' % (model,mode,checkpoint),pred)
+	np.save('/user/home/al18709/work/%s_predictions_20/%s_input-%s_2_better-noise.npy' % (model,mode,checkpoint),low_res_inputs)
 
 
 

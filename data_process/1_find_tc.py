@@ -9,7 +9,7 @@ column docs for ibtracks: https://www.ncdc.noaa.gov/ibtracs/pdf/IBTrACS_v04_colu
 # import modules
 import glob
 import pandas as pd
-from netCDF4 import Dataset
+# from netCDF4 import Dataset
 import numpy as np
 
 # open csv file
@@ -51,6 +51,10 @@ ibtracks = ibtracks[ibtracks['USA_SSHS'] >= 0]
 # extract datetime data
 ibtracks['ISO_TIME'] = pd.to_datetime(ibtracks['ISO_TIME'])
 year_month_day = list(pd.to_datetime(ibtracks['ISO_TIME']).dt.strftime('%Y%m%d'))
+year_month = list(pd.to_datetime(ibtracks['ISO_TIME']).dt.strftime('%Y%m'))
+years = list(pd.to_datetime(ibtracks['ISO_TIME']).dt.strftime('%Y'))
+months = list(pd.to_datetime(ibtracks['ISO_TIME']).dt.strftime('%m'))
+days = list(pd.to_datetime(ibtracks['ISO_TIME']).dt.strftime('%d'))
 day_of_year = ibtracks['ISO_TIME'].dt.dayofyear
 for d in list(range(1,10)):
 
@@ -66,7 +70,7 @@ mswep_indices = []
 
 for hr in [0,3,6,9]:
 	hours_mswep[hours_mswep == hr] = '0' + str(hr)
-
+hours_era5 = hours
 hours[hours == 0] = 24
 hours = hours - 1
 hours = hours.astype(str).str.zfill(2)
@@ -75,6 +79,7 @@ time_points = [str(h) + '5959' for h in hours]
 # generate list of filepaths
 filepaths_imerg = ['/bp1store/geog-tropical/data/Obs/IMERG/half_hourly/final/3B-HHR.MS.MRG.3IMERG.%s*%s*.HDF5' % (ymd,h) for ymd,h in zip(year_month_day,time_points)]
 filepaths_mswep = ['/bp1store/geog-tropical/data/Obs/MSWEP/3hourly_invertlat/%s.%s.nc' % (yd,h) for yd,h in zip(year_day,hours_mswep)]
+filepaths_era5 = ['/bp1store/geog-tropical/data/ERA-5/hour/precipitation/ERA5_precipitation_3hrly_%s' % ym for ym in year_month]
 # filepaths_q = ['/user/home/al18709/work/era5/specific_humidity/ERA5_q_3hourly_1deg_%s.h' % ym for ym in year_months]
 
 
@@ -87,11 +92,23 @@ name = list(ibtracks['NAME'])
 basin = list(ibtracks['BASIN']) 
 sshs = list(ibtracks['USA_SSHS'])
 sids = list(ibtracks['SID'])
+hours_era5[hours_era5 == 24] = 0
 
 # write csv file
 tc_files = pd.DataFrame({
-						 'filepath_imerg' : filepaths_imerg, 'filepath_mswep' : filepaths_mswep, 'sid' : sids, 'lat' : lat, 'lon' : lon,
-						 'name' : name, 'basin' : basin, 'sshs' : sshs, 'hour' : hours
+						 'filepath_imerg' : filepaths_imerg, 
+						 'filepath_mswep' : filepaths_mswep, 
+						 'filepath_era5' : filepaths_era5, 
+						 'sid' : sids, 
+						 'lat' : lat, 
+						 'lon' : lon,
+						 'name' : name, 
+						 'basin' : basin, 
+						 'sshs' : sshs,
+						 'year' : years,
+						 'month' : months,
+						 'day' : days,
+						 'hour' : hours_era5
 })
 
 # reindex the dataframe and drop old index column

@@ -249,6 +249,7 @@ def process_mswep(df):
 if __name__ == '__main__':
 	dataset = 'mswep' # or imerg
 	# dataset = 'imerg'
+	dataset = 'era5'
 	df = pd.read_csv('/user/work/al18709/ibtracks/tc_files.csv')
 	df_split = np.array_split(df, 32)
 	p = Pool(processes=32)

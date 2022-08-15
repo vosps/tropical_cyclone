@@ -32,7 +32,7 @@ TRAIN:
     steps_per_checkpoint: 800 # 200 this affects number of training samples trained on before saving? so when this was 3,200 it took a long time to train as there were 52,000 samples to go through each checkpoint
     batch_size: 16  # can use 400x16 without CL, or 3200x2 with CL
     kl_weight: 1e-2  # used for VAEGAN 1e-8
-    ensemble_size: 1  # size of pred ensemble for content loss, set to 1 for no content loss or 8 as the highest, it was 1 but this caused an error in gan.py i think
+    ensemble_size: null  # null or 1 size of pred ensemble for content loss, set to 1 for no content loss or 8 as the highest, it was 1 but this caused an error in gan.py i think
     content_loss_weight: 0 # set to zero for no content loss or 1000.0 for content loss
 
 VAL:
