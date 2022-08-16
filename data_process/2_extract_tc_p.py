@@ -236,6 +236,178 @@ def process_apply_mswep(x):
 	else:
 		print('%s not saved!' % filepath)
 
+def process_apply_era5(x):
+	# define variables
+	
+	result = 1
+	filepath = x.loc['filepath_era5']
+
+	# remove filepaths which relate to timestamps we don't have in ERA5
+	if str(x.loc['hour']) not in ['0','3','6','9','12','15','18','21']:
+		print(x.loc['hour'])
+		result = 0
+
+	if result == 1:
+		print(filepath)
+		if glob.glob(filepath) == []:
+			with open('logs/error_filepaths.txt', 'w') as f:
+					f.write(filepath)
+					f.write('\n')
+		elif 'tp' not in Dataset(filepath, 'r').variables:
+			with open('logs/error_filepaths.txt', 'w') as f:
+					f.write(filepath + ' precipitation variable not included')
+					f.write('\n')
+
+		else:
+			filepath = glob.glob(filepath)[0]
+			centre_lat = x.loc['lat']
+			centre_lon = x.loc['lon']
+			if centre_lon < 0:
+				centre_lon = centre_lon + 360
+			name = x.loc['name']
+			cat = x.loc['sshs']
+			time = x.loc['hour']
+			sid = x.loc['sid']
+			basin = x.loc['basin']
+			year = x.loc['year']
+			month = x.loc['month']
+			day = x.loc['day']
+			hour = x.loc['hour']
+			
+			tc_time = '%s-%s-%sT%s:00:00' % (year,month,day,hour)
+
+			# time='2021-05-31T21:00:00'
+			# centre_lat = x.loc['centre_lat']
+			# centre_lon = x.loc['centre_lon']
+			i = x[0]
+
+			# open file
+			d = xr.open_dataset(filepath)
+			# d = Dataset(filepath, 'r')
+			# lat = d.variables['latitude'][:] #lat
+			# lon = d.variables['longitude'][:] #lon
+			lat = d.latitude.values
+			lon = d.longitude.values
+			# lon = lon + 180
+
+			# check if variable exists
+			
+			# era5 don't have the same lat and lons as mswep
+			# clip to location
+			lat_lower_bound = (np.abs(lat-centre_lat-5.)).argmin()
+			lat_upper_bound = (np.abs(lat-centre_lat+5.)).argmin()
+			lon_lower_bound = (np.abs(lon-centre_lon+5.)).argmin()
+			lon_upper_bound = (np.abs(lon-centre_lon-5.)).argmin()
+
+			# work on edge cases
+			"""
+			if lat_lower_bound - lat_upper_bound != 100:
+				lat_lower_bound = lat_upper_bound + 100
+			"""
+
+			# if lon lower bound is over centre, splice
+			# print('centre lon: ',centre_lon)
+			# print('lower bound: ',lon_lower_bound)
+			# print('upper bound: ',lon_upper_bound)
+
+			if centre_lon > 355: 
+				print('goes over centre')
+				diff = lon_upper_bound - lon_lower_bound
+				second_upper_bound = 100 - diff
+				# print(tc_time)
+				# print(lat_lower_bound,lat_upper_bound,lon_lower_bound,lon_upper_bound)
+				# print(centre_lon)
+				data1 = d.sel(time=tc_time).variables['tp'][lat_lower_bound:lat_upper_bound,lon_lower_bound:lon_upper_bound]
+				data2 = d.sel(time=tc_time).variables['tp'][lat_lower_bound:lat_upper_bound,0:second_upper_bound]
+				# data1 = d.variables['precipitation'][0,lat_lower_bound:lat_upper_bound,lon_lower_bound:lon_upper_bound]
+				# data2 = d.variables['precipitation'][0,lat_lower_bound:lat_upper_bound,0:second_upper_bound]
+				lat = lat[lat_lower_bound:lat_upper_bound]
+				lon1 = lon[lon_lower_bound:lon_upper_bound]
+				lon2 = lon[0:second_upper_bound]
+				data = np.concatenate((data1,data2),axis=1)
+				lon = np.concatenate((lon1,lon2))
+			elif centre_lon < 5:
+				print('goes over centre the other way')
+				diff = lon_upper_bound - lon_lower_bound
+				second_upper_bound = 100 - diff
+				# print(tc_time)
+				# print(lat_lower_bound,lat_upper_bound,lon_lower_bound,lon_upper_bound)
+				# print(centre_lon)
+
+				data1 = d.sel(time=tc_time).variables['tp'][lat_lower_bound:lat_upper_bound,-second_upper_bound:-1]
+				data2 = d.sel(time=tc_time).variables['tp'][lat_lower_bound:lat_upper_bound,lon_lower_bound:lon_upper_bound]
+				lat = lat[lat_lower_bound:lat_upper_bound]
+				lon1 = lon[-second_upper_bound:-1]
+				lon2 = lon[lon_lower_bound:lon_upper_bound]
+				
+				data = np.concatenate((data1,data2),axis=1)
+				lon = np.concatenate((lon1,lon2))
+			else:
+				print('does not go over centre')
+				print(centre_lat,centre_lon,tc_time,lat_lower_bound,lat_upper_bound,lon_lower_bound,lon_upper_bound)
+				print(' ')
+				# print(d.time.values)
+				data = d.sel(time=tc_time).variables['tp'][lat_lower_bound:lat_upper_bound,lon_lower_bound:lon_upper_bound]
+				lat = lat[lat_lower_bound:lat_upper_bound]
+				lon = lon[lon_lower_bound:lon_upper_bound]
+
+			"""
+			lon_upper_og = lon_upper_bound
+			if lon_upper_bound - lon_lower_bound != 100:
+				lon_upper_og = lon_upper_bound
+				lon_upper_bound = lon_lower_bound + 100
+			lon_bool = False
+
+			# data = d.variables['precipitation']
+			if lon_upper_bound >= 3599:
+				lon_idx = []
+				lon_idx = lon_idx + list(range(0,lon_upper_bound - 3599))
+				if list(range(lon_lower_bound,3599)) != []:
+					lon_idx = lon_idx + list(range(lon_lower_bound,3599))
+				
+				lon_bool = []
+				for i in range(len(lon)):
+					if i in lon_idx:
+						lon_bool.append(True)
+					else:
+						lon_bool.append(False)
+				data = d.variables['precipitation'][0,lat_upper_bound:lat_lower_bound,lon_bool]
+
+			else:
+				data = d.variables['precipitation'][0,lat_upper_bound:lat_lower_bound,lon_lower_bound:lon_upper_bound]
+			lat = lat[lat_upper_bound:lat_lower_bound]
+			if lon_bool:
+				lon = lon[lon_bool]
+			else:
+				lon = lon[lon_lower_bound:lon_upper_bound]"""
+			
+			
+			# d.close()
+			print(len(lon))
+			print(len(lat))
+			if (len(lon) != 40) or (len(lat) != 40): # TODO: figure out why this happens
+				print('dimensions do not match')
+			else:
+				# precip = np.transpose(precip)
+				print(data.shape)
+				da = xr.DataArray(data, 
+								dims=("x", "y"), 
+								coords={"x": lon, "y": lat},
+								attrs=dict(description="Total Precipitation",units="mm"),
+								name = 'precipitation')
+				# print(da)
+				if cat not in [1,2,3,4,5]:
+					cat = 0
+				if centre_lon > 180:
+					centre_lon = centre_lon - 360
+				# da.to_netcdf('/user/work/al18709/tropical_cyclones/mswep/' + str(name) + '_' + str(sid) + '_hour-' + str(time) + '_idx-' + str(i) + '_cat-' + str(int(cat)) + '_basin-' + str(basin) + '.nc')
+				# da.to_netcdf('/user/work/al18709/tropical_cyclones/mswep/' + str(name) + '_' + str(sid) + '_hour-' + str(time) + '_idx-' + str(i) + '_cat-' + str(int(cat)) + '_basin-' + str(basin) + '.nc')
+				da.to_netcdf('/user/work/al18709/tropical_cyclones/era5/' + str(name) + '_' + str(sid) + '_hour-' + str(time) + '_idx-' + str(i) + '_cat-' + str(int(cat)) + '_basin-' + str(basin) + '_centrelat-' + str(centre_lat) + '_centrelon-' + str(centre_lon) + '.nc')
+				print('%s saved!' % filepath)
+				# TODO: flip lats
+	else:
+		print('%s not saved!' % filepath)
+
 def process(df):
 	print('doing process...')
 	res = df.apply(process_apply,axis=1)
@@ -246,6 +418,11 @@ def process_mswep(df):
 	res = df.apply(process_apply_mswep,axis=1)
 	return res
 
+def process_era5(df):
+	print('doing process...')
+	res = df.apply(process_apply_era5,axis=1)
+	return res
+
 if __name__ == '__main__':
 	dataset = 'mswep' # or imerg
 	# dataset = 'imerg'
@@ -253,6 +430,8 @@ if __name__ == '__main__':
 	df = pd.read_csv('/user/work/al18709/ibtracks/tc_files.csv')
 	df_split = np.array_split(df, 32)
 	p = Pool(processes=32)
+	# df_split = np.array_split(df, 1)
+	# p = Pool(processes=1)
 	print('opened csv!')
 	print('pooling processes...')
 
@@ -261,6 +440,8 @@ if __name__ == '__main__':
 		pool_results = p.map(process, df_split)
 	elif dataset == 'mswep':
 		pool_results = p.map(process_mswep, df_split)
+	elif dataset == 'era5':
+		pool_results = p.map(process_era5, df_split)
 	# data = pd.concat(p.map(process, df_split))
 	print('results pooled')
 	p.close()

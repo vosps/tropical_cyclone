@@ -79,7 +79,7 @@ time_points = [str(h) + '5959' for h in hours]
 # generate list of filepaths
 filepaths_imerg = ['/bp1store/geog-tropical/data/Obs/IMERG/half_hourly/final/3B-HHR.MS.MRG.3IMERG.%s*%s*.HDF5' % (ymd,h) for ymd,h in zip(year_month_day,time_points)]
 filepaths_mswep = ['/bp1store/geog-tropical/data/Obs/MSWEP/3hourly_invertlat/%s.%s.nc' % (yd,h) for yd,h in zip(year_day,hours_mswep)]
-filepaths_era5 = ['/bp1store/geog-tropical/data/ERA-5/hour/precipitation/ERA5_precipitation_3hrly_%s' % ym for ym in year_month]
+filepaths_era5 = ['/bp1store/geog-tropical/data/ERA-5/hour/precipitation/ERA5_precipitation_3hrly_%s.nc' % ym for ym in year_month]
 # filepaths_q = ['/user/home/al18709/work/era5/specific_humidity/ERA5_q_3hourly_1deg_%s.h' % ym for ym in year_months]
 
 
@@ -92,7 +92,19 @@ name = list(ibtracks['NAME'])
 basin = list(ibtracks['BASIN']) 
 sshs = list(ibtracks['USA_SSHS'])
 sids = list(ibtracks['SID'])
-hours_era5[hours_era5 == 24] = 0
+hours_era5[hours_era5 == 24] = '00'
+# hours_era5[hours_era5 == 3] = '03'
+# hours_era5[hours_era5 == 6] = '06'
+# hours_era5[hours_era5 == 9] = '09'
+# months[months == 1] = '01'
+# months[months == 2] = '02'
+# months[months == 3] = '03'
+# months[months == 4] = '04'
+# months[months == 5] = '05'
+# months[months == 6] = '06'
+# months[months == 7] = '07'
+# months[months == 8] = '08'
+# months[months == 9] = '09'
 
 # write csv file
 tc_files = pd.DataFrame({
