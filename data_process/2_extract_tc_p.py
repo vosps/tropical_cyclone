@@ -95,7 +95,6 @@ def process_apply(x):
 
 def process_apply_mswep(x):
 	# define variables
-	
 	result = 1
 	filepath = x.loc['filepath_mswep']
 
@@ -123,8 +122,6 @@ def process_apply_mswep(x):
 			time = x.loc['hour']
 			sid = x.loc['sid']
 			basin = x.loc['basin']
-			# centre_lat = x.loc['centre_lat']
-			# centre_lon = x.loc['centre_lon']
 			i = x[0]
 
 			# open file
@@ -132,7 +129,6 @@ def process_apply_mswep(x):
 			lat = d.variables['lat'][:] #lat
 			lon = d.variables['lon'][:] #lon
 
-			# check if variable exists
 			
 			
 			# clip to location
@@ -140,17 +136,6 @@ def process_apply_mswep(x):
 			lat_upper_bound = (np.abs(lat-centre_lat-5.)).argmin()
 			lon_lower_bound = (np.abs(lon-centre_lon+5.)).argmin()
 			lon_upper_bound = (np.abs(lon-centre_lon-5.)).argmin()
-
-			# work on edge cases
-			"""
-			if lat_lower_bound - lat_upper_bound != 100:
-				lat_lower_bound = lat_upper_bound + 100
-			"""
-
-			# if lon lower bound is over centre, splice
-			# print('centre lon: ',centre_lon)
-			# print('lower bound: ',lon_lower_bound)
-			# print('upper bound: ',lon_upper_bound)
 
 			if centre_lon > 175: 
 				print('goes over centre')
@@ -179,36 +164,6 @@ def process_apply_mswep(x):
 				data = d.variables['precipitation'][0,lat_lower_bound:lat_upper_bound,lon_lower_bound:lon_upper_bound]
 				lat = lat[lat_lower_bound:lat_upper_bound]
 				lon = lon[lon_lower_bound:lon_upper_bound]
-
-			"""
-			lon_upper_og = lon_upper_bound
-			if lon_upper_bound - lon_lower_bound != 100:
-				lon_upper_og = lon_upper_bound
-				lon_upper_bound = lon_lower_bound + 100
-			lon_bool = False
-
-			# data = d.variables['precipitation']
-			if lon_upper_bound >= 3599:
-				lon_idx = []
-				lon_idx = lon_idx + list(range(0,lon_upper_bound - 3599))
-				if list(range(lon_lower_bound,3599)) != []:
-					lon_idx = lon_idx + list(range(lon_lower_bound,3599))
-				
-				lon_bool = []
-				for i in range(len(lon)):
-					if i in lon_idx:
-						lon_bool.append(True)
-					else:
-						lon_bool.append(False)
-				data = d.variables['precipitation'][0,lat_upper_bound:lat_lower_bound,lon_bool]
-
-			else:
-				data = d.variables['precipitation'][0,lat_upper_bound:lat_lower_bound,lon_lower_bound:lon_upper_bound]
-			lat = lat[lat_upper_bound:lat_lower_bound]
-			if lon_bool:
-				lon = lon[lon_bool]
-			else:
-				lon = lon[lon_lower_bound:lon_upper_bound]"""
 			
 			
 			d.close()
@@ -272,23 +227,14 @@ def process_apply_era5(x):
 			year = x.loc['year']
 			month = x.loc['month']
 			day = x.loc['day']
-			hour = x.loc['hour']
-			
+			hour = x.loc['hour']		
 			tc_time = '%s-%s-%sT%s:00:00' % (year,month,day,hour)
-
-			# time='2021-05-31T21:00:00'
-			# centre_lat = x.loc['centre_lat']
-			# centre_lon = x.loc['centre_lon']
 			i = x[0]
 
 			# open file
 			d = xr.open_dataset(filepath)
-			# d = Dataset(filepath, 'r')
-			# lat = d.variables['latitude'][:] #lat
-			# lon = d.variables['longitude'][:] #lon
 			lat = d.latitude.values
 			lon = d.longitude.values
-			# lon = lon + 180
 
 			# check if variable exists
 			
@@ -300,27 +246,13 @@ def process_apply_era5(x):
 			lon_upper_bound = (np.abs(lon-centre_lon-5.)).argmin()
 
 			# work on edge cases
-			"""
-			if lat_lower_bound - lat_upper_bound != 100:
-				lat_lower_bound = lat_upper_bound + 100
-			"""
-
-			# if lon lower bound is over centre, splice
-			# print('centre lon: ',centre_lon)
-			# print('lower bound: ',lon_lower_bound)
-			# print('upper bound: ',lon_upper_bound)
 
 			if centre_lon > 355: 
 				print('goes over centre')
 				diff = lon_upper_bound - lon_lower_bound
 				second_upper_bound = 100 - diff
-				# print(tc_time)
-				# print(lat_lower_bound,lat_upper_bound,lon_lower_bound,lon_upper_bound)
-				# print(centre_lon)
 				data1 = d.sel(time=tc_time).variables['tp'][lat_lower_bound:lat_upper_bound,lon_lower_bound:lon_upper_bound]
 				data2 = d.sel(time=tc_time).variables['tp'][lat_lower_bound:lat_upper_bound,0:second_upper_bound]
-				# data1 = d.variables['precipitation'][0,lat_lower_bound:lat_upper_bound,lon_lower_bound:lon_upper_bound]
-				# data2 = d.variables['precipitation'][0,lat_lower_bound:lat_upper_bound,0:second_upper_bound]
 				lat = lat[lat_lower_bound:lat_upper_bound]
 				lon1 = lon[lon_lower_bound:lon_upper_bound]
 				lon2 = lon[0:second_upper_bound]
@@ -330,9 +262,6 @@ def process_apply_era5(x):
 				print('goes over centre the other way')
 				diff = lon_upper_bound - lon_lower_bound
 				second_upper_bound = 100 - diff
-				# print(tc_time)
-				# print(lat_lower_bound,lat_upper_bound,lon_lower_bound,lon_upper_bound)
-				# print(centre_lon)
 
 				data1 = d.sel(time=tc_time).variables['tp'][lat_lower_bound:lat_upper_bound,-second_upper_bound:-1]
 				data2 = d.sel(time=tc_time).variables['tp'][lat_lower_bound:lat_upper_bound,lon_lower_bound:lon_upper_bound]
@@ -350,41 +279,7 @@ def process_apply_era5(x):
 				data = d.sel(time=tc_time).variables['tp'][lat_lower_bound:lat_upper_bound,lon_lower_bound:lon_upper_bound]
 				lat = lat[lat_lower_bound:lat_upper_bound]
 				lon = lon[lon_lower_bound:lon_upper_bound]
-
-			"""
-			lon_upper_og = lon_upper_bound
-			if lon_upper_bound - lon_lower_bound != 100:
-				lon_upper_og = lon_upper_bound
-				lon_upper_bound = lon_lower_bound + 100
-			lon_bool = False
-
-			# data = d.variables['precipitation']
-			if lon_upper_bound >= 3599:
-				lon_idx = []
-				lon_idx = lon_idx + list(range(0,lon_upper_bound - 3599))
-				if list(range(lon_lower_bound,3599)) != []:
-					lon_idx = lon_idx + list(range(lon_lower_bound,3599))
-				
-				lon_bool = []
-				for i in range(len(lon)):
-					if i in lon_idx:
-						lon_bool.append(True)
-					else:
-						lon_bool.append(False)
-				data = d.variables['precipitation'][0,lat_upper_bound:lat_lower_bound,lon_bool]
-
-			else:
-				data = d.variables['precipitation'][0,lat_upper_bound:lat_lower_bound,lon_lower_bound:lon_upper_bound]
-			lat = lat[lat_upper_bound:lat_lower_bound]
-			if lon_bool:
-				lon = lon[lon_bool]
-			else:
-				lon = lon[lon_lower_bound:lon_upper_bound]"""
-			
-			
-			# d.close()
-			print(len(lon))
-			print(len(lat))
+					
 			if (len(lon) != 40) or (len(lat) != 40): # TODO: figure out why this happens
 				print('dimensions do not match')
 			else:
@@ -400,11 +295,8 @@ def process_apply_era5(x):
 					cat = 0
 				if centre_lon > 180:
 					centre_lon = centre_lon - 360
-				# da.to_netcdf('/user/work/al18709/tropical_cyclones/mswep/' + str(name) + '_' + str(sid) + '_hour-' + str(time) + '_idx-' + str(i) + '_cat-' + str(int(cat)) + '_basin-' + str(basin) + '.nc')
-				# da.to_netcdf('/user/work/al18709/tropical_cyclones/mswep/' + str(name) + '_' + str(sid) + '_hour-' + str(time) + '_idx-' + str(i) + '_cat-' + str(int(cat)) + '_basin-' + str(basin) + '.nc')
 				da.to_netcdf('/user/work/al18709/tropical_cyclones/era5/' + str(name) + '_' + str(sid) + '_hour-' + str(time) + '_idx-' + str(i) + '_cat-' + str(int(cat)) + '_basin-' + str(basin) + '_centrelat-' + str(centre_lat) + '_centrelon-' + str(centre_lon) + '.nc')
 				print('%s saved!' % filepath)
-				# TODO: flip lats
 	else:
 		print('%s not saved!' % filepath)
 

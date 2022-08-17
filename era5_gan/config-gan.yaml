@@ -9,7 +9,7 @@ MODEL:
     # change padding to zero padding?
         
 SETUP:
-    log_folder: "/user/home/al18709/work/gan/logs_10"
+    log_folder: "/user/home/al18709/work/gan/logs_era5_era-to-mswep_1"
     # log_folder: "/user/home/al18709/work/dsrnngan/logs"
 
 GENERATOR:

@@ -51,26 +51,22 @@ def save_Xy(grouped_tcs):
 		regex = r"/user/work/al18709/tropical_cyclones/era5/.+?_(.+?)_.*?_idx-(.+?)_.*?_centrelat-(.+?)_centrelon-(.+?).nc"
 		
 	# regex = r"/user/work/al18709/tropical_cyclones/.+?_(.+?)_.*?.nc"
-	
+	resolution = 40
+
 	# define grid, this doesn't need to be specific, only needs to be the correct resolution
 	grid_in = xr.Dataset({'longitude': np.linspace(0, 100, 100),
 			'latitude': np.linspace(-50, 50, 100)
 			})
-	# output grid has a the same coverage at finer resolution
-	grid_out = xr.Dataset({'longitude': np.linspace(0, 100, 10),
-				'latitude': np.linspace(-50, 50, 10)
-			})
+	if resolution == 40:
+		grid_out = xr.Dataset({'longitude': np.linspace(0, 100, 40),
+					'latitude': np.linspace(-50, 50, 40)
+				})
+	else:
+		# output grid has a the same coverage at finer resolution
+		grid_out = xr.Dataset({'longitude': np.linspace(0, 100, 10),
+					'latitude': np.linspace(-50, 50, 10)
+				})
 	
-	"""
-	# define grid, this doesn't need to be specific, only needs to be the correct resolution
-	grid_in = xr.Dataset({'longitude': np.linspace(50, -50, 100),
-			'latitude': np.linspace(-50, 50, 100)
-			})
-	# output grid has a the same coverage at finer resolution
-	grid_out = xr.Dataset({'longitude': np.linspace(50, -50, 10),
-				'latitude': np.linspace(-50, 50, 10)
-			})
-	"""
 	# regrid with conservative interpolation so means are conserved spatially
 	regridder = xe.Regridder(grid_in, grid_out, 'conservative')
 
@@ -92,7 +88,10 @@ def save_Xy(grouped_tcs):
 			meta_lons = []
 			meta_sids = []
 		else:
-			tc_X = np.zeros((n_timesteps,10,10))
+			if resolution == 40:
+				tc_X = np.zeros((n_timesteps,40,40))
+			else:
+				tc_X = np.zeros((n_timesteps,10,10))
 			meta_lats = np.zeros((n_timesteps))
 			meta_lons = np.zeros((n_timesteps))
 			meta_sids = []
@@ -111,17 +110,19 @@ def save_Xy(grouped_tcs):
 				centre_lon = re.match(regex,tc[i]).groups()[2]
 			
 			# array_flipped = np.zeros((1,100,100))
-			mswep_fp = glob.glob('/user/work/al18709/tropical_cyclones/mswep/*_idx-%s_*.nc' % idx)
-			print(mswep_fp)
-			if len(mswep_fp) == 0:
-				print('skip')
-				continue
-			else:
-				mswep_fp = mswep_fp[0]
 
-			mswep_array = xr.open_dataset(mswep_fp).precipitation.values
+			if dataset == 'era5':
+				mswep_fp = glob.glob('/user/work/al18709/tropical_cyclones/mswep/*_idx-%s_*.nc' % idx)
+				if len(mswep_fp) == 0 :
+					print('skip')
+					continue
+				else:
+					mswep_fp = mswep_fp[0]
 
+				mswep_array = xr.open_dataset(mswep_fp).precipitation.values
+			
 			array = ds.precipitation.values
+
 			if dataset == 'era5':
 				limit = 40
 			else:
@@ -152,7 +153,10 @@ def save_Xy(grouped_tcs):
 		print(len(meta_lons))
 		meta = pd.DataFrame({'sid' : meta_sids,'centre_lat' : meta_lats,'centre_lon' : meta_lons})
 		if dataset == 'mswep':
-			path = '/user/work/al18709/tc_Xy'
+			if resolution == 40:
+				path = '/user/work/al18709/tc_Xy_40'
+			else:
+				path = '/user/work/al18709/tc_Xy'
 		elif dataset == 'era5':
 			path = '/user/work/al18709/tc_Xy_era5'
 		np.save('%s/X_%s.npy' % (path,sid),tc_X)
@@ -168,8 +172,8 @@ if __name__ == '__main__':
 
 	# set up
 	n_processes = 64
-	# dataset = 'mswep'
-	dataset = 'era5'
+	dataset = 'mswep'
+	# dataset = 'era5'
 	# dataset = 'imerg'
 	
 	tc_dir = '/user/work/al18709/tropical_cyclones/%s/*.nc' % dataset

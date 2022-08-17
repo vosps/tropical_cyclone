@@ -1,0 +1,47 @@
+GENERAL:
+    mode: "VAEGAN" # choices 'det' 'GAN' 'VAEGAN'
+    problem_type: "superresolution" # choices 'normal' 'superresolution'
+    
+MODEL:
+    architecture: "normal" # check if force_1d_conv is true is false
+    # padding: "reflect"  # convolution padding: 'same', 'reflect', or 'symmetric' 
+    padding: "same"
+    # change padding to zero padding?
+        
+SETUP:
+    log_folder: "/user/home/al18709/work/vaegan/logs_3_better-noise"
+    # log_folder: "/user/home/al18709/work/dsrnngan/logs"
+
+GENERATOR:
+    filters_gen: 128 #128
+    noise_channels: 4 # used for GAN, used to be 4, but tat was for 9 input channels, so could decrease this.
+    latent_variables: 1 # used for VAEGAN
+    learning_rate_gen: 1e-6 # halve this for the vaegan 1e-5 or 5e-6
+
+DISCRIMINATOR:
+    # filters_disc: 512 #512
+    filters_disc: 512 #512
+    learning_rate_disc: 1e-5 # halve this for the vaegan 1e-5
+
+TRAIN:
+    train_years: [2016, 2017, 2018] 
+    training_weights: [0.4, 0.3, 0.2, 0.1]
+    # num_samples: 320000
+    num_samples: 1960000 #640000, 1320000
+    # steps_per_checkpoint: 3200 # perhaps this needs to be looked at. 200 too low, 3200 too slow. number of images is around 40,000
+    steps_per_checkpoint: 800 # 200 this affects number of training samples trained on before saving? so when this was 3,200 it took a long time to train as there were 52,000 samples to go through each checkpoint
+    batch_size: 16  # can use 400x16 without CL, or 3200x2 with CL
+    kl_weight: 1e-2  # used for VAEGAN 1e-8
+    ensemble_size: null  # size of pred ensemble for content loss, set to 1 for no content loss or 8 as the highest, it was 1 but this caused an error in gan.py i think
+    content_loss_weight: 0 # set to zero for no content loss or 1000.0 for content loss
+
+VAL:
+    val_years: 2019 # cannot pass a list if using create_fixed_dataset
+    val_size: 8
+
+EVAL:
+    num_batches: 256
+    add_postprocessing_noise: True # flag for adding postprocessing noise in rank statistics eval
+    postprocessing_noise_factor: 1e-3 # factor for scaling postprocessing noise in rank statistics eval
+    max_pooling: True
+    avg_pooling: True
