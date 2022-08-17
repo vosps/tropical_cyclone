@@ -192,14 +192,14 @@ def create_fixed_dataset(year=None,mode='validation',batch_size=16,
     print('opening fixed dataset...')
     # added this in
     if mode == 'train':
-        x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_era5_flipped/train_X.npy'),axis=3))
-        y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_era5_flipped/train_y.npy'),axis=3))
+        x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep_flipped_40/train_X.npy'),axis=3))
+        y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep_flipped_40/train_y.npy'),axis=3))
     elif mode == 'validation':
-        x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_era5_flipped/valid_X.npy'),axis=3))
-        y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_era5_flipped/valid_y.npy'),axis=3))
+        x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep_flipped_40/valid_X.npy'),axis=3))
+        y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep_flipped_40/valid_y.npy'),axis=3))
     elif mode == 'extreme_valid':
-        x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_era5_flipped/extreme_valid_X.npy'),axis=3))
-        y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_era5_flipped/extreme_valid_y.npy'),axis=3))
+        x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep_flipped_40/extreme_valid_X.npy'),axis=3))
+        y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep_flipped_40/extreme_valid_y.npy'),axis=3))
     elif mode == 'gcm':
         x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/gcm_X.npy'),axis=3))
         y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/gcm_X.npy'),axis=3))
