@@ -31,7 +31,12 @@ def load_tc_data(set = 'validation',results = 'final'):
 		inputs = np.load('/user/home/al18709/work/gan_predictions_20/%s_input-opt_improve.npy' % set)
 		pred_cnn = np.load('/user/home/al18709/work/cnn/unet_valid_2.npy')
 		pred_gan = np.load('/user/home/al18709/work/gan_predictions_20/%s_pred-opt_improve.npy' % set)[:,:,:,0]
-		pred_vaegan = np.load('/user/home/al18709/work/vaegan_predictions_20/%s_pred-opt_1_better-noise.npy' % set)[:,:,:,0]
+		pred_vaegan = np.load('/user/home/al18709/work/vaegan_predictions_20/%s_pred-opt_3_better-noise.npy' % set)[:,:,:,0]
+		pred_gan_ensemble = np.load('/user/home/al18709/work/gan_predictions_20/%s_pred-opt_improve.npy' % set)
+		pred_vaegan_ensemble = np.load('/user/home/al18709/work/vaegan_predictions_20/%s_pred-opt_3_better-noise.npy' % set)
+		if set == 'validation':
+			set = 'valid'
+		meta = pd.read_csv('/user/work/al18709/tc_data_mswep/%s_meta.csv' % set)
 
 
 	# real_x = np.load('/user/home/al18709/work/gan_predictions_20/extreme_valid_real-opt_improve.npy')

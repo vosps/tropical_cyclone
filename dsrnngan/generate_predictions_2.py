@@ -50,20 +50,10 @@ def generate_predictions(*,
 					):
 		
 	# define initial variables
-	print('generating predictions...')
-	# downsample = True
 	input_channels = 1
 	noise_channels = 2 #4
 	batch_size = 512
 	num_images = 150
-	num_images,_,_ = np.load('/user/work/al18709/tc_data_flipped/valid_X.npy').shape
-	# num_images = 1000
-	# num_images,_,_ = np.load('/user/work/al18709/tc_data_flipped/extreme_valid_X.npy').shape
-	print('number of images: ',num_images)
-
-	if gcm == True:
-		batch_size = 1
-		num_images = 5
 		
 
 	# initialise model
@@ -77,6 +67,8 @@ def generate_predictions(*,
 								   noise_channels=noise_channels,
 								   latent_variables=latent_variables)
 
+	print('generating predictions...')
+
 	# set initial variables
 	mode = 'extreme_valid'
 	# mode = 'validation'
@@ -84,6 +76,18 @@ def generate_predictions(*,
 	# mode = 'train'
 	if gcm == True:
 		mode = 'gcm'
+	
+
+	if mode == 'validation':
+		num_images,_,_ = np.load('/user/work/al18709/tc_data_flipped/valid_X.npy').shape
+	elif mode == 'extreme_valid':
+	# num_images = 1000
+		num_images,_,_ = np.load('/user/work/al18709/tc_data_flipped/extreme_valid_X.npy').shape
+	print('number of images: ',num_images)
+
+	if gcm == True:
+		batch_size = 1
+		num_images = 5
 		
 	# load relevant data
 	data_predict = create_fixed_dataset(predict_year,
@@ -132,6 +136,7 @@ def generate_predictions(*,
 	print(nbatches)	
 	# loop through batches
 	for i in range(nbatches+1):
+	# for i in range(nbatches):
 		
 		print('running batch ',i,'...')
 		inputs, outputs = next(data_pred_iter)
