@@ -49,7 +49,8 @@ def generator(mode,
         print(f"Shape after first concatenate: {generator_output.shape}")
 
     # Pass through 3 residual blocks
-    for i in range(3):
+    n_blocks = 6 # this was 3
+    for i in range(n_blocks):
         generator_output = residual_block(generator_output, filters=filters_gen, conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate, padding=padding, force_1d_conv=forceconv)
     print('End of first residual block')
     print(f"Shape after first residual block: {generator_output.shape}")
@@ -74,7 +75,8 @@ def generator(mode,
         # basically the vaegan had poor ensemble spread and this was because the noise was passed in too late in the process. Therefore 
         # we add three residual blocks so that the noise gets a change to diverge a bit
         # Pass through 3 more residual blocks
-        for i in range(3):
+        n_blocks = 6 # before this was 3, but I'm increasing it to see if it helps with spread
+        for i in range(n_blocks):
             generator_output = residual_block(generator_output, filters=filters_gen, conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate, padding=padding, force_1d_conv=forceconv)
         print('End of extra low-res residual blocks')
         print(f"Shape after extra low-res residual blocks: {generator_output.shape}")

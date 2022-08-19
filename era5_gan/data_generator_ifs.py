@@ -60,8 +60,11 @@ class DataGenerator(Sequence):
     def _dataset_downsampler(self, nimrod):
         # nimrod = tf.convert_to_tensor(nimrod,dtype=tf.float32)
         # print(nimrod.shape)
-        kernel_tf = tf.constant(0.01, shape=(10, 10, 1, 1), dtype=tf.float32)
-        image = tf.nn.conv2d(nimrod, filters=kernel_tf, strides=[1, 10, 10, 1], padding='VALID',
+        # kernel_tf = tf.constant(0.01, shape=(10, 10, 1, 1), dtype=tf.float32)
+        # image = tf.nn.conv2d(nimrod, filters=kernel_tf, strides=[1, 10, 10, 1], padding='VALID',
+        #                      name='conv_debug', data_format='NHWC')
+        kernel_tf = tf.constant(0.01, shape=(40, 40, 1, 1), dtype=tf.float32)
+        image = tf.nn.conv2d(nimrod, filters=kernel_tf, strides=[1, 1, 1, 1], padding='VALID',
                              name='conv_debug', data_format='NHWC')
         return image
 

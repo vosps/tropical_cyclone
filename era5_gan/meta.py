@@ -75,4 +75,7 @@ def input_shapes(model, prefix):
     shapes = [il.shape[1:] for il in 
         model.inputs if il.name.startswith(prefix)]
     shapes = [tuple([d for d in dims]) for dims in shapes]
+
+    print("–––––YOLO–––––")
+    print(shapes)
     return shapes

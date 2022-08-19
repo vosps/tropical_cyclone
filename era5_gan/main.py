@@ -173,6 +173,7 @@ if __name__ == "__main__":
         input_channels = 9
     elif problem_type == "superresolution":
         downsample = True
+        # downsample = False
         input_channels = 1
     else:
         raise ValueError("no such problem type, try again!")

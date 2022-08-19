@@ -9,13 +9,13 @@ MODEL:
     # change padding to zero padding?
         
 SETUP:
-    log_folder: "/user/home/al18709/work/vaegan/logs_3_better-noise"
+    log_folder: "/user/home/al18709/work/vaegan/logs_4_better-spread-error"
     # log_folder: "/user/home/al18709/work/dsrnngan/logs"
 
 GENERATOR:
     filters_gen: 128 #128
     noise_channels: 4 # used for GAN, used to be 4, but tat was for 9 input channels, so could decrease this.
-    latent_variables: 1 # used for VAEGAN
+    latent_variables: 2 # used for VAEGAN used to be 1
     learning_rate_gen: 1e-6 # halve this for the vaegan 1e-5 or 5e-6
 
 DISCRIMINATOR:

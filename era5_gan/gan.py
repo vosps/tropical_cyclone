@@ -152,6 +152,9 @@ class WGANGP(object):
             # self.disc_trainer = Model(inputs=cond_in + const_in + noise_in + sample_in,
             #                           outputs=[disc_out_real, disc_out_fake, disc_gp], 
             #                           name='disc_trainer')
+            print('cond in',cond_in)
+            print('noise in',noise_in)
+            print('sample in', sample_in)
             self.disc_trainer = Model(inputs=cond_in + noise_in + sample_in,
                                       outputs=[disc_out_real, disc_out_fake, disc_gp], 
                                       name='disc_trainer')
@@ -224,6 +227,11 @@ class WGANGP(object):
                 (cond,sample) = batch_gen_iter.get_next()
                 
                 with Nontrainable(self.gen):   
+                    print('cond is',cond.shape)
+                    print('noise gen is',noise_gen().shape)
+                    print('sample is',sample.shape)
+                    print(self.disc_trainer)
+                    
                     dl = self.disc_trainer.train_on_batch(
                         # [cond,const,noise_gen(),sample], disc_target)
                         [cond,noise_gen(),sample], disc_target)

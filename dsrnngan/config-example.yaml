@@ -9,12 +9,12 @@ MODEL:
     # change padding to zero padding?
         
 SETUP:
-    log_folder: "/user/home/al18709/work/gan/logs_10"
+    log_folder: "/user/home/al18709/work/gan/logs_better_spread-error"
     # log_folder: "/user/home/al18709/work/dsrnngan/logs"
 
 GENERATOR:
     filters_gen: 128 #128
-    noise_channels: 2 # used for GAN, used to be 4, but tat was for 9 input channels, so could decrease this.
+    noise_channels: 4 # used for GAN, used to be 4, but tat was for 9 input channels, so could decrease this.
     latent_variables: 1 # used for VAEGAN
     learning_rate_gen: 1e-5
 

@@ -7,6 +7,8 @@ import setupmodel
 from noise import NoiseGenerator
 import gc
 
+import matplotlib.pyplot as plt
+
 def flip(tc):
 		tc_flipped = np.flip(tc,axis=0)
 		return tc_flipped
@@ -54,7 +56,7 @@ def generate_predictions(*,
 	# downsample = True
 	input_channels = 1
 	noise_channels = 2 #4
-	batch_size = 512
+	batch_size = 1 #512
 	num_images = 150
 	num_images,_,_ = np.load('/user/work/al18709/tc_data_era5_flipped/valid_X.npy').shape
 	# num_images = 1000
@@ -174,6 +176,9 @@ def generate_predictions(*,
 			else:
 				nn = noise_gen()
 				pred_single = np.array(model.gen.predict([inputs,nn]))[:,:,:,0]
+				print('prediction shape: ',pred_single.shape)
+				plt.imshow(pred_single[0])
+				plt.savefig('figs/test.png')
 				
 				# pred_single = np.array(model.gen.predict_on_batch([inputs,nn]))[:,:,:,0]
 				gc.collect()
@@ -242,9 +247,9 @@ def generate_predictions(*,
 		model = 'vaegan'
 	else:
 		model = 'gan'
-	np.save('/user/home/al18709/work/%s_predictions_20/%s_real-%s_era5_era-to-mswep.npy' % (model,mode,checkpoint),seq_real)
-	np.save('/user/home/al18709/work/%s_predictions_20/%s_pred-%s_era5_era-to-mswep.npy' % (model,mode,checkpoint),pred)
-	np.save('/user/home/al18709/work/%s_predictions_20/%s_input-%s_era5_era-to-mswep.npy' % (model,mode,checkpoint),low_res_inputs)
+	np.save('/user/home/al18709/work/%s_predictions_20/%s_real-%s_era5_era-to-mswep_2.npy' % (model,mode,checkpoint),seq_real)
+	np.save('/user/home/al18709/work/%s_predictions_20/%s_pred-%s_era5_era-to-mswep_2.npy' % (model,mode,checkpoint),pred)
+	np.save('/user/home/al18709/work/%s_predictions_20/%s_input-%s_era5_era-to-mswep_2.npy' % (model,mode,checkpoint),low_res_inputs)
 
 
 
