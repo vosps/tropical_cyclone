@@ -27,14 +27,14 @@ def load_tc_data(set = 'validation',results = 'final'):
 		meta = pd.read_csv('/user/work/al18709/tc_data_mswep/%s_meta.csv' % set)
 
 	elif results == 'test':
-		real = np.load('/user/home/al18709/work/gan_predictions_20/%s_real-opt_improve.npy' % set)
-		inputs = np.load('/user/home/al18709/work/gan_predictions_20/%s_input-opt_improve.npy' % set)
+		real = np.load('/user/home/al18709/work/gan_predictions_20/%s_real-opt_improve.npy' % set)[:,:,:,0]
+		inputs = np.load('/user/home/al18709/work/gan_predictions_20/%s_input-opt_improve.npy' % set)[:,:,:,0]
 		pred_cnn = np.load('/user/home/al18709/work/cnn/unet_valid_2.npy')
-		pred_gan = np.load('/user/home/al18709/work/gan_predictions_20/%s_pred-opt_improve.npy' % set)[:,:,:,0]
-		pred_vaegan = np.load('/user/home/al18709/work/vaegan_predictions_20/%s_pred-opt_3_better-noise.npy' % set)[:,:,:,0]
-		pred_gan_ensemble = np.load('/user/home/al18709/work/gan_predictions_20/%s_pred-opt_improve.npy' % set)
-		pred_vaegan_ensemble = np.load('/user/home/al18709/work/vaegan_predictions_20/%s_pred-opt_3_better-noise.npy' % set)
-		if set == 'validation':
+		pred_gan = np.load('/user/home/al18709/work/gan_predictions_20/%s_pred-opt_5_normal_problem.npy' % set,mmap_mode='r')[:,:,:,0]
+		pred_vaegan = np.load('/user/home/al18709/work/vaegan_predictions_20/%s_pred-opt_5_better_spread-error.npy' % set,mmap_mode='r')[:,:,:,0]
+		pred_gan_ensemble = np.load('/user/home/al18709/work/gan_predictions_20/%s_pred-opt_5_normal_problem.npy' % set,mmap_mode='r')
+		pred_vaegan_ensemble = np.load('/user/home/al18709/work/vaegan_predictions_20/%s_pred-opt_5_better_spread-error.npy' % set,mmap_mode='r')
+		if set == 'validation': 
 			set = 'valid'
 		meta = pd.read_csv('/user/work/al18709/tc_data_mswep/%s_meta.csv' % set)
 
@@ -52,4 +52,10 @@ def load_tc_data(set = 'validation',results = 'final'):
 	# meta_train = pd.read_csv('/user/work/al18709/tc_data_mswep/train_meta.csv')
 
 	return real,inputs,pred_cnn,pred_vaegan,pred_gan,pred_vaegan_ensemble,pred_gan_ensemble,meta
+
+
+# final data runs
+# vaegan - 7_better-spread-error - 3 more residual layers before upsampling, 4 latent variables, problem = 'normal', 100 latent variables
+# gan = logs_normal_problem-final (7_normal), 4 noise channels, 3 residual layers before upsampling, problem = 'normal'
+# 
 

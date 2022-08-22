@@ -6,7 +6,6 @@ from tfrecords_generator_ifs import create_fixed_dataset
 import setupmodel
 from noise import NoiseGenerator
 import gc
-
 import matplotlib.pyplot as plt
 
 def flip(tc):
@@ -53,20 +52,9 @@ def generate_predictions(*,
 		
 	# define initial variables
 	print('generating predictions...')
-	# downsample = True
 	input_channels = 1
-	noise_channels = 2 #4
-	batch_size = 1 #512
-	num_images = 150
-	num_images,_,_ = np.load('/user/work/al18709/tc_data_era5_flipped/valid_X.npy').shape
-	# num_images = 1000
-	# num_images,_,_ = np.load('/user/work/al18709/tc_data_flipped/extreme_valid_X.npy').shape
-	print('number of images: ',num_images)
-
-	if gcm == True:
-		batch_size = 1
-		num_images = 5
-		
+	noise_channels = 4 #4
+	batch_size = 512 #512
 
 	# initialise model
 	print(mode)
@@ -79,13 +67,25 @@ def generate_predictions(*,
 								   noise_channels=noise_channels,
 								   latent_variables=latent_variables)
 
-	# set initial variables
 	mode = 'extreme_valid'
+	if mode == 'validation':
+		num_images,_,_ = np.load('/user/work/al18709/tc_data_era5_flipped/valid_X.npy').shape
+	elif mode == 'extreme_valid':
+		num_images,_,_ = np.load('/user/work/al18709/tc_data_era5_flipped/extreme_valid_X.npy').shape
+	print('number of images: ',num_images)
+
+	# set initial variables
+
 	# mode = 'validation'
 	# mode = 'cmip'
 	# mode = 'train'
 	if gcm == True:
 		mode = 'gcm'
+	
+	if gcm == True:
+		batch_size = 1
+		num_images = 5
+		
 		
 	# load relevant data
 	data_predict = create_fixed_dataset(predict_year,
@@ -202,23 +202,6 @@ def generate_predictions(*,
 			pred[i*batch_size:i*batch_size + batch_size,:,:,:] = img_pred
 			low_res_inputs[i*batch_size:i*batch_size + batch_size,:,:,:] = inputs
 
-		# append to relevant array
-		# if i == 0:
-		# 	seq_real.append(img_real)
-		# 	pred.append(img_pred)
-		# 	low_res_inputs.append(inputs)
-		# 	seq_real = np.array(seq_real)
-		# 	pred = np.array(pred)
-		# 	low_res_inputs = np.array(low_res_inputs)
-			
-		# else:
-		# 	print('seq real shape',len(seq_real))
-		# 	seq_real = np.concatenate((seq_real, np.expand_dims(img_real, axis=0)), axis=1)
-		# 	pred = np.concatenate((pred, np.expand_dims(img_pred, axis=0)), axis=1)
-		# 	low_res_inputs = np.concatenate((low_res_inputs,np.expand_dims(inputs,axis=0)),axis=1)
-		# 	seq_real = np.array(seq_real)
-		# 	pred = np.array(pred)
-		# 	low_res_inputs = np.array(low_res_inputs)
 			
 	# TODO: transfer to cpu memory not gpu memory
 	print(mode)

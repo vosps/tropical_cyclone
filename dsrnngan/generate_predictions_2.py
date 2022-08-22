@@ -7,6 +7,7 @@ import setupmodel
 from noise import NoiseGenerator
 import gc
 
+
 def flip(tc):
 		tc_flipped = np.flip(tc,axis=0)
 		return tc_flipped
@@ -51,7 +52,7 @@ def generate_predictions(*,
 		
 	# define initial variables
 	input_channels = 1
-	noise_channels = 2 #4
+	noise_channels = 4 #4
 	batch_size = 512
 	num_images = 150
 		
@@ -104,7 +105,7 @@ def generate_predictions(*,
 	# else:
 	# 	gen_weights_file = "/user/home/al18709/work/dsrnngan/logs/models/gen_weights-%s.h5" % checkpoint
 
-	vaegan = True
+	vaegan = False
 	# if vaegan:
 	# 	gen_weights_file = "/user/home/al18709/work/vaegan/logs/models-gen_weights.h5"
 	# else:
@@ -247,9 +248,9 @@ def generate_predictions(*,
 		model = 'vaegan'
 	else:
 		model = 'gan'
-	np.save('/user/home/al18709/work/%s_predictions_20/%s_real-%s_4_better-spread-error.npy' % (model,mode,checkpoint),seq_real)
-	np.save('/user/home/al18709/work/%s_predictions_20/%s_pred-%s_4_better-spread-error.npy' % (model,mode,checkpoint),pred)
-	np.save('/user/home/al18709/work/%s_predictions_20/%s_input-%s_4_better-spread-error.npy' % (model,mode,checkpoint),low_res_inputs)
+	np.save('/user/home/al18709/work/%s_predictions_20/%s_real-%s_7_normal.npy' % (model,mode,checkpoint),seq_real)
+	np.save('/user/home/al18709/work/%s_predictions_20/%s_pred-%s_7_normal.npy' % (model,mode,checkpoint),pred)
+	np.save('/user/home/al18709/work/%s_predictions_20/%s_input-%s_7_normal.npy' % (model,mode,checkpoint),low_res_inputs)
 
 
 
