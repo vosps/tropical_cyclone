@@ -52,7 +52,7 @@ def generator(mode,
         print(f"Shape after first concatenate: {generator_output.shape}")
 
     # Pass through 3 residual blocks
-    for i in range(3):
+    for i in range(6): #change to 6
         generator_output = residual_block(generator_output, filters=filters_gen, conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate, padding=padding, force_1d_conv=forceconv)
     print('End of first residual block')
     print(f"Shape after first residual block: {generator_output.shape}")

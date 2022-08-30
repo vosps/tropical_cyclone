@@ -17,15 +17,14 @@ def train_model(*,
     # for cond, _, _ in batch_gen_train.take(1).as_numpy_iterator():
     for cond, _ in batch_gen_train.take(1).as_numpy_iterator():
         img_shape = cond.shape[1:-1]
+        # img_shape = (40,40)
         batch_size = cond.shape[0]
     del cond
 
     if mode == 'GAN':
-        print('training gan')
+        print('training gan') 
         noise_shape = (img_shape[0], img_shape[1], noise_channels)
         noise_gen = noise.NoiseGenerator(noise_shape, batch_size=batch_size)
-        print(noise_shape)
-        print(batch_gen_train)
         loss_log = model.train(batch_gen_train, noise_gen,
                                steps_per_checkpoint, training_ratio=5)
 

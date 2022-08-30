@@ -55,6 +55,7 @@ def _dataset_downsampler(inputs,outputs):
     kernel_tf = tf.constant(0.01,shape=(10,10,1,1), dtype=tf.float32)
     image = tf.nn.conv2d(image, filters=kernel_tf, strides=[1, 10, 10, 1], padding='VALID',
                          name='conv_debug',data_format='NHWC')
+    print('DOWNSAMPLE',image.shape)
     inputs['lo_res_inputs'] = image
     return inputs,outputs
 
@@ -62,8 +63,8 @@ def _dataset_downsampler(inputs,outputs):
 def _dataset_downsampler_list(inputs, outputs):
     image = outputs
     kernel_tf = tf.constant(0.01,shape=(10,10,1,1), dtype=tf.float32)
-    # kernel_tf = tf.constant(0.01,shape=(10,10,1,1), dtype=tf.float64)
     image = tf.nn.conv2d(image, filters=kernel_tf, strides=[1, 10, 10, 1], padding='VALID', name='conv_debug',data_format='NHWC')
+    print('DOWNSAMPLE',image.shape)
     inputs = image
     # return inputs, constants, outputs
     return inputs, outputs
@@ -135,8 +136,8 @@ def create_dataset(year,clss,era_shape=(40,40,1),out_shape=(100,100,1),
     # TODO: ensure ds is in the correct shape
     # TODO: only open 8000 images to save time. done
     print('loading in actual data...')
-    x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_era5_flipped/train_X.npy'),axis=3)) # inputs this will eventually be (nimags,10,10,nfeatures)
-    y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_era5_flipped/train_y.npy'),axis=3)) # outputs
+    x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep_flipped_40/train_X.npy'),axis=3)) # inputs this will eventually be (nimags,10,10,nfeatures)
+    y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep_flipped_40/train_y.npy'),axis=3)) # outputs
     # z = np.load('/user/work/al18709/tc_data/train_y.npy') # constants, this will eventually be (100,100,2)
     print('x shape: ',x.shape)
     print('y shape: ',y.shape)
@@ -187,7 +188,7 @@ def create_dataset(year,clss,era_shape=(40,40,1),out_shape=(100,100,1),
 
 def create_fixed_dataset(year=None,mode='validation',batch_size=16,
                          downsample=False,
-                         era_shape=(10,10,1),out_shape=(100,100,1),
+                         era_shape=(40,40,1),out_shape=(100,100,1),
                          name=None,folder=records_folder):
     print('opening fixed dataset...')
     # added this in
@@ -210,10 +211,12 @@ def create_fixed_dataset(year=None,mode='validation',batch_size=16,
     ds = tf.data.Dataset.from_tensor_slices((x, y))
     ds = ds.batch(batch_size)
     # return_dic=False #adding this in to get roc curve to work
+    # downsample = False
     if downsample and return_dic:
         ds=ds.map(_dataset_downsampler)
     elif downsample and not return_dic:
         ds=ds.map(_dataset_downsampler_list)
+    print('downsample',downsample)
     print('ds in new format',ds)
 
     return ds

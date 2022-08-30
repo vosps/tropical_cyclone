@@ -224,6 +224,7 @@ class WGANGP(object):
                 (cond,sample) = batch_gen_iter.get_next()
                 
                 with Nontrainable(self.gen):   
+                    
                     dl = self.disc_trainer.train_on_batch(
                         # [cond,const,noise_gen(),sample], disc_target)
                         [cond,noise_gen(),sample], disc_target)

@@ -18,17 +18,20 @@ def setup_batch_gen(train_years,
         else DataGenerator(train_years,
                            batch_size=batch_size,
                            downsample=downsample, weights=weights)
-
+    print('error?')
+    print(val_size)
     # note -- using create_fixed_dataset with a batch size not divisible by 16 will cause problems [is this true?]
     # create_fixed_dataset will not take a list
     if val_size is not None:
         # assume that val_size is small enough that we can just use one batch
         val = tfrecords_generator_ifs.create_fixed_dataset(val_years, batch_size=val_size, downsample=downsample)
+        # val = tfrecords_generator_ifs.create_fixed_dataset(val_years, batch_size=val_size, downsample=False)
         val = val.take(1)
         if val_fixed:
             val = val.cache()
     else:
         val = tfrecords_generator_ifs.create_fixed_dataset(val_years, batch_size=batch_size, downsample=downsample)
+        # val = tfrecords_generator_ifs.create_fixed_dataset(val_years, batch_size=batch_size, downsample=False)
     return train, val
 
 
@@ -60,8 +63,9 @@ def setup_data(train_years=None,
                weights=None,
                batch_size=None,
                load_full_image=False):
-
+    print('load full image',load_full_image)
     if load_full_image is True:
+        print('true')
         batch_gen_train = None if train_years is None \
             else setup_full_image_dataset(train_years,
                                           batch_size=batch_size,
@@ -72,6 +76,7 @@ def setup_data(train_years=None,
                                           downsample=downsample)
 
     else:
+        print('else')
         batch_gen_train, batch_gen_valid = setup_batch_gen(
             train_years=train_years,
             val_years=val_years,

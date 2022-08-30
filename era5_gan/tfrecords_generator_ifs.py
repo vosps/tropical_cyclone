@@ -125,7 +125,7 @@ def create_dataset(year,clss,era_shape=(40,40,1),out_shape=(100,100,1),
     # ds = ds.map(lambda x: _parse_batch(x, insize=era_shape,consize=con_shape,
     #                                    outsize=out_shape))
     print('making ds the first time...')
-    fl = ['/user/work/al18709/tc_data_flipped/train_X.npy']
+    fl = ['/user/work/al18709/tc_data_flipped_40/train_X.npy']
     files_ds = tf.data.Dataset.list_files(fl)
     ds = tf.data.TFRecordDataset(files_ds,
                                  num_parallel_reads=AUTOTUNE)
@@ -136,8 +136,8 @@ def create_dataset(year,clss,era_shape=(40,40,1),out_shape=(100,100,1),
     # TODO: ensure ds is in the correct shape
     # TODO: only open 8000 images to save time. done
     print('loading in actual data...')
-    x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_era5_flipped/train_X.npy'),axis=3)) # inputs this will eventually be (nimags,10,10,nfeatures)
-    y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_era5_flipped/train_y.npy'),axis=3)) # outputs
+    x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_era5_flipped_40/train_X.npy'),axis=3)) # inputs this will eventually be (nimags,10,10,nfeatures)
+    y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_era5_flipped_40/train_y.npy'),axis=3)) # outputs
     # z = np.load('/user/work/al18709/tc_data/train_y.npy') # constants, this will eventually be (100,100,2)
     print('x shape: ',x.shape)
     print('y shape: ',y.shape)
@@ -193,14 +193,14 @@ def create_fixed_dataset(year=None,mode='validation',batch_size=16,
     print('opening fixed dataset...')
     # added this in
     if mode == 'train':
-        x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_era5_flipped/train_X.npy'),axis=3))
-        y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_era5_flipped/train_y.npy'),axis=3))
+        x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_era5_flipped_40/train_X.npy'),axis=3))
+        y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_era5_flipped_40/train_y.npy'),axis=3))
     elif mode == 'validation':
-        x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_era5_flipped/valid_X.npy'),axis=3))
-        y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_era5_flipped/valid_y.npy'),axis=3))
+        x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_era5_flipped_40/valid_X.npy'),axis=3))
+        y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_era5_flipped_40/valid_y.npy'),axis=3))
     elif mode == 'extreme_valid':
-        x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_era5_flipped/extreme_valid_X.npy'),axis=3))
-        y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_era5_flipped/extreme_valid_y.npy'),axis=3))
+        x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_era5_flipped_40/extreme_valid_X.npy'),axis=3))
+        y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_era5_flipped_40/extreme_valid_y.npy'),axis=3))
     elif mode == 'gcm':
         x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/gcm_X.npy'),axis=3))
         y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/gcm_X.npy'),axis=3))
