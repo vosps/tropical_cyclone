@@ -1,3 +1,4 @@
+from operator import truediv
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -163,7 +164,7 @@ def plot_accumulated(data,lats,lons,vmin=0,vmax=200,plot='show',cmap='Blues',tit
         else:
                 plt.savefig('figs/accumulated_rainfall')
 
-def find_landfalling_tcs(meta):
+def find_landfalling_tcs(meta,land=True):
         """
         Grabs all tcs that ever make landfall at tc strength
 
@@ -176,7 +177,10 @@ def find_landfalling_tcs(meta):
                 centre_lon = meta['centre_lon'][i]
                 if centre_lon > 180:
                         centre_lon = centre_lon - 180
-                landfall = globe.is_land(centre_lat, centre_lon)
+                if land == True:
+                        landfall = globe.is_land(centre_lat, centre_lon)
+                else:
+                        landfall = True
                 if landfall:
                         sid = meta['sid'][i]
                         landfall_sids.append(sid)
@@ -215,26 +219,39 @@ def tc_region(meta,sid_i,lat,lon):
                 lat_upper_bounds.append((np.abs(lat-meta['centre_lat'][i]-5.)).argmin())
                 lon_lower_bounds.append((np.abs(lon-meta['centre_lon'][i]+5.)).argmin())
                 lon_upper_bounds.append((np.abs(lon-meta['centre_lon'][i]-5.)).argmin())
-
+        
         lat_lower_bound = min(lat_lower_bounds)
         lat_upper_bound = max(lat_upper_bounds)
         lon_lower_bound = min(lon_lower_bounds)
         lon_upper_bound = max(lon_upper_bounds)
 
+        print('lat lower: ',lat_lower_bound)
+        print('lat upper: ',lat_upper_bound)
+        print('lon lower: ',lon_lower_bound)
+        print('lon upper: ',lon_upper_bound)
+
         lats = lat[lat_lower_bound:lat_upper_bound]
         # lats = np.flip(lats)
         lons = lon[lon_lower_bound:lon_upper_bound]
+        # print('lats: ',lats)
+        # print('lons: ',lons)
 
         return lats,lons
 
 def create_xarray(lats,lons,data):
         accumulated_ds = xr.Dataset(
                 data_vars=dict(
-                        precipitation=(["x", "y"], data)),
+                        # precipitation=(["x", "y"], data)),
+                        precipitation=(["y", "x"], data)),
+                
                 coords=dict(
-                        lon=("x", lons),
-                        lat=("y", lats),
-                ))
+                        lon=(["y","x"], lons),
+                        lat=(["y","x"], lats),
+                ),
+                # coords=dict(
+                #         lon=("x", lons),
+                #         lat=("y", lats),
+                # ))
         return accumulated_ds
 
 def get_storm_coords(lat,lon,meta,i):

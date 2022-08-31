@@ -4,8 +4,10 @@ import metpy
 from matplotlib.colors import LinearSegmentedColormap
 import metpy.plots.ctables
 
-def make_cmap():
+def make_cmap(high_vals=False):
 	precip_clevs = [0, 1, 2, 3, 5, 7, 10, 15, 20, 25, 30, 40, 50, 70, 100, 150]
+	if high_vals==True:
+		precip_clevs = [0, 20, 25, 30, 40, 50, 70, 100,125, 150, 175,200, 225,250, 300,350, 400, 500]
 	precip_cmap = matplotlib.colors.ListedColormap(metpy.plots.ctables.colortables["precipitation"][:len(precip_clevs)-1], 'precipitation')
 	precip_norm = matplotlib.colors.BoundaryNorm(precip_clevs, precip_cmap.N)
 
@@ -31,7 +33,10 @@ def make_cmap():
 				(24/255, 17/255, 153/255), # you do not want to be caught in this rain 70-100
 				(9/255, 5/255, 87/255), # I can't belive the scle goes up this high 100-150
 	]
-
-	precip_cmap = LinearSegmentedColormap.from_list('tc_colours',tc_colours,N=16) #increasing N makes it smoother
+	if high_vals == False:
+		N = 16
+	else:
+		N=32
+	precip_cmap = LinearSegmentedColormap.from_list('tc_colours',tc_colours,N=N) #increasing N makes it smoother
 	precip_norm = matplotlib.colors.BoundaryNorm(precip_clevs, precip_cmap.N)
 	return precip_cmap,precip_norm

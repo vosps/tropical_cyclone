@@ -72,7 +72,7 @@ def generate_predictions(*,
 
 	# set initial variables
 	mode = 'extreme_valid'
-	# mode = 'validation'
+	mode = 'validation'
 	# mode = 'cmip'
 	# mode = 'train'
 	if gcm == True:
@@ -105,7 +105,7 @@ def generate_predictions(*,
 	# else:
 	# 	gen_weights_file = "/user/home/al18709/work/dsrnngan/logs/models/gen_weights-%s.h5" % checkpoint
 
-	vaegan = True
+	vaegan = False
 	# if vaegan:
 	# 	gen_weights_file = "/user/home/al18709/work/vaegan/logs/models-gen_weights.h5"
 	# else:
@@ -251,9 +251,9 @@ def generate_predictions(*,
 
 	problem = '7_better_spread-error'
 	problem = '5_normal_problem'
-	np.save('/user/home/al18709/work/%s_predictions_20/%s_real-%s_7_better_spread-error.npy' % (model,mode,checkpoint),seq_real)
-	np.save('/user/home/al18709/work/%s_predictions_20/%s_pred-%s_7_better_spread-error.npy' % (model,mode,checkpoint),pred)
-	np.save('/user/home/al18709/work/%s_predictions_20/%s_input-%s_7_better_spread-error.npy' % (model,mode,checkpoint),low_res_inputs)
+	np.save('/user/home/al18709/work/%s_predictions_20/%s_real-%s_5_normal_problem.npy' % (model,mode,checkpoint),seq_real)
+	np.save('/user/home/al18709/work/%s_predictions_20/%s_pred-%s_5_normal_problem.npy' % (model,mode,checkpoint),pred)
+	np.save('/user/home/al18709/work/%s_predictions_20/%s_input-%s_5_normal_problem.npy' % (model,mode,checkpoint),low_res_inputs)
 
 
 

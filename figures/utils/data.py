@@ -36,6 +36,7 @@ def load_tc_data(set = 'validation',results = 'final'):
 		if set == 'validation': 
 			set = 'valid'
 		meta = pd.read_csv('/user/work/al18709/tc_data_mswep/%s_meta.csv' % set)
+		# meta = pd.read_csv('/user/work/al18709/tc_data_flipped/%s_meta.csv' % set)
 		pred_cnn = np.load('/user/home/al18709/work/cnn/unet_%s_2.npy' % set)
 	
 	elif results == 'era5':
