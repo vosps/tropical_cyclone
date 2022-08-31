@@ -93,18 +93,6 @@ basin = list(ibtracks['BASIN'])
 sshs = list(ibtracks['USA_SSHS'])
 sids = list(ibtracks['SID'])
 hours_era5[hours_era5 == 24] = '00'
-# hours_era5[hours_era5 == 3] = '03'
-# hours_era5[hours_era5 == 6] = '06'
-# hours_era5[hours_era5 == 9] = '09'
-# months[months == 1] = '01'
-# months[months == 2] = '02'
-# months[months == 3] = '03'
-# months[months == 4] = '04'
-# months[months == 5] = '05'
-# months[months == 6] = '06'
-# months[months == 7] = '07'
-# months[months == 8] = '08'
-# months[months == 9] = '09'
 
 # write csv file
 tc_files = pd.DataFrame({

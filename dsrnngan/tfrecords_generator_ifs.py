@@ -200,6 +200,12 @@ def create_fixed_dataset(year=None,mode='validation',batch_size=16,
     elif mode == 'extreme_valid':
         x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/extreme_valid_X.npy'),axis=3))
         y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/extreme_valid_y.npy'),axis=3))
+    elif mode == 'extreme_test':
+        x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/extreme_test_X.npy'),axis=3))
+        y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/extreme_test_y.npy'),axis=3))
+    elif mode == 'test':
+        x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/test_X.npy'),axis=3))
+        y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/test_y.npy'),axis=3))
     elif mode == 'gcm':
         x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/gcm_X.npy'),axis=3))
         y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/gcm_X.npy'),axis=3))

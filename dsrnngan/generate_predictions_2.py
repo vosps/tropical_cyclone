@@ -74,7 +74,7 @@ def generate_predictions(*,
 	mode = 'extreme_valid'
 	mode = 'validation'
 	# mode = 'cmip'
-	# mode = 'train'
+	mode = 'extreme_test'
 	if gcm == True:
 		mode = 'gcm'
 	
@@ -84,6 +84,15 @@ def generate_predictions(*,
 	elif mode == 'extreme_valid':
 	# num_images = 1000
 		num_images,_,_ = np.load('/user/work/al18709/tc_data_flipped/extreme_valid_X.npy').shape
+	elif mode == 'train':
+	# num_images = 1000
+		num_images,_,_ = np.load('/user/work/al18709/tc_data_flipped/train_X.npy').shape
+	elif mode == 'test':
+	# num_images = 1000
+		num_images,_,_ = np.load('/user/work/al18709/tc_data_flipped/test_X.npy').shape
+	elif mode == 'extreme_test':
+	# num_images = 1000
+		num_images,_,_ = np.load('/user/work/al18709/tc_data_flipped/extreme_test_X.npy').shape
 	print('number of images: ',num_images)
 
 	if gcm == True:

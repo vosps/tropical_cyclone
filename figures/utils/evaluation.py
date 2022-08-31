@@ -244,14 +244,14 @@ def create_xarray(lats,lons,data):
                         # precipitation=(["x", "y"], data)),
                         precipitation=(["y", "x"], data)),
                 
-                coords=dict(
-                        lon=(["y","x"], lons),
-                        lat=(["y","x"], lats),
-                ),
                 # coords=dict(
-                #         lon=("x", lons),
-                #         lat=("y", lats),
-                # ))
+                #         lon=(["y","x"], lons),
+                #         lat=(["y","x"], lats),
+                # )),
+                coords=dict(
+                        lon=("x", lons),
+                        lat=("y", lats),
+                ))
         return accumulated_ds
 
 def get_storm_coords(lat,lon,meta,i):
