@@ -117,6 +117,8 @@ if __name__ == "__main__":
             print(exc)
 
     mode = setup_params["GENERAL"]["mode"]
+    data_mode = setup_params["GENERAL"]["data_mode"]
+    storm = setup_params["GENERAL"]["storm"]
     arch = setup_params["MODEL"]["architecture"]
     padding = setup_params["MODEL"]["padding"]
     log_folder = setup_params["SETUP"]["log_folder"]
@@ -434,6 +436,8 @@ if __name__ == "__main__":
     for checkpoint in checkpoints:
         print('checkpoint = ',checkpoint)
         generate_predictions(mode=mode,
+                            data_mode=data_mode,
+                            storm=storm,
                             checkpoint=checkpoint,
                             arch=arch,
                             log_folder=log_folder,

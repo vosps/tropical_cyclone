@@ -28,7 +28,8 @@ ibtracks['SEASON'] = pd.to_numeric(ibtracks['SEASON'])
 ibtracks = ibtracks[ibtracks['SEASON'] >= 1979] # changed for mswep data
 
 # select tropical storms that reach TC strength
-ibtracks = ibtracks[ibtracks['NATURE'] == 'TS']
+ibtracks = ibtracks[ibtracks['NATURE'] == 'TS'] #TODO: uncomment this usually
+
 # ibtracks = ibtracks[ibtracks['USA_SSHS'] >= 1] # TODO: change
 # select only storms that strengthen to TC strength at any point
 TCs = ibtracks[ibtracks['USA_SSHS'] >= 1]['SID']
@@ -116,6 +117,7 @@ tc_files = tc_files.reset_index(drop=True)
 print(tc_files)
 
 tc_files.to_csv('/user/work/al18709/ibtracks/tc_files.csv')
+# tc_files.to_csv('/user/work/al18709/ibtracks/tc_files_all.csv')
 print(tc_files['filepath_imerg'][86])
 print(tc_files['filepath_mswep'][86])
 print(tc_files.shape)

@@ -14,6 +14,10 @@ But the raw values show the storm rotating the opposite way. So we must:
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import glob
+from multiprocessing import Pool
+from itertools import groupby
+import re
 # sns.set_style("white")
 
 def flip(tc):
@@ -29,7 +33,7 @@ def plot_tc(tc,title):
 def find_and_flip(X,y,meta,dataset='mswep'):
 	print(X.shape)
 	print(y.shape)
-	print(meta)
+	# print(meta)
 
 	sh_indices = meta[meta['centre_lat'] < 0].index
 	nh_indices = meta[meta['centre_lat'] > 0].index
@@ -57,10 +61,49 @@ def find_and_flip(X,y,meta,dataset='mswep'):
 
 
 dataset = 'era5'
-# dataset = 'mswep'
 resolution = 40
+# dataset = 'mswep'
+dataset = 'mswep_extend'
+resolution = 100
 
-if resolution == 100:
+def save_flipped(grouped_sids):
+	# print(sid)
+	for sid in grouped_sids:
+		if 'NAMED' in sid:
+			continue
+		if 'extreme_valid' in sid:
+			continue
+		X = np.load('/user/work/al18709/tc_Xy_extend/X_%s.npy' % sid)
+		y = np.load('/user/work/al18709/tc_Xy_extend/y_%s.npy' % sid)
+		meta = pd.read_csv('/user/work/al18709/tc_Xy_extend/meta_%s.csv' % sid)
+		X,y = find_and_flip(X,y,meta)
+		print(X.shape)
+		np.save('/user/work/al18709/tc_data_%s_flipped/X_%s.npy' % (dataset,sid),X)
+		np.save('/user/work/al18709/tc_data_%s_flipped/y_%s.npy' % (dataset,sid),y)
+		meta.to_csv('/user/work/al18709/tc_data_%s_flipped/meta_%s.csv' % (dataset,sid))
+
+
+def process(filepaths):
+	print('doing process...')
+	res = save_flipped(filepaths)
+	return res
+
+
+
+if dataset == 'mswep_extend':
+
+	n_processes = 64
+
+	files = glob.glob('/user/work/al18709/tc_Xy_extend/X_*.npy')
+	sids = [file[34:47] for file in files]
+	tc_split = np.array(np.array_split(sids, n_processes))
+	p = Pool(processes=n_processes)
+	pool_results = p.map(process, tc_split)
+	p.close()
+	p.join()	
+
+
+elif resolution == 100:
 	valid_X = np.load('/user/work/al18709/tc_data_%s/valid_X.npy' % dataset)
 	valid_y = np.load('/user/work/al18709/tc_data_%s/valid_y.npy' % dataset)
 	valid_meta = pd.read_csv('/user/work/al18709/tc_data_%s/valid_meta.csv' % dataset)
@@ -93,6 +136,7 @@ else:
 	extreme_valid_y = np.load('/user/work/al18709/tc_data_%s_40/extreme_valid_y.npy' % dataset)
 	extreme_valid_meta = pd.read_csv('/user/work/al18709/tc_data_%s_40/extreme_valid_meta.csv' % dataset)
 
+exit()
 # print('valid')
 # valid_X,valid_y = find_and_flip(valid_X,valid_y,valid_meta,dataset='era5')
 # np.save('/user/work/al18709/tc_data_%s_flipped_40/valid_X.npy' % dataset,valid_X)
@@ -118,7 +162,7 @@ extreme_valid_X,extreme_valid_y = find_and_flip(extreme_valid_X,extreme_valid_y,
 np.save('/user/work/al18709/tc_data_%s_flipped_40/extreme_valid_X.npy' % dataset,extreme_valid_X)
 np.save('/user/work/al18709/tc_data_%s_flipped_40/extreme_valid_y.npy' % dataset,extreme_valid_y)
 
-exit()
+
 
 if resolution == 100:
 	np.save('/user/work/al18709/tc_data_%s_flipped/valid_X.npy' % dataset,valid_X)

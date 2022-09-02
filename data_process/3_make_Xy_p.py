@@ -49,9 +49,11 @@ def save_Xy(grouped_tcs):
 	elif dataset == 'era5':
 		# regex = r"/user/work/al18709/tropical_cyclones/mswep/.+?_(.+?)_.*?(..).nc"
 		regex = r"/user/work/al18709/tropical_cyclones/era5/.+?_(.+?)_.*?_idx-(.+?)_.*?_centrelat-(.+?)_centrelon-(.+?).nc"
-		
+	elif dataset == 'mswep_extend':
+		regex = r"/user/work/al18709/tropical_cyclones/mswep_extend/.+?_(.+?)_.*?_centrelat-(.+?)_centrelon-(.+?).nc"
+	
 	# regex = r"/user/work/al18709/tropical_cyclones/.+?_(.+?)_.*?.nc"
-	resolution = 40
+	resolution = 10
 
 	# define grid, this doesn't need to be specific, only needs to be the correct resolution
 	grid_in = xr.Dataset({'longitude': np.linspace(0, 100, 100),
@@ -149,6 +151,9 @@ def save_Xy(grouped_tcs):
 				path = '/user/work/al18709/tc_Xy'
 		elif dataset == 'era5':
 			path = '/user/work/al18709/tc_Xy_era5_40'
+		elif dataset == 'mswep_extend':
+			path = '/user/work/al18709/tc_Xy_extend'
+		print(tc_X.shape)
 		np.save('%s/X_%s.npy' % (path,sid),tc_X)
 		np.save('%s/y_%s.npy' % (path,sid),tc_y)
 		meta.to_csv('%s/meta_%s.csv' % (path,sid))
@@ -241,6 +246,7 @@ if __name__ == '__main__':
 	dataset = 'mswep'
 	dataset = 'era5'
 	# dataset = 'imerg'
+	dataset = 'mswep_extend'
 	
 	tc_dir = '/user/work/al18709/tropical_cyclones/%s/*.nc' % dataset
 	filepaths = glob.glob(tc_dir)
@@ -254,6 +260,8 @@ if __name__ == '__main__':
 		regex = r"/user/work/al18709/tropical_cyclones/imerg/.+?_(.+?)_.*?.nc"
 	elif dataset == 'era5':
 		regex = r"/user/work/al18709/tropical_cyclones/era5/.+?_(.+?)_.*?.nc"
+	elif dataset == 'mswep_extend':
+		regex = r"/user/work/al18709/tropical_cyclones/mswep_extend/.+?_(.+?)_.*?.nc"
 	keyf = lambda text: (re.findall(regex, text)+ [text])[0]
 	grouped_tcs = [list(items) for gr, items in groupby(sorted(filepaths), key=keyf)]
 	print('grouped!')
@@ -271,6 +279,8 @@ if __name__ == '__main__':
 		pool_results = p.map(process, tc_split)
 	elif dataset == 'era5':
 		pool_results = p.map(process_era5, tc_split)
+	elif dataset == 'mswep_extend':
+		pool_results = p.map(process, tc_split)
 	print('results pooled')
 	p.close()
 	p.join()

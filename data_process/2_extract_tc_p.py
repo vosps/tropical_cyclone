@@ -183,9 +183,8 @@ def process_apply_mswep(x):
 				if cat not in [1,2,3,4,5]:
 					cat = 0
 				
-				# da.to_netcdf('/user/work/al18709/tropical_cyclones/mswep/' + str(name) + '_' + str(sid) + '_hour-' + str(time) + '_idx-' + str(i) + '_cat-' + str(int(cat)) + '_basin-' + str(basin) + '.nc')
-				# da.to_netcdf('/user/work/al18709/tropical_cyclones/mswep/' + str(name) + '_' + str(sid) + '_hour-' + str(time) + '_idx-' + str(i) + '_cat-' + str(int(cat)) + '_basin-' + str(basin) + '.nc')
-				da.to_netcdf('/user/work/al18709/tropical_cyclones/mswep/' + str(name) + '_' + str(sid) + '_hour-' + str(time) + '_idx-' + str(i) + '_cat-' + str(int(cat)) + '_basin-' + str(basin) + '_centrelat-' + str(centre_lat) + '_centrelon-' + str(centre_lon) + '.nc')
+				# da.to_netcdf('/user/work/al18709/tropical_cyclones/mswep/' + str(name) + '_' + str(sid) + '_hour-' + str(time) + '_idx-' + str(i) + '_cat-' + str(int(cat)) + '_basin-' + str(basin) + '_centrelat-' + str(centre_lat) + '_centrelon-' + str(centre_lon) + '.nc')
+				da.to_netcdf('/user/work/al18709/tropical_cyclones/mswep_extend/' + str(name) + '_' + str(sid) + '_hour-' + str(time) + '_idx-' + str(i) + '_cat-' + str(int(cat)) + '_basin-' + str(basin) + '_centrelat-' + str(centre_lat) + '_centrelon-' + str(centre_lon) + '.nc')
 				print('%s saved!' % filepath)
 				# TODO: flip lats
 	else:
@@ -318,10 +317,11 @@ def process_era5(df):
 if __name__ == '__main__':
 	dataset = 'mswep' # or imerg
 	# dataset = 'imerg'
-	dataset = 'era5'
-	df = pd.read_csv('/user/work/al18709/ibtracks/tc_files.csv')
-	df_split = np.array_split(df, 32)
-	p = Pool(processes=32)
+	# dataset = 'era5'
+	# df = pd.read_csv('/user/work/al18709/ibtracks/tc_files.csv')
+	df = pd.read_csv('/user/work/al18709/ibtracks/tc_files_all.csv')
+	df_split = np.array_split(df, 64)
+	p = Pool(processes=64)
 	# df_split = np.array_split(df, 1)
 	# p = Pool(processes=1)
 	print('opened csv!')

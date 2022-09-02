@@ -106,7 +106,8 @@ def create_set(tcs,dataset='imerg',resolution=100):
 
 # define which dataset to look at
 dataset = 'mswep'
-dataset = 'era5'
+dataset = 'mswep_extend'
+# dataset = 'era5'
 resolution = 100
 
 # generate list of sids
@@ -119,6 +120,8 @@ print('number of filepaths = ',len(filepaths))
 # group by tc sid number
 if dataset == 'mswep':
 	regex = r"/user/work/al18709/tropical_cyclones/mswep/.+?_(.+?)_.*?.nc"
+elif dataset == 'mswep_extend':
+	regex = r"/user/work/al18709/tropical_cyclones/mswep_extend/.+?_(.+?)_.*?.nc"
 elif dataset == 'era5':
 	regex = r"/user/work/al18709/tropical_cyclones/era5/.+?_(.+?)_.*?.nc"
 keyf = lambda text: (re.findall(regex, text)+ [text])[0]
@@ -136,6 +139,8 @@ max_rains = []
 for tc in sids:
 	if dataset == 'mswep':
 		fp = '/user/work/al18709/tc_Xy/X_%s.npy' % tc
+	elif dataset == 'mswep_extend':
+		fp = '/user/work/al18709/tc_Xy_mswep_extend/X_%s.npy' % tc
 	elif dataset == 'era5':
 		fp = '/user/work/al18709/tc_Xy_era5_40/X_%s.npy' % tc
 

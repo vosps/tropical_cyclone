@@ -125,7 +125,7 @@ def create_dataset(year,clss,era_shape=(40,40,1),out_shape=(100,100,1),
     # ds = ds.map(lambda x: _parse_batch(x, insize=era_shape,consize=con_shape,
     #                                    outsize=out_shape))
     print('making ds the first time...')
-    fl = ['/user/work/al18709/tc_data_flipped_40/train_X.npy']
+    fl = ['/user/work/al18709/tc_data_era5_flipped_40/train_X.npy']
     files_ds = tf.data.Dataset.list_files(fl)
     ds = tf.data.TFRecordDataset(files_ds,
                                  num_parallel_reads=AUTOTUNE)

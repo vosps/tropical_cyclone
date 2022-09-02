@@ -32,6 +32,8 @@ def find_and_flip(data,meta):
 
 def generate_predictions(*,
 					mode,
+					data_mode,
+					storm,
 					checkpoint,
 					arch,
 					log_folder, 
@@ -71,54 +73,46 @@ def generate_predictions(*,
 	print('generating predictions...')
 
 	# set initial variables
-	mode = 'extreme_valid'
-	mode = 'validation'
-	# mode = 'cmip'
-	mode = 'extreme_test'
-	if gcm == True:
-		mode = 'gcm'
+	# mode = 'extreme_valid'
+	# mode = 'validation'
+	# # mode = 'cmip'
+	# mode = 'extreme_test'
+	# if gcm == True:
+	# 	mode = 'gcm'
+	# mode = 'storm'
+	# storm = '2017228N14314'
 	
-
-	if mode == 'validation':
+	if data_mode == 'validation':
 		num_images,_,_ = np.load('/user/work/al18709/tc_data_flipped/valid_X.npy').shape
-	elif mode == 'extreme_valid':
-	# num_images = 1000
-		num_images,_,_ = np.load('/user/work/al18709/tc_data_flipped/extreme_valid_X.npy').shape
-	elif mode == 'train':
-	# num_images = 1000
-		num_images,_,_ = np.load('/user/work/al18709/tc_data_flipped/train_X.npy').shape
-	elif mode == 'test':
-	# num_images = 1000
-		num_images,_,_ = np.load('/user/work/al18709/tc_data_flipped/test_X.npy').shape
-	elif mode == 'extreme_test':
-	# num_images = 1000
-		num_images,_,_ = np.load('/user/work/al18709/tc_data_flipped/extreme_test_X.npy').shape
+	elif data_mode == 'storm':
+		num_images,_,_ = np.load('/user/work/al18709/tc_data_mswep_extend_flipped/y_%s.npy' % storm).shape
+	else:
+		num_images,_,_ = np.load('/user/work/al18709/tc_data_flipped/%s_X.npy' % data_mode).shape
+
+	
 	print('number of images: ',num_images)
 
 	if gcm == True:
 		batch_size = 1
 		num_images = 5
+	
+	if data_mode == 'storm':
+		batch_size = num_images
 		
 	# load relevant data
 	data_predict = create_fixed_dataset(predict_year,
 										batch_size=batch_size,
 										downsample=False,
-										mode = mode)
+										mode = data_mode,
+										storm=storm)
 
 		
 	# load model weights from main file
-	# TODO: update logs file locations
-	# print('checkpoint = ',checkpoint)
-	# if checkpoint == 'opt':
-	# 	gen_weights_file = "/user/home/al18709/work/dsrnngan/logs/models-gen_weights.h5"
-	# else:
-	# 	gen_weights_file = "/user/home/al18709/work/dsrnngan/logs/models/gen_weights-%s.h5" % checkpoint
+	if mode == 'VAEGAN':
+		vaegan = True
+	elif mode == 'GAN':
+		vaegan = False
 
-	vaegan = False
-	# if vaegan:
-	# 	gen_weights_file = "/user/home/al18709/work/vaegan/logs/models-gen_weights.h5"
-	# else:
-	# 	gen_weights_file = "/user/home/al18709/work/dsrnngan/logs/models-gen_weights.h5"
 	print('log folder is:',log_folder)
 	print(vaegan)
 	gen_weights_file = log_folder + '/models-gen_weights.h5'
@@ -130,22 +124,21 @@ def generate_predictions(*,
 	print(data_predict.batch(batch_size))
 	print(iter(data_predict.batch(batch_size)))
 	# define initial variables
-	# pred = []
-	# seq_real = []
-	# low_res_inputs = []
 	pred = np.zeros((num_images,100,100,20))
 	seq_real = np.zeros((num_images,100,100,1))
 	low_res_inputs = np.zeros((num_images,10,10,1))
 	data_pred_iter = iter(data_predict)
 	# unbatch first
-	# data_predict = data_predict.unbatch()
-	# data_pred_iter = iter(data_predict.batch(batch_size))
 	nbatches = int(num_images/batch_size)
 	remainder = num_images - nbatches*batch_size
 
 	print(nbatches)	
 	# loop through batches
-	for i in range(nbatches+1):
+	if nbatches == 1:
+		loop = 1
+	else:
+		loop = nbatches+1
+	for i in range(loop):
 	# for i in range(nbatches):
 		
 		print('running batch ',i,'...')
@@ -212,23 +205,6 @@ def generate_predictions(*,
 			pred[i*batch_size:i*batch_size + batch_size,:,:,:] = img_pred
 			low_res_inputs[i*batch_size:i*batch_size + batch_size,:,:,:] = inputs
 
-		# append to relevant array
-		# if i == 0:
-		# 	seq_real.append(img_real)
-		# 	pred.append(img_pred)
-		# 	low_res_inputs.append(inputs)
-		# 	seq_real = np.array(seq_real)
-		# 	pred = np.array(pred)
-		# 	low_res_inputs = np.array(low_res_inputs)
-			
-		# else:
-		# 	print('seq real shape',len(seq_real))
-		# 	seq_real = np.concatenate((seq_real, np.expand_dims(img_real, axis=0)), axis=1)
-		# 	pred = np.concatenate((pred, np.expand_dims(img_pred, axis=0)), axis=1)
-		# 	low_res_inputs = np.concatenate((low_res_inputs,np.expand_dims(inputs,axis=0)),axis=1)
-		# 	seq_real = np.array(seq_real)
-		# 	pred = np.array(pred)
-		# 	low_res_inputs = np.array(low_res_inputs)
 			
 	# TODO: transfer to cpu memory not gpu memory
 	print(mode)
@@ -236,16 +212,16 @@ def generate_predictions(*,
 	print(pred.shape)
 	print(low_res_inputs.shape)
 
-	
-
 	# print(seq_real)
 	flip = True
 
 	if flip == True:
-		if mode == 'validation':
+		if data_mode == 'validation':
 			meta = pd.read_csv('/user/work/al18709/tc_data_mswep/valid_meta.csv')
+		elif data_mode == 'storm':
+			meta = pd.read_csv('/user/work/al18709/tc_data_mswep_extend_flipped/meta_%s.csv' % storm)
 		else:
-			meta = pd.read_csv('/user/work/al18709/tc_data_mswep/%s_meta.csv' % mode)
+			meta = pd.read_csv('/user/work/al18709/tc_data_mswep/%s_meta.csv' % data_mode)
 		seq_real = find_and_flip(seq_real,meta)
 		pred = find_and_flip(pred,meta)
 		low_res_inputs = find_and_flip(low_res_inputs,meta)
@@ -255,14 +231,18 @@ def generate_predictions(*,
 
 	if vaegan == True:
 		model = 'vaegan'
+		problem = '7_better_spread-error'
 	else:
-		model = 'gan'
+		model = 'gan'	
+		problem = '5_normal_problem'
 
-	problem = '7_better_spread-error'
-	problem = '5_normal_problem'
-	np.save('/user/home/al18709/work/%s_predictions_20/%s_real-%s_5_normal_problem.npy' % (model,mode,checkpoint),seq_real)
-	np.save('/user/home/al18709/work/%s_predictions_20/%s_pred-%s_5_normal_problem.npy' % (model,mode,checkpoint),pred)
-	np.save('/user/home/al18709/work/%s_predictions_20/%s_input-%s_5_normal_problem.npy' % (model,mode,checkpoint),low_res_inputs)
+	if data_mode == 'storm':
+		problem = storm
+
+
+	np.save('/user/home/al18709/work/%s_predictions_20/%s_real-%s_%s.npy' % (model,data_mode,checkpoint,problem),seq_real)
+	np.save('/user/home/al18709/work/%s_predictions_20/%s_pred-%s_%s.npy' % (model,data_mode,checkpoint,problem),pred)
+	np.save('/user/home/al18709/work/%s_predictions_20/%s_input-%s_%s.npy' % (model,data_mode,checkpoint,problem),low_res_inputs)
 
 
 

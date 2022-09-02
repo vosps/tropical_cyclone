@@ -187,31 +187,45 @@ def create_dataset(year,clss,era_shape=(10,10,1),out_shape=(100,100,1),
 
 def create_fixed_dataset(year=None,mode='validation',batch_size=16,
                          downsample=False,
+                         storm=False,
                          era_shape=(10,10,1),out_shape=(100,100,1),
                          name=None,folder=records_folder):
     print('opening fixed dataset...')
     # added this in
-    if mode == 'train':
-        x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/train_X.npy'),axis=3))
-        y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/train_y.npy'),axis=3))
-    elif mode == 'validation':
-        x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/valid_X.npy'),axis=3))
-        y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/valid_y.npy'),axis=3))
-    elif mode == 'extreme_valid':
-        x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/extreme_valid_X.npy'),axis=3))
-        y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/extreme_valid_y.npy'),axis=3))
-    elif mode == 'extreme_test':
-        x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/extreme_test_X.npy'),axis=3))
-        y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/extreme_test_y.npy'),axis=3))
-    elif mode == 'test':
-        x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/test_X.npy'),axis=3))
-        y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/test_y.npy'),axis=3))
-    elif mode == 'gcm':
-        x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/gcm_X.npy'),axis=3))
-        y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/gcm_X.npy'),axis=3))
-    elif mode == 'cmip':
-        x = np.float32(np.expand_dims(np.load('/user/home/al18709/work/CMIP6/HighResMIP/EC-Earth3p/historical/storm_rain.npy')[-1000:,:,:],axis=3))
-        y = np.float32(np.expand_dims(np.load('/user/home/al18709/work/CMIP6/HighResMIP/EC-Earth3p/historical/storm_rain.npy')[-1000:,:,:],axis=3))
+
+    if mode == 'storm':
+        dataset = storm
+        x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep_extend_flipped/X_%s.npy' % dataset),axis=3))
+        y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep_extend_flipped/y_%s.npy' % dataset),axis=3))
+    else:
+        if mode == 'validation':
+            dataset = 'valid'
+        else:
+            dataset = mode
+        x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/%s_X.npy' % dataset),axis=3))
+        y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/%s_y.npy' % dataset),axis=3))
+
+    # if mode == 'train':
+    #     x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/train_X.npy'),axis=3))
+    #     y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/train_y.npy'),axis=3))
+    # elif mode == 'validation':
+    #     x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/valid_X.npy'),axis=3))
+    #     y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/valid_y.npy'),axis=3))
+    # elif mode == 'extreme_valid':
+    #     x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/extreme_valid_X.npy'),axis=3))
+    #     y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/extreme_valid_y.npy'),axis=3))
+    # elif mode == 'extreme_test':
+    #     x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/extreme_test_X.npy'),axis=3))
+    #     y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/extreme_test_y.npy'),axis=3))
+    # elif mode == 'test':
+    #     x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/test_X.npy'),axis=3))
+    #     y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/test_y.npy'),axis=3))
+    # elif mode == 'gcm':
+    #     x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/gcm_X.npy'),axis=3))
+    #     y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/gcm_X.npy'),axis=3))
+    # elif mode == 'cmip':
+    #     x = np.float32(np.expand_dims(np.load('/user/home/al18709/work/CMIP6/HighResMIP/EC-Earth3p/historical/storm_rain.npy')[-1000:,:,:],axis=3))
+    #     y = np.float32(np.expand_dims(np.load('/user/home/al18709/work/CMIP6/HighResMIP/EC-Earth3p/historical/storm_rain.npy')[-1000:,:,:],axis=3))
 
     ds = tf.data.Dataset.from_tensor_slices((x, y))
     ds = ds.batch(batch_size)
