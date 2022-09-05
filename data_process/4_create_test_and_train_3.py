@@ -171,7 +171,7 @@ print('len sids = ',len(sids))
 
 max_idx = list(np.argpartition(max_rains, -100)[-100:])
 extreme_tcs_test = [tcs[i] for i in max_idx]
-max_idx = list(np.argpartition(max_rains, -100)[-201:-101])
+max_idx = list(np.argpartition(max_rains, -100)[-200:-100])
 extreme_tcs_valid = [tcs[i] for i in max_idx]
 
 # print(extreme_tcs_test)

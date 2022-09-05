@@ -53,6 +53,12 @@ def find_and_flip(X,y,meta,dataset='mswep'):
 
 		y_flipped = flip(y[i])
 		y[i] = y_flipped
+
+	# flip the y values in the hr era5 dataset because they rotate differently
+	if dataset == 'era5':
+		for i in sh_indices:
+			y_flipped = flip(y[i])
+			y[i] = y_flipped
 		
 		
 		# plot_tc(y[i],'flipped')
@@ -63,8 +69,8 @@ def find_and_flip(X,y,meta,dataset='mswep'):
 dataset = 'era5'
 resolution = 40
 # dataset = 'mswep'
-dataset = 'mswep_extend'
-resolution = 100
+# dataset = 'mswep_extend'
+# resolution = 100
 
 def save_flipped(grouped_sids):
 	# print(sid)
@@ -136,16 +142,19 @@ else:
 	extreme_valid_y = np.load('/user/work/al18709/tc_data_%s_40/extreme_valid_y.npy' % dataset)
 	extreme_valid_meta = pd.read_csv('/user/work/al18709/tc_data_%s_40/extreme_valid_meta.csv' % dataset)
 
-exit()
+if dataset == 'mswep_extend':
+	exit()
+
+
 # print('valid')
 # valid_X,valid_y = find_and_flip(valid_X,valid_y,valid_meta,dataset='era5')
 # np.save('/user/work/al18709/tc_data_%s_flipped_40/valid_X.npy' % dataset,valid_X)
 # np.save('/user/work/al18709/tc_data_%s_flipped_40/valid_y.npy' % dataset,valid_y)
 
-# print('train')
-# train_X,train_y = find_and_flip(train_X,train_y,train_meta,dataset='era5')
-# np.save('/user/work/al18709/tc_data_%s_flipped_40/train_X.npy' % dataset,train_X)
-# np.save('/user/work/al18709/tc_data_%s_flipped_40/train_y.npy' % dataset,train_y)
+print('train')
+train_X,train_y = find_and_flip(train_X,train_y,train_meta,dataset='era5')
+np.save('/user/work/al18709/tc_data_%s_flipped_40/train_X.npy' % dataset,train_X)
+np.save('/user/work/al18709/tc_data_%s_flipped_40/train_y.npy' % dataset,train_y)
 
 # print('test')
 # test_X,test_y = find_and_flip(test_X,test_y,test_meta,dataset='era5')
@@ -157,12 +166,12 @@ exit()
 # np.save('/user/work/al18709/tc_data_%s_flipped_40/extreme_test_X.npy' % dataset,extreme_test_X)
 # np.save('/user/work/al18709/tc_data_%s_flipped_40/extreme_test_y.npy' % dataset,extreme_test_y)
 
-print('extreme valid')
-extreme_valid_X,extreme_valid_y = find_and_flip(extreme_valid_X,extreme_valid_y,extreme_valid_meta,dataset='era5')
-np.save('/user/work/al18709/tc_data_%s_flipped_40/extreme_valid_X.npy' % dataset,extreme_valid_X)
-np.save('/user/work/al18709/tc_data_%s_flipped_40/extreme_valid_y.npy' % dataset,extreme_valid_y)
+# print('extreme valid')
+# extreme_valid_X,extreme_valid_y = find_and_flip(extreme_valid_X,extreme_valid_y,extreme_valid_meta,dataset='era5')
+# np.save('/user/work/al18709/tc_data_%s_flipped_40/extreme_valid_X.npy' % dataset,extreme_valid_X)
+# np.save('/user/work/al18709/tc_data_%s_flipped_40/extreme_valid_y.npy' % dataset,extreme_valid_y)
 
-
+exit()
 
 if resolution == 100:
 	np.save('/user/work/al18709/tc_data_%s_flipped/valid_X.npy' % dataset,valid_X)
