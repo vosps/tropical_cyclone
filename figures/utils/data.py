@@ -28,6 +28,7 @@ def load_tc_data(set = 'validation',results = 'final'):
 		meta = pd.read_csv('/user/work/al18709/tc_data_mswep/%s_meta.csv' % set)
 
 	elif results == 'test':
+		# real = np.load('/user/home/al18709/work/tc_data_flipped/%s_y.npy' % set)
 		real = np.load('/user/home/al18709/work/gan_predictions_20/%s_real-opt_5_normal_problem.npy' % set)[:,:,:,0]
 		inputs = np.load('/user/home/al18709/work/gan_predictions_20/%s_input-opt_5_normal_problem.npy' % set)[:,:,:,0]
 		pred_gan = np.load('/user/home/al18709/work/gan_predictions_20/%s_pred-opt_5_normal_problem.npy' % set,mmap_mode='r')[:,:,:,0]

@@ -1,7 +1,7 @@
 GENERAL:
     mode: "GAN" # choices 'det' 'GAN' 'VAEGAN'
     problem_type: "normal" # choices 'normal' 'superresolution'
-    data_mode: 'storm' # validation, test, train, extreme_validation, extreme_test
+    data_mode: 'extreme_test' # validation, test, train, extreme_validation, extreme_test
     storm: '1997279N12263'
     
 MODEL:

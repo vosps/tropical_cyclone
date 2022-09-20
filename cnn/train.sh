@@ -5,7 +5,7 @@
 #SBATCH --gres=gpu:1
 #SBATCH --ntasks-per-node=1
 #SBATCH --job-name=cgan
-#SBATCH --partition gpu
+#SBATCH --partition magma
 source ~/.bashrc
 cd $SLURM_SUBMIT_DIR
 echo Running on host `hostname`
@@ -28,6 +28,7 @@ echo jungle environment activated
 echo running cgan
 dt=$(date '+%d/%m/%Y %H:%M:%S');
 echo "$dt"
-python train_new.py
+# python train_new.py
+srun python make_predictions.py
 dt=$(date '+%d/%m/%Y %H:%M:%S');
 echo "$dt"

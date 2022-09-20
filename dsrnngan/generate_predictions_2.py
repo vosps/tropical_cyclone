@@ -208,6 +208,7 @@ def generate_predictions(*,
 			
 	# TODO: transfer to cpu memory not gpu memory
 	print(mode)
+	print(data_mode)
 	print(seq_real.shape)
 	print(pred.shape)
 	print(low_res_inputs.shape)

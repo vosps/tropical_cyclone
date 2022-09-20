@@ -68,9 +68,9 @@ def find_and_flip(X,y,meta,dataset='mswep'):
 
 dataset = 'era5'
 resolution = 40
-# dataset = 'mswep'
+dataset = 'mswep'
 # dataset = 'mswep_extend'
-# resolution = 100
+resolution = 100
 
 def save_flipped(grouped_sids):
 	# print(sid)
@@ -147,27 +147,35 @@ if dataset == 'mswep_extend':
 
 
 # print('valid')
-# valid_X,valid_y = find_and_flip(valid_X,valid_y,valid_meta,dataset='era5')
+# valid_X,valid_y = find_and_flip(valid_X,valid_y,valid_meta,dataset=dataset)
 # np.save('/user/work/al18709/tc_data_%s_flipped_40/valid_X.npy' % dataset,valid_X)
 # np.save('/user/work/al18709/tc_data_%s_flipped_40/valid_y.npy' % dataset,valid_y)
 
-print('train')
-train_X,train_y = find_and_flip(train_X,train_y,train_meta,dataset='era5')
-np.save('/user/work/al18709/tc_data_%s_flipped_40/train_X.npy' % dataset,train_X)
-np.save('/user/work/al18709/tc_data_%s_flipped_40/train_y.npy' % dataset,train_y)
+# print('train')
+# train_X,train_y = find_and_flip(train_X,train_y,train_meta,dataset=dataset)
+# np.save('/user/work/al18709/tc_data_%s_flipped_40/train_X.npy' % dataset,train_X)
+# np.save('/user/work/al18709/tc_data_%s_flipped_40/train_y.npy' % dataset,train_y)
 
 # print('test')
-# test_X,test_y = find_and_flip(test_X,test_y,test_meta,dataset='era5')
-# np.save('/user/work/al18709/tc_data_%s_flipped_40/test_X.npy' % dataset,test_X)
-# np.save('/user/work/al18709/tc_data_%s_flipped_40/test_y.npy' % dataset,test_y)
+# test_X,test_y = find_and_flip(test_X,test_y,test_meta,dataset=dataset)
+# # np.save('/user/work/al18709/tc_data_%s_flipped_40/test_X.npy' % dataset,test_X)
+# # np.save('/user/work/al18709/tc_data_%s_flipped_40/test_y.npy' % dataset,test_y)
+# np.save('/user/work/al18709/tc_data_flipped/test_X.npy',test_X)
+# np.save('/user/work/al18709/tc_data_flipped/test_y.npy',test_y)
 
-# print('extreme test')
-# extreme_test_X,extreme_test_y = find_and_flip(extreme_test_X,extreme_test_y,extreme_test_meta,dataset='era5')
+print('extreme test')
+print(extreme_test_X.shape)
+print(extreme_test_y.shape)
+extreme_test_X,extreme_test_y = find_and_flip(extreme_test_X,extreme_test_y,extreme_test_meta,dataset=dataset)
 # np.save('/user/work/al18709/tc_data_%s_flipped_40/extreme_test_X.npy' % dataset,extreme_test_X)
 # np.save('/user/work/al18709/tc_data_%s_flipped_40/extreme_test_y.npy' % dataset,extreme_test_y)
+print(extreme_test_X.shape)
+print(extreme_test_y.shape)
+np.save('/user/work/al18709/tc_data_flipped/extreme_test_X.npy',extreme_test_X)
+np.save('/user/work/al18709/tc_data_flipped/extreme_test_y.npy',extreme_test_y)
 
 # print('extreme valid')
-# extreme_valid_X,extreme_valid_y = find_and_flip(extreme_valid_X,extreme_valid_y,extreme_valid_meta,dataset='era5')
+# extreme_valid_X,extreme_valid_y = find_and_flip(extreme_valid_X,extreme_valid_y,extreme_valid_meta,dataset=dataset)
 # np.save('/user/work/al18709/tc_data_%s_flipped_40/extreme_valid_X.npy' % dataset,extreme_valid_X)
 # np.save('/user/work/al18709/tc_data_%s_flipped_40/extreme_valid_y.npy' % dataset,extreme_valid_y)
 
