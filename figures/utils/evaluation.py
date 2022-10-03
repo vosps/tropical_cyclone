@@ -7,6 +7,7 @@ import cartopy.feature as cfeature
 import cartopy.crs as ccrs
 from global_land_mask import globe
 import xarray as xr
+import pandas as pd
 
 sns.set_style("white")
 
@@ -162,7 +163,7 @@ def plot_accumulated(data,lats,lons,vmin=0,vmax=200,plot='show',cmap='Blues',tit
         if plot=='show':
                 plt.show()
         else:
-                plt.savefig('figs/accumulated_rainfall')
+                plt.savefig('accumulated_rainfall.png')
 
 def find_landfalling_tcs(meta,land=True):
         """
@@ -238,20 +239,27 @@ def tc_region(meta,sid_i,lat,lon):
 
         return lats,lons
 
-def create_xarray(lats,lons,data):
-        accumulated_ds = xr.Dataset(
-                data_vars=dict(
-                        # precipitation=(["x", "y"], data)),
-                        precipitation=(["y", "x"], data)),
+def create_xarray(lats,lons,data,ensemble=None):
+        if ensemble==None:
+                accumulated_ds = xr.Dataset(
+                        data_vars=dict(
+                                precipitation=(["y", "x"], data)),  
+                        coords=dict(
+                                lon=("x", lons),
+                                lat=("y", lats),
+                        ))
+        else:
                 
-                # coords=dict(
-                #         lon=(["y","x"], lons),
-                #         lat=(["y","x"], lats),
-                # )),
-                coords=dict(
-                        lon=("x", lons),
-                        lat=("y", lats),
-                ))
+                accumulated_ds = xr.Dataset(
+                        data_vars=dict(
+                                precipitation=(["y","x","ens"], data)),                        
+                        coords=dict(
+                                lon=("x", lons),
+                                lat=("y", lats),
+                                member=("ens", ensemble)
+                        )
+                )
+
         return accumulated_ds
 
 def get_storm_coords(lat,lon,meta,i):
@@ -289,6 +297,129 @@ def get_storm_coords(lat,lon,meta,i):
 
         return storm_lats,storm_lons
 
+def plot_accumulated(data,lats,lons,basin_sids,vmin=0,vmax=200,plot='show',cmap='Blues',title='Accumulated Rainfall',levels=[0,50,100,150,200,250,300],centre_lats=None,centre_lons=None,intensity=None):
+        """
+        Plots the accumulated rainfall of a tropical cyclone while it's at tropical cyclone strength
+        """
+        data = np.where(data<1,np.nan,data)
+        lon2d,lat2d = np.meshgrid(lons,lats)
+        fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()})
+        # ax.set_extent([-100,-30,5,45], crs=ccrs.PlateCarree())
+        c = ax.contourf(lon2d,lat2d,data,vmin=vmin,vmax=vmax,levels=levels,cmap = cmap, transform=ccrs.PlateCarree())
+        ax.add_feature(cfeature.COASTLINE,linewidth=0.5)
+        if centre_lats is not None:
+                for i in range(len(centre_lats)):
+                        if intensity[i] == 0.0:
+                                colour = '#ffb600'
+                        elif intensity[i] == 1.0:
+                                colour =  '#ff9e00'
+                        elif intensity[i] == 2.0:
+                                colour = '#ff7900'
+                        elif intensity[i] == 3.0:       
+                                colour = '#ff6000'
+                        elif intensity[i] == 4.0:
+                                colour = '#ff4000' 
+                        elif intensity[i]==5.0:
+                                colour = '#ff2000' 
+                        ax.plot(centre_lons[i:i+2],centre_lats[i:i+2],color=colour)
+
+        ax.outline_patch.set_linewidth(0.5)
+        cbar = plt.colorbar(c, shrink=0.68)
+        cbar.ax.tick_params(labelsize=6,width=0.5)
+
+        tc_data = pd.read_csv('/user/work/al18709/ibtracks/tc_files.csv')
+
+        for storm in basin_sids:
+                storm_data = tc_data[tc_data['sid']==storm]
+                storm_lats = storm_data['lat']
+                storm_lons = storm_data['lon']
+                plt.plot(storm_lons,storm_lats,linewidth=0.1,color='Black')
+        # ax.set_xlim(-100,-30)
+        # ax.set_ylim(5,45)
+        ax.set_xlim(np.min(lons),np.max(lons))
+        ax.set_ylim(np.min(lats),np.max(lats))
+        plt.tight_layout()
+        if plot=='show':
+                plt.show()
+        else:
+                plt.savefig('basin_rainfall.png',bbox_inches='tight',dpi=300)
+
+def find_basin_coords(basin):
+	# grab mswep coordinate variables
+	fp = '/bp1store/geog-tropical/data/Obs/MSWEP/3hourly_invertlat/2000342.00.nc'
+	ds = xr.open_dataset(fp)
+	if basin == 'NA':
+		min_lon,min_lat,max_lon,max_lat = -100,5,-30,45
+	elif basin == 'NIO':
+		min_lon,min_lat,max_lon,max_lat = 40,5,110,30
+	elif basin == 'NWP':
+			min_lon,min_lat,max_lon,max_lat = 90,5,179,30
+	elif basin == 'SPO':
+			min_lon,min_lat,max_lon,max_lat = 130,-30,-110,-5
+	elif basin == 'A':
+			min_lon,min_lat,max_lon,max_lat = 70,-30,150,-5
+
+	mask_lon = (ds.lon >= min_lon) & (ds.lon <= max_lon)
+	mask_lat = (ds.lat >= min_lat) & (ds.lat <= max_lat)
+	cropped_ds = ds.where(mask_lon & mask_lat, drop=True)
+
+	lats = cropped_ds.lat.values
+	lons = cropped_ds.lon.values
+	return lats,lons
+
+def find_basin_tcs(meta,basin):
+		"""
+		Grabs all tcs that ever make landfall at tc strength
+
+				inputs : meta csv
+		"""
+		nstorms,_ = meta.shape
+		basin_sids = []
+		if basin == 'NA':
+			min_lon,min_lat,max_lon,max_lat = -100,5,-30,45
+		elif basin == 'NIO':
+			min_lon,min_lat,max_lon,max_lat = 40,5,110,30
+		elif basin == 'NWP':
+			min_lon,min_lat,max_lon,max_lat = 90,5,179,30
+		elif basin == 'SPO':
+			min_lon,min_lat,max_lon,max_lat = 130,-30,-110,-5
+		elif basin == 'A':
+			min_lon,min_lat,max_lon,max_lat = 70,-30,150,-5
+		
+		for i in range(nstorms):
+				centre_lat = meta['centre_lat'][i]
+				centre_lon = meta['centre_lon'][i]
+				if centre_lon > 180:
+						centre_lon = centre_lon - 180
+				in_basin = (centre_lat >= min_lat) & (centre_lat <= max_lat) & (centre_lon >= min_lon) & (centre_lon <= max_lon)
+				if in_basin:
+						sid = meta['sid'][i]
+						basin_sids.append(sid)
+
+		# find indices of all basining snapshots
+		basin_sids = list(dict.fromkeys(basin_sids))
+		return basin_sids
+
+def calculate_crps(observation, forecasts):
+	# forecasts = forecasts[...,None]
+	fc = forecasts.copy()
+	fc.sort(axis=-1)
+	obs = observation
+	fc_below = fc < obs[..., None]
+	crps = np.zeros_like(obs)
+
+	for i in range(fc.shape[-1]):
+		below = fc_below[..., i]
+		weight = ((i+1)**2 - i**2) / fc.shape[-1]**2
+		crps[below] += weight * (obs[below]-fc[..., i][below])
+
+	for i in range(fc.shape[-1] - 1, -1, -1):
+		above = ~fc_below[..., i]
+		k = fc.shape[-1] - 1 - i
+		weight = ((k+1)**2 - k**2) / fc.shape[-1]**2
+		crps[above] += weight * (fc[..., i][above] - obs[above])
+
+	return crps
 
 
 

@@ -68,9 +68,10 @@ def find_and_flip(X,y,meta,dataset='mswep'):
 
 dataset = 'era5'
 resolution = 40
-dataset = 'mswep'
+resolution == 100
+# dataset = 'mswep'
 # dataset = 'mswep_extend'
-resolution = 100
+# resolution = 100
 
 def save_flipped(grouped_sids):
 	# print(sid)
@@ -84,9 +85,9 @@ def save_flipped(grouped_sids):
 		meta = pd.read_csv('/user/work/al18709/tc_Xy_extend/meta_%s.csv' % sid)
 		X,y = find_and_flip(X,y,meta)
 		print(X.shape)
-		np.save('/user/work/al18709/tc_data_%s_flipped/X_%s.npy' % (dataset,sid),X)
-		np.save('/user/work/al18709/tc_data_%s_flipped/y_%s.npy' % (dataset,sid),y)
-		meta.to_csv('/user/work/al18709/tc_data_%s_flipped/meta_%s.csv' % (dataset,sid))
+		np.save('/user/work/al18709/tc_data_%s_flipped_10/X_%s.npy' % (dataset,sid),X)
+		np.save('/user/work/al18709/tc_data_%s_flipped_10/y_%s.npy' % (dataset,sid),y)
+		meta.to_csv('/user/work/al18709/tc_data_%s_flipped_10/meta_%s.csv' % (dataset,sid))
 
 
 def process(filepaths):
@@ -106,7 +107,23 @@ if dataset == 'mswep_extend':
 	p = Pool(processes=n_processes)
 	pool_results = p.map(process, tc_split)
 	p.close()
-	p.join()	
+	p.join()
+elif (dataset == 'era5') and (resolution == 100):
+	valid_X = np.load('/user/work/al18709/tc_data_%s_10/valid_X.npy' % dataset)
+	valid_y = np.load('/user/work/al18709/tc_data_%s_10/valid_y.npy' % dataset)
+	valid_meta = pd.read_csv('/user/work/al18709/tc_data_%s_10/valid_meta.csv' % dataset)
+	train_X = np.load('/user/work/al18709/tc_data_%s_10/train_X.npy' % dataset)
+	train_y = np.load('/user/work/al18709/tc_data_%s_10/train_y.npy' % dataset)
+	train_meta = pd.read_csv('/user/work/al18709/tc_data_%s_10/train_meta.csv' % dataset)
+	test_X = np.load('/user/work/al18709/tc_data_%s_10/test_X.npy' % dataset)
+	test_y = np.load('/user/work/al18709/tc_data_%s_10/test_y.npy' % dataset)
+	test_meta = pd.read_csv('/user/work/al18709/tc_data_%s_10/test_meta.csv' % dataset)
+	extreme_test_X = np.load('/user/work/al18709/tc_data_%s_10/extreme_test_X.npy' % dataset)
+	extreme_test_y = np.load('/user/work/al18709/tc_data_%s_10/extreme_test_y.npy' % dataset)
+	extreme_test_meta = pd.read_csv('/user/work/al18709/tc_data_%s_10/extreme_test_meta.csv' % dataset)
+	extreme_valid_X = np.load('/user/work/al18709/tc_data_%s_10/extreme_valid_X.npy' % dataset)
+	extreme_valid_y = np.load('/user/work/al18709/tc_data_%s_10/extreme_valid_y.npy' % dataset)
+	extreme_valid_meta = pd.read_csv('/user/work/al18709/tc_data_%s_10/extreme_valid_meta.csv' % dataset)
 
 
 elif resolution == 100:
@@ -145,7 +162,7 @@ else:
 if dataset == 'mswep_extend':
 	exit()
 
-
+exit()
 # print('valid')
 # valid_X,valid_y = find_and_flip(valid_X,valid_y,valid_meta,dataset=dataset)
 # np.save('/user/work/al18709/tc_data_%s_flipped_40/valid_X.npy' % dataset,valid_X)
@@ -179,7 +196,7 @@ np.save('/user/work/al18709/tc_data_flipped/extreme_test_y.npy',extreme_test_y)
 # np.save('/user/work/al18709/tc_data_%s_flipped_40/extreme_valid_X.npy' % dataset,extreme_valid_X)
 # np.save('/user/work/al18709/tc_data_%s_flipped_40/extreme_valid_y.npy' % dataset,extreme_valid_y)
 
-exit()
+
 
 if resolution == 100:
 	np.save('/user/work/al18709/tc_data_%s_flipped/valid_X.npy' % dataset,valid_X)

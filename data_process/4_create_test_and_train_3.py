@@ -79,6 +79,9 @@ def create_set(tcs,dataset='imerg',resolution=100):
 		elif dataset == 'mswep':
 			y = np.load('/user/work/al18709/tc_Xy/y_%s.npy' % tc,allow_pickle = True)
 			X = np.load('/user/work/al18709/tc_Xy/X_%s.npy' % tc,allow_pickle = True)
+		elif (dataset == 'era5') and (resolution == 100):
+			y = np.load('/user/work/al18709/tc_Xy_%s_10/y_%s.npy' % (dataset,tc),allow_pickle = True)
+			X = np.load('/user/work/al18709/tc_Xy_%s_10/X_%s.npy' % (dataset,tc),allow_pickle = True)
 		else:
 			y = np.load('/user/work/al18709/tc_Xy_%s_40/y_%s.npy' % (dataset,tc),allow_pickle = True)
 			X = np.load('/user/work/al18709/tc_Xy_%s_40/X_%s.npy' % (dataset,tc),allow_pickle = True)
@@ -91,10 +94,11 @@ def create_set(tcs,dataset='imerg',resolution=100):
 	return set_X[1:,:,:],set_y[1:,:,:],set_meta
 
 # define which dataset to look at
-dataset = 'mswep'
+# dataset = 'mswep'
 # dataset = 'mswep_extend'
-# dataset = 'era5'
+dataset = 'era5'
 resolution = 100
+# resolution = 40
 
 # generate list of sids
 tc_dir = '/user/work/al18709/tropical_cyclones/%s/*.nc' % dataset
@@ -212,7 +216,24 @@ print(extreme_test_y.shape)
 print(extreme_valid_X.shape)
 print(extreme_valid_y.shape)
 # exit()
-if (resolution == 40) or (dataset=='era5'):
+if (resolution == 100) and (dataset=='era5'):
+	print('saving in correct place')
+	np.save('/user/work/al18709/tc_data_%s_10/valid_X.npy' % dataset,valid_X)
+	np.save('/user/work/al18709/tc_data_%s_10/valid_y.npy' % dataset,valid_y)
+	valid_meta.to_csv('/user/work/al18709/tc_data_%s_10/valid_meta.csv' % dataset)
+	np.save('/user/work/al18709/tc_data_%s_10/train_X.npy' % dataset,train_X)
+	np.save('/user/work/al18709/tc_data_%s_10/train_y.npy' % dataset,train_y)
+	train_meta.to_csv('/user/work/al18709/tc_data_%s_10/train_meta.csv' % dataset)
+	np.save('/user/work/al18709/tc_data_%s_10/test_X.npy' % dataset,test_X)
+	np.save('/user/work/al18709/tc_data_%s_10/test_y.npy' % dataset,test_y)
+	test_meta.to_csv('/user/work/al18709/tc_data_%s_10/test_meta.csv' % dataset)
+	np.save('/user/work/al18709/tc_data_%s_10/extreme_test_X.npy' % dataset,extreme_test_X)
+	np.save('/user/work/al18709/tc_data_%s_10/extreme_test_y.npy' % dataset,extreme_test_y)
+	extreme_test_meta.to_csv('/user/work/al18709/tc_data_%s_10/extreme_test_meta.csv' % dataset)
+	np.save('/user/work/al18709/tc_data_%s_10/extreme_valid_X.npy' % dataset,extreme_valid_X)
+	np.save('/user/work/al18709/tc_data_%s_10/extreme_valid_y.npy' % dataset,extreme_valid_y)
+	extreme_valid_meta.to_csv('/user/work/al18709/tc_data_%s_10/extreme_valid_meta.csv' % dataset)
+elif (resolution == 40) or (dataset=='era5'):
 	np.save('/user/work/al18709/tc_data_%s_40/valid_X.npy' % dataset,valid_X)
 	np.save('/user/work/al18709/tc_data_%s_40/valid_y.npy' % dataset,valid_y)
 	valid_meta.to_csv('/user/work/al18709/tc_data_%s_40/valid_meta.csv' % dataset)

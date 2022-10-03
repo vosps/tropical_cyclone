@@ -72,20 +72,13 @@ def generate_predictions(*,
 
 	print('generating predictions...')
 
-	# set initial variables
-	# mode = 'extreme_valid'
-	# mode = 'validation'
-	# # mode = 'cmip'
-	# mode = 'extreme_test'
-	# if gcm == True:
-	# 	mode = 'gcm'
-	# mode = 'storm'
-	# storm = '2017228N14314'
 	
 	if data_mode == 'validation':
 		num_images,_,_ = np.load('/user/work/al18709/tc_data_flipped/valid_X.npy').shape
 	elif data_mode == 'storm':
 		num_images,_,_ = np.load('/user/work/al18709/tc_data_mswep_extend_flipped/y_%s.npy' % storm).shape
+	elif data_mode == 'era5':
+		num_images,_,_ = np.load('/user/home/al18709/work/tc_data_era5_flipped/y_%s.npy' % storm).shape
 	else:
 		num_images,_,_ = np.load('/user/work/al18709/tc_data_flipped/%s_X.npy' % data_mode).shape
 

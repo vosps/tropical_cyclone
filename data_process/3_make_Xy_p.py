@@ -54,11 +54,18 @@ def save_Xy(grouped_tcs):
 	
 	# regex = r"/user/work/al18709/tropical_cyclones/.+?_(.+?)_.*?.nc"
 	resolution = 10
+	print('dataset is:', dataset)
+	print('resolution is: ',resolution)
 
 	# define grid, this doesn't need to be specific, only needs to be the correct resolution
-	grid_in = xr.Dataset({'longitude': np.linspace(0, 100, 100),
-			'latitude': np.linspace(-50, 50, 100)
+	if (dataset == 'era5'):
+		grid_in = xr.Dataset({'longitude': np.linspace(0, 100, 40),
+			'latitude': np.linspace(-50, 50, 40)
 			})
+	else:
+		grid_in = xr.Dataset({'longitude': np.linspace(0, 100, 100),
+				'latitude': np.linspace(-50, 50, 100)
+				})
 	if resolution == 40:
 		grid_out = xr.Dataset({'longitude': np.linspace(0, 100, 40),
 					'latitude': np.linspace(-50, 50, 40)
@@ -77,20 +84,23 @@ def save_Xy(grouped_tcs):
 		sid = re.match(regex,tc[0]).groups()[0]	
 
 		n_timesteps = len(tc)
-		if dataset == 'era5':
+		# if dataset == 'era5':
+		# 	tc_X = np.zeros((n_timesteps,40,40))
+		# 	meta_lats = []
+		# 	meta_lons = []
+		# 	meta_sids = []
+		# else:
+		if resolution == 40:
 			tc_X = np.zeros((n_timesteps,40,40))
-			meta_lats = []
-			meta_lons = []
-			meta_sids = []
 		else:
-			if resolution == 40:
-				tc_X = np.zeros((n_timesteps,40,40))
-			else:
-				tc_X = np.zeros((n_timesteps,10,10))
-			meta_lats = np.zeros((n_timesteps))
-			meta_lons = np.zeros((n_timesteps))
-			meta_sids = []
-		tc_y = np.zeros((n_timesteps,100,100))
+			tc_X = np.zeros((n_timesteps,10,10))
+		meta_lats = np.zeros((n_timesteps))
+		meta_lons = np.zeros((n_timesteps))
+		meta_sids = []
+		if dataset == 'era5':
+			tc_y = np.zeros((n_timesteps,40,40))
+		else:
+			tc_y = np.zeros((n_timesteps,100,100))
 
 		# loop though tc filepaths
 		for i,filepath in enumerate(tc):
@@ -107,51 +117,62 @@ def save_Xy(grouped_tcs):
 			
 			# array_flipped = np.zeros((1,100,100))
 
-			if dataset == 'era5':
-				mswep_fp = glob.glob('/user/work/al18709/tropical_cyclones/mswep/*_idx-%s_*.nc' % idx)
-				if len(mswep_fp) == 0 :
-					# print('skip')
-					continue
-				else:
-					mswep_fp = mswep_fp[0]
+			# if dataset == 'era5':
+			# 	mswep_fp = glob.glob('/user/work/al18709/tropical_cyclones/mswep/*_idx-%s_*.nc' % idx)
+			# 	if len(mswep_fp) == 0 :
+			# 		n = 1
+			# 		print('skip',n)
+			# 		n = n+1
+			# 		continue
+			# 	else:
+			# 		mswep_fp = mswep_fp[0]
 
-				mswep_array = xr.open_dataset(mswep_fp).precipitation.values
+			# 	mswep_array = xr.open_dataset(mswep_fp).precipitation.values
 			
 			array = ds.precipitation.values
 
-			if dataset == 'era5':
+			if (dataset == 'era5'):
+				# print('the limit is 40')
 				limit = 40
 			else:
+				# print('the limit is 100')
 				limit = 100
+			print('array shape: ',array.shape)
 			if array.shape != (limit,limit):
+				print('skipping')
 				continue
 
 
 			# TODO: going to end up with some zero values here - fix that
-			if dataset == 'era5':
-				tc_X[i,:,:] = array
-				tc_y[i,:,:] = mswep_array
-				meta_lats.append(centre_lat)
-				meta_lons.append(centre_lon)
-				meta_sids.append(str(sid))
-			else:
-				tc_X[i,:,:] = regridder(array)
-				tc_y[i,:,:] = array
-				meta_lats[i] = centre_lat
-				meta_lons[i] = centre_lon
-				meta_sids.append(str(sid))
+			# if dataset == 'era5':
+			# 	tc_X[i,:,:] = array
+			# 	tc_y[i,:,:] = mswep_array
+			# 	meta_lats.append(centre_lat)
+			# 	meta_lons.append(centre_lon)
+			# 	meta_sids.append(str(sid))
+			# else:
+			tc_X[i,:,:] = regridder(array)
+			tc_y[i,:,:] = array
+			meta_lats[i] = centre_lat
+			meta_lons[i] = centre_lon
+			meta_sids.append(str(sid))
 
-
+		# print('meta_sids',len(meta_sids))
+		# print('meta_lats',len(meta_lats))
+		# print('meta_lons',len(meta_lons))
 		# meta = np.dtype(float, metadata={"dataset": dataset,"sid":meta_sids,"centre_lat": meta_lats,"centre_lons": meta_lons})
 		meta = pd.DataFrame({'sid' : meta_sids,'centre_lat' : meta_lats,'centre_lon' : meta_lons})
 		if dataset == 'mswep':
+			print('saving to mswep...')
 			if resolution == 40:
 				path = '/user/work/al18709/tc_Xy_40'
 			else:
 				path = '/user/work/al18709/tc_Xy'
 		elif dataset == 'era5':
-			path = '/user/work/al18709/tc_Xy_era5_40'
+			print('saving to era5...')
+			path = '/user/work/al18709/tc_Xy_era5_10'
 		elif dataset == 'mswep_extend':
+			print('saving to mswep extend...')
 			path = '/user/work/al18709/tc_Xy_extend'
 		print(tc_X.shape)
 		np.save('%s/X_%s.npy' % (path,sid),tc_X)
@@ -165,27 +186,29 @@ def save_Xy_era5(grouped_tcs):
 	"""
 
 	# initial set up
+	resolution = 40 # or 40
 	regex = r"/user/work/al18709/tropical_cyclones/era5/.+?_(.+?)_.*?_idx-(.+?)_.*?_centrelat-(.+?)_centrelon-(.+?).nc"
 
 	# loop through tcs and make an X and y array for each
 	for tc in grouped_tcs:
+		number = 1
+		
+		print('storm: ',number,end='\r')
+		number = number + 1
 		sid = re.match(regex,tc[0]).groups()[0]	
 		n_timesteps = len(tc)
-		tc_X = np.zeros((n_timesteps,40,40))
-		# meta_lats = []
-		# meta_lons = []
-		# meta_sids = []
+		# tc_X = np.zeros((n_timesteps,40,40))
+		tc_X = np.zeros((n_timesteps,resolution,resolution))
 		meta_lats = np.zeros((n_timesteps))
 		meta_lons = np.zeros((n_timesteps))
 		meta_sids = np.zeros((n_timesteps),dtype=str)
 		remove_i = []
-		# meta_sids = []
 
 		tc_y = np.zeros((n_timesteps,100,100))
 
 		# loop though tc filepaths
 		for i,filepath in enumerate(tc):
-			print(i,end='\r')
+			# print(i,end='\r')
 			
 			ds = xr.open_dataset(filepath)
 			idx = re.match(regex,tc[i]).groups()[1]
@@ -202,20 +225,18 @@ def save_Xy_era5(grouped_tcs):
 			mswep_array = xr.open_dataset(mswep_fp).precipitation.values
 			
 			array = ds.precipitation.values
-			if array.shape != (40,40):
+			# if array.shape != (40,40):
+			if array.shape != (resolution,resolution):
 				remove_i.append(i)
 				continue
 
 			# assign arrays
 			tc_X[i,:,:] = array
 			tc_y[i,:,:] = mswep_array
-			# meta_lats.append(centre_lat)
-			# meta_lons.append(centre_lon)
-			# meta_sids.append(str(sid))
 			meta_lats[i] = centre_lat
 			meta_lons[i] = centre_lon
 			meta_sids[i] = str(sid)
-			# meta_sids.append(str(sid))
+
 		for index in remove_i:
 			np.delete(meta_lats,index)
 			np.delete(meta_lons,index)
@@ -227,7 +248,7 @@ def save_Xy_era5(grouped_tcs):
 		np.save('%s/X_%s.npy' % (path,sid),tc_X)
 		np.save('%s/y_%s.npy' % (path,sid),tc_y)
 		meta.to_csv('%s/meta_%s.csv' % (path,sid))
-		print('saved!')
+		# print('saved!')
 	
 def process(filepaths):
 	print('doing process...')
@@ -246,11 +267,12 @@ if __name__ == '__main__':
 	dataset = 'mswep'
 	dataset = 'era5'
 	# dataset = 'imerg'
-	dataset = 'mswep_extend'
+	# dataset = 'mswep_extend'
+	resolution = 10
 	
 	tc_dir = '/user/work/al18709/tropical_cyclones/%s/*.nc' % dataset
 	filepaths = glob.glob(tc_dir)
-	# print(filepaths)
+	print('number of tropical cyclones',len(filepaths))
 
 	# group by tc sid number
 	print('grouping...')
@@ -277,7 +299,10 @@ if __name__ == '__main__':
 	print('pooling processes...')
 	if dataset == 'mswep':
 		pool_results = p.map(process, tc_split)
-	elif dataset == 'era5':
+	elif (dataset == 'era5') and (resolution == 10):
+		print('processing era5 at low resolution!')
+		pool_results = p.map(process, tc_split)	
+	elif (dataset == 'era5') and (resolution == 40):
 		pool_results = p.map(process_era5, tc_split)
 	elif dataset == 'mswep_extend':
 		pool_results = p.map(process, tc_split)
