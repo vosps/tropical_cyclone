@@ -12,6 +12,7 @@ print('running')
 import glob
 import pandas as pd
 from netCDF4 import Dataset
+import datetime
 import numpy as np
 import xarray as xr
 import h5py
@@ -228,6 +229,7 @@ def process_apply_era5(x):
 			day = x.loc['day']
 			hour = x.loc['hour']		
 			tc_time = '%s-%s-%sT%s:00:00' % (year,month,day,hour)
+			# tc_time = (datetime.datetime(year,month,day,hour) - datetime.datetime(1900,1,1,0)).seconds/3600 # datetime gregorian?
 			i = x[0]
 
 			# open file
@@ -274,7 +276,9 @@ def process_apply_era5(x):
 				print('does not go over centre')
 				print(centre_lat,centre_lon,tc_time,lat_lower_bound,lat_upper_bound,lon_lower_bound,lon_upper_bound)
 				print(' ')
-				# print(d.time.values)
+				print(d.time.values)
+				print('tc_time',tc_time)
+
 				data = d.sel(time=tc_time).variables['tp'][lat_lower_bound:lat_upper_bound,lon_lower_bound:lon_upper_bound]
 				lat = lat[lat_lower_bound:lat_upper_bound]
 				lon = lon[lon_lower_bound:lon_upper_bound]
@@ -294,6 +298,7 @@ def process_apply_era5(x):
 					cat = 0
 				if centre_lon > 180:
 					centre_lon = centre_lon - 360
+				print('saving new era5 file...')
 				da.to_netcdf('/user/work/al18709/tropical_cyclones/era5/' + str(name) + '_' + str(sid) + '_hour-' + str(time) + '_idx-' + str(i) + '_cat-' + str(int(cat)) + '_basin-' + str(basin) + '_centrelat-' + str(centre_lat) + '_centrelon-' + str(centre_lon) + '.nc')
 				print('%s saved!' % filepath)
 	else:
@@ -317,7 +322,7 @@ def process_era5(df):
 if __name__ == '__main__':
 	dataset = 'mswep' # or imerg
 	# dataset = 'imerg'
-	# dataset = 'era5'
+	dataset = 'era5'
 	# df = pd.read_csv('/user/work/al18709/ibtracks/tc_files.csv')
 	df = pd.read_csv('/user/work/al18709/ibtracks/tc_files_all.csv')
 	df_split = np.array_split(df, 64)

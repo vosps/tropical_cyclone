@@ -10,11 +10,11 @@ import subprocess
 import os
 
 # open imerg
-filepath = '/bp1store/geog-tropical/data/ERA-5/hour/precipitation/ERA5_precipitation_3hrly_202112.nc'
-d = Dataset(filepath, 'r')
-lat = d.variables['latitude'][:] #lat
-lon = d.variables['longitude'][:] #lon
-d.close()
+# filepath = '/bp1store/geog-tropical/data/ERA-5/hour/precipitation/ERA5_precipitation_3hrly_202112.nc'
+# d = Dataset(filepath, 'r')
+# lat = d.variables['latitude'][:] #lat
+# lon = d.variables['longitude'][:] #lon
+# d.close()
 
 # print(lat)
 # print(lon)
@@ -36,13 +36,16 @@ for fp in filepaths:
 	if filename in filepaths_complete:
 		print(filename)
 		continue
-	outfile = fp[:53] + '_invertlat' + fp[53:]
+	outfile1 = '/bp1store/geog-tropical/data/ERA-5/hour/precipitation_invertlat/tmp.nc'
+	outfile2 = fp[:53] + '_invertlat' + fp[53:]
 	
-	cdo_cmd = ['cdo','invertlat','-setattribute,tp@units=mm',fp,outfile]
+	cdo_cmd = ['cdo','invertlat',fp,outfile1]
 	print(' '.join(cdo_cmd))
 	ret = subprocess.call(cdo_cmd)
 
 	# convert to mm
-	cdo_cmd = ['cdo','-r','-b','32','mulc,1000',outfile,outfile]
+	# cdo_cmd = ['cdo','-r','-b','32','mulc,1000',outfile,outfile]
+	cdo_cmd = ['cdo','-r','-b','32','mulc,1000','-setattribute,tp@units=mm',outfile1,outfile2]
 	print(' '.join(cdo_cmd))
 	ret = subprocess.call(cdo_cmd)
+	os.remove(outfile1)

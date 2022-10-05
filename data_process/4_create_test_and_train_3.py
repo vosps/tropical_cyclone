@@ -60,13 +60,17 @@ def create_set(tcs,dataset='imerg',resolution=100):
 	# initialise arrays
 	n_tcs = len(tcs)
 	print("n_tcs = ",n_tcs)
+	set_y = np.zeros((1,100,100))
 	if resolution == 40:
 		set_X = np.zeros((1,40,40))
 	elif dataset == 'mswep':
 		set_X = np.zeros((1,10,10))
-	elif dataset == 'era5':
+	elif (dataset == 'era5') and (resolution == 40):
 		set_X = np.zeros((1,40,40))
-	set_y = np.zeros((1,100,100))
+	else:
+		set_X = np.zeros((1,10,10))
+		set_y = np.zeros((1,40,40))
+	
 	set_meta = pd.DataFrame()
 
 	# loop through each tc
@@ -87,6 +91,10 @@ def create_set(tcs,dataset='imerg',resolution=100):
 			X = np.load('/user/work/al18709/tc_Xy_%s_40/X_%s.npy' % (dataset,tc),allow_pickle = True)
 		meta = pd.read_csv('/user/work/al18709/tc_Xy/meta_%s.csv' % tc)
 		print(meta)
+		print(set_X.shape)
+		print(X.shape)
+		print(set_y.shape)
+		print(y.shape)
 		set_X = np.vstack((set_X,X))
 		set_y = np.vstack((set_y,y))
 		set_meta = set_meta.append(meta)

@@ -74,6 +74,9 @@ def generator(mode,
     else:
         pass
 
+
+    # downscampling from 64x64 - 8x8
+    # upsampling back to 64x64
     # Upsampling from (10,10) to (100,100) with alternating residual blocks
     block_channels = [2*filters_gen, filters_gen]
     generator_output = UpSampling2D(size=(5, 5), interpolation='bilinear')(generator_output)

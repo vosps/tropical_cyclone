@@ -42,21 +42,18 @@ def load_tc_data(set = 'validation',results = 'final'):
 		pred_cnn = np.load('/user/home/al18709/work/cnn/unet_%s_2.npy' % set)
 	
 	elif results == 'era5':
-		# era5 = np.load('/user/home/al18709/work/gan_predictions_20/extreme_valid_pred-opt_era5_era-to-mswep_4.npy')
-		# era5_real = np.load('/user/home/al18709/work/tc_data_era5_flipped_40/extreme_valid_y.npy')
-		# era5_input = np.load('/user/home/al18709/work/tc_data_era5_flipped_40/extreme_valid_X.npy')
-		# era5_meta = pd.read_csv('/user/home/al18709/work/tc_data_era5/extreme_valid_meta.csv')
-		# mswep = np.load('/user/home/al18709/work/gan_predictions_20/extreme_valid_pred-opt_era5_mswep-to-mswep_2.npy')
-		# mswep_real = np.load('/user/home/al18709/work/tc_data_mswep_40/extreme_valid_y.npy')
-		# mswep_input = np.load('/user/home/al18709/work/tc_data_mswep_40/extreme_valid_X.npy')
-		# mswep_meta = pd.read_csv('/user/home/al18709/work/tc_data_mswep_40/extreme_valid_meta.csv')s
-		era5 = np.load('/user/home/al18709/work/gan_predictions_20/%s_pred-opt_era5_era-to-mswep_4.npy' % set)
-		era5_real = np.load('/user/home/al18709/work/gan_predictions_20/%s_real-opt_era5_era-to-mswep_4.npy' % set)
-		era5_input = np.load('/user/home/al18709/work/gan_predictions_20/%s_input-opt_era5_era-to-mswep_4.npy' % set)
-		# era5_real = np.load('/user/home/al18709/work/tc_data_era5_flipped_40/%s_y.npy' % set)
-		# era5_input = np.load('/user/home/al18709/work/tc_data_era5_flipped_40/%s_X.npy' % set)
+		if set == 'validation':
+			era5 = np.load('/user/home/al18709/work/gan_predictions_20/era5_pred-opt_5_normal_problem.npy')
+			era5_real = np.load('/user/home/al18709/work/gan_predictions_20/era5_real-opt_5_normal_problem.npy')
+			era5_input = np.load('/user/home/al18709/work/gan_predictions_20/era5_input-opt_5_normal_problem.npy')
+			era5_meta = pd.read_csv('/user/home/al18709/work/tc_data_era5_10/valid_meta.csv')
+			return era5,era5_real,era5_input,era5_meta
+		else:
+			era5 = np.load('/user/home/al18709/work/gan_predictions_20/%s_pred-opt_era5_era-to-mswep_4.npy' % set)
+			era5_real = np.load('/user/home/al18709/work/gan_predictions_20/%s_real-opt_era5_era-to-mswep_4.npy' % set)
+			era5_input = np.load('/user/home/al18709/work/gan_predictions_20/%s_input-opt_era5_era-to-mswep_4.npy' % set)
+			era5_meta = pd.read_csv('/user/home/al18709/work/tc_data_era5/%s_meta.csv' % set)
 
-		era5_meta = pd.read_csv('/user/home/al18709/work/tc_data_era5/%s_meta.csv' % set)
 		mswep = np.load('/user/home/al18709/work/gan_predictions_20/%s_pred-opt_era5_mswep-to-mswep_2.npy' % set)
 		mswep_real = np.load('/user/home/al18709/work/gan_predictions_20/%s_real-opt_era5_mswep-to-mswep_2.npy' % set)
 		mswep_input = np.load('/user/home/al18709/work/gan_predictions_20/%s_input-opt_era5_mswep-to-mswep_2.npy' % set)
