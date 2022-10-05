@@ -67,9 +67,9 @@ def find_and_flip(X,y,meta,dataset='mswep'):
 
 print('running script 5...')
 dataset = 'era5'
-resolution = 40
+# resolution = 40
 resolution = 100
-# dataset = 'mswep'
+dataset = 'mswep'
 # dataset = 'mswep_extend'
 # resolution = 100
 
@@ -210,6 +210,16 @@ if resolution == 100:
 	np.save('/user/work/al18709/tc_data_%s_flipped_10/extreme_test_y.npy' % dataset,extreme_test_y)
 	np.save('/user/work/al18709/tc_data_%s_flipped_10/extreme_valid_X.npy' % dataset,extreme_valid_X)
 	np.save('/user/work/al18709/tc_data_%s_flipped_10/extreme_valid_y.npy' % dataset,extreme_valid_y)
+	# np.save('/user/work/al18709/tc_data_%s_flipped/valid_X.npy' % dataset,valid_X)
+	# np.save('/user/work/al18709/tc_data_%s_flipped/valid_y.npy' % dataset,valid_y)
+	# np.save('/user/work/al18709/tc_data_%s_flipped/train_X.npy' % dataset,train_X)
+	# np.save('/user/work/al18709/tc_data_%s_flipped/train_y.npy' % dataset,train_y)
+	# np.save('/user/work/al18709/tc_data_%s_flipped/test_X.npy' % dataset,test_X)
+	# np.save('/user/work/al18709/tc_data_%s_flipped/test_y.npy' % dataset,test_y)
+	# np.save('/user/work/al18709/tc_data_%s_flipped/extreme_test_X.npy' % dataset,extreme_test_X)
+	# np.save('/user/work/al18709/tc_data_%s_flipped/extreme_test_y.npy' % dataset,extreme_test_y)
+	# np.save('/user/work/al18709/tc_data_%s_flipped/extreme_valid_X.npy' % dataset,extreme_valid_X)
+	# np.save('/user/work/al18709/tc_data_%s_flipped/extreme_valid_y.npy' % dataset,extreme_valid_y)
 else:
 	np.save('/user/work/al18709/tc_data_%s_flipped_40/valid_X.npy' % dataset,valid_X)
 	np.save('/user/work/al18709/tc_data_%s_flipped_40/valid_y.npy' % dataset,valid_y)

@@ -8,6 +8,8 @@ import cartopy.crs as ccrs
 from global_land_mask import globe
 import xarray as xr
 import pandas as pd
+from netCDF4 import Dataset
+import xesmf as xe
 
 sns.set_style("white")
 
@@ -421,6 +423,55 @@ def calculate_crps(observation, forecasts):
 
 	return crps
 
+def accumulated_rain(storm,meta,real,pred_gan,inputs,flip=True):
+	# grab mswep coordinate variables
+	fp = '/bp1store/geog-tropical/data/Obs/MSWEP/3hourly_invertlat/2000342.00.nc'
+	d = Dataset(fp, 'r')
+	lat = d.variables['lat'][:] #lat
+	lon = d.variables['lon'][:] #lon
+	# print('lat shape: ',lat.shape)
+	# print('lon shape: ',lon.shape)
+	# calculate lats and lons for storm
+	lats,lons = tc_region(meta,storm,lat,lon)
+	# initialise accumulated xarray
+	# grid_x, grid_y = np.meshgrid(lats, lons)
+	grid_x, grid_y = np.meshgrid(lons,lats)
+	# a = np.zeros((grid_x.shape))
+	# print('grid_x shape: ',grid_x.shape)
+	# print('grid_y.shape: ', grid_y.shape)
+	# print('lons shape: ',lons.shape)
+	# print('lats shape: ',lats.shape)
+	a = np.zeros((grid_y.shape))
+	# print('a shape',a.shape)
+	accumulated_ds = create_xarray(lats,lons,a)
+	accumulated_ds_pred = create_xarray(lats,lons,a)
+	# accumulated_ds_input = create_xarray(lats,lons,a)
+	# loop through storm time steps o generate accumulated rainfall
+	for i in storm:
+		storm_lats,storm_lons = get_storm_coords(lat,lon,meta,i)
+		ds = create_xarray(storm_lats,storm_lons,real[i])
+		ds_pred = create_xarray(storm_lats,storm_lons,pred_gan[i])
+		input_lats,input_lons = get_storm_coords(np.arange(-89.5,90,1),np.arange(-179.5,180),meta,i)
+		# ds_input = create_xarray(input_lats,input_lons,inputs[i])
 
+		# if flip==True:
+		# 	ds.precipitation.values = np.flip(ds.precipitation.values,axis=0)
+		# 	ds_pred.precipitation.values = np.flip(ds_pred.precipitation.values,axis=0)
+
+		# regrid so grids match
+		regridder = xe.Regridder(ds, accumulated_ds, "bilinear")
+		ds_out = regridder(ds)
+		ds_pred_out = regridder(ds_pred)
+
+		# regird the inputs
+		# regridder = xe.Regridder(ds_input, accumulated_ds, "bilinear")
+		# ds_input_out = regridder(ds_input)
+
+		# add up rainfall
+		accumulated_ds = accumulated_ds + ds_out
+		accumulated_ds_pred = accumulated_ds_pred + ds_pred_out
+		# accumulated_ds_input = accumulated_ds_input + ds_input_out
+
+	return accumulated_ds,accumulated_ds_pred
 
 

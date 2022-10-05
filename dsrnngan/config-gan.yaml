@@ -1,8 +1,8 @@
 GENERAL:
     mode: "GAN" # choices 'det' 'GAN' 'VAEGAN'
     problem_type: "normal" # choices 'normal' 'superresolution'
-    data_mode: 'era5' # validation, test, train, extreme_validation, extreme_test, storm,era5
-    storm: '2011233N15301'
+    data_mode: 'storm' # validation, test, train, extreme_validation, extreme_test, storm,era5
+    storm: '2019236N10314'
     
 MODEL:
     architecture: "normal" # check if force_1d_conv is true is false

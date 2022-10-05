@@ -48,7 +48,7 @@ def save_Xy(grouped_tcs):
 		regex = r"/user/work/al18709/tropical_cyclones/imerg/.+?_(.+?)_.*?(..).nc"
 	elif dataset == 'era5':
 		# regex = r"/user/work/al18709/tropical_cyclones/mswep/.+?_(.+?)_.*?(..).nc"
-		regex = r"/user/work/al18709/tropical_cyclones/era5/.+?_(.+?)_.*?_idx-(.+?)_.*?_centrelat-(.+?)_centrelon-(.+?).nc"
+		regex = r"/user/work/al18709/tropical_cyclones/era5_10/.+?_(.+?)_.*?_idx-(.+?)_.*?_centrelat-(.+?)_centrelon-(.+?).nc"
 	elif dataset == 'mswep_extend':
 		regex = r"/user/work/al18709/tropical_cyclones/mswep_extend/.+?_(.+?)_.*?_centrelat-(.+?)_centrelon-(.+?).nc"
 	

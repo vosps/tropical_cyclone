@@ -184,20 +184,23 @@ def process_apply_mswep(x):
 				if cat not in [1,2,3,4,5]:
 					cat = 0
 				
-				# da.to_netcdf('/user/work/al18709/tropical_cyclones/mswep/' + str(name) + '_' + str(sid) + '_hour-' + str(time) + '_idx-' + str(i) + '_cat-' + str(int(cat)) + '_basin-' + str(basin) + '_centrelat-' + str(centre_lat) + '_centrelon-' + str(centre_lon) + '.nc')
-				da.to_netcdf('/user/work/al18709/tropical_cyclones/mswep_extend/' + str(name) + '_' + str(sid) + '_hour-' + str(time) + '_idx-' + str(i) + '_cat-' + str(int(cat)) + '_basin-' + str(basin) + '_centrelat-' + str(centre_lat) + '_centrelon-' + str(centre_lon) + '.nc')
+				da.to_netcdf('/user/work/al18709/tropical_cyclones/mswep/' + str(name) + '_' + str(sid) + '_hour-' + str(time) + '_idx-' + str(i) + '_cat-' + str(int(cat)) + '_basin-' + str(basin) + '_centrelat-' + str(centre_lat) + '_centrelon-' + str(centre_lon) + '.nc')
+				# da.to_netcdf('/user/work/al18709/tropical_cyclones/mswep_extend/' + str(name) + '_' + str(sid) + '_hour-' + str(time) + '_idx-' + str(i) + '_cat-' + str(int(cat)) + '_basin-' + str(basin) + '_centrelat-' + str(centre_lat) + '_centrelon-' + str(centre_lon) + '.nc')
+				# da.to_netcdf('/user/work/al18709/tropical_cyclones/era5_10/' + str(name) + '_' + str(sid) + '_hour-' + str(time) + '_idx-' + str(i) + '_cat-' + str(int(cat)) + '_basin-' + str(basin) + '_centrelat-' + str(centre_lat) + '_centrelon-' + str(centre_lon) + '.nc')
 				print('%s saved!' % filepath)
 				# TODO: flip lats
 	else:
 		print('%s not saved!' % filepath)
 
 def process_apply_era5(x):
+	print('applying era5 process...')
 	# define variables
 	
 	result = 1
 	filepath = x.loc['filepath_era5']
 
 	# remove filepaths which relate to timestamps we don't have in ERA5
+	print('the hour is: ',str(x.loc['hour']))
 	if str(x.loc['hour']) not in ['0','3','6','9','12','15','18','21']:
 		print(x.loc['hour'])
 		result = 0
@@ -241,8 +244,10 @@ def process_apply_era5(x):
 			
 			# era5 don't have the same lat and lons as mswep
 			# clip to location
-			lat_lower_bound = (np.abs(lat-centre_lat-5.)).argmin()
-			lat_upper_bound = (np.abs(lat-centre_lat+5.)).argmin()
+			# lat_lower_bound = (np.abs(lat-centre_lat-5.)).argmin()
+			# lat_upper_bound = (np.abs(lat-centre_lat+5.)).argmin()
+			lat_lower_bound = (np.abs(lat-centre_lat+5.)).argmin()
+			lat_upper_bound = (np.abs(lat-centre_lat-5.)).argmin()
 			lon_lower_bound = (np.abs(lon-centre_lon+5.)).argmin()
 			lon_upper_bound = (np.abs(lon-centre_lon-5.)).argmin()
 
@@ -276,13 +281,15 @@ def process_apply_era5(x):
 				print('does not go over centre')
 				print(centre_lat,centre_lon,tc_time,lat_lower_bound,lat_upper_bound,lon_lower_bound,lon_upper_bound)
 				print(' ')
-				print(d.time.values)
-				print('tc_time',tc_time)
+				# print(d.time.values)
+				# print('tc_time',tc_time)
 
 				data = d.sel(time=tc_time).variables['tp'][lat_lower_bound:lat_upper_bound,lon_lower_bound:lon_upper_bound]
 				lat = lat[lat_lower_bound:lat_upper_bound]
 				lon = lon[lon_lower_bound:lon_upper_bound]
-					
+			
+			print(len(lon))
+			print(len(lat))
 			if (len(lon) != 40) or (len(lat) != 40): # TODO: figure out why this happens
 				print('dimensions do not match')
 			else:
@@ -299,7 +306,7 @@ def process_apply_era5(x):
 				if centre_lon > 180:
 					centre_lon = centre_lon - 360
 				print('saving new era5 file...')
-				da.to_netcdf('/user/work/al18709/tropical_cyclones/era5/' + str(name) + '_' + str(sid) + '_hour-' + str(time) + '_idx-' + str(i) + '_cat-' + str(int(cat)) + '_basin-' + str(basin) + '_centrelat-' + str(centre_lat) + '_centrelon-' + str(centre_lon) + '.nc')
+				da.to_netcdf('/user/work/al18709/tropical_cyclones/era5_10/' + str(name) + '_' + str(sid) + '_hour-' + str(time) + '_idx-' + str(i) + '_cat-' + str(int(cat)) + '_basin-' + str(basin) + '_centrelat-' + str(centre_lat) + '_centrelon-' + str(centre_lon) + '.nc')
 				print('%s saved!' % filepath)
 	else:
 		print('%s not saved!' % filepath)

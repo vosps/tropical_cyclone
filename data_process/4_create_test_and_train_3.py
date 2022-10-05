@@ -102,7 +102,7 @@ def create_set(tcs,dataset='imerg',resolution=100):
 	return set_X[1:,:,:],set_y[1:,:,:],set_meta
 
 # define which dataset to look at
-# dataset = 'mswep'
+dataset = 'mswep'
 # dataset = 'mswep_extend'
 dataset = 'era5'
 resolution = 100
