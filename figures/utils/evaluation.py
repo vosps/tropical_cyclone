@@ -203,7 +203,7 @@ def is_near_land(centre_lat, centre_lon):
 
 
 
-def tc_region(meta,sid_i,lat,lon):
+def tc_region(meta,sid_i,lat,lon,era5=False):
         """
         find region which contains all points/ranfinall data of tc track
                 inputs
@@ -216,7 +216,7 @@ def tc_region(meta,sid_i,lat,lon):
         lat_upper_bounds = []
         lon_lower_bounds = []
         lon_upper_bounds = []
-
+                
         for i in sid_i:
                 lat_lower_bounds.append((np.abs(lat-meta['centre_lat'][i]+5.)).argmin())
                 lat_upper_bounds.append((np.abs(lat-meta['centre_lat'][i]-5.)).argmin())
@@ -228,6 +228,10 @@ def tc_region(meta,sid_i,lat,lon):
         lon_lower_bound = min(lon_lower_bounds)
         lon_upper_bound = max(lon_upper_bounds)
 
+        if era5 == True:
+                # lat_lower_bound = lat_lower_bound + 1
+                lat_upper_bound = lat_upper_bound - 1
+
         print('lat lower: ',lat_lower_bound)
         print('lat upper: ',lat_upper_bound)
         print('lon lower: ',lon_lower_bound)
@@ -236,8 +240,8 @@ def tc_region(meta,sid_i,lat,lon):
         lats = lat[lat_lower_bound:lat_upper_bound]
         # lats = np.flip(lats)
         lons = lon[lon_lower_bound:lon_upper_bound]
-        # print('lats: ',lats)
-        # print('lons: ',lons)
+        print('lats: ',lats.shape)
+        print('lons: ',lons.shape)
 
         return lats,lons
 
@@ -264,7 +268,7 @@ def create_xarray(lats,lons,data,ensemble=None):
 
         return accumulated_ds
 
-def get_storm_coords(lat,lon,meta,i):
+def get_storm_coords(lat,lon,meta,i,era5=False):
         """
         returns lat and longitude of rainfall from one storm
         """
@@ -276,6 +280,10 @@ def get_storm_coords(lat,lon,meta,i):
         # storm_lats = lat[lat_lower_bound:lat_upper_bound]
         # # storm_lats = np.flip(storm_lats)
         # storm_lons = lon[lon_lower_bound:lon_upper_bound]
+        if era5 ==True:
+                print(lat_upper_bound)
+                lat_upper_bound = lat_upper_bound +1
+                print(lat_upper_bound)
 
         if meta['centre_lon'][i] > 175: 
                 diff = lon_upper_bound - lon_lower_bound
@@ -294,7 +302,6 @@ def get_storm_coords(lat,lon,meta,i):
         else:
                 storm_lats = lat[lat_lower_bound:lat_upper_bound]
                 storm_lons = lon[lon_lower_bound:lon_upper_bound]
-
 
 
         return storm_lats,storm_lons
@@ -423,14 +430,15 @@ def calculate_crps(observation, forecasts):
 
 	return crps
 
-def accumulated_rain(storm,meta,real,pred_gan,inputs,flip=True):
+def accumulated_rain(storm,meta,real,pred_gan,inputs,flip=True,era5=False):
 	# grab mswep coordinate variables
 	fp = '/bp1store/geog-tropical/data/Obs/MSWEP/3hourly_invertlat/2000342.00.nc'
+
 	d = Dataset(fp, 'r')
 	lat = d.variables['lat'][:] #lat
 	lon = d.variables['lon'][:] #lon
-	# print('lat shape: ',lat.shape)
-	# print('lon shape: ',lon.shape)
+	print('lat shape: ',lat.shape)
+	print('lon shape: ',lon.shape)
 	# calculate lats and lons for storm
 	lats,lons = tc_region(meta,storm,lat,lon)
 	# initialise accumulated xarray
@@ -449,6 +457,12 @@ def accumulated_rain(storm,meta,real,pred_gan,inputs,flip=True):
 	# loop through storm time steps o generate accumulated rainfall
 	for i in storm:
 		storm_lats,storm_lons = get_storm_coords(lat,lon,meta,i)
+		# print('storm_lonsshape1',storm_lons.shape)
+		# print('storm_latshape1',storm_lats.shape)
+		if storm_lats.shape != (100,):
+			storm_lats,storm_lons = get_storm_coords(lat,lon,meta,i,era5=era5)
+		# print('storm_lonsshape2',storm_lons.shape)
+		# print('storm_latshape2',storm_lats.shape)
 		ds = create_xarray(storm_lats,storm_lons,real[i])
 		ds_pred = create_xarray(storm_lats,storm_lons,pred_gan[i])
 		input_lats,input_lons = get_storm_coords(np.arange(-89.5,90,1),np.arange(-179.5,180),meta,i)

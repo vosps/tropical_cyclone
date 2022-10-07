@@ -197,9 +197,21 @@ def create_fixed_dataset(year=None,mode='validation',batch_size=16,
         dataset = storm
         x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep_extend_flipped/X_%s.npy' % dataset),axis=3))
         y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep_extend_flipped/y_%s.npy' % dataset),axis=3))
+    elif mode == 'storm_era5':
+        dataset = storm
+        x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_era5_flipped_10/X_%s.npy' % dataset),axis=3))
+        y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_era5_flipped_10/y_%s.npy' % dataset),axis=3))
+    elif mode == 'storm_era5_corrected':
+        dataset = storm
+        x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_era5_flipped_10/X_%s_corrected.npy' % dataset),axis=3))
+        y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_era5_flipped_10/y_%s.npy' % dataset),axis=3))
     elif mode == 'era5':
         dataset = 'valid'
         x = np.float32(np.expand_dims(np.load('/user/home/al18709/work/tc_data_era5_flipped_10/%s_X.npy' % dataset),axis=3))
+        y = np.float32(np.expand_dims(np.load('/user/home/al18709/work/tc_data_era5_flipped_10/%s_y.npy' % dataset),axis=3))
+    elif mode == 'era5_corrected':
+        dataset = 'valid'
+        x = np.float32(np.load('/user/home/al18709/work/tc_data_era5_flipped_10/%s_corrected_X.npy' % dataset))
         y = np.float32(np.expand_dims(np.load('/user/home/al18709/work/tc_data_era5_flipped_10/%s_y.npy' % dataset),axis=3))
     else:
         if mode == 'validation':

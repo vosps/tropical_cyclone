@@ -80,7 +80,7 @@ time_points = [str(h) + '5959' for h in hours]
 # generate list of filepaths
 filepaths_imerg = ['/bp1store/geog-tropical/data/Obs/IMERG/half_hourly/final/3B-HHR.MS.MRG.3IMERG.%s*%s*.HDF5' % (ymd,h) for ymd,h in zip(year_month_day,time_points)]
 filepaths_mswep = ['/bp1store/geog-tropical/data/Obs/MSWEP/3hourly_invertlat/%s.%s.nc' % (yd,h) for yd,h in zip(year_day,hours_mswep)]
-filepaths_era5 = ['/bp1store/geog-tropical/data/ERA-5/hour/precipitation_invertlat/ERA5_precipitation_3hrly_%s.nc' % ym for ym in year_month]
+filepaths_era5 = ['/bp1store/geog-tropical/data/ERA-5/hour/precipitation_invertlat_em/ERA5_precipitation_3hrly_%s.nc' % ym for ym in year_month]
 # filepaths_q = ['/user/home/al18709/work/era5/specific_humidity/ERA5_q_3hourly_1deg_%s.h' % ym for ym in year_months]
 
 

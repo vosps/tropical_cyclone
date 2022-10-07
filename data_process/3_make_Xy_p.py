@@ -270,7 +270,10 @@ if __name__ == '__main__':
 	# dataset = 'mswep_extend'
 	resolution = 10
 	
-	tc_dir = '/user/work/al18709/tropical_cyclones/%s/*.nc' % dataset
+	if dataset == 'era5':
+		tc_dir = '/user/work/al18709/tropical_cyclones/%s_10/*.nc' % dataset
+	else:
+		tc_dir = '/user/work/al18709/tropical_cyclones/%s/*.nc' % dataset
 	filepaths = glob.glob(tc_dir)
 	print('number of tropical cyclones',len(filepaths))
 
@@ -281,7 +284,7 @@ if __name__ == '__main__':
 	elif dataset == 'imerg':
 		regex = r"/user/work/al18709/tropical_cyclones/imerg/.+?_(.+?)_.*?.nc"
 	elif dataset == 'era5':
-		regex = r"/user/work/al18709/tropical_cyclones/era5/.+?_(.+?)_.*?.nc"
+		regex = r"/user/work/al18709/tropical_cyclones/era5_10/.+?_(.+?)_.*?.nc"
 	elif dataset == 'mswep_extend':
 		regex = r"/user/work/al18709/tropical_cyclones/mswep_extend/.+?_(.+?)_.*?.nc"
 	keyf = lambda text: (re.findall(regex, text)+ [text])[0]

@@ -140,7 +140,7 @@ for tc in sids:
 	elif dataset == 'mswep_extend':
 		fp = '/user/work/al18709/tc_Xy_mswep_extend/X_%s.npy' % tc
 	elif dataset == 'era5':
-		fp = '/user/work/al18709/tc_Xy_era5_40/X_%s.npy' % tc
+		fp = '/user/work/al18709/tc_Xy_era5_10/X_%s.npy' % tc
 
 	if glob.glob(fp) != []:
 		data = np.load(fp,allow_pickle=True)

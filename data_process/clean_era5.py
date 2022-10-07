@@ -27,8 +27,8 @@ import os
 # print(lat)
 # print(lon)
 
-filepaths = glob.glob('/bp1store/geog-tropical/data/ERA-5/hour/precipitation/*.nc')
-filepaths_complete = os.listdir('/bp1store/geog-tropical/data/ERA-5/hour/precipitation_invertlat/')
+filepaths = glob.glob('/bp1store/geog-tropical/data/ERA-5/hour/precipitation_ensemble_members/*.nc')
+filepaths_complete = os.listdir('/bp1store/geog-tropical/data/ERA-5/hour/precipitation_invertlat_em/')
 
 
 for fp in filepaths:
@@ -36,7 +36,7 @@ for fp in filepaths:
 	if filename in filepaths_complete:
 		print(filename)
 		continue
-	outfile1 = '/bp1store/geog-tropical/data/ERA-5/hour/precipitation_invertlat/tmp.nc'
+	outfile1 = '/bp1store/geog-tropical/data/ERA-5/hour/precipitation_invertlat_em/tmp.nc'
 	outfile2 = fp[:53] + '_invertlat' + fp[53:]
 	
 	cdo_cmd = ['cdo','invertlat',fp,outfile1]

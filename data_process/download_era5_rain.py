@@ -21,8 +21,9 @@ variable_name = 'total_precipitation'
 
 # change dataset depending on single or pressure levels
 dataset = 'reanalysis-era5-single-levels'
-
-outdir = '/bp1store/geog-tropical/data/ERA-5/hour/precipitation/'
+product = 'reanalysis'
+product = 'ensemble_members'
+outdir = '/bp1store/geog-tropical/data/ERA-5/hour/precipitation_ensemble_members/'
 # tmpdir = '/bp1store/geog-tropical/data/ERA-5/tmp'
 print(level)
 print(variable)
@@ -31,7 +32,7 @@ print(variable_name)
 
 def generate_yrmonths():
 	# 1979 - 2020
-	years = range(1980,2022)
+	years = range(1979,2023)
 	print(list(years))
 	months = ['01','02','03','04','05','06','07','08','09','10','11','12']
 	yrmonths = [ int("%s%s" % (year,month)) for year in years for month in months]
@@ -65,7 +66,7 @@ for yrmonth in yrmonths:
 	# tmpfile_day =  os.path.join(tmpdir,'ERA5_'+variable+'_day_'+year+mon+'.nc')
 
 	request = {
-				'product_type': 'reanalysis',
+				'product_type': product,
 				'format': 'netcdf',
 				'variable': variable_name,
 				'year': year,

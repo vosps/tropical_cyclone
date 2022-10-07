@@ -55,8 +55,9 @@ def find_and_flip(X,y,meta,dataset='mswep'):
 		y[i] = y_flipped
 
 	# flip the y values in the hr era5 dataset because they rotate differently
-	if dataset == 'era5':
+	if (dataset == 'era5') or (dataset == 'era5_storm'):
 		for i in sh_indices:
+			print('flipping era5...')
 			y_flipped = flip(y[i])
 			y[i] = y_flipped
 		
@@ -67,9 +68,10 @@ def find_and_flip(X,y,meta,dataset='mswep'):
 
 print('running script 5...')
 dataset = 'era5'
+dataset = 'era5_storm'
 # resolution = 40
 resolution = 100
-dataset = 'mswep'
+# dataset = 'mswep'
 # dataset = 'mswep_extend'
 # resolution = 100
 
@@ -80,14 +82,24 @@ def save_flipped(grouped_sids):
 			continue
 		if 'extreme_valid' in sid:
 			continue
-		X = np.load('/user/work/al18709/tc_Xy_extend/X_%s.npy' % sid)
-		y = np.load('/user/work/al18709/tc_Xy_extend/y_%s.npy' % sid)
-		meta = pd.read_csv('/user/work/al18709/tc_Xy_extend/meta_%s.csv' % sid)
+		# if dataset == 'mswep_extend':
+		# 	X = np.load('/user/work/al18709/tc_Xy_extend/X_%s.npy' % sid)
+		# 	y = np.load('/user/work/al18709/tc_Xy_extend/y_%s.npy' % sid)
+		# 	meta = pd.read_csv('/user/work/al18709/tc_Xy_extend/meta_%s.csv' % sid)
+		# else:
+		X = np.load('/user/work/al18709/tc_Xy_era5_10/X_%s.npy' % sid)
+		y = np.load('/user/work/al18709/tc_Xy_era5_10/y_%s.npy' % sid)
+		meta = pd.read_csv('/user/work/al18709/tc_Xy_era5_10/meta_%s.csv' % sid)
+			# dataset == 'era5_10'
+		dataset = 'era5'
 		X,y = find_and_flip(X,y,meta)
 		print(X.shape)
+		print(dataset)
+		
 		np.save('/user/work/al18709/tc_data_%s_flipped_10/X_%s.npy' % (dataset,sid),X)
 		np.save('/user/work/al18709/tc_data_%s_flipped_10/y_%s.npy' % (dataset,sid),y)
 		meta.to_csv('/user/work/al18709/tc_data_%s_flipped_10/meta_%s.csv' % (dataset,sid))
+	print('complete')
 
 
 def process(filepaths):
@@ -97,12 +109,18 @@ def process(filepaths):
 
 
 
-if dataset == 'mswep_extend':
+if (dataset == 'mswep_extend') or (dataset == 'era5_storm'):
 
-	n_processes = 64
-
-	files = glob.glob('/user/work/al18709/tc_Xy_extend/X_*.npy')
-	sids = [file[34:47] for file in files]
+	n_processes = 24
+	if dataset == 'mswep_extend':
+		files = glob.glob('/user/work/al18709/tc_Xy_extend/X_*.npy')
+		sids = [file[34:47] for file in files]
+	else:
+		files = glob.glob('/user/work/al18709/tc_Xy_era5_10/X_*.npy')
+		sids = [file[35:48] for file in files]
+	
+	# save_flipped(sids)
+	print('about to do process...')
 	tc_split = np.array(np.array_split(sids, n_processes))
 	p = Pool(processes=n_processes)
 	pool_results = p.map(process, tc_split)

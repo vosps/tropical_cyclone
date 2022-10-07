@@ -40,7 +40,13 @@ def load_tc_data(set = 'validation',results = 'final'):
 		meta = pd.read_csv('/user/work/al18709/tc_data_mswep/%s_meta.csv' % set)
 		# meta = pd.read_csv('/user/work/al18709/tc_data_flipped/%s_meta.csv' % set)
 		pred_cnn = np.load('/user/home/al18709/work/cnn/unet_%s_2.npy' % set)
-	
+	elif results == 'era5_corrected':
+		if set == 'validation':
+			era5 = np.load('/user/home/al18709/work/gan_predictions_20/era5_corrected_pred-opt_5_normal_problem.npy')
+			era5_real = np.load('/user/home/al18709/work/gan_predictions_20/era5_corrected_real-opt_5_normal_problem.npy')
+			era5_input = np.load('/user/home/al18709/work/gan_predictions_20/era5_corrected_input-opt_5_normal_problem.npy')
+			era5_meta = pd.read_csv('/user/home/al18709/work/tc_data_era5_10/valid_meta.csv')
+			return era5,era5_real,era5_input,era5_meta
 	elif results == 'era5':
 		if set == 'validation':
 			era5 = np.load('/user/home/al18709/work/gan_predictions_20/era5_pred-opt_5_normal_problem.npy')

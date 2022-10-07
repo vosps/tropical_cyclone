@@ -77,7 +77,9 @@ def generate_predictions(*,
 		num_images,_,_ = np.load('/user/work/al18709/tc_data_flipped/valid_X.npy').shape
 	elif data_mode == 'storm':
 		num_images,_,_ = np.load('/user/work/al18709/tc_data_mswep_extend_flipped/y_%s.npy' % storm).shape
-	elif data_mode == 'era5':
+	elif (data_mode == 'storm_era5') or (data_mode == 'storm_era5_corrected'):
+		num_images,_,_ = np.load('/user/work/al18709/tc_data_era5_flipped_10/y_%s.npy' % storm).shape
+	elif (data_mode == 'era5') or (data_mode == 'era5_corrected'):
 		num_images,_,_ = np.load('/user/home/al18709/work/tc_data_era5_flipped_10/valid_y.npy').shape
 	else:
 		num_images,_,_ = np.load('/user/work/al18709/tc_data_flipped/%s_X.npy' % data_mode).shape
@@ -136,7 +138,7 @@ def generate_predictions(*,
 		
 		print('running batch ',i,'...')
 		inputs, outputs = next(data_pred_iter)
-		if data_mode == 'era5':
+		if (data_mode == 'era5') or (data_mode == 'era5_corrected') or (data_mode == 'storm_era5') or (data_mode == 'storm_era5_corrected'):
 			if i == batch_size:
 				n = remainder
 			else:
@@ -220,10 +222,15 @@ def generate_predictions(*,
 			meta = pd.read_csv('/user/work/al18709/tc_data_mswep/valid_meta.csv')
 		elif data_mode == 'storm':
 			meta = pd.read_csv('/user/work/al18709/tc_data_mswep_extend_flipped/meta_%s.csv' % storm)
-		elif data_mode == 'era5':
+		elif data_mode == 'storm_era5':
+			meta = pd.read_csv('/user/work/al18709/tc_data_era5_flipped_10/meta_%s.csv' % storm)
+		elif data_mode == 'storm_era5_corrected':
+			meta = pd.read_csv('/user/work/al18709/tc_data_era5_flipped_10/meta_%s.csv' % storm)
+		elif (data_mode == 'era5') or (data_mode == 'era5_corrected'):
 			meta = pd.read_csv('/user/work/al18709/tc_data_era5_10/valid_meta.csv')
 		else:
 			meta = pd.read_csv('/user/work/al18709/tc_data_mswep/%s_meta.csv' % data_mode)
+		
 		seq_real = find_and_flip(seq_real,meta)
 		pred = find_and_flip(pred,meta)
 		low_res_inputs = find_and_flip(low_res_inputs,meta)
