@@ -213,6 +213,8 @@ def create_fixed_dataset(year=None,mode='validation',batch_size=16,
         dataset = 'valid'
         x = np.float32(np.load('/user/home/al18709/work/tc_data_era5_flipped_10/%s_corrected_X.npy' % dataset))
         y = np.float32(np.expand_dims(np.load('/user/home/al18709/work/tc_data_era5_flipped_10/%s_y.npy' % dataset),axis=3))
+        print(x.shape)
+        print(y.shape)
     else:
         if mode == 'validation':
             dataset = 'valid'

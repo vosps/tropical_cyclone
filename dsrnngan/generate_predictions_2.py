@@ -248,6 +248,9 @@ def generate_predictions(*,
 	if data_mode == 'storm':
 		problem = storm
 
+	if data_mode == 'era5_corrected':
+		problem = '3_hrly'
+
 
 	np.save('/user/home/al18709/work/%s_predictions_20/%s_real-%s_%s.npy' % (model,data_mode,checkpoint,problem),seq_real)
 	np.save('/user/home/al18709/work/%s_predictions_20/%s_pred-%s_%s.npy' % (model,data_mode,checkpoint,problem),pred)

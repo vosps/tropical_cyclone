@@ -32,7 +32,7 @@ print(variable_name)
 
 def generate_yrmonths():
 	# 1979 - 2020
-	years = range(1979,2023)
+	years = range(2002,2023)
 	print(list(years))
 	months = ['01','02','03','04','05','06','07','08','09','10','11','12']
 	yrmonths = [ int("%s%s" % (year,month)) for year in years for month in months]

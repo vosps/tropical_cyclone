@@ -37,7 +37,8 @@ for fp in filepaths:
 		print(filename)
 		continue
 	outfile1 = '/bp1store/geog-tropical/data/ERA-5/hour/precipitation_invertlat_em/tmp.nc'
-	outfile2 = fp[:53] + '_invertlat' + fp[53:]
+	# outfile2 = fp[:53] + '_invertlat' + fp[53:]
+	outfile2 = '/bp1store/geog-tropical/data/ERA-5/hour/precipitation_invertlat_em/' + fp[-34:]
 	
 	cdo_cmd = ['cdo','invertlat',fp,outfile1]
 	print(' '.join(cdo_cmd))
