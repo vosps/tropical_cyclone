@@ -119,7 +119,8 @@ if (dataset == 'mswep_extend') or (dataset == 'era5_storm'):
 		files = glob.glob('/user/work/al18709/tc_Xy_era5_10/X_*.npy')
 		sids = [file[35:48] for file in files]
 	
-	# save_flipped(sids)
+	save_flipped(sids)
+	exit()
 	print('about to do process...')
 	tc_split = np.array(np.array_split(sids, n_processes))
 	p = Pool(processes=n_processes)
@@ -181,7 +182,8 @@ else:
 if dataset == 'mswep_extend':
 	exit()
 
-
+if dataset == 'era5_storm':
+	exit()
 # print('valid')
 valid_X,valid_y = find_and_flip(valid_X,valid_y,valid_meta,dataset=dataset)
 # np.save('/user/work/al18709/tc_data_%s_flipped_40/valid_X.npy' % dataset,valid_X)
