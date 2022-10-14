@@ -1,4 +1,0 @@
-the second time i've had to write this down.
-
-
-conda create --prefix "/user/work/al18709/.conda/envs/jungle" python=3.7 
