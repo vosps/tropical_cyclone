@@ -97,6 +97,10 @@ pred_land = accumulated_ds_pred['precipitation'].values.copy()
 real_land = accumulated_ds['precipitation'].values.copy()
 pred_land[~land] = 0
 real_land[~land] = 0
+pred_ocean = accumulated_ds_pred['precipitation'].values.copy()
+real_ocean = accumulated_ds['precipitation'].values.copy()
+pred_ocean[land] = 0
+real_ocean[land] = 0
 # plot_accumulated(pred_land[:,:,1],accumulated_ds_pred['lat'].values,accumulated_ds_pred['lon'].values,None,vmin=0,vmax=100,levels = levels,plot='save',centre_lats=centre_lats,centre_lons=centre_lons,intensity=intensity)
 print(pred_land.shape)
 
@@ -113,8 +117,10 @@ ax.invert_yaxis()
 plt.savefig('storm_real_%s.png' % storm)
 crps = calculate_crps(accumulated_ds.precipitation.values,accumulated_ds_pred.precipitation.values)
 crps_land = calculate_crps(real_land,pred_land)
+crps_ocean = calculate_crps(real_ocean,pred_ocean)
 mean_crps = crps.mean()
 mean_crps_land = crps_land.mean()
+mean_crps_ocean = crps_ocean.mean()
 
 
 total_basin_rain_real = np.sum(real_land)
@@ -125,6 +131,9 @@ total_basin_rain_pred = np.sum(np.mean(pred_land,axis=-1))
 
 normalised_crps_land = mean_crps_land/total_basin_rain_pred
 normalised_crps = mean_crps/(np.sum(np.mean(accumulated_ds_pred['precipitation'].values,axis=-1)))
+
+new_norm_crps_land = 
+new_norm_crps_ocean =  
 
 print('crps',mean_crps)
 print('land crps',mean_crps_land)

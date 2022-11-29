@@ -13,14 +13,15 @@ import cdsapi
 import subprocess
 # import utils 
 
-"""
+
 regrid = 'True'
-variable = 'u'
+variable = 'q'
 level = '200'
-variable_name = 'u_component_of_wind'
+level = '925'
+variable_name = 'specific_humidity'
 
 # change dataset depending on single or pressure levels
-dataset = 'reanalysis-era5-single-levels'
+# dataset = 'reanalysis-era5-single-levels'
 dataset = 'reanalysis-era5-pressure-levels'
 
 outdir = '/bp1store/geog-tropical/data/ERA-5/hour'
@@ -78,7 +79,7 @@ for yrmonth in yrmonths:
 				'product_type': 'reanalysis',
 				'format': 'netcdf',
 				'variable': variable_name,
-				# 'pressure_level': level,
+				'pressure_level': level,
 				'year': year,
 				'month': mon,
 				'day': [
@@ -113,7 +114,11 @@ for yrmonth in yrmonths:
 	
 	# save as above and then regrid to 1 degree resolution
 	else:
-		ftas = os.path.join(outdir,variable,level,'ERA5_'+variable+'_3hourly_1deg_'+year+mon+'.nc') # 1 deg res
+		
+		if len(level) == 0:
+			ftas = os.path.join(outdir,variable,'ERA5_'+variable+'_3hourly_1deg_'+year+mon+'.nc')
+		else:
+			ftas = os.path.join(outdir,variable,level,'ERA5_'+variable+'_3hourly_1deg_'+year+mon+'.nc') # 1 deg res
 		cdo_cmd = ['cdo','remapbil,r360x180',tmpfile,ftas]
 		print(' '.join(cdo_cmd))
 		ret = subprocess.call(cdo_cmd)
@@ -123,8 +128,8 @@ for yrmonth in yrmonths:
 	# delete tmpfile
 	os.remove(tmpfile)
 	print('Finished')
-"""
 
+exit()
 c = cdsapi.Client()
 directory = '/bp1store/geog-tropical/data/ERA-5/hour/precipitation/'
 request = {

@@ -8,27 +8,24 @@ to : /user/home/al18709/work/era5/specific_humidity
 
 # import modules
 import glob
-# import pandas as pd
-# from netCDF4 import Dataset
-# import numpy as np
-# import xarray as xr
 import subprocess
-# import os
 
 def generate_yrmonths():
-	years = range(2017,2022)
+	years = range(1979,2022)
 	months = ['01','02','03','04','05','06','07','08','09','10','11','12']
 	yrmonths = [ int("%s%s" % (year,month)) for year in years for month in months]
 	return yrmonths
 
 # generate year months
 year_months = generate_yrmonths()
+variable_path = 'q/925'
+variable_name = 'q'
 
 # generate list of filepaths
-filepaths_era = ['/bp1store/geog-tropical/data/ERA-5/hour/specific_humidity/ERA5_q_3hourly_1deg_%s.nc' % ym for ym in year_months]
+filepaths_era = ['/bp1store/geog-tropical/data/ERA-5/hour/{variable_path}/ERA5_{variable_name}_3hourly_1deg_%s.nc' % ym for ym in year_months]
 # filepaths_tmp = ['/user/home/al18709/work/era5/specific_humidity/ERA5_q_3hourly_1deg_%s.nc' % ym for ym in year_months]
-obases_day = ['/bp1store/geog-tropical/data/ERA-5/hour/specific_humidity/day/ERA5_q_3hourly_1deg_%s' % ym for ym in year_months]
-obases_hour = ['/bp1store/geog-tropical/data/ERA-5/hour/specific_humidity/hour/ERA5_q_3hourly_1deg_%s' % ym for ym in year_months]
+obases_day = ['/bp1store/geog-tropical/data/ERA-5/hour/{variable_path}}/day/ERA5_{variable_name}_3hourly_1deg_%s' % ym for ym in year_months]
+obases_hour = ['/bp1store/geog-tropical/data/ERA-5/hour/{variable_path}}/hour/ERA5_{variable_name}_3hourly_1deg_%s' % ym for ym in year_months]
 print(filepaths_era)
 
 # dates, datasets = zip(*ds.resample(time='1D').mean('time').groupby('time'))
@@ -50,8 +47,9 @@ for i,fp in enumerate(filepaths_era):
 	if not ret==0:
 		raise Exception('Error with cdo command')
 
-	for fp2 in glob.glob('/bp1store/geog-tropical/data/ERA-5/hour/specific_humidity/day/*.nc'):
-		obase = '/bp1store/geog-tropical/data/ERA-5/hour/specific_humidity/hour/' + fp2[-31:-2]
+	for fp2 in glob.glob('/bp1store/geog-tropical/data/ERA-5/hour/{variable_path}}/day/*.nc'):
+		index = -
+		obase = '/bp1store/geog-tropical/data/ERA-5/hour/{variable_path}}/hour/' + fp2[-31:-2]
 		# obase = obases_hour[i] TODO: define this to include day label
 		cdo_cmd = ['cdo','splithour',fp2,obase] # normal resolution
 		print(' '.join(cdo_cmd))

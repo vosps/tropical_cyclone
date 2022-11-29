@@ -36,3 +36,31 @@ def make_cmap(high_vals=False):
 	precip_cmap = LinearSegmentedColormap.from_list('tc_colours',tc_colours,N=N) #increasing N makes it smoother
 	precip_norm = matplotlib.colors.BoundaryNorm(precip_clevs, precip_cmap.N)
 	return precip_cmap,precip_norm
+
+
+def make_anomaly_cmap(high_vals=False):
+	precip_clevs = [-20,-15,-10,-5,0,5,10,15,20]
+	
+	precip_cmap = matplotlib.colors.ListedColormap(metpy.plots.ctables.colortables["precipitation"][:len(precip_clevs)-1], 'precipitation')
+	precip_norm = matplotlib.colors.BoundaryNorm(precip_clevs, precip_cmap.N)
+
+	tc_colours = [	(140/255, 112/255, 102/255),
+					(171/255, 118/255, 99/255), # no rain
+					(196/255, 160/255, 134/255),
+					(228/255, 211/255, 187/255),
+					
+					(241/255, 238/255, 241/255), #0
+					
+					(155/255, 208/255, 209/255),
+					(0/255, 121/255, 162/255),
+					(0/255, 81/255, 162/255),
+					(1/255, 53/255, 105/255)
+				
+	]
+	if high_vals == False:
+		N = 16
+	else:
+		N=16
+	precip_cmap = LinearSegmentedColormap.from_list('tc_colours',tc_colours,N=N) #increasing N makes it smoother
+	precip_norm = matplotlib.colors.BoundaryNorm(precip_clevs, precip_cmap.N)
+	return precip_cmap,precip_norm
