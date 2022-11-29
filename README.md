@@ -1,8 +1,12 @@
 # Tropical Cyclone Downscaling
 
-This is a test
+This repo contains code for the U-NET, VAEGAN and WGAN all used to downscale tropical cyclone rainfall from 100 km resolution to 10 km resolution. Trained models are also included.
 
-## CGAN model
+## Input Data
+
+This version of the models require input data to be in 100 km resolution arrays of shape (nstorms,nlats,nlons) centred around the tropical cyclone.
+
+## WGAN model
 
 Running the code
 
@@ -66,7 +70,6 @@ Necessary arguments:
 - --model_number    model iteration you want to use to predict
 
 Optional arguments:
-- --predict_year	    year of data to predict on (2019/2020)
 - --num_predictions   number of different input images to predict on
 - --num_samples	    number of predictions to draw from ensemble
 		    N.B. if you run mode == 'det' we have hardcoded this
