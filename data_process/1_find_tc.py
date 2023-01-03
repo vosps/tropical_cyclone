@@ -11,6 +11,15 @@ import glob
 import pandas as pd
 # from netCDF4 import Dataset
 import numpy as np
+import sys
+
+variable = sys.argv[1]
+print('variable: ', variable)
+if '/' in variable:
+	var = variable.split('/')[0]
+else: 
+	var = variable
+
 
 # open csv file
 ibtracks = pd.read_csv('/user/work/al18709/ibtracks/ibtracs.ALL.list.v04r00.csv',
@@ -81,7 +90,9 @@ time_points = [str(h) + '5959' for h in hours]
 filepaths_imerg = ['/bp1store/geog-tropical/data/Obs/IMERG/half_hourly/final/3B-HHR.MS.MRG.3IMERG.%s*%s*.HDF5' % (ymd,h) for ymd,h in zip(year_month_day,time_points)]
 filepaths_mswep = ['/bp1store/geog-tropical/data/Obs/MSWEP/3hourly_invertlat/%s.%s.nc' % (yd,h) for yd,h in zip(year_day,hours_mswep)]
 filepaths_era5 = ['/bp1store/geog-tropical/data/ERA-5/hour/precipitation_invertlat_em/ERA5_precipitation_3hrly_%s.nc' % ym for ym in year_month]
-# filepaths_q = ['/user/home/al18709/work/era5/specific_humidity/ERA5_q_3hourly_1deg_%s.h' % ym for ym in year_months]
+filepaths_var = [f'/bp1store/geog-tropical/data/ERA-5/hour/{variable}_invertlat/ERA5_{var}_3hourly_1deg_{ym}.nc' for ym in year_month]
+
+print(filepaths_var)
 
 
 # generate lat + lon for centroid of TC
@@ -99,7 +110,8 @@ hours_era5[hours_era5 == 24] = '00'
 tc_files = pd.DataFrame({
 						 'filepath_imerg' : filepaths_imerg, 
 						 'filepath_mswep' : filepaths_mswep, 
-						 'filepath_era5' : filepaths_era5, 
+						 'filepath_era5' : filepaths_era5,
+						 'filepath_var' : filepaths_var,
 						 'sid' : sids, 
 						 'lat' : lat, 
 						 'lon' : lon,
@@ -120,6 +132,7 @@ tc_files.to_csv('/user/work/al18709/ibtracks/tc_files.csv')
 # tc_files.to_csv('/user/work/al18709/ibtracks/tc_files_all.csv')
 print(tc_files['filepath_imerg'][86])
 print(tc_files['filepath_mswep'][86])
+print(tc_files['filepath_var'][86])
 print(tc_files.shape)
 
 

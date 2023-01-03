@@ -27,6 +27,7 @@ from itertools import groupby
 import re
 from numpy.random import default_rng
 import seaborn as sns
+import sys
 sns.set_style("white")
 
 def get_max_rain(tcs,dataset='imerg'):
@@ -63,7 +64,7 @@ def create_set(tcs,dataset='imerg',resolution=100):
 	set_y = np.zeros((1,100,100))
 	if resolution == 40:
 		set_X = np.zeros((1,40,40))
-	elif dataset == 'mswep':
+	elif dataset == 'mswep'or dataset == 'var':
 		set_X = np.zeros((1,10,10))
 	elif (dataset == 'era5') and (resolution == 40):
 		set_X = np.zeros((1,40,40))
@@ -75,22 +76,30 @@ def create_set(tcs,dataset='imerg',resolution=100):
 
 	# loop through each tc
 	for i,tc in enumerate(tcs):
-		if glob.glob('/user/work/al18709/tc_Xy/y_%s.npy' % tc) == []: # TODO: this directory doesn't have much in it
+		if (glob.glob('/user/work/al18709/tc_Xy/y_%s.npy' % tc) == []) and (dataset != 'var'): # TODO: this directory doesn't have much in it
 			continue
 		if resolution == 40:
 			y = np.load('/user/work/al18709/tc_Xy_40/y_%s.npy' % tc,allow_pickle = True)
 			X = np.load('/user/work/al18709/tc_Xy_40/X_%s.npy' % tc,allow_pickle = True)
+			meta = pd.read_csv('/user/work/al18709/tc_Xy/meta_%s.csv' % tc)
 		elif dataset == 'mswep':
 			y = np.load('/user/work/al18709/tc_Xy/y_%s.npy' % tc,allow_pickle = True)
 			X = np.load('/user/work/al18709/tc_Xy/X_%s.npy' % tc,allow_pickle = True)
+			meta = pd.read_csv('/user/work/al18709/tc_Xy/meta_%s.csv' % tc)
 		elif (dataset == 'era5') and (resolution == 100):
 			y = np.load('/user/work/al18709/tc_Xy_%s_10/y_%s.npy' % (dataset,tc),allow_pickle = True)
 			X = np.load('/user/work/al18709/tc_Xy_%s_10/X_%s.npy' % (dataset,tc),allow_pickle = True)
+			meta = pd.read_csv('/user/work/al18709/tc_Xy/meta_%s.csv' % tc)
+		elif dataset == 'var':
+			X = np.load('/user/work/al18709/tc_Xy_%s/X_%s.npy' % (dataset,tc),allow_pickle = True)
+			y = set_y = np.zeros((X.shape[0],100,100))
+			meta = pd.read_csv('/user/work/al18709/tc_Xy_var/meta_%s.csv' % tc)
 		else:
 			y = np.load('/user/work/al18709/tc_Xy_%s_40/y_%s.npy' % (dataset,tc),allow_pickle = True)
 			X = np.load('/user/work/al18709/tc_Xy_%s_40/X_%s.npy' % (dataset,tc),allow_pickle = True)
-		meta = pd.read_csv('/user/work/al18709/tc_Xy/meta_%s.csv' % tc)
+		meta2 = pd.read_csv('/user/work/al18709/tc_Xy/meta_%s.csv' % tc) # TODO: make sure this is up to date
 		print(meta)
+		print(meta2)
 		print(set_X.shape)
 		print(X.shape)
 		print(set_y.shape)
@@ -99,43 +108,55 @@ def create_set(tcs,dataset='imerg',resolution=100):
 		set_y = np.vstack((set_y,y))
 		set_meta = set_meta.append(meta)
 	print(set_meta)
+	set_meta = set_meta.reset_index(drop=True)
 	return set_X[1:,:,:],set_y[1:,:,:],set_meta
 
 # define which dataset to look at
-dataset = 'mswep'
-# dataset = 'mswep_extend'
-dataset = 'era5'
+# dataset = 'mswep'
+# # dataset = 'mswep_extend'
+# dataset = 'era5'
+# dataset = 'var'
+
+variable = sys.argv[1]
+print('variable: ', variable)
+if '/' in variable:
+	dataset = 'var'
+elif variable in ['mswep','era5']:
+	dataset = variable
+else: 
+	dataset = 'var'
 resolution = 100
+# order sets based on precipitation data, then index other variables to be consistent
 # resolution = 40
 
-# generate list of sids
-tc_dir = '/user/work/al18709/tropical_cyclones/%s/*.nc' % dataset
+# generate list of sids and all their timesteps?
+if dataset != 'var':
+	tc_dir = '/user/work/al18709/tropical_cyclones/%s/*.nc' % dataset
+else:
+	tc_dir = '/user/work/al18709/tropical_cyclones/mswep/*.nc'
 filepaths = glob.glob(tc_dir)
 print('number of filepaths = ',len(filepaths))
 
-
-
 # group by tc sid number
-if dataset == 'mswep':
+if dataset == 'mswep' or dataset == 'var':
 	regex = r"/user/work/al18709/tropical_cyclones/mswep/.+?_(.+?)_.*?.nc"
 elif dataset == 'mswep_extend':
 	regex = r"/user/work/al18709/tropical_cyclones/mswep_extend/.+?_(.+?)_.*?.nc"
 elif dataset == 'era5':
 	regex = r"/user/work/al18709/tropical_cyclones/era5/.+?_(.+?)_.*?.nc"
+
 keyf = lambda text: (re.findall(regex, text)+ [text])[0]
 sids = [gr for gr, items in groupby(sorted(filepaths), key=keyf)]
 print('number of sids = ',len(sids))
 # pick random 
-
+print('sids are: ',sids)
 # find most extreme tcs
 tcs = []
 max_rains = []
 
-
-
 # loop through each tc
 for tc in sids:
-	if dataset == 'mswep':
+	if dataset == 'mswep' or dataset == 'var':
 		fp = '/user/work/al18709/tc_Xy/X_%s.npy' % tc
 	elif dataset == 'mswep_extend':
 		fp = '/user/work/al18709/tc_Xy_mswep_extend/X_%s.npy' % tc
@@ -211,6 +232,44 @@ test_X,test_y,test_meta = create_set(test_tcs,dataset=dataset,resolution=resolut
 extreme_test_X,extreme_test_y,extreme_test_meta = create_set(extreme_tcs_test,dataset=dataset,resolution=resolution)
 extreme_valid_X,extreme_valid_y,extreme_valid_meta = create_set(extreme_tcs_valid,dataset=dataset,resolution=resolution)
 
+
+def remove_mismatch(X,meta,dset):
+	idx = []
+	# mswep_X = np.load('/user/work/al18709/tc_Xy/%s_X.npy' % set)
+	mswep_meta = pd.read_csv('/user/work/al18709/tc_data_mswep/%s_meta.csv' % dset)
+	mswep_meta = mswep_meta.loc[:, ~mswep_meta.columns.str.contains('^Unnamed')]
+	meta = meta.loc[:, ~meta.columns.str.contains('^Unnamed')]
+	print('meta length',meta)
+	print('mswep meta length',mswep_meta)
+	var_lats = meta.centre_lat
+	mswep_lats = mswep_meta.centre_lat
+	var_lons = meta.centre_lon
+	mswep_lons = mswep_meta.centre_lon
+
+	overlap_lats = var_lats.isin(mswep_lats)
+	overlap_lons = var_lons.isin(mswep_lons)
+	overlap = ~(overlap_lons | overlap_lats)
+
+	idx = overlap[overlap].index
+	
+	
+	meta = meta.drop(idx)
+	X = np.delete(X,idx,axis=0)
+
+	print('index is: ',idx)
+
+	return X,meta
+
+
+# remove any mismatching rows
+if dataset == 'var':
+	valid_X,valid_meta = remove_mismatch(valid_X,valid_meta,'valid')
+	train_X,train_meta = remove_mismatch(train_X,train_meta,'train')
+	test_X,test_meta = remove_mismatch(test_X,test_meta,'test')
+	extreme_test_X,extreme_test_meta = remove_mismatch(extreme_test_X,extreme_test_meta,'extreme_test')
+	extreme_valid_X,extreme_valid_meta =remove_mismatch(extreme_valid_X,extreme_valid_meta,'extreme_valid')
+
+
 # print shapes
 print(valid_X.shape)
 print(valid_y.shape)
@@ -223,6 +282,8 @@ print(extreme_test_X.shape)
 print(extreme_test_y.shape)
 print(extreme_valid_X.shape)
 print(extreme_valid_y.shape)
+
+
 # exit()
 if (resolution == 100) and (dataset=='era5'):
 	print('saving in correct place')
@@ -257,6 +318,17 @@ elif (resolution == 40) or (dataset=='era5'):
 	np.save('/user/work/al18709/tc_data_%s_40/extreme_valid_X.npy' % dataset,extreme_valid_X)
 	np.save('/user/work/al18709/tc_data_%s_40/extreme_valid_y.npy' % dataset,extreme_valid_y)
 	extreme_valid_meta.to_csv('/user/work/al18709/tc_data_%s_40/extreme_valid_meta.csv' % dataset)
+elif dataset == 'var':
+	np.save('/user/work/al18709/tc_data_%s/valid_X.npy' % dataset,valid_X)
+	valid_meta.to_csv('/user/work/al18709/tc_data_%s/valid_meta.csv' % dataset)
+	np.save('/user/work/al18709/tc_data_%s/train_X.npy' % dataset,train_X)
+	train_meta.to_csv('/user/work/al18709/tc_data_%s/train_meta.csv' % dataset)
+	np.save('/user/work/al18709/tc_data_%s/test_X.npy' % dataset,test_X)
+	test_meta.to_csv('/user/work/al18709/tc_data_%s/test_meta.csv' % dataset)
+	np.save('/user/work/al18709/tc_data_%s/extreme_test_X.npy' % dataset,extreme_test_X)
+	extreme_test_meta.to_csv('/user/work/al18709/tc_data_%s/extreme_test_meta.csv' % dataset)
+	np.save('/user/work/al18709/tc_data_%s/extreme_valid_X.npy' % dataset,extreme_valid_X)
+	extreme_valid_meta.to_csv('/user/work/al18709/tc_data_%s/extreme_valid_meta.csv' % dataset)
 else:
 	np.save('/user/work/al18709/tc_data_%s/valid_X.npy' % dataset,valid_X)
 	np.save('/user/work/al18709/tc_data_%s/valid_y.npy' % dataset,valid_y)

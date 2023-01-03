@@ -17,6 +17,7 @@ import xarray as xr
 import numpy as np
 import xesmf as xe
 import pandas as pd
+import sys
 from itertools import groupby
 from multiprocessing import Pool
 import seaborn as sns
@@ -51,6 +52,8 @@ def save_Xy(grouped_tcs):
 		regex = r"/user/work/al18709/tropical_cyclones/era5_10/.+?_(.+?)_.*?_idx-(.+?)_.*?_centrelat-(.+?)_centrelon-(.+?).nc"
 	elif dataset == 'mswep_extend':
 		regex = r"/user/work/al18709/tropical_cyclones/mswep_extend/.+?_(.+?)_.*?_centrelat-(.+?)_centrelon-(.+?).nc"
+	elif dataset == 'var':
+		regex = r"/user/work/al18709/tropical_cyclones/var/.+?_(.+?)_.*?_centrelat-(.+?)_centrelon-(.+?).nc"
 	
 	# regex = r"/user/work/al18709/tropical_cyclones/.+?_(.+?)_.*?.nc"
 	resolution = 10
@@ -105,7 +108,7 @@ def save_Xy(grouped_tcs):
 		# loop though tc filepaths
 		for i,filepath in enumerate(tc):
 			print(i,end='\r')
-			
+			# print('filepath = ', filepath)
 			ds = xr.open_dataset(filepath)
 			if dataset == 'era5':
 				idx = re.match(regex,tc[i]).groups()[1]
@@ -129,11 +132,18 @@ def save_Xy(grouped_tcs):
 
 			# 	mswep_array = xr.open_dataset(mswep_fp).precipitation.values
 			
-			array = ds.precipitation.values
+			if dataset == 'var':
+				var = list(ds.variables)[-1]
+				array = ds[var].values
+			else:
+				array = ds.precipitation.values
 
 			if (dataset == 'era5'):
 				# print('the limit is 40')
 				limit = 40
+			elif dataset == 'var':
+				# we dont' need y for variables
+				limit = 10
 			else:
 				# print('the limit is 100')
 				limit = 100
@@ -151,8 +161,12 @@ def save_Xy(grouped_tcs):
 			# 	meta_lons.append(centre_lon)
 			# 	meta_sids.append(str(sid))
 			# else:
-			tc_X[i,:,:] = regridder(array)
-			tc_y[i,:,:] = array
+			if dataset == 'var':
+				# variables already in low resolution
+				tc_X[i,:,:] = array
+			else:
+				tc_X[i,:,:] = regridder(array)
+				tc_y[i,:,:] = array
 			meta_lats[i] = centre_lat
 			meta_lons[i] = centre_lon
 			meta_sids.append(str(sid))
@@ -174,10 +188,17 @@ def save_Xy(grouped_tcs):
 		elif dataset == 'mswep_extend':
 			print('saving to mswep extend...')
 			path = '/user/work/al18709/tc_Xy_extend'
+		elif dataset == 'var':
+			print('saving to var...')
+			path = '/user/work/al18709/tc_Xy_var'
 		print(tc_X.shape)
-		np.save('%s/X_%s.npy' % (path,sid),tc_X)
-		np.save('%s/y_%s.npy' % (path,sid),tc_y)
-		meta.to_csv('%s/meta_%s.csv' % (path,sid))
+		if dataset == 'var':
+			np.save('%s/X_%s.npy' % (path,sid),tc_X)
+			meta.to_csv('%s/meta_%s.csv' % (path,sid))
+		else:
+			np.save('%s/X_%s.npy' % (path,sid),tc_X)
+			np.save('%s/y_%s.npy' % (path,sid),tc_y)
+			meta.to_csv('%s/meta_%s.csv' % (path,sid))
 		print('saved!')
 
 def save_Xy_era5(grouped_tcs):
@@ -264,8 +285,17 @@ if __name__ == '__main__':
 
 	# set up
 	n_processes = 128
-	dataset = 'mswep'
-	dataset = 'era5'
+	variable = sys.argv[1]
+	print('variable: ', variable)
+	if '/' in variable:
+		dataset = 'var'
+	elif variable in ['mswep','era5']:
+		dataset = variable
+	else: 
+		dataset = 'var'
+	# dataset = 'mswep'
+	# dataset = 'era5'
+	# dataset = 'var'
 	# dataset = 'imerg'
 	# dataset = 'mswep_extend'
 	resolution = 10
@@ -287,6 +317,8 @@ if __name__ == '__main__':
 		regex = r"/user/work/al18709/tropical_cyclones/era5_10/.+?_(.+?)_.*?.nc"
 	elif dataset == 'mswep_extend':
 		regex = r"/user/work/al18709/tropical_cyclones/mswep_extend/.+?_(.+?)_.*?.nc"
+	elif dataset == 'var':
+		regex = r"/user/work/al18709/tropical_cyclones/var/.+?_(.+?)_.*?.nc"
 	keyf = lambda text: (re.findall(regex, text)+ [text])[0]
 	grouped_tcs = [list(items) for gr, items in groupby(sorted(filepaths), key=keyf)]
 	print('grouped!')
@@ -308,6 +340,8 @@ if __name__ == '__main__':
 	elif (dataset == 'era5') and (resolution == 40):
 		pool_results = p.map(process_era5, tc_split)
 	elif dataset == 'mswep_extend':
+		pool_results = p.map(process, tc_split)
+	elif dataset == 'var':
 		pool_results = p.map(process, tc_split)
 	print('results pooled')
 	p.close()
