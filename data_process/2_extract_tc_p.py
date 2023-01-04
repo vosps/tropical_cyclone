@@ -204,7 +204,7 @@ def process_apply_era5(x):
 
 	# remove filepaths which relate to timestamps we don't have in ERA5
 	print('the hour is: ',str(x.loc['hour']))
-	if str(x.loc['hour']) not in ['0','3','6','9','12','15','18','21']:
+	if str(x.loc['hour']) not in ['00','3','6','9','12','15','18','21']:
 		print(x.loc['hour'])
 		result = 0
 

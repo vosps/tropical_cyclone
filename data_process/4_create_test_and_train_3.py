@@ -232,42 +232,65 @@ test_X,test_y,test_meta = create_set(test_tcs,dataset=dataset,resolution=resolut
 extreme_test_X,extreme_test_y,extreme_test_meta = create_set(extreme_tcs_test,dataset=dataset,resolution=resolution)
 extreme_valid_X,extreme_valid_y,extreme_valid_meta = create_set(extreme_tcs_valid,dataset=dataset,resolution=resolution)
 
+def compare(df1,df2,col='Exist'):
+		""" add column to df1 and if row exists in df2 then put true"""
+		df = pd.merge(df1, df2, on=['sid','centre_lat','centre_lon'], how='left', indicator=col)
+		return df
 
-def remove_mismatch(X,meta,dset):
-	idx = []
+def remove_mismatch(X,y,meta,dset,mswep=False):
 	# mswep_X = np.load('/user/work/al18709/tc_Xy/%s_X.npy' % set)
-	mswep_meta = pd.read_csv('/user/work/al18709/tc_data_mswep/%s_meta.csv' % dset)
-	mswep_meta = mswep_meta.loc[:, ~mswep_meta.columns.str.contains('^Unnamed')]
+	if mswep == True:
+		mswep_meta = meta
+
+	else:
+		mswep_meta = pd.read_csv('/user/work/al18709/tc_data_mswep/%s_meta.csv' % dset)
+	# removed unnamed columns
+	meta_mswep = mswep_meta.loc[:, ~mswep_meta.columns.str.contains('^Unnamed')]
 	meta = meta.loc[:, ~meta.columns.str.contains('^Unnamed')]
 	print('meta length',meta)
 	print('mswep meta length',mswep_meta)
-	var_lats = meta.centre_lat
-	mswep_lats = mswep_meta.centre_lat
-	var_lons = meta.centre_lon
-	mswep_lons = mswep_meta.centre_lon
 
-	overlap_lats = var_lats.isin(mswep_lats)
-	overlap_lons = var_lons.isin(mswep_lons)
-	overlap = ~(overlap_lons | overlap_lats)
+	# drop duplicate values from both for the merge to work
+	meta_mswep = meta_mswep[['sid','centre_lat','centre_lon']].round(4).drop_duplicates()
+	meta = meta[['sid','centre_lat','centre_lon']].round(4).drop_duplicates()
+	idx_drop_duplicates = meta.index
+	# cut down X so it alligns with meta
+	X = X[idx_drop_duplicates,:,:]
+	y = y[idx_drop_duplicates,:,:]
 
-	idx = overlap[overlap].index
-	
-	
-	meta = meta.drop(idx)
-	X = np.delete(X,idx,axis=0)
+	# merge meta and meta_mswep so that for every row in meta, we know if its in meta_mswep
+	df = compare(meta,meta_mswep)
 
-	print('index is: ',idx)
+	# meta and X need to match up exactly with meta_mswep
+	idx_intersection = df['Exist']=='both'
+	intersection = df[idx_intersection]
+	df2 = intersection.sort_values(by=['sid','centre_lat'], ascending = [True, True])
 
-	return X,meta
+	idx_sort = df2.index.to_list()
+	X = X[idx_sort,:,:]
+	y = y[idx_sort,:,:]
+	meta = df2.reset_index(drop=True)
+
+	return X,y,meta
+
 
 
 # remove any mismatching rows
-if dataset == 'var':
-	valid_X,valid_meta = remove_mismatch(valid_X,valid_meta,'valid')
-	train_X,train_meta = remove_mismatch(train_X,train_meta,'train')
-	test_X,test_meta = remove_mismatch(test_X,test_meta,'test')
-	extreme_test_X,extreme_test_meta = remove_mismatch(extreme_test_X,extreme_test_meta,'extreme_test')
-	extreme_valid_X,extreme_valid_meta =remove_mismatch(extreme_valid_X,extreme_valid_meta,'extreme_valid')
+if dataset == 'mswep':
+	mswep = True
+else:
+	mswep = False
+	valid_y = np.zeros((valid_X.shape[0],100,100))
+	train_y = np.zeros((train_X.shape[0],100,100))
+	test_y = np.zeros((test_X.shape[0],100,100))
+	extreme_test_y = np.zeros((extreme_test_X.shape[0],100,100))
+	extreme_valid_y = np.zeros((extreme_valid_X.shape[0],100,100))
+
+valid_X,valid_y,valid_meta = remove_mismatch(valid_X,valid_y,valid_meta,'valid',mswep=mswep)
+train_X,train_y,train_meta = remove_mismatch(train_X,train_y,train_meta,'train',mswep=mswep)
+test_X,test_y,test_meta = remove_mismatch(test_X,test_y,test_meta,'test',mswep=mswep)
+extreme_test_X,extreme_test_y,extreme_test_meta = remove_mismatch(extreme_test_X,extreme_test_y,extreme_test_meta,'extreme_test',mswep=mswep)
+extreme_valid_X,extreme_valid_X,extreme_valid_meta = remove_mismatch(extreme_valid_X,extreme_valid_y,extreme_valid_meta,'extreme_valid',mswep=mswep)
 
 
 # print shapes
