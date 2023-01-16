@@ -15,10 +15,10 @@ import subprocess
 
 
 regrid = 'True'
-variable = 'q'
-level = '200'
-level = '925'
-variable_name = 'specific_humidity'
+variable = 'v'
+level = '850'
+# level = '925'
+variable_name = 'v_component_of_wind'
 
 # change dataset depending on single or pressure levels
 # dataset = 'reanalysis-era5-single-levels'

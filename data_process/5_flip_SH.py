@@ -18,6 +18,7 @@ import glob
 from multiprocessing import Pool
 from itertools import groupby
 import re
+import sys
 # sns.set_style("white")
 
 def flip(tc):
@@ -44,15 +45,18 @@ def find_and_flip(X,y,meta,dataset='mswep'):
 	# in mswep they can be plotted correctly with the mswep lats and lons, but the raw data shows them flipped as mswep has descending latitudes
 	for i in nh_indices:
 		print(i,end='\r')
-		plot_tc(y[i],'normal')
+		# plot_tc(y[i],'normal')
 		
-		# era5 doesn't need to be flipped because it's already correct
-		if dataset == 'mswep':
+		# era5 doesn't need to be flipped because it's already correct, t doesn't need to flip X because it is high res (y)
+		if dataset in ['mswep','var']:
 			X_flipped = flip(X[i])
 			X[i] = X_flipped
 
-		y_flipped = flip(y[i])
-		y[i] = y_flipped
+		if dataset == 'var':
+			y_flipped = y
+		else:
+			y_flipped = flip(y[i])
+			y[i] = y_flipped
 
 	# flip the y values in the hr era5 dataset because they rotate differently
 	if (dataset == 'era5') or (dataset == 'era5_storm'):
@@ -67,13 +71,22 @@ def find_and_flip(X,y,meta,dataset='mswep'):
 	return X,y
 
 print('running script 5...')
-dataset = 'era5'
-dataset = 'era5_storm'
-# resolution = 40
+# dataset = 'era5'
+# dataset = 'era5_storm'
+variable = sys.argv[1]
+print('variable: ', variable)
+if '/' in variable:
+	dataset = 'var'
+	variable = variable.replace('/','-')
+elif variable in ['mswep','era5','t']:
+	dataset = variable
+else: 
+	dataset = 'var'
+
+print(variable)
+print(dataset)
 resolution = 100
-# dataset = 'mswep'
-# dataset = 'mswep_extend'
-# resolution = 100
+
 
 def save_flipped(grouped_sids):
 	# print(sid)
@@ -146,7 +159,7 @@ elif (dataset == 'era5') and (resolution == 100):
 	extreme_valid_y = np.load('/user/work/al18709/tc_data_%s_10/extreme_valid_y.npy' % dataset)
 	extreme_valid_meta = pd.read_csv('/user/work/al18709/tc_data_%s_10/extreme_valid_meta.csv' % dataset)
 
-elif  (dataset != 'era5') and (resolution == 100):
+elif  (dataset != 'era5') and (resolution == 100) and (dataset != 'var') and (dataset != 't'):
 	valid_X = np.load('/user/work/al18709/tc_data_%s/valid_X.npy' % dataset)
 	valid_y = np.load('/user/work/al18709/tc_data_%s/valid_y.npy' % dataset)
 	valid_meta = pd.read_csv('/user/work/al18709/tc_data_%s/valid_meta.csv' % dataset)
@@ -162,6 +175,41 @@ elif  (dataset != 'era5') and (resolution == 100):
 	extreme_valid_X = np.load('/user/work/al18709/tc_data_%s/extreme_valid_X.npy' % dataset)
 	extreme_valid_y = np.load('/user/work/al18709/tc_data_%s/extreme_valid_y.npy' % dataset)
 	extreme_valid_meta = pd.read_csv('/user/work/al18709/tc_data_%s/extreme_valid_meta.csv' % dataset)
+
+elif dataset == 'var':
+	valid_X = np.load('/user/work/al18709/tc_data_var/%s_valid_X.npy' % variable)
+	valid_y = np.zeros((1,1))
+	valid_meta = pd.read_csv('/user/work/al18709/tc_data_var/%s_valid_meta.csv' % variable)
+	train_X = np.load('/user/work/al18709/tc_data_var/%s_train_X.npy' % variable)
+	train_y = np.zeros((1,1))
+	train_meta = pd.read_csv('/user/work/al18709/tc_data_var/%s_train_meta.csv' % variable)
+	test_X = np.load('/user/work/al18709/tc_data_var/%s_test_X.npy' % variable)
+	test_y = np.zeros((1,1))
+	test_meta = pd.read_csv('/user/work/al18709/tc_data_var/%s_test_meta.csv' % variable)
+	extreme_test_X = np.load('/user/work/al18709/tc_data_var/%s_extreme_test_X.npy' % variable)
+	extreme_test_y = np.zeros((1,1))
+	extreme_test_meta = pd.read_csv('/user/work/al18709/tc_data_var/%s_extreme_test_meta.csv' % variable)
+	extreme_valid_X = np.load('/user/work/al18709/tc_data_var/%s_extreme_valid_X.npy' % variable)
+	extreme_valid_y = np.zeros((1,1))
+	extreme_valid_meta = pd.read_csv('/user/work/al18709/tc_data_var/%s_extreme_valid_meta.csv' % variable)
+
+elif dataset == 't':
+	valid_X = np.load('/user/work/al18709/tc_data_t/valid_X.npy')
+	valid_y = np.load('/user/work/al18709/tc_data_t/valid_y.npy')
+	valid_meta = pd.read_csv('/user/work/al18709/tc_data_t/valid_meta.csv')
+	train_X = np.load('/user/work/al18709/tc_data_t/train_X.npy')
+	train_y = np.load('/user/work/al18709/tc_data_t/train_y.npy')
+	train_meta = pd.read_csv('/user/work/al18709/tc_data_t/train_meta.csv')
+	test_X = np.load('/user/work/al18709/tc_data_t/test_X.npy')
+	test_y = np.load('/user/work/al18709/tc_data_t/test_y.npy')
+	test_meta = pd.read_csv('/user/work/al18709/tc_data_t/test_meta.csv')
+	extreme_test_X = np.load('/user/work/al18709/tc_data_t/extreme_test_X.npy')
+	extreme_test_y = np.load('/user/work/al18709/tc_data_t/extreme_test_y.npy')
+	extreme_test_meta = pd.read_csv('/user/work/al18709/tc_data_t/extreme_test_meta.csv')
+	extreme_valid_X = np.load('/user/work/al18709/tc_data_t/extreme_valid_X.npy')
+	extreme_valid_y = np.load('/user/work/al18709/tc_data_t/extreme_valid_y.npy')
+	extreme_valid_meta = pd.read_csv('/user/work/al18709/tc_data_t/extreme_valid_meta.csv')
+
 else:
 	valid_X = np.load('/user/work/al18709/tc_data_%s_40/valid_X.npy' % dataset)
 	valid_y = np.load('/user/work/al18709/tc_data_%s_40/valid_y.npy' % dataset)
@@ -184,52 +232,48 @@ if dataset == 'mswep_extend':
 
 if dataset == 'era5_storm':
 	exit()
-# print('valid')
+
+print('valid')
 valid_X,valid_y = find_and_flip(valid_X,valid_y,valid_meta,dataset=dataset)
-# np.save('/user/work/al18709/tc_data_%s_flipped_40/valid_X.npy' % dataset,valid_X)
-# np.save('/user/work/al18709/tc_data_%s_flipped_40/valid_y.npy' % dataset,valid_y)
 
-# print('train')
+
+print('train')
 train_X,train_y = find_and_flip(train_X,train_y,train_meta,dataset=dataset)
-# np.save('/user/work/al18709/tc_data_%s_flipped_40/train_X.npy' % dataset,train_X)
-# np.save('/user/work/al18709/tc_data_%s_flipped_40/train_y.npy' % dataset,train_y)
 
-# print('test')
+print('test')
 test_X,test_y = find_and_flip(test_X,test_y,test_meta,dataset=dataset)
-# # np.save('/user/work/al18709/tc_data_%s_flipped_40/test_X.npy' % dataset,test_X)
-# # np.save('/user/work/al18709/tc_data_%s_flipped_40/test_y.npy' % dataset,test_y)
-# np.save('/user/work/al18709/tc_data_flipped/test_X.npy',test_X)
-# np.save('/user/work/al18709/tc_data_flipped/test_y.npy',test_y)
 
-# print('extreme test')
-# print(extreme_test_X.shape)
-# print(extreme_test_y.shape)
+print('extreme_test')
 extreme_test_X,extreme_test_y = find_and_flip(extreme_test_X,extreme_test_y,extreme_test_meta,dataset=dataset)
-# np.save('/user/work/al18709/tc_data_%s_flipped_40/extreme_test_X.npy' % dataset,extreme_test_X)
-# np.save('/user/work/al18709/tc_data_%s_flipped_40/extreme_test_y.npy' % dataset,extreme_test_y)
-# print(extreme_test_X.shape)
-# print(extreme_test_y.shape)
-# np.save('/user/work/al18709/tc_data_flipped/extreme_test_X.npy',extreme_test_X)
-# np.save('/user/work/al18709/tc_data_flipped/extreme_test_y.npy',extreme_test_y)
 
-# print('extreme valid')
+
+print('extreme valid')
 extreme_valid_X,extreme_valid_y = find_and_flip(extreme_valid_X,extreme_valid_y,extreme_valid_meta,dataset=dataset)
-# np.save('/user/work/al18709/tc_data_%s_flipped_40/extreme_valid_X.npy' % dataset,extreme_valid_X)
-# np.save('/user/work/al18709/tc_data_%s_flipped_40/extreme_valid_y.npy' % dataset,extreme_valid_y)
 
 
 
-if resolution == 100:
-	np.save('/user/work/al18709/tc_data_%s_flipped_10/valid_X.npy' % dataset,valid_X)
-	np.save('/user/work/al18709/tc_data_%s_flipped_10/valid_y.npy' % dataset,valid_y)
-	np.save('/user/work/al18709/tc_data_%s_flipped_10/train_X.npy' % dataset,train_X)
-	np.save('/user/work/al18709/tc_data_%s_flipped_10/train_y.npy' % dataset,train_y)
-	np.save('/user/work/al18709/tc_data_%s_flipped_10/test_X.npy' % dataset,test_X)
-	np.save('/user/work/al18709/tc_data_%s_flipped_10/test_y.npy' % dataset,test_y)
-	np.save('/user/work/al18709/tc_data_%s_flipped_10/extreme_test_X.npy' % dataset,extreme_test_X)
-	np.save('/user/work/al18709/tc_data_%s_flipped_10/extreme_test_y.npy' % dataset,extreme_test_y)
-	np.save('/user/work/al18709/tc_data_%s_flipped_10/extreme_valid_X.npy' % dataset,extreme_valid_X)
-	np.save('/user/work/al18709/tc_data_%s_flipped_10/extreme_valid_y.npy' % dataset,extreme_valid_y)
+
+if resolution == 100 and dataset == 'mswep':
+	# np.save('/user/work/al18709/tc_data_%s_flipped_10/valid_X.npy' % dataset,valid_X)
+	# np.save('/user/work/al18709/tc_data_%s_flipped_10/valid_y.npy' % dataset,valid_y)
+	# np.save('/user/work/al18709/tc_data_%s_flipped_10/train_X.npy' % dataset,train_X)
+	# np.save('/user/work/al18709/tc_data_%s_flipped_10/train_y.npy' % dataset,train_y)
+	# np.save('/user/work/al18709/tc_data_%s_flipped_10/test_X.npy' % dataset,test_X)
+	# np.save('/user/work/al18709/tc_data_%s_flipped_10/test_y.npy' % dataset,test_y)
+	# np.save('/user/work/al18709/tc_data_%s_flipped_10/extreme_test_X.npy' % dataset,extreme_test_X)
+	# np.save('/user/work/al18709/tc_data_%s_flipped_10/extreme_test_y.npy' % dataset,extreme_test_y)
+	# np.save('/user/work/al18709/tc_data_%s_flipped_10/extreme_valid_X.npy' % dataset,extreme_valid_X)
+	# np.save('/user/work/al18709/tc_data_%s_flipped_10/extreme_valid_y.npy' % dataset,extreme_valid_y)
+	np.save('/user/work/al18709/tc_data_mswep_flipped/%s_valid_X.npy' % dataset,valid_X)
+	np.save('/user/work/al18709/tc_data_mswep_flipped/%s_valid_y.npy' % dataset,valid_y)
+	np.save('/user/work/al18709/tc_data_mswep_flipped/%s_train_X.npy' % dataset,train_X)
+	np.save('/user/work/al18709/tc_data_mswep_flipped/%s_train_y.npy' % dataset,train_y)
+	np.save('/user/work/al18709/tc_data_mswep_flipped/%s_test_X.npy' % dataset,test_X)
+	np.save('/user/work/al18709/tc_data_mswep_flipped/%s_test_y.npy' % dataset,test_y)
+	np.save('/user/work/al18709/tc_data_mswep_flipped/%s_extreme_test_X.npy' % dataset,extreme_test_X)
+	np.save('/user/work/al18709/tc_data_mswep_flipped/%s_extreme_test_y.npy' % dataset,extreme_test_y)
+	np.save('/user/work/al18709/tc_data_mswep_flipped/%s_extreme_valid_X.npy' % dataset,extreme_valid_X)
+	np.save('/user/work/al18709/tc_data_mswep_flipped/%s_extreme_valid_y.npy' % dataset,extreme_valid_y)
 	# np.save('/user/work/al18709/tc_data_%s_flipped/valid_X.npy' % dataset,valid_X)
 	# np.save('/user/work/al18709/tc_data_%s_flipped/valid_y.npy' % dataset,valid_y)
 	# np.save('/user/work/al18709/tc_data_%s_flipped/train_X.npy' % dataset,train_X)
@@ -240,6 +284,31 @@ if resolution == 100:
 	# np.save('/user/work/al18709/tc_data_%s_flipped/extreme_test_y.npy' % dataset,extreme_test_y)
 	# np.save('/user/work/al18709/tc_data_%s_flipped/extreme_valid_X.npy' % dataset,extreme_valid_X)
 	# np.save('/user/work/al18709/tc_data_%s_flipped/extreme_valid_y.npy' % dataset,extreme_valid_y)
+elif dataset == 'var':
+	np.save('/user/work/al18709/tc_data_flipped_var/%s_valid_X.npy' % variable,valid_X)
+	np.save('/user/work/al18709/tc_data_flipped_var/%s_valid_y.npy' % variable,valid_y)
+	np.save('/user/work/al18709/tc_data_flipped_var/%s_train_X.npy' % variable,train_X)
+	np.save('/user/work/al18709/tc_data_flipped_var/%s_train_y.npy' % variable,train_y)
+	np.save('/user/work/al18709/tc_data_flipped_var/%s_test_X.npy' % variable,test_X)
+	np.save('/user/work/al18709/tc_data_flipped_var/%s_test_y.npy' % variable,test_y)
+	np.save('/user/work/al18709/tc_data_flipped_var/%s_extreme_test_X.npy' % variable,extreme_test_X)
+	np.save('/user/work/al18709/tc_data_flipped_var/%s_extreme_test_y.npy' % variable,extreme_test_y)
+	np.save('/user/work/al18709/tc_data_flipped_var/%s_extreme_valid_X.npy' % variable,extreme_valid_X)
+	np.save('/user/work/al18709/tc_data_flipped_var/%s_extreme_valid_y.npy' % variable,extreme_valid_y)
+
+elif dataset == 't':
+	np.save('/user/work/al18709/tc_data_flipped_t/valid_X.npy',valid_X)
+	np.save('/user/work/al18709/tc_data_flipped_t/valid_y.npy',valid_y)
+	np.save('/user/work/al18709/tc_data_flipped_t/train_X.npy',train_X)
+	np.save('/user/work/al18709/tc_data_flipped_t/train_y.npy',train_y)
+	np.save('/user/work/al18709/tc_data_flipped_t/test_X.npy',test_X)
+	np.save('/user/work/al18709/tc_data_flipped_t/test_y.npy',test_y)
+	np.save('/user/work/al18709/tc_data_flipped_t/extreme_test_X.npy',extreme_test_X)
+	np.save('/user/work/al18709/tc_data_flipped_t/extreme_test_y.npy',extreme_test_y)
+	np.save('/user/work/al18709/tc_data_flipped_t/extreme_valid_X.npy',extreme_valid_X)
+	np.save('/user/work/al18709/tc_data_flipped_t/extreme_valid_y.npy',extreme_valid_y)
+
+
 else:
 	np.save('/user/work/al18709/tc_data_%s_flipped_40/valid_X.npy' % dataset,valid_X)
 	np.save('/user/work/al18709/tc_data_%s_flipped_40/valid_y.npy' % dataset,valid_y)

@@ -54,7 +54,8 @@ def save_Xy(grouped_tcs):
 		regex = r"/user/work/al18709/tropical_cyclones/mswep_extend/.+?_(.+?)_.*?_centrelat-(.+?)_centrelon-(.+?).nc"
 	elif dataset == 'var':
 		regex = r"/user/work/al18709/tropical_cyclones/var/.+?_(.+?)_.*?_centrelat-(.+?)_centrelon-(.+?).nc"
-	
+	elif dataset == 't':
+		regex = r"/user/work/al18709/tropical_cyclones/topography/.+?_(.+?)_.*?_centrelat-(.+?)_centrelon-(.+?).nc"
 	# regex = r"/user/work/al18709/tropical_cyclones/.+?_(.+?)_.*?.nc"
 	resolution = 10
 	print('dataset is:', dataset)
@@ -147,7 +148,7 @@ def save_Xy(grouped_tcs):
 			else:
 				# print('the limit is 100')
 				limit = 100
-			print('array shape: ',array.shape)
+			# print('array shape: ',array.shape)
 			if array.shape != (limit,limit):
 				print('skipping')
 				continue
@@ -191,6 +192,7 @@ def save_Xy(grouped_tcs):
 		elif dataset == 'var':
 			print('saving to var...')
 			path = '/user/work/al18709/tc_Xy_var'
+
 		print(tc_X.shape)
 		if dataset == 'var':
 			np.save('%s/X_%s.npy' % (path,sid),tc_X)
@@ -270,7 +272,57 @@ def save_Xy_era5(grouped_tcs):
 		np.save('%s/y_%s.npy' % (path,sid),tc_y)
 		meta.to_csv('%s/meta_%s.csv' % (path,sid))
 		# print('saved!')
-	
+
+def save_Xy_topography(grouped_tcs):
+	"""
+	save X and y npy file for each tc
+	"""
+
+	# initial set up
+	regex = r"/user/work/al18709/tropical_cyclones/topography/.+?_(.+?)_.*?_centrelat-(.+?)_centrelon-(.+?).nc"
+	resolution = 10
+	print('dataset is:', dataset)
+	print('resolution is: ',resolution)
+
+	# loop through tcs and make an X and y array for each
+	for tc in grouped_tcs:
+		sid = re.match(regex,tc[0]).groups()[0]	
+		n_timesteps = len(tc)
+		tc_X = np.zeros((n_timesteps,10,10))
+		tc_y = np.zeros((n_timesteps,100,100))
+		meta_lats = np.zeros((n_timesteps))
+		meta_lons = np.zeros((n_timesteps))
+		meta_sids = []
+
+		# loop though tc filepaths
+		for i,filepath in enumerate(tc):
+			# print(i,end='\r')
+			# print('filepath = ', filepath)
+			ds = xr.open_dataset(filepath)
+			centre_lat = re.match(regex,tc[i]).groups()[1]
+			centre_lon = re.match(regex,tc[i]).groups()[2]
+			print('ds variables',ds.variables)
+			
+			array = ds.elevation.values
+			limit = 100
+			print('array shape: ',array.shape)
+			if array.shape != (limit,limit):
+				print('skipping')
+				continue
+
+			tc_y[i,:,:] = array
+			meta_lats[i] = centre_lat
+			meta_lons[i] = centre_lon
+			meta_sids.append(str(sid))
+
+		meta = pd.DataFrame({'sid' : meta_sids,'centre_lat' : meta_lats,'centre_lon' : meta_lons})
+		path = '/user/work/al18709/tc_Xy_topography'
+		np.save('%s/y_%s.npy' % (path,sid),tc_y)
+		meta.to_csv('%s/meta_%s.csv' % (path,sid))
+		print('saved!')
+
+
+
 def process(filepaths):
 	print('doing process...')
 	res = save_Xy(filepaths)
@@ -281,6 +333,11 @@ def process_era5(filepaths):
 	res = save_Xy_era5(filepaths)
 	return res
 
+def process_topography(filepaths):
+	print('doing topography process...')
+	res = save_Xy_topography(filepaths)
+	return res
+
 if __name__ == '__main__':
 
 	# set up
@@ -289,19 +346,18 @@ if __name__ == '__main__':
 	print('variable: ', variable)
 	if '/' in variable:
 		dataset = 'var'
-	elif variable in ['mswep','era5']:
+	elif variable in ['mswep','era5','t']:
 		dataset = variable
 	else: 
 		dataset = 'var'
-	# dataset = 'mswep'
-	# dataset = 'era5'
-	# dataset = 'var'
-	# dataset = 'imerg'
-	# dataset = 'mswep_extend'
+
 	resolution = 10
+	print(dataset)
 	
 	if dataset == 'era5':
 		tc_dir = '/user/work/al18709/tropical_cyclones/%s_10/*.nc' % dataset
+	elif dataset == 't':
+		tc_dir = '/user/work/al18709/tropical_cyclones/topography/*.nc'
 	else:
 		tc_dir = '/user/work/al18709/tropical_cyclones/%s/*.nc' % dataset
 	filepaths = glob.glob(tc_dir)
@@ -319,6 +375,8 @@ if __name__ == '__main__':
 		regex = r"/user/work/al18709/tropical_cyclones/mswep_extend/.+?_(.+?)_.*?.nc"
 	elif dataset == 'var':
 		regex = r"/user/work/al18709/tropical_cyclones/var/.+?_(.+?)_.*?.nc"
+	elif dataset == 't':
+		regex = r"/user/work/al18709/tropical_cyclones/topography/.+?_(.+?)_.*?.nc"
 	keyf = lambda text: (re.findall(regex, text)+ [text])[0]
 	grouped_tcs = [list(items) for gr, items in groupby(sorted(filepaths), key=keyf)]
 	print('grouped!')
@@ -343,6 +401,8 @@ if __name__ == '__main__':
 		pool_results = p.map(process, tc_split)
 	elif dataset == 'var':
 		pool_results = p.map(process, tc_split)
+	elif dataset == 't':
+		pool_results = p.map(process_topography, tc_split)
 	print('results pooled')
 	p.close()
 	p.join()

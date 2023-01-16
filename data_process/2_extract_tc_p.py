@@ -195,6 +195,81 @@ def process_apply_mswep(x):
 	else:
 		print('%s not saved!' % filepath)
 
+def process_apply_topography(x):
+	# define variables
+	filename = x.loc['filepath_var']
+
+	filepath = glob.glob(filename)[0]
+	centre_lat = x.loc['lat']
+	centre_lon = x.loc['lon']
+	name = x.loc['name']
+	cat = x.loc['sshs']
+	time = x.loc['hour']
+	sid = x.loc['sid']
+	basin = x.loc['basin']
+	i = x[0]
+
+	# open file
+	d = Dataset(filepath, 'r')
+	lat = d.variables['lat'][:] #lat
+	lon = d.variables['lon'][:] #lon
+		
+	# clip to location
+	lat_lower_bound = (np.abs(lat-centre_lat+5.)).argmin()
+	lat_upper_bound = (np.abs(lat-centre_lat-5.)).argmin()
+	lon_lower_bound = (np.abs(lon-centre_lon+5.)).argmin()
+	lon_upper_bound = (np.abs(lon-centre_lon-5.)).argmin()
+
+	if centre_lon > 175: 
+		print('goes over centre')
+		diff = lon_upper_bound - lon_lower_bound
+		second_upper_bound = 100 - diff
+
+		data1 = d.variables['z'][lat_lower_bound:lat_upper_bound,lon_lower_bound:lon_upper_bound]
+		data2 = d.variables['z'][lat_lower_bound:lat_upper_bound,0:second_upper_bound]
+		lat = lat[lat_lower_bound:lat_upper_bound]
+		lon1 = lon[lon_lower_bound:lon_upper_bound]
+		lon2 = lon[0:second_upper_bound]
+		data = np.concatenate((data1,data2),axis=1)
+		lon = np.concatenate((lon1,lon2))
+	elif centre_lon < -175:
+		diff = lon_upper_bound - lon_lower_bound
+		second_upper_bound = 100 - diff
+		data1 = d.variables['z'][lat_lower_bound:lat_upper_bound,-second_upper_bound:-1]
+		data2 = d.variables['z'][lat_lower_bound:lat_upper_bound,lon_lower_bound:lon_upper_bound]
+		lat = lat[lat_lower_bound:lat_upper_bound]
+		lon1 = lon[-second_upper_bound:-1]
+		lon2 = lon[lon_lower_bound:lon_upper_bound]
+		
+		data = np.concatenate((data1,data2),axis=1)
+		lon = np.concatenate((lon1,lon2))
+	else:
+		data = d.variables['z'][lat_lower_bound:lat_upper_bound,lon_lower_bound:lon_upper_bound]
+		lat = lat[lat_lower_bound:lat_upper_bound]
+		lon = lon[lon_lower_bound:lon_upper_bound]
+
+	d.close()
+	# print(len(lon))
+	# print(len(lat))
+	if (len(lon) != 100) or (len(lat) != 100): # TODO: figure out why this happens
+		print('dimensions do not match')
+		lat,lon,data = fix_dimensions(lat,lon,data)
+
+	# else:
+	# precip = np.transpose(precip)
+
+	da = xr.DataArray(data, 
+					dims=("x", "y"), 
+					coords={"x": lon, "y": lat},
+					attrs=dict(description="elevation",units="m"),
+					name = 'elevation')
+	# print(da)
+	if cat not in [1,2,3,4,5]:
+		cat = 0
+	
+	da.to_netcdf('/user/work/al18709/tropical_cyclones/topography/' + str(name) + '_' + str(sid) + '_hour-' + str(time) + '_idx-' + str(i) + '_cat-' + str(int(cat)) + '_basin-' + str(basin) + '_centrelat-' + str(centre_lat) + '_centrelon-' + str(centre_lon) + '.nc')
+	# print('%s saved!' % filepath)
+
 def process_apply_era5(x):
 	print('applying era5 process...')
 	# define variables
@@ -385,8 +460,8 @@ def process_apply_variable(x):
 				print('goes over centre')
 				diff = lon_upper_bound - lon_lower_bound
 				second_upper_bound = 100 - diff
-				data1 = d.sel(time=tc_time).variables['tp'][lat_lower_bound:lat_upper_bound,lon_lower_bound:lon_upper_bound]
-				data2 = d.sel(time=tc_time).variables['tp'][lat_lower_bound:lat_upper_bound,0:second_upper_bound]
+				data1 = d.sel(time=tc_time).variables[variable][lat_lower_bound:lat_upper_bound,lon_lower_bound:lon_upper_bound]
+				data2 = d.sel(time=tc_time).variables[variable][lat_lower_bound:lat_upper_bound,0:second_upper_bound]
 				lat = lat[lat_lower_bound:lat_upper_bound]
 				lon1 = lon[lon_lower_bound:lon_upper_bound]
 				lon2 = lon[0:second_upper_bound]
@@ -397,8 +472,8 @@ def process_apply_variable(x):
 				diff = lon_upper_bound - lon_lower_bound
 				second_upper_bound = 100 - diff
 
-				data1 = d.sel(time=tc_time).variables['tp'][lat_lower_bound:lat_upper_bound,-second_upper_bound:-1]
-				data2 = d.sel(time=tc_time).variables['tp'][lat_lower_bound:lat_upper_bound,lon_lower_bound:lon_upper_bound]
+				data1 = d.sel(time=tc_time).variables[variable][lat_lower_bound:lat_upper_bound,-second_upper_bound:-1]
+				data2 = d.sel(time=tc_time).variables[variable][lat_lower_bound:lat_upper_bound,lon_lower_bound:lon_upper_bound]
 				lat = lat[lat_lower_bound:lat_upper_bound]
 				lon1 = lon[-second_upper_bound:-1]
 				lon2 = lon[lon_lower_bound:lon_upper_bound]
@@ -410,19 +485,31 @@ def process_apply_variable(x):
 				print(centre_lat,centre_lon,tc_time,lat_lower_bound,lat_upper_bound,lon_lower_bound,lon_upper_bound)
 				print(' ')
 				# print(d.time.values)
-				# print('tc_time',tc_time)
+				print('tc_time',tc_time)
 
 				data = d.sel(time=tc_time).variables[variable][lat_lower_bound:lat_upper_bound,lon_lower_bound:lon_upper_bound]
 				lat = lat[lat_lower_bound:lat_upper_bound]
 				lon = lon[lon_lower_bound:lon_upper_bound]
-			
-			print(len(lon))
-			print(len(lat))
+
+				if data.shape != (10,10): #TODO: check this doesn't mess with orientation later
+					print('wrong data shape')
+					data = d.sel(time=tc_time)
+					# print('data shape',data.shape)
+					print('data time is:',data.time)
+					data = data.variables[variable][0,lat_lower_bound:lat_upper_bound,lon_lower_bound:lon_upper_bound]
+					
+			print('lon length: ',len(lon))
+			print('lat length: ',len(lat))
+			# TODO: for some reason lat and lon don't match up with data :/
 			if (len(lon) != 10) or (len(lat) != 10): # TODO: figure out why this happens
 				print('dimensions do not match')
 			else:
 				# precip = np.transpose(precip)
-				print(data.shape)
+				print('data shape should be (10,10): ',data.shape)
+				print(lon)
+				print(lat)
+				print('lon length: ',len(lon))
+				print('lat length: ',len(lat))
 				da = xr.DataArray(data, 
 								dims=("x", "y"), 
 								coords={"x": lon, "y": lat},
@@ -438,6 +525,32 @@ def process_apply_variable(x):
 				print('%s saved!' % filepath)
 	else:
 		print('%s not saved!' % filepath)
+
+def fix_dimensions(lat,lon,data):
+	print('fixing dimensions...')
+	if len(lon) == 99:
+		print('lon too long')
+		lon = np.append(lon,lon[-1])
+		print(data[-1,:].shape)
+		print(data[:,-1].shape)
+		print(data.shape)
+		data = np.concatenate((data,np.array([data[:,-1]]).T),axis=1)
+	if len(lat) == 99:
+		print('lat too long')
+		lat = np.append(lat,lat[-1])
+		print(data[-1,:].shape)
+		print(data[:,-1].shape)
+		print(data.shape)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+	if len(lon) == 101:
+		lon=lon[:-1]
+		data = data[:,:-1]
+	if len(lat) == 101:
+		lat = lat[:-1]
+		data = data[:-1,:]
+		
+	print(lon.shape,lat.shape,data.shape)
+	return lat,lon,data
 
 def process(df):
 	print('doing process...')
@@ -457,6 +570,11 @@ def process_era5(df):
 def process_variable(df):
 	print('doing process...')
 	res = df.apply(process_apply_variable,axis=1)
+	return res
+
+def process_topography(df):
+	print('doing process...')
+	res = df.apply(process_apply_topography,axis=1)
 	return res
 
 if __name__ == '__main__':
@@ -487,10 +605,12 @@ if __name__ == '__main__':
 		pool_results = p.map(process_mswep, df_split)
 	elif dataset == 'era5':
 		pool_results = p.map(process_era5, df_split)
+	elif dataset == 't':
+		pool_results = p.map(process_topography, df_split)
 	else:
 		# remove old files to save space
-		os.rmdir('/user/work/al18709/tropical_cyclones/var')
-		os.mkdir('/user/work/al18709/tropical_cyclones/var')
+		for file in os.listdir('/user/work/al18709/tropical_cyclones/var'):
+			os.remove('/user/work/al18709/tropical_cyclones/var/'+ file)
 		pool_results = p.map(process_variable, df_split)
 	# data = pd.concat(p.map(process, df_split))
 	print('results pooled')

@@ -90,10 +90,10 @@ time_points = [str(h) + '5959' for h in hours]
 filepaths_imerg = ['/bp1store/geog-tropical/data/Obs/IMERG/half_hourly/final/3B-HHR.MS.MRG.3IMERG.%s*%s*.HDF5' % (ymd,h) for ymd,h in zip(year_month_day,time_points)]
 filepaths_mswep = ['/bp1store/geog-tropical/data/Obs/MSWEP/3hourly_invertlat/%s.%s.nc' % (yd,h) for yd,h in zip(year_day,hours_mswep)]
 filepaths_era5 = ['/bp1store/geog-tropical/data/ERA-5/hour/precipitation_invertlat_em/ERA5_precipitation_3hrly_%s.nc' % ym for ym in year_month]
-filepaths_var = [f'/bp1store/geog-tropical/data/ERA-5/hour/{variable}_invertlat/ERA5_{var}_3hourly_1deg_{ym}.nc' for ym in year_month]
-
-print(filepaths_var)
-
+if variable == "t":
+	filepaths_var = ['/user/home/al18709/work/topography/topography_10km_nn.nc'] * len(filepaths_mswep)
+else:
+	filepaths_var = [f'/bp1store/geog-tropical/data/ERA-5/hour/{variable}_invertlat/ERA5_{var}_3hourly_1deg_{ym}.nc' for ym in year_month]
 
 # generate lat + lon for centroid of TC
 lat = list(ibtracks['LAT'])

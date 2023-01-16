@@ -64,7 +64,7 @@ def create_set(tcs,dataset='imerg',resolution=100):
 	set_y = np.zeros((1,100,100))
 	if resolution == 40:
 		set_X = np.zeros((1,40,40))
-	elif dataset == 'mswep'or dataset == 'var':
+	elif dataset == 'mswep'or dataset == 'var' or dataset == 't':
 		set_X = np.zeros((1,10,10))
 	elif (dataset == 'era5') and (resolution == 40):
 		set_X = np.zeros((1,40,40))
@@ -94,12 +94,17 @@ def create_set(tcs,dataset='imerg',resolution=100):
 			X = np.load('/user/work/al18709/tc_Xy_%s/X_%s.npy' % (dataset,tc),allow_pickle = True)
 			y = set_y = np.zeros((X.shape[0],100,100))
 			meta = pd.read_csv('/user/work/al18709/tc_Xy_var/meta_%s.csv' % tc)
+		elif dataset == 't':
+			y = np.load('/user/work/al18709/tc_Xy_topography/y_%s.npy' % tc,allow_pickle = True)
+			print('sum y is: ',np.sum(y))
+			X = np.zeros((y.shape[0],10,10))
+			meta = pd.read_csv('/user/work/al18709/tc_Xy_topography/meta_%s.csv' % tc)
 		else:
 			y = np.load('/user/work/al18709/tc_Xy_%s_40/y_%s.npy' % (dataset,tc),allow_pickle = True)
 			X = np.load('/user/work/al18709/tc_Xy_%s_40/X_%s.npy' % (dataset,tc),allow_pickle = True)
 		meta2 = pd.read_csv('/user/work/al18709/tc_Xy/meta_%s.csv' % tc) # TODO: make sure this is up to date
-		print(meta)
-		print(meta2)
+		# print(meta)
+		# print(meta2)
 		print(set_X.shape)
 		print(X.shape)
 		print(set_y.shape)
@@ -107,7 +112,7 @@ def create_set(tcs,dataset='imerg',resolution=100):
 		set_X = np.vstack((set_X,X))
 		set_y = np.vstack((set_y,y))
 		set_meta = set_meta.append(meta)
-	print(set_meta)
+	# print(set_meta)
 	set_meta = set_meta.reset_index(drop=True)
 	return set_X[1:,:,:],set_y[1:,:,:],set_meta
 
@@ -121,7 +126,8 @@ variable = sys.argv[1]
 print('variable: ', variable)
 if '/' in variable:
 	dataset = 'var'
-elif variable in ['mswep','era5']:
+	variable = variable.replace('/','-')
+elif variable in ['mswep','era5','t']:
 	dataset = variable
 else: 
 	dataset = 'var'
@@ -130,15 +136,16 @@ resolution = 100
 # resolution = 40
 
 # generate list of sids and all their timesteps?
-if dataset != 'var':
+if dataset not in ['var','t']:
 	tc_dir = '/user/work/al18709/tropical_cyclones/%s/*.nc' % dataset
 else:
 	tc_dir = '/user/work/al18709/tropical_cyclones/mswep/*.nc'
 filepaths = glob.glob(tc_dir)
+print('dataset is: ',dataset)
 print('number of filepaths = ',len(filepaths))
 
 # group by tc sid number
-if dataset == 'mswep' or dataset == 'var':
+if dataset == 'mswep' or dataset == 'var' or dataset == 't':
 	regex = r"/user/work/al18709/tropical_cyclones/mswep/.+?_(.+?)_.*?.nc"
 elif dataset == 'mswep_extend':
 	regex = r"/user/work/al18709/tropical_cyclones/mswep_extend/.+?_(.+?)_.*?.nc"
@@ -156,7 +163,7 @@ max_rains = []
 
 # loop through each tc
 for tc in sids:
-	if dataset == 'mswep' or dataset == 'var':
+	if dataset == 'mswep' or dataset == 'var' or dataset == 't':
 		fp = '/user/work/al18709/tc_Xy/X_%s.npy' % tc
 	elif dataset == 'mswep_extend':
 		fp = '/user/work/al18709/tc_Xy_mswep_extend/X_%s.npy' % tc
@@ -269,7 +276,10 @@ def remove_mismatch(X,y,meta,dset,mswep=False):
 	idx_sort = df2.index.to_list()
 	X = X[idx_sort,:,:]
 	y = y[idx_sort,:,:]
-	meta = df2.reset_index(drop=True)
+
+	meta = df2[['sid','centre_lat','centre_lon']].reset_index(drop=True)
+	# remove columns with unnamed in them
+	meta = meta.loc[:, ~meta.columns.str.contains('^Unnamed')]
 
 	return X,y,meta
 
@@ -278,13 +288,16 @@ def remove_mismatch(X,y,meta,dset,mswep=False):
 # remove any mismatching rows
 if dataset == 'mswep':
 	mswep = True
-else:
+elif dataset == 'var':
 	mswep = False
 	valid_y = np.zeros((valid_X.shape[0],100,100))
 	train_y = np.zeros((train_X.shape[0],100,100))
 	test_y = np.zeros((test_X.shape[0],100,100))
 	extreme_test_y = np.zeros((extreme_test_X.shape[0],100,100))
 	extreme_valid_y = np.zeros((extreme_valid_X.shape[0],100,100))
+elif dataset == 't':
+	mswep = False
+
 
 valid_X,valid_y,valid_meta = remove_mismatch(valid_X,valid_y,valid_meta,'valid',mswep=mswep)
 train_X,train_y,train_meta = remove_mismatch(train_X,train_y,train_meta,'train',mswep=mswep)
@@ -312,62 +325,62 @@ if (resolution == 100) and (dataset=='era5'):
 	print('saving in correct place')
 	np.save('/user/work/al18709/tc_data_%s_10/valid_X.npy' % dataset,valid_X)
 	np.save('/user/work/al18709/tc_data_%s_10/valid_y.npy' % dataset,valid_y)
-	valid_meta.to_csv('/user/work/al18709/tc_data_%s_10/valid_meta.csv' % dataset)
+	valid_meta.to_csv('/user/work/al18709/tc_data_%s_10/valid_meta.csv' % dataset,index=False)
 	np.save('/user/work/al18709/tc_data_%s_10/train_X.npy' % dataset,train_X)
 	np.save('/user/work/al18709/tc_data_%s_10/train_y.npy' % dataset,train_y)
-	train_meta.to_csv('/user/work/al18709/tc_data_%s_10/train_meta.csv' % dataset)
+	train_meta.to_csv('/user/work/al18709/tc_data_%s_10/train_meta.csv' % dataset,index=False)
 	np.save('/user/work/al18709/tc_data_%s_10/test_X.npy' % dataset,test_X)
 	np.save('/user/work/al18709/tc_data_%s_10/test_y.npy' % dataset,test_y)
-	test_meta.to_csv('/user/work/al18709/tc_data_%s_10/test_meta.csv' % dataset)
+	test_meta.to_csv('/user/work/al18709/tc_data_%s_10/test_meta.csv' % dataset,index=False)
 	np.save('/user/work/al18709/tc_data_%s_10/extreme_test_X.npy' % dataset,extreme_test_X)
 	np.save('/user/work/al18709/tc_data_%s_10/extreme_test_y.npy' % dataset,extreme_test_y)
-	extreme_test_meta.to_csv('/user/work/al18709/tc_data_%s_10/extreme_test_meta.csv' % dataset)
+	extreme_test_meta.to_csv('/user/work/al18709/tc_data_%s_10/extreme_test_meta.csv' % dataset,index=False)
 	np.save('/user/work/al18709/tc_data_%s_10/extreme_valid_X.npy' % dataset,extreme_valid_X)
 	np.save('/user/work/al18709/tc_data_%s_10/extreme_valid_y.npy' % dataset,extreme_valid_y)
-	extreme_valid_meta.to_csv('/user/work/al18709/tc_data_%s_10/extreme_valid_meta.csv' % dataset)
+	extreme_valid_meta.to_csv('/user/work/al18709/tc_data_%s_10/extreme_valid_meta.csv' % dataset,index=False)
 elif (resolution == 40) or (dataset=='era5'):
 	np.save('/user/work/al18709/tc_data_%s_40/valid_X.npy' % dataset,valid_X)
 	np.save('/user/work/al18709/tc_data_%s_40/valid_y.npy' % dataset,valid_y)
-	valid_meta.to_csv('/user/work/al18709/tc_data_%s_40/valid_meta.csv' % dataset)
+	valid_meta.to_csv('/user/work/al18709/tc_data_%s_40/valid_meta.csv' % dataset,index=False)
 	np.save('/user/work/al18709/tc_data_%s_40/train_X.npy' % dataset,train_X)
 	np.save('/user/work/al18709/tc_data_%s_40/train_y.npy' % dataset,train_y)
-	train_meta.to_csv('/user/work/al18709/tc_data_%s_40/train_meta.csv' % dataset)
+	train_meta.to_csv('/user/work/al18709/tc_data_%s_40/train_meta.csv' % dataset,index=False)
 	np.save('/user/work/al18709/tc_data_%s_40/test_X.npy' % dataset,test_X)
 	np.save('/user/work/al18709/tc_data_%s_40/test_y.npy' % dataset,test_y)
-	test_meta.to_csv('/user/work/al18709/tc_data_%s_40/test_meta.csv' % dataset)
+	test_meta.to_csv('/user/work/al18709/tc_data_%s_40/test_meta.csv' % dataset,index=False)
 	np.save('/user/work/al18709/tc_data_%s_40/extreme_test_X.npy' % dataset,extreme_test_X)
 	np.save('/user/work/al18709/tc_data_%s_40/extreme_test_y.npy' % dataset,extreme_test_y)
-	extreme_test_meta.to_csv('/user/work/al18709/tc_data_%s_40/extreme_test_meta.csv' % dataset)
+	extreme_test_meta.to_csv('/user/work/al18709/tc_data_%s_40/extreme_test_meta.csv' % dataset,index=False)
 	np.save('/user/work/al18709/tc_data_%s_40/extreme_valid_X.npy' % dataset,extreme_valid_X)
 	np.save('/user/work/al18709/tc_data_%s_40/extreme_valid_y.npy' % dataset,extreme_valid_y)
-	extreme_valid_meta.to_csv('/user/work/al18709/tc_data_%s_40/extreme_valid_meta.csv' % dataset)
+	extreme_valid_meta.to_csv('/user/work/al18709/tc_data_%s_40/extreme_valid_meta.csv' % dataset,index=False)
 elif dataset == 'var':
-	np.save('/user/work/al18709/tc_data_%s/valid_X.npy' % dataset,valid_X)
-	valid_meta.to_csv('/user/work/al18709/tc_data_%s/valid_meta.csv' % dataset)
-	np.save('/user/work/al18709/tc_data_%s/train_X.npy' % dataset,train_X)
-	train_meta.to_csv('/user/work/al18709/tc_data_%s/train_meta.csv' % dataset)
-	np.save('/user/work/al18709/tc_data_%s/test_X.npy' % dataset,test_X)
-	test_meta.to_csv('/user/work/al18709/tc_data_%s/test_meta.csv' % dataset)
-	np.save('/user/work/al18709/tc_data_%s/extreme_test_X.npy' % dataset,extreme_test_X)
-	extreme_test_meta.to_csv('/user/work/al18709/tc_data_%s/extreme_test_meta.csv' % dataset)
-	np.save('/user/work/al18709/tc_data_%s/extreme_valid_X.npy' % dataset,extreme_valid_X)
-	extreme_valid_meta.to_csv('/user/work/al18709/tc_data_%s/extreme_valid_meta.csv' % dataset)
+	np.save('/user/work/al18709/tc_data_%s/%s_valid_X.npy' % (dataset,variable),valid_X)
+	valid_meta.to_csv('/user/work/al18709/tc_data_%s/%s_valid_meta.csv' % (dataset,variable),index=False)
+	np.save('/user/work/al18709/tc_data_%s/%s_train_X.npy' % (dataset,variable),train_X)
+	train_meta.to_csv('/user/work/al18709/tc_data_%s/%s_train_meta.csv' % (dataset,variable),index=False)
+	np.save('/user/work/al18709/tc_data_%s/%s_test_X.npy' % (dataset,variable),test_X)
+	test_meta.to_csv('/user/work/al18709/tc_data_%s/%s_test_meta.csv' % (dataset,variable),index=False)
+	np.save('/user/work/al18709/tc_data_%s/%s_extreme_test_X.npy' % (dataset,variable),extreme_test_X)
+	extreme_test_meta.to_csv('/user/work/al18709/tc_data_%s/%s_extreme_test_meta.csv' % (dataset,variable),index=False)
+	np.save('/user/work/al18709/tc_data_%s/%s_extreme_valid_X.npy' % (dataset,variable),extreme_valid_X)
+	extreme_valid_meta.to_csv('/user/work/al18709/tc_data_%s/%s_extreme_valid_meta.csv' % (dataset,variable),index=False)
 else:
 	np.save('/user/work/al18709/tc_data_%s/valid_X.npy' % dataset,valid_X)
 	np.save('/user/work/al18709/tc_data_%s/valid_y.npy' % dataset,valid_y)
-	valid_meta.to_csv('/user/work/al18709/tc_data_%s/valid_meta.csv' % dataset)
+	valid_meta.to_csv('/user/work/al18709/tc_data_%s/valid_meta.csv' % dataset,index=False)
 	np.save('/user/work/al18709/tc_data_%s/train_X.npy' % dataset,train_X)
 	np.save('/user/work/al18709/tc_data_%s/train_y.npy' % dataset,train_y)
-	train_meta.to_csv('/user/work/al18709/tc_data_%s/train_meta.csv' % dataset)
+	train_meta.to_csv('/user/work/al18709/tc_data_%s/train_meta.csv' % dataset,index=False)
 	np.save('/user/work/al18709/tc_data_%s/test_X.npy' % dataset,test_X)
 	np.save('/user/work/al18709/tc_data_%s/test_y.npy' % dataset,test_y)
-	test_meta.to_csv('/user/work/al18709/tc_data_%s/test_meta.csv' % dataset)
+	test_meta.to_csv('/user/work/al18709/tc_data_%s/test_meta.csv' % dataset,index=False)
 	np.save('/user/work/al18709/tc_data_%s/extreme_test_X.npy' % dataset,extreme_test_X)
 	np.save('/user/work/al18709/tc_data_%s/extreme_test_y.npy' % dataset,extreme_test_y)
-	extreme_test_meta.to_csv('/user/work/al18709/tc_data_%s/extreme_test_meta.csv' % dataset)
+	extreme_test_meta.to_csv('/user/work/al18709/tc_data_%s/extreme_test_meta.csv' % dataset,index=False)
 	np.save('/user/work/al18709/tc_data_%s/extreme_valid_X.npy' % dataset,extreme_valid_X)
 	np.save('/user/work/al18709/tc_data_%s/extreme_valid_y.npy' % dataset,extreme_valid_y)
-	extreme_valid_meta.to_csv('/user/work/al18709/tc_data_%s/extreme_valid_meta.csv' % dataset)
+	extreme_valid_meta.to_csv('/user/work/al18709/tc_data_%s/extreme_valid_meta.csv' % dataset,index=False)
 
 
 
