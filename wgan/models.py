@@ -13,7 +13,7 @@ def generator(mode,
               noise_channels=8,
               filters_gen=64,
               img_shape=(100, 100),
-              constant_fields=2,
+              constant_fields=1, #2
               conv_size=(3, 3),
               padding=None,
               stride=1,
@@ -27,12 +27,12 @@ def generator(mode,
     generator_input = Input(shape=(None, None, input_channels), name="lo_res_inputs")
     print(f"generator_input shape: {generator_input.shape}")
     # constant fields
-    # const_input = Input(shape=(None, None, constant_fields), name="hi_res_inputs")
-    # print(f"constants_input shape: {const_input.shape}")
+    const_input = Input(shape=(None, None, constant_fields), name="hi_res_inputs")
+    print(f"constants_input shape: {const_input.shape}")
 
     # Convolve constant fields down to match other input dimensions
-    # upscaled_const_input = const_upscale_block_100(const_input, filters=filters_gen)
-    # print(f"upscaled constants shape: {upscaled_const_input.shape}")
+    upscaled_const_input = const_upscale_block_100(const_input, filters=filters_gen)
+    print(f"upscaled constants shape: {upscaled_const_input.shape}")
 
     if mode in ('det', 'VAEGAN'):
         # Concatenate all inputs together
@@ -44,8 +44,8 @@ def generator(mode,
         noise_input = Input(shape=(None, None, noise_channels), name="noise_input") # change so shape isn't None
         print(f"noise_input shape: {noise_input.shape}")
         # Concatenate all inputs together
-        # generator_output = concatenate([generator_input, upscaled_const_input, noise_input])
-        generator_output = concatenate([generator_input, noise_input])
+        generator_output = concatenate([generator_input, upscaled_const_input, noise_input])
+        # generator_output = concatenate([generator_input, noise_input])
         print(f"Shape after first concatenate: {generator_output.shape}")
 
     # Pass through 3 residual blocks
@@ -93,7 +93,7 @@ def generator(mode,
     print(f"Shape after residual block: {generator_output.shape}")
 
     # Concatenate with original size constants field
-    # generator_output = concatenate([generator_output, const_input])
+    generator_output = concatenate([generator_output, const_input])
     print(f"Shape after second concatenate: {generator_output.shape}")
 
     # Pass through 3 residual blocks
@@ -110,8 +110,8 @@ def generator(mode,
         decoder_model = Model(inputs=[mean_input, logvar_input, noise_input], outputs=generator_output, name='decoder')
         return (encoder_model, decoder_model)
     elif mode == 'GAN':
-        # model = Model(inputs=[generator_input, const_input, noise_input], outputs=generator_output, name='gen')
-        model = Model(inputs=[generator_input, noise_input], outputs=generator_output, name='gen')
+        model = Model(inputs=[generator_input, const_input, noise_input], outputs=generator_output, name='gen')
+        # model = Model(inputs=[generator_input, noise_input], outputs=generator_output, name='gen')
         return model
     elif mode == 'det':
         # model = Model(inputs=[generator_input, const_input], outputs=generator_output, name='gen')
@@ -136,24 +136,24 @@ def discriminator(arch,
     generator_input = Input(shape=(None, None, input_channels), name="lo_res_inputs")
     print(f"generator_input shape: {generator_input.shape}")
     # constant fields
-    # const_input = Input(shape=(None, None, constant_fields), name="hi_res_inputs")
-    # print(f"constants_input shape: {const_input.shape}")
+    const_input = Input(shape=(None, None, constant_fields), name="hi_res_inputs")
+    print(f"constants_input shape: {const_input.shape}")
     # target image
     generator_output = Input(shape=(None, None, 1), name="output")
     print(f"generator_output shape: {generator_output.shape}")
 
     # convolve down constant fields to match ERA
-    # lo_res_const_input = const_upscale_block_100(const_input, filters=filters_disc)
-    # print(f"upscaled constants shape: {lo_res_const_input.shape}")
+    lo_res_const_input = const_upscale_block_100(const_input, filters=filters_disc)
+    print(f"upscaled constants shape: {lo_res_const_input.shape}")
 
     # concatenate constants to lo-res input
-    # lo_res_input = concatenate([generator_input, lo_res_const_input])
-    lo_res_input = generator_input
+    lo_res_input = concatenate([generator_input, lo_res_const_input])
+    # lo_res_input = generator_input
     print(f"Shape after lo-res concatenate: {lo_res_input.shape}")
 
     # concatenate constants to hi-res input
-    # hi_res_input = concatenate([generator_output, const_input])
-    hi_res_input = generator_output
+    hi_res_input = concatenate([generator_output, const_input])
+    # hi_res_input = generator_output
     print(f"Shape after hi-res concatenate: {hi_res_input.shape}")
 
     # encode inputs using residual blocks
@@ -192,7 +192,7 @@ def discriminator(arch,
     disc_output = Dense(1, name="disc_output")(disc_output)
     print(f"discriminator output shape: {disc_output.shape}")
 
-    # disc = Model(inputs=[generator_input, const_input, generator_output], outputs=disc_output, name='disc')
-    disc = Model(inputs=[generator_input, generator_output], outputs=disc_output, name='disc')
+    disc = Model(inputs=[generator_input, const_input, generator_output], outputs=disc_output, name='disc')
+    # disc = Model(inputs=[generator_input, generator_output], outputs=disc_output, name='disc')
 
     return disc

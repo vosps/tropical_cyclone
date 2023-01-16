@@ -58,15 +58,15 @@ def _dataset_downsampler(inputs,outputs):
     inputs['lo_res_inputs'] = image
     return inputs,outputs
 
-# def _dataset_downsampler_list(inputs, constants, outputs):
-def _dataset_downsampler_list(inputs, outputs):
+def _dataset_downsampler_list(inputs, constants, outputs):
+# def _dataset_downsampler_list(inputs, outputs):
     image = outputs
     kernel_tf = tf.constant(0.01,shape=(10,10,1,1), dtype=tf.float32)
     # kernel_tf = tf.constant(0.01,shape=(10,10,1,1), dtype=tf.float64)
     image = tf.nn.conv2d(image, filters=kernel_tf, strides=[1, 10, 10, 1], padding='VALID', name='conv_debug',data_format='NHWC')
     inputs = image
-    # return inputs, constants, outputs
-    return inputs, outputs
+    return inputs, constants, outputs
+    # return inputs, outputs
 
 def _parse_batch(record_batch,insize=(10,10,9),consize=(100,100,2),
                  outsize=(100,100,1)):
@@ -132,19 +132,24 @@ def create_dataset(year,clss,era_shape=(10,10,1),out_shape=(100,100,1),
     # ds = ds.shuffle(shuffle_size)
     
     # insert my code here
-    # TODO: ensure ds is in the correct shape
-    # TODO: only open 8000 images to save time. done
-    print('loading in actual data...')
-    x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/train_X.npy'),axis=3)) # inputs this will eventually be (nimags,10,10,nfeatures)
-    y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/train_y.npy'),axis=3)) # outputs
+    print('loading in tropical cyclone data...')
+    x = np.float32(np.load('/user/work/al18709/tc_data_flipped/train_X.npy')) # inputs are (nimags,10,10,nfeatures)
+    y = np.float32(np.load('/user/work/al18709/tc_data_flipped/train_y.npy'))
+    z = np.float32(np.load('/user/home/al18709/work/tc_data_flipped_t/train_y.npy')) # this is the topography variable (nimags,100,100)
+
+    # x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/train_X.npy'),axis=3)) # inputs this will eventually be (nimags,10,10,nfeatures)
+    # y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/train_y.npy'),axis=3)) # outputs
     # z = np.load('/user/work/al18709/tc_data/train_y.npy') # constants, this will eventually be (100,100,2)
+    
     print('x shape: ',x.shape)
     print('y shape: ',y.shape)
     print('repeat is: ', repeat)
     print('number of nans in x: ',np.count_nonzero(np.isnan(x)))
     print('number of nans in y: ',np.count_nonzero(np.isnan(y)))
     print('making ds from data...')
-    ds = tf.data.Dataset.from_tensor_slices((x, y))
+
+    # ds = tf.data.Dataset.from_tensor_slices((x, y))
+    ds = tf.data.Dataset.from_tensor_slices((x,z,y)) # have added in elevation as z here
     print('ds made!')
     # shuffle, map, then repeat
     print('shufflinf dataset...')
@@ -220,30 +225,11 @@ def create_fixed_dataset(year=None,mode='validation',batch_size=16,
             dataset = 'valid'
         else:
             dataset = mode
-        x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/%s_X.npy' % dataset),axis=3))
-        y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/%s_y.npy' % dataset),axis=3))
-
-    # if mode == 'train':
-    #     x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/train_X.npy'),axis=3))
-    #     y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/train_y.npy'),axis=3))
-    # elif mode == 'validation':
-    #     x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/valid_X.npy'),axis=3))
-    #     y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/valid_y.npy'),axis=3))
-    # elif mode == 'extreme_valid':
-    #     x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/extreme_valid_X.npy'),axis=3))
-    #     y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/extreme_valid_y.npy'),axis=3))
-    # elif mode == 'extreme_test':
-    #     x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/extreme_test_X.npy'),axis=3))
-    #     y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/extreme_test_y.npy'),axis=3))
-    # elif mode == 'test':
-    #     x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/test_X.npy'),axis=3))
-    #     y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/test_y.npy'),axis=3))
-    # elif mode == 'gcm':
-    #     x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/gcm_X.npy'),axis=3))
-    #     y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep/gcm_X.npy'),axis=3))
-    # elif mode == 'cmip':
-    #     x = np.float32(np.expand_dims(np.load('/user/home/al18709/work/CMIP6/HighResMIP/EC-Earth3p/historical/storm_rain.npy')[-1000:,:,:],axis=3))
-    #     y = np.float32(np.expand_dims(np.load('/user/home/al18709/work/CMIP6/HighResMIP/EC-Earth3p/historical/storm_rain.npy')[-1000:,:,:],axis=3))
+        # x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/%s_X.npy' % dataset),axis=3))
+        # y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/%s_y.npy' % dataset),axis=3))
+        x = np.float32(np.load('/user/work/al18709/tc_data_flipped/%s_combined_X.npy' % dataset))
+        y = np.float32(np.load('/user/work/al18709/tc_data_flipped/%s_combined_y.npy' % dataset))
+        z = np.float32(np.load('/user/home/al18709/work/tc_data_flipped_t/%s_y.npy') % dataset)
 
     ds = tf.data.Dataset.from_tensor_slices((x, y))
     ds = ds.batch(batch_size)
