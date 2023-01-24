@@ -53,7 +53,8 @@ def generate_predictions(*,
 					):
 		
 	# define initial variables
-	input_channels = 1
+	# input_channels = 1
+	input_channels = 7
 	noise_channels = 4 #4
 	batch_size = 512
 	num_images = 150
@@ -74,7 +75,8 @@ def generate_predictions(*,
 
 	
 	if data_mode == 'validation':
-		num_images,_,_ = np.load('/user/work/al18709/tc_data_flipped/valid_X.npy').shape
+		# num_images,_,_ = np.load('/user/work/al18709/tc_data_flipped/valid_X.npy').shape
+		num_images,_,_,_ = np.load('/user/work/al18709/tc_data_flipped/valid_combined_X.npy').shape
 	elif data_mode == 'storm':
 		num_images,_,_ = np.load('/user/work/al18709/tc_data_mswep_extend_flipped/y_%s.npy' % storm).shape
 	elif (data_mode == 'storm_era5') or (data_mode == 'storm_era5_corrected'):
@@ -82,7 +84,8 @@ def generate_predictions(*,
 	elif (data_mode == 'era5') or (data_mode == 'era5_corrected'):
 		num_images,_,_ = np.load('/user/home/al18709/work/tc_data_era5_flipped_10/valid_y.npy').shape
 	else:
-		num_images,_,_ = np.load('/user/work/al18709/tc_data_flipped/%s_X.npy' % data_mode).shape
+		# num_images,_,_ = np.load('/user/work/al18709/tc_data_flipped/%s_X.npy' % data_mode).shape
+		num_images,_,_,_ = np.load('/user/work/al18709/tc_data_flipped/%s_combined_X.npy' % data_mode).shape
 
 	
 	print('number of images: ',num_images)
@@ -113,7 +116,7 @@ def generate_predictions(*,
 	gen_weights_file = log_folder + '/models-gen_weights.h5'
 	# gen_weights_file = log_folder + '/models-gen_opt_weights.h5' # TODO: this has different construction to gen_weights - ask andrew and lucy
 	model.gen.built = True
-	model.gen.load_weights(gen_weights_file)
+	model.gen.load_weights(gen_weights_file) 
 
 	print(data_predict)
 	print(data_predict.batch(batch_size))
@@ -121,7 +124,8 @@ def generate_predictions(*,
 	# define initial variables
 	pred = np.zeros((num_images,100,100,20))
 	seq_real = np.zeros((num_images,100,100,1))
-	low_res_inputs = np.zeros((num_images,10,10,1))
+	# low_res_inputs = np.zeros((num_images,10,10,1))
+	low_res_inputs = np.zeros((num_images,10,10,7))
 	data_pred_iter = iter(data_predict)
 	# unbatch first
 	nbatches = int(num_images/batch_size)
@@ -137,7 +141,8 @@ def generate_predictions(*,
 	# for i in range(nbatches):
 		
 		print('running batch ',i,'...')
-		inputs, outputs = next(data_pred_iter)
+		# inputs, outputs = next(data_pred_iter)
+		inputs, topography, outputs = next(data_pred_iter)
 		if (data_mode == 'era5') or (data_mode == 'era5_corrected') or (data_mode == 'storm_era5') or (data_mode == 'storm_era5_corrected'):
 			if i == batch_size:
 				n = remainder
@@ -147,6 +152,7 @@ def generate_predictions(*,
 		# if i !=nbatches:
 		# 	continue
 		print(inputs.shape)
+		print(topography.shape)
 		print(outputs.shape)
 		print('remainder',remainder)
 		print('number of batches',nbatches)
@@ -182,8 +188,9 @@ def generate_predictions(*,
 			
 			else:
 				nn = noise_gen()
-				pred_single = np.array(model.gen.predict([inputs,nn]))[:,:,:,0]
-				
+				# pred_single = np.array(model.gen.predict([inputs,nn]))[:,:,:,0] # this one
+				pred_single = np.array(model.gen.predict([inputs,topography,nn]))[:,:,:,0]
+
 				# pred_single = np.array(model.gen.predict_on_batch([inputs,nn]))[:,:,:,0]
 				gc.collect()
 				
@@ -196,13 +203,17 @@ def generate_predictions(*,
 			
 
 		print('img pred shape: ',img_pred.shape)
+		print('img real shape: ',img_real.shape)
+		print('seq_real.shape: ',seq_real.shape)
 		print('assigning images ',i*batch_size,' to ',i*batch_size + batch_size,'...')
 		if i == nbatches:
-			seq_real[i*batch_size:,:,:,:] = img_real[:remainder]
+			# seq_real[i*batch_size:,:,:,:] = img_real[:remainder]
+			seq_real[i*batch_size:,:,:,0] = img_real[:remainder]
 			pred[i*batch_size:,:,:,:] = img_pred[:remainder]
 			low_res_inputs[i*batch_size:,:,:,:] = inputs[:remainder]
 		else:
-			seq_real[i*batch_size:i*batch_size + batch_size,:,:,:] = img_real
+			# seq_real[i*batch_size:i*batch_size + batch_size,:,:,:] = img_real
+			seq_real[i*batch_size:i*batch_size + batch_size,:,:,0] = img_real
 			pred[i*batch_size:i*batch_size + batch_size,:,:,:] = img_pred
 			low_res_inputs[i*batch_size:i*batch_size + batch_size,:,:,:] = inputs
 
@@ -240,10 +251,11 @@ def generate_predictions(*,
 
 	if vaegan == True:
 		model = 'vaegan'
-		problem = '7_better_spread-error'
+		# problem = '7_better_spread-error'
 	else:
 		model = 'gan'	
-		problem = '5_normal_problem'
+		# problem = '5_normal_problem'
+		problem = 'combined_test_run_1'
 
 	if data_mode == 'storm':
 		problem = storm
@@ -251,6 +263,9 @@ def generate_predictions(*,
 	if data_mode == 'era5_corrected':
 		problem = '3_hrly'
 
+	seq_real = 10**seq_real - 1
+	pred = 10**pred - 1
+	low_res_inputs = 10**low_res_inputs - 1
 
 	np.save('/user/home/al18709/work/%s_predictions_20/%s_real-%s_%s.npy' % (model,data_mode,checkpoint,problem),seq_real)
 	np.save('/user/home/al18709/work/%s_predictions_20/%s_pred-%s_%s.npy' % (model,data_mode,checkpoint,problem),pred)

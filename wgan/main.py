@@ -37,6 +37,10 @@ print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 # print("Is GPU available? ",tf.test.is_gpu_available())
 # tf.config.experimental.set_memory_growth(gpus[0], True)
 
+# try this
+gpus = tf.config.experimental.list_physical_devices('GPU')
+tf.config.experimental.set_memory_growth(gpus[0], True)
+
 # fix random memory issue
 # TF_GPU_ALLOCATOR=cuda_malloc_async
 # tf.config.experimental.set_memory_growth(physical_devices[0], True)
@@ -173,7 +177,8 @@ if __name__ == "__main__":
     if problem_type == "normal":
         downsample = False
         # input_channels = 9
-        input_channels = 1
+        # input_channels = 1
+        input_channels = 7
     elif problem_type == "superresolution":
         downsample = True
         input_channels = 1

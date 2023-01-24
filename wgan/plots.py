@@ -44,9 +44,11 @@ def plot_sequences(gen,
                    num_samples=8, 
                    num_instances=4, 
                    out_fn=None):
-    
-    # for cond, const, seq_real in batch_gen.as_numpy_iterator():
-    for cond, seq_real in batch_gen.as_numpy_iterator():
+    print('batch gen as numpy iterator: ')
+    print(batch_gen.as_numpy_iterator())
+    # print(batch_gen.as_numpy_iterator().shape)
+    for cond, const, seq_real in batch_gen.as_numpy_iterator():
+    # for cond, seq_real in batch_gen.as_numpy_iterator():
         batch_size = cond.shape[0]
 
     seq_gen = []
@@ -54,22 +56,22 @@ def plot_sequences(gen,
         for i in range(num_instances):
             noise_shape = cond[0,...,0].shape + (noise_channels,)
             noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size)
-            # seq_gen.append(gen.predict([cond, const, noise_gen()]))
-            seq_gen.append(gen.predict([cond, noise_gen()]))
+            seq_gen.append(gen.predict([cond, const, noise_gen()]))
+            # seq_gen.append(gen.predict([cond, noise_gen()]))
     elif mode == 'det':
         for i in range(num_instances):
-            # seq_gen.append(gen.predict([cond, const]))
-            seq_gen.append(gen.predict([cond]))
+            seq_gen.append(gen.predict([cond, const]))
+            # seq_gen.append(gen.predict([cond]))
     elif mode == 'VAEGAN':
         ## call encoder
-        # (mean, logvar) = gen.encoder([cond, const])
-        (mean, logvar) = gen.encoder([cond])
+        (mean, logvar) = gen.encoder([cond, const])
+        # (mean, logvar) = gen.encoder([cond])
         ## run decoder n times
         for i in range(num_instances):
             noise_shape = cond[0,...,0].shape + (latent_variables,)
             noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size)
-            # seq_gen.append(gen.decoder.predict([mean, logvar, noise_gen(), const]))
-            seq_gen.append(gen.decoder.predict([mean, logvar, noise_gen()]))
+            seq_gen.append(gen.decoder.predict([mean, logvar, noise_gen(), const]))
+            # seq_gen.append(gen.decoder.predict([mean, logvar, noise_gen()]))
 
     seq_real = data.denormalise(seq_real)
     cond = data.denormalise(cond)
@@ -89,13 +91,16 @@ def plot_sequences(gen,
     for s in range(num_samples):
         i = s
         plt.subplot(gs[i,0])
-        plot_img(seq_real[s,:,:,0], value_range=value_range)
+        # plot_img(seq_real[s,:,:,0], value_range=value_range)
+        plot_img(seq_real[s,:,:], value_range=value_range)
         plt.subplot(gs[i,1])
         plot_img(cond[s,:,:,0], value_range=value_range)
+        # plot_img(cond[s,:,:], value_range=value_range)
         for k in range(num_instances):
             j = 2+k
             plt.subplot(gs[i,j])
             plot_img(seq_gen[k][s,:,:,0], value_range=value_range) 
+            # plot_img(seq_gen[k][s,:,:], value_range=value_range) 
 
     plt.suptitle('Checkpoint ' + str(checkpoint))
 

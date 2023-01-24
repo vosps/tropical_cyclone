@@ -121,7 +121,7 @@ def generator(mode,
 
 def discriminator(arch,
                   input_channels=9,
-                  constant_fields=2,
+                  constant_fields=1, #2
                   filters_disc=64,
                   conv_size=(3, 3),
                   padding=None,

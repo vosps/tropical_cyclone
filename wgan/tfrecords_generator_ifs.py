@@ -133,16 +133,31 @@ def create_dataset(year,clss,era_shape=(10,10,1),out_shape=(100,100,1),
     
     # insert my code here
     print('loading in tropical cyclone data...')
-    x = np.float32(np.load('/user/work/al18709/tc_data_flipped/train_X.npy')) # inputs are (nimags,10,10,nfeatures)
-    y = np.float32(np.load('/user/work/al18709/tc_data_flipped/train_y.npy'))
+    x = np.float32(np.load('/user/work/al18709/tc_data_flipped/train_combined_X.npy')) # inputs are (nimags,10,10,nfeatures)
+    y = np.float32(np.load('/user/work/al18709/tc_data_flipped/train_combined_y.npy'))
     z = np.float32(np.load('/user/home/al18709/work/tc_data_flipped_t/train_y.npy')) # this is the topography variable (nimags,100,100)
 
     # x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/train_X.npy'),axis=3)) # inputs this will eventually be (nimags,10,10,nfeatures)
     # y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/train_y.npy'),axis=3)) # outputs
     # z = np.load('/user/work/al18709/tc_data/train_y.npy') # constants, this will eventually be (100,100,2)
     
+    # normalise the data??
+    # normalise rain
+    x[:,:,:,0] = np.log10(1+x[:,:,:,0])
+    y = np.log10(1+y)
+
+    # normalise mslp
+    x[:,:,:,1] = (x[:,:,:,1]-np.mean(x[:,:,:,1]))/np.std(x[:,:,:,1])
+
+    # normalise the rest by max
+    z = z/np.max(z)
+    for i in range(2,x.shape[-1]):
+        x[:,:,:,i] = x[:,:,:,i]/np.max(x[:,:,:,i])
+
+
     print('x shape: ',x.shape)
     print('y shape: ',y.shape)
+    print('z shape: ',z.shape)
     print('repeat is: ', repeat)
     print('number of nans in x: ',np.count_nonzero(np.isnan(x)))
     print('number of nans in y: ',np.count_nonzero(np.isnan(y)))
@@ -152,7 +167,7 @@ def create_dataset(year,clss,era_shape=(10,10,1),out_shape=(100,100,1),
     ds = tf.data.Dataset.from_tensor_slices((x,z,y)) # have added in elevation as z here
     print('ds made!')
     # shuffle, map, then repeat
-    print('shufflinf dataset...')
+    print('shuffling dataset...')
     ds = ds.shuffle(shuffle_size)
     print('ds shuffled!')
     # ds = ds.map(lambda x: _parse_batch(x, insize=era_shape, outsize=out_shape))
@@ -229,9 +244,26 @@ def create_fixed_dataset(year=None,mode='validation',batch_size=16,
         # y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/%s_y.npy' % dataset),axis=3))
         x = np.float32(np.load('/user/work/al18709/tc_data_flipped/%s_combined_X.npy' % dataset))
         y = np.float32(np.load('/user/work/al18709/tc_data_flipped/%s_combined_y.npy' % dataset))
-        z = np.float32(np.load('/user/home/al18709/work/tc_data_flipped_t/%s_y.npy') % dataset)
+        z = np.float32(np.load('/user/home/al18709/work/tc_data_flipped_t/%s_y.npy' % dataset))
 
-    ds = tf.data.Dataset.from_tensor_slices((x, y))
+    # normalise the data??
+    # normalise rain
+    x[:,:,:,0] = np.log10(1+x[:,:,:,0])
+    y = np.log10(1+y)
+
+    # normalise mslp
+    x[:,:,:,1] = (x[:,:,:,1]-np.mean(x[:,:,:,1]))/np.std(x[:,:,:,1])
+
+    # normalise the rest by max
+    z = z/np.max(z)
+    for i in range(2,x.shape[-1]):
+        x[:,:,:,i] = x[:,:,:,i]/np.max(x[:,:,:,i])
+
+    # ds = tf.data.Dataset.from_tensor_slices((x, y))
+    ds = tf.data.Dataset.from_tensor_slices((x, z, y))
+
+
+
     ds = ds.batch(batch_size)
     # return_dic=False #adding this in to get roc curve to work
     if downsample and return_dic:
@@ -239,6 +271,7 @@ def create_fixed_dataset(year=None,mode='validation',batch_size=16,
     elif downsample and not return_dic:
         ds=ds.map(_dataset_downsampler_list)
     print('ds in new format',ds)
+
 
     return ds
         

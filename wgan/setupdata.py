@@ -29,6 +29,8 @@ def setup_batch_gen(train_years,
             val = val.cache()
     else:
         val = tfrecords_generator_ifs.create_fixed_dataset(val_years, batch_size=batch_size, downsample=downsample)
+
+
     return train, val
 
 

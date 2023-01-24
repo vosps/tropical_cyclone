@@ -74,6 +74,7 @@ class DataGenerator(Sequence):
         # normalise the data (ev) TODO: check this is nec
         data_x_batch = np.log10(1+data_x_batch)
         data_y_batch = np.log10(1+data_y_batch) 
+        print('normalised')
 
         if self.downsample:
             data_x_batch = self._dataset_downsampler(data_y_batch[..., np.newaxis])

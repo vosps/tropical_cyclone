@@ -192,8 +192,8 @@ class WGANGP(object):
         training_ratio=1, show_progress=True):
 
         disc_target_real = None
-        # for tmp_batch, _, _ in batch_gen.take(1).as_numpy_iterator():
-        for tmp_batch, _ in batch_gen.take(1).as_numpy_iterator():
+        for tmp_batch, _, _ in batch_gen.take(1).as_numpy_iterator():
+        # for tmp_batch, _ in batch_gen.take(1).as_numpy_iterator():
             batch_size = tmp_batch.shape[0]
         del tmp_batch
         if show_progress:
@@ -253,7 +253,7 @@ class WGANGP(object):
                     #               for ii in range(self.ensemble_size + 1)]
                     noise_list = [noise_gen()]
                     gt_outputs = [gen_target, sample]
-                print('condconst',len(condconst))
+                # print('condconst',len(condconst))
                 # print('noise list',len(noise_list))
                 gt_inputs = condconst + noise_list
 
