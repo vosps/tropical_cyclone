@@ -1543,6 +1543,18 @@ test = ["pytest", "pytest-mpl", "pytest-cov", "pytest-subtests"]
 uncertainties = ["uncertainties (>=3.0)"]
 
 [[package]]
+name = "plotly"
+version = "5.14.0"
+description = "An open-source, interactive data visualization library for Python"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+packaging = "*"
+tenacity = ">=6.2.0"
+
+[[package]]
 name = "pointpats"
 version = "2.2.0"
 description = "Methods and Functions for planar point pattern analysis"
@@ -2809,7 +2821,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7.1,<3.10"
-content-hash = "018325084a73b2b4628b96419fe300ceed01604bb556f96ac5d214648a72ffa5"
+content-hash = "d2c42e767dfc0a3aeabb37f78b6187817f3de154e4e321e31766ed1693e7f87b"
 
 [metadata.files]
 absl-py = []
@@ -2922,6 +2934,7 @@ pexpect = []
 pickleshare = []
 pillow = []
 pint = []
+plotly = []
 pointpats = []
 pooch = []
 prometheus-client = []
