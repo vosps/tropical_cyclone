@@ -41,6 +41,10 @@ print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 gpus = tf.config.experimental.list_physical_devices('GPU')
 tf.config.experimental.set_memory_growth(gpus[0], True)
 
+# if using more than 1 GPU need to make sure memory is same in both
+for gpu in gpus:
+    tf.config.experimental.set_memory_growth(gpu, True)
+
 # fix random memory issue
 # TF_GPU_ALLOCATOR=cuda_malloc_async
 # tf.config.experimental.set_memory_growth(physical_devices[0], True)
