@@ -68,50 +68,37 @@ class WGANGP(object):
             cond_shapes = input_shapes(self.gen, "lo_res_inputs")
             const_shapes = input_shapes(self.gen, "hi_res_inputs")
             noise_shapes = input_shapes(self.gen, "noise_input")
-        elif self.mode == 'VAEGAN':
-            cond_shapes = input_shapes(self.gen.encoder, "lo_res_inputs")
-            const_shapes = input_shapes(self.gen.encoder, "hi_res_inputs")
-            noise_shapes = input_shapes(self.gen.decoder, "noise_input")
+
         sample_shapes = input_shapes(self.disc, "output")
         
         # Create generator training network
         with Nontrainable(self.disc):
             if self.mode == 'GAN':
+                print('cond shapes: ',cond_shapes)
+                print('const shapes: ',const_shapes)
+                print('noise shapes: ',noise_shapes)
                 cond_in = [Input(shape=cond_shapes[0])] # this might error if cond_shapes doesn't exist
                 const_in = [Input(shape=const_shapes[0])]
                 
                 if self.ensemble_size is None:
                     noise_in = [Input(shape=noise_shapes[0])]
                 else:
-                    # noise_in = [Input(shape=noise_shapes[0])
-                    #             for ii in range(self.ensemble_size + 1)]
                     noise_in = [Input(shape=noise_shapes[0])]
                 gen_in = cond_in + const_in + noise_in
-                # print('noise shape non trainable',len(noise_in))
-                # gen_in = cond_in + noise_in
-                # print('model expecting this many inputs: ',len(gen_in))
-                # print(gen_in)
 
                 gen_out = self.gen(gen_in[0:3])  # only use cond/const/noise
                 # gen_out = self.gen(gen_in[0:2])  # this might be getting rid of const but if it thows back an error then got back?
                 gen_out = ensure_list(gen_out)
                 disc_in_gen = cond_in + const_in + gen_out
                 # disc_in_gen = cond_in + gen_out
+                print(cond_in)
+                print(cond_in[0].shape)
+                print(const_in)
+                print(gen_out)
+                print('disc in gen',disc_in_gen)
                 disc_out_gen = self.disc(disc_in_gen)
                 full_gen_out = [disc_out_gen]
-                # if self.ensemble_size is not None:
-                #     # generate ensemble of predictions and add mean to gen_trainer output
-                #     # preds = [self.gen([gen_in[0], gen_in[1], gen_in[3+ii]])
-                #     #          for ii in range(self.ensemble_size)]
 
-                #     preds = [self.gen([gen_in[0], gen_in[1], gen_in[2+ii]])
-                #              for ii in range(self.ensemble_size)]
-                #     preds = tf.stack(preds)
-                #     pred_mean = tf.reduce_mean(preds, axis=0)
-                #     full_gen_out.append(pred_mean)
-                
-                # print('len of gen_in... again?',len(gen_in))
-                # print(gen_in)
                 self.gen_trainer = Model(inputs=gen_in, 
                                          outputs=full_gen_out, 
                                          name='gen_trainer')

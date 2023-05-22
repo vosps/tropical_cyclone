@@ -34,7 +34,7 @@ def make_cmap(high_vals=False):
 	else:
 		N=16
 	precip_cmap = LinearSegmentedColormap.from_list('tc_colours',tc_colours,N=N) #increasing N makes it smoother
-	precip_norm = matplotlib.colors.BoundaryNorm(precip_clevs, precip_cmap.N)
+	precip_norm = matplotlib.colors.BoundaryNorm(precip_clevs, precip_cmap.N,extend='max')
 	return precip_cmap,precip_norm
 
 

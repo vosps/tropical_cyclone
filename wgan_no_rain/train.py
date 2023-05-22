@@ -16,13 +16,17 @@ def train_model(*,
 
     for cond, _, _ in batch_gen_train.take(1).as_numpy_iterator():
     # for cond, _ in batch_gen_train.take(1).as_numpy_iterator():
-        img_shape = cond.shape[1:-1]
+        # img_shape = cond.shape[1:-1]
+        img_shape = cond.shape
         batch_size = cond.shape[0]
     del cond
 
     if mode == 'GAN':
         print('training gan')
-        noise_shape = (img_shape[0], img_shape[1], noise_channels)
+        # noise_shape = (img_shape[0], img_shape[1], noise_channels)
+        print('img_shape',img_shape)
+        # noise_shape = (1, noise_channels)
+        noise_shape = (10,10, noise_channels)
         noise_gen = noise.NoiseGenerator(noise_shape, batch_size=batch_size)
         print(noise_shape)
         print(batch_gen_train)

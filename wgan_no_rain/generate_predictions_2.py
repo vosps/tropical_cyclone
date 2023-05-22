@@ -54,8 +54,8 @@ def generate_predictions(*,
 		
 	# define initial variables
 	# input_channels = 1
-	input_channels = 7
-	noise_channels = 4 #4
+	input_channels = 6
+	noise_channels = 6 #4
 	batch_size = 512
 	num_images = 150
 		
@@ -125,7 +125,7 @@ def generate_predictions(*,
 	pred = np.zeros((num_images,100,100,20))
 	seq_real = np.zeros((num_images,100,100,1))
 	# low_res_inputs = np.zeros((num_images,10,10,1))
-	low_res_inputs = np.zeros((num_images,10,10,7))
+	low_res_inputs = np.zeros((num_images,10,10,6))
 	data_pred_iter = iter(data_predict)
 	# unbatch first
 	nbatches = int(num_images/batch_size)
@@ -162,7 +162,8 @@ def generate_predictions(*,
 
 		img_real = outputs
 		img_pred = []	   
-		noise_shape = inputs[0,...,0].shape + (noise_channels,)
+		# noise_shape = inputs[0,...,0].shape + (noise_channels,)
+		noise_shape = (10,10) + (noise_channels,)
 		print('noise shape: ',noise_shape)
 		if i == nbatches:
 			noise_gen = NoiseGenerator(noise_shape, batch_size=remainder) # does noise gen need to be outside of the for loop?
@@ -207,13 +208,13 @@ def generate_predictions(*,
 		print('seq_real.shape: ',seq_real.shape)
 		print('assigning images ',i*batch_size,' to ',i*batch_size + batch_size,'...')
 		if i == nbatches:
-			# seq_real[i*batch_size:,:,:,:] = img_real[:remainder]
-			seq_real[i*batch_size:,:,:,0] = img_real[:remainder]
+			seq_real[i*batch_size:,:,:,:] = img_real[:remainder]
+			# seq_real[i*batch_size:,:,:,0] = img_real[:remainder]
 			pred[i*batch_size:,:,:,:] = img_pred[:remainder]
 			low_res_inputs[i*batch_size:,:,:,:] = inputs[:remainder]
 		else:
-			# seq_real[i*batch_size:i*batch_size + batch_size,:,:,:] = img_real
-			seq_real[i*batch_size:i*batch_size + batch_size,:,:,0] = img_real
+			seq_real[i*batch_size:i*batch_size + batch_size,:,:,:] = img_real
+			# seq_real[i*batch_size:i*batch_size + batch_size,:,:,0] = img_real
 			pred[i*batch_size:i*batch_size + batch_size,:,:,:] = img_pred
 			low_res_inputs[i*batch_size:i*batch_size + batch_size,:,:,:] = inputs
 
@@ -255,7 +256,7 @@ def generate_predictions(*,
 	else:
 		model = 'gan'	
 		# problem = '5_normal_problem'
-		problem = 'combined_test_run_1'
+		problem = 'no_rain_test_run_1'
 
 	if data_mode == 'storm':
 		problem = storm
