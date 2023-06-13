@@ -15,17 +15,17 @@ import subprocess
 
 
 regrid = 'True'
-variable = 'v'
-level = '850'
+variable = 't'
+level = '600'
 # level = '925'
-variable_name = 'v_component_of_wind'
+variable_name = 'temperature'
 
 # change dataset depending on single or pressure levels
 # dataset = 'reanalysis-era5-single-levels'
 dataset = 'reanalysis-era5-pressure-levels'
 
-outdir = '/bp1store/geog-tropical/data/ERA-5/hour'
-tmpdir = '/bp1store/geog-tropical/data/ERA-5/tmp'
+outdir = '/bp1/geog-tropical/data/ERA-5/hour'
+tmpdir = '/bp1/geog-tropical/data/ERA-5/tmp'
 print(level)
 print(variable)
 print(variable_name)
@@ -35,7 +35,7 @@ if not os.path.exists(tmpdir):
 
 def generate_yrmonths():
 	# 1979 - 2020
-	years = range(1979,2022)
+	years = range(1979,2023)
 	print(list(years))
 	months = ['01','02','03','04','05','06','07','08','09','10','11','12']
 	yrmonths = [ int("%s%s" % (year,month)) for year in years for month in months]

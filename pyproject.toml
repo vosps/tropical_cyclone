@@ -35,6 +35,7 @@ MetPy = "1.2.0"
 imageio = "^2.22.4"
 lime = "^0.2.0"
 plotly = "^5.14.0"
+psmpy = "^0.3.13"
 
 [tool.poetry.dev-dependencies]
 
