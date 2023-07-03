@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from scipy import stats
 import scipy.stats as stats
 from scipy import interpolate
-from utils.evaluation import find_landfalling_tcs,tc_region,create_xarray,get_storm_coords
+# from utils.evaluation import find_landfalling_tcs,tc_region,create_xarray,get_storm_coords
 
 def make_cmap(high_vals=False,low_vals=False):
 	precip_clevs = [0, 1, 2, 3, 5, 7, 10, 15, 20, 25, 30, 40, 50, 70, 100, 150]
