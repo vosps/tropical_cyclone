@@ -83,6 +83,10 @@ def generate_predictions(*,
 		num_images,_,_ = np.load('/user/work/al18709/tc_data_era5_flipped_10/y_%s.npy' % storm).shape
 	elif (data_mode == 'era5') or (data_mode == 'era5_corrected'):
 		num_images,_,_ = np.load('/user/home/al18709/work/tc_data_era5_flipped_10/valid_y.npy').shape
+	elif (data_mode == 'miroc') or (data_mode == 'miroc_corrected'):
+		num_images,_ = np.load('/user/work/al18709/tc_data_flipped/KE_tracks/ke_miroc6-hist_qm_corrected.npy')[:30000,:].shape
+	elif (data_mode == 'miroc_ssp585'):
+		num_images,_ = 30000
 	else:
 		# num_images,_,_ = np.load('/user/work/al18709/tc_data_flipped/%s_X.npy' % data_mode).shape
 		num_images,_,_,_ = np.load('/user/work/al18709/tc_data_flipped/%s_combined_X.npy' % data_mode).shape
@@ -240,6 +244,10 @@ def generate_predictions(*,
 			meta = pd.read_csv('/user/work/al18709/tc_data_era5_flipped_10/meta_%s.csv' % storm)
 		elif (data_mode == 'era5') or (data_mode == 'era5_corrected'):
 			meta = pd.read_csv('/user/work/al18709/tc_data_era5_10/valid_meta.csv')
+		elif (data_mode == 'miroc') or (data_mode == 'miroc_corrected') or (data_mode == 'miroc_ssp585'):
+			meta = pd.read_csv('/user/home/al18709/work/ibtracks/miroc6_hist_tracks.csv').head(30000)
+			meta.rename(columns={'lat':'centre_lat'},inplace=True)
+			meta.rename(columns={'lon':'centre_lon'},inplace=True)
 		else:
 			meta = pd.read_csv('/user/work/al18709/tc_data_mswep/%s_meta.csv' % data_mode)
 		

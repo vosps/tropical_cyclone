@@ -2,6 +2,9 @@ import tensorflow as tf
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, concatenate, Conv2D, UpSampling2D
 from tensorflow.keras.layers import GlobalAveragePooling2D, Dense, LeakyReLU
+from tensorflow.keras import backend as K
+from keras.layers.core import Activation
+from keras.utils.generic_utils import get_custom_objects
 
 from blocks import residual_block, const_upscale_block_100
 
@@ -92,8 +95,17 @@ def generator(mode,
         generator_output = residual_block(generator_output, filters=filters_gen, conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate, padding=padding, force_1d_conv=forceconv)
     print(f"Shape after third residual block: {generator_output.shape}")
 
+    # define new activation function
+    def custom_activation(x):
+  
+        return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.1)+1)
+     
+    get_custom_objects().update({'custom_activation': Activation(custom_activation)})
+    
+
     # Output layer
-    generator_output = Conv2D(filters=1, kernel_size=(1, 1), activation='softplus', name="output")(generator_output)
+    # generator_output = Conv2D(filters=1, kernel_size=(1, 1), activation='softplus', name="output")(generator_output)
+    generator_output = Conv2D(filters=1, kernel_size=(1, 1), activation='custom_activation', name="output")(generator_output)
     print(f"Output shape: {generator_output.shape}")
 
     if mode == 'GAN':

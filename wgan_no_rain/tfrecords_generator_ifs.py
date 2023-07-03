@@ -191,6 +191,19 @@ def create_fixed_dataset(year=None,mode='validation',batch_size=16,
         dataset = storm
         x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep_extend_flipped/KE_tracks/X_%s.npy' % dataset),axis=3))
         y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_mswep_extend_flipped/KE_tracks/y_%s.npy' % dataset),axis=3))
+    
+    elif mode == 'miroc':
+        x = np.float32(np.expand_dims(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/KE_tracks/ke_miroc6-hist.npy'),axis=1),axis=1))[:30000,:,::]
+        y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/KE_tracks/train_y.npy'),axis=3))[:30000,:,::]
+        z = np.float32(np.expand_dims(np.load('/user/home/al18709/work/tc_data_flipped_t/miroc_topography.npy'),axis=3))[:30000,:,::]
+    elif mode == 'miroc_corrected':
+        x = np.float32(np.expand_dims(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/KE_tracks/ke_miroc6-hist_qm_corrected.npy'),axis=1),axis=1))[:30000,:,::]
+        y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/KE_tracks/train_y.npy'),axis=3))[:30000,:,::]
+        z = np.float32(np.expand_dims(np.load('/user/home/al18709/work/tc_data_flipped_t/miroc_topography.npy'),axis=3))[:30000,:,::]
+    elif mode == 'miroc_ssp585':
+        x = np.float32(np.expand_dims(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/KE_tracks/ke_miroc6-ssp585.npy'),axis=1),axis=1))[:30000,:,::]
+        y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/KE_tracks/train_y.npy'),axis=3))[:30000,:,::]
+        z = np.float32(np.expand_dims(np.load('/user/home/al18709/work/tc_data_flipped_t/miroc_ssp585_topography.npy'),axis=3))[:30000,:,::]
     else:
         if mode == 'validation':
             dataset = 'valid'

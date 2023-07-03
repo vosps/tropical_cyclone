@@ -8,7 +8,8 @@ import matplotlib.pyplot as plt
 from scipy import stats
 import scipy.stats as stats
 from scipy import interpolate
-from utils.evaluation import find_landfalling_tcs,tc_region,create_xarray,get_storm_coords
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
 
 def make_cmap(high_vals=False,low_vals=False):
 	precip_clevs = [0, 1, 2, 3, 5, 7, 10, 15, 20, 25, 30, 40, 50, 70, 100, 150]
@@ -277,3 +278,78 @@ def plot_qq(ax,analysis,pred,pred_2,pred_og,real,cnn=False):
 
 	print(analysis)
 	return ax
+
+def plot_accumulated(data,lats,lons,vmin=0,vmax=200,plot='show',limit=1,cmap='Blues',title=False,levels=[0,50,100,150,200,250,300],centre_lats=None,centre_lons=None,intensity=None,ax=None,mask_oceans=False,cbar=False,cax=False,title_pos=False):
+        """
+        Plots the accumulated rainfall of a tropical cyclone while it's at tropical cyclone strength
+        """
+        data = np.where(data<limit,np.nan,data)
+        lon2d,lat2d = np.meshgrid(lons,lats)
+        if plot != 'ax':
+                fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()})
+        print(lon2d.shape,lat2d.shape)
+        print(data.shape)
+        c = ax.contourf(lon2d,lat2d,data,vmin=vmin,vmax=vmax,levels=levels,cmap = cmap, transform=ccrs.PlateCarree())
+        ax.add_feature(cfeature.COASTLINE,linewidth=0.5)
+        ax.add_feature(cfeature.LAND, zorder=100,color='black',alpha=0.1)
+        if centre_lats is not None:
+                for i in range(len(centre_lats)):
+                        if intensity[i] == 0.0:
+                                colour = '#ffb600'
+                                colour='black'
+                        elif intensity[i] == 1.0:
+                                colour =  '#ff9e00'
+                                colour='black'
+                        elif intensity[i] == 2.0:
+                                colour = '#ff7900'
+                                colour='black'
+                        elif intensity[i] == 3.0:       
+                                colour = '#ff6000'
+                                colour='black'
+                        elif intensity[i] == 4.0:
+                                colour = '#ff4000' 
+                                colour='black'
+                        elif intensity[i]==5.0:
+                                colour = '#ff2000' 
+                                colour='black'
+                        ax.plot(centre_lons[i:i+2],centre_lats[i:i+2],color=colour,linewidth=2)
+        ax.outline_patch.set_linewidth(0.5)
+        gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,
+                  linewidth=0.5, color='gray', alpha=0.5, linestyle='-')
+        gl.xlabels_top = False
+        gl.ylabels_right = False
+        gl.xlabel_style = {'size': 14}
+        gl.ylabel_style = {'size': 14}
+        # ax.set_xticklabels(labelsize=20)
+        # ax.set_yticklabels(labelsize=20)
+        ax.tick_params(axis='x', labelsize=20)
+        ax.tick_params(axis='y', labelsize=20)
+        if plot != 'ax':
+                cbar = plt.colorbar(c, shrink=0.78)
+                # cbar.outline.set_linewidth(0.5)
+                cbar.ax.tick_params(labelsize=6,width=0.5)
+        
+        if cbar == True:
+                precip_cmap,precip_norm = make_cmap(high_vals=True)
+                cbar = plt.colorbar(c,fraction=1.5, pad=-0.7,cmap=precip_cmap,ticks=levels,boundaries=levels, format='%1i',ax=cax)
+                # cbar.ax.tick_params(labelsize=8,width=0.5)
+                cbar.ax.tick_params(labelsize=20)
+
+        if (title != False) and (title_pos == False):
+                ax.set_title(title,fontsize=26,pad=15)
+        elif (title != False) and (title_pos != False):
+                x,y = title_pos
+                print(x)
+                print(y)
+                ax.text(x,y,title,fontsize=30)
+        
+
+        if plot=='show':
+                plt.show()
+        elif plot=='save':
+                plt.savefig('accumulated_rainfall.png',bbox_inches='tight',dpi=300)
+        else:
+                return ax
+	
+
+	

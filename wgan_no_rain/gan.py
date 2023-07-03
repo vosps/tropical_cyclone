@@ -40,15 +40,24 @@ class WGANGP(object):
         return fn
 
     def load(self, load_files):
-        self.gen.load_weights(load_files["gen_weights"])
+        print(load_files)
+        # self.gen.load_weights(load_files["gen_weights"])
+        # self.disc.load_weights(load_files["disc_weights"])
+        self.gen.load_weights('/user/home/al18709/work/gan/logs_wgan_no_rain_v4/models/gen_weights-2598400.h5')
+        # self.disc.load_weights("/user/home/al18709/work/gan/logs_wgan_no_rain_v4/models-disc_weights.h5")
+        # self.gen.load_weights(load_files["gen_weights"]) # figure out why this breaks
         self.disc.load_weights(load_files["disc_weights"])
-        
+        # disable eager execution to get the next bit to work??
+        # tf.compat.v1.disable_eager_execution()
         with Nontrainable(self.disc):
-            self.gen_trainer._make_train_function()
+            # self.gen_trainer._make_train_function()
+            self.gen_trainer.make_train_function()
+            print(load_files["gen_opt_weights"])
             load_opt_weights(self.gen_trainer,
                 load_files["gen_opt_weights"])
         with Nontrainable(self.gen):
-            self.disc_trainer._make_train_function()
+            # self.disc_trainer._make_train_function()
+            self.disc_trainer.make_train_function()
             load_opt_weights(self.disc_trainer,
                 load_files["disc_opt_weights"])
 
