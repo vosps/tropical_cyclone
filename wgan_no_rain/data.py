@@ -24,6 +24,8 @@ UK_LON_LIMIT = (-2, 12)
 
 def denormalise(x):
     return 10**x - 1
+    # with 1D model don't need to denormalise?
+    # return x
 
 
 def select_precip_region(data, lat_limit, lon_limit):

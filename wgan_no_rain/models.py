@@ -45,12 +45,15 @@ def generator(mode,
 
     # (1,1) to (5,5) to (10,10) fingers crossed that works
     block_channels = [2*filters_gen, filters_gen]
+    
     generator_intermediate = UpSampling2D(size=(5, 5), interpolation='bilinear')(generator_input)
     print(f"Shape after upsampling step 1: {generator_intermediate.shape}")
-    generator_intermediate = residual_block(generator_intermediate, filters=block_channels[0], conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate, padding=padding, force_1d_conv=forceconv)
+    for i in range(3):
+        generator_intermediate = residual_block(generator_intermediate, filters=block_channels[0], conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate, padding=padding, force_1d_conv=forceconv)
     generator_intermediate = UpSampling2D(size=(2, 2), interpolation='bilinear')(generator_intermediate)
     print(f"Shape after upsampling step 2: {generator_intermediate.shape}")
-    generator_intermediate = residual_block(generator_intermediate, filters=block_channels[1], conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate, padding=padding, force_1d_conv=forceconv)
+    for i in range(3):
+        generator_intermediate = residual_block(generator_intermediate, filters=block_channels[1], conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate, padding=padding, force_1d_conv=forceconv)
 
     if mode == 'GAN':
         # noise
@@ -76,12 +79,16 @@ def generator(mode,
     # continue with normal upsampling from og WGAN
     generator_output = UpSampling2D(size=(5, 5), interpolation='bilinear')(generator_output)
     print(f"Shape after upsampling step 3: {generator_output.shape}")
-    generator_output = residual_block(generator_output, filters=block_channels[0], conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate, padding=padding, force_1d_conv=forceconv)
+    for i in range(3):
+        generator_output = residual_block(generator_output, filters=block_channels[0], conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate, padding=padding, force_1d_conv=forceconv)
     print(f"Shape after residual block: {generator_output.shape}")
     generator_output = UpSampling2D(size=(2, 2), interpolation='bilinear')(generator_output)
     print(f"Shape after upsampling step 4: {generator_output.shape}")
-    generator_output = residual_block(generator_output, filters=block_channels[1], conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate, padding=padding, force_1d_conv=forceconv)
+    for i in range(3):
+        generator_output = residual_block(generator_output, filters=block_channels[1], conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate, padding=padding, force_1d_conv=forceconv)
     print(f"Shape after residual block: {generator_output.shape}")
+
+    # TODO: add a downscaling and upscaling step here to improve spectral power?
 
     # TODO: concantenate high res constant field with high res input features and maybe pass through some more residual blocks?
     # and then edit the discriminator so that it matches.
@@ -100,7 +107,7 @@ def generator(mode,
   
         return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.1)+1)
      
-    get_custom_objects().update({'custom_activation': Activation(custom_activation)})
+    # get_custom_objects().update({'custom_activation': Activation(custom_activation)})
     
 
     # Output layer
@@ -204,8 +211,8 @@ def discriminator(arch,
     
     # extra residual blocks, this might help with spatial structure!
     # try removing these extra residual blocks to see if this helps improve the spectral power
-    # disc_input = residual_block(disc_input, filters=filters_disc, conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate, padding=padding, force_1d_conv=forceconv)
-    # disc_input = residual_block(disc_input, filters=filters_disc, conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate, padding=padding, force_1d_conv=forceconv)
+    disc_input = residual_block(disc_input, filters=filters_disc, conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate, padding=padding, force_1d_conv=forceconv)
+    disc_input = residual_block(disc_input, filters=filters_disc, conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate, padding=padding, force_1d_conv=forceconv)
     
 
     print(f"Shape after residual block: {disc_input.shape}")

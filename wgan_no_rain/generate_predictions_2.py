@@ -273,8 +273,9 @@ def generate_predictions(*,
 		problem = '3_hrly'
 
 	seq_real = 10**seq_real - 1
+	# don't need to denormalise the results, actually seems like you do
 	pred = 10**pred - 1
-	low_res_inputs = 10**low_res_inputs - 1
+	# low_res_inputs = 10**low_res_inputs - 1
 
 	np.save('/user/home/al18709/work/%s_predictions_20/%s_real-%s_%s.npy' % (model,data_mode,checkpoint,problem),seq_real)
 	np.save('/user/home/al18709/work/%s_predictions_20/%s_pred-%s_%s.npy' % (model,data_mode,checkpoint,problem),pred)
