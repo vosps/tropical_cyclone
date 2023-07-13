@@ -12,9 +12,13 @@ fps = ['/user/home/al18709/work/CMIP6/MIROC6/hour/pr/pr_E1hr_MIROC6_historical_r
 urls = ['http://esgf-data3.ceda.ac.uk/thredds/fileServer/esg_cmip6/CMIP6/HighResMIP/EC-Earth-Consortium/EC-Earth3P/hist-1950/r1i1p2f1/3hr/pr/gr/v20190314/pr_3hr_EC-Earth3P_hist-1950_r1i1p2f1_gr_%s01010000-%s12312100.nc' % (year,year) for year in range(2004,2015)]
 fps = ['/user/home/al18709/work/CMIP6/HighResMIP/EC-Earth3p/historical/pr_3hr_EC-Earth3P_hist-1950_r1i1p2f1_gr_%s01010000-%s12312100.nc' % (year,year) for year in range(2004,2015)]
 
+urls = ['http://esgf-data02.diasjp.net/thredds/fileServer/esg_dataroot/CMIP6/ScenarioMIP/MIROC/MIROC6/ssp585/r1i1p1f1/6hrPlev/pr/gn/v20191204/pr_6hrPlev_MIROC6_ssp585_r1i1p1f1_gn_%s01010300-%s12312100.nc' % (year,year) for year in range(2050,2100)]
+fps = ['/user/home/al18709/work/CMIP6/MIROC6/hour/ssp585/pr_6hrPlev_MIROC6_ssp585_r1i1p1f1_gn_%s01010000-%s12312100.nc' % (year,year) for year in range(2050,2100)]
+
 for i,url in enumerate(urls):
-	fp = fps[i]
-	wget_cmd = ['wget','-O',fp,url] # normal resolution
+	# fp = fps[i]
+	fp = '/user/home/al18709/work/CMIP6/MIROC6/hour/ssp585/'
+	wget_cmd = ['wget','-O',url,fp] # normal resolution
 	print(' '.join(wget_cmd))
 	ret = subprocess.call(wget_cmd)
 	if not ret==0:

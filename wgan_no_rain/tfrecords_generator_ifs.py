@@ -214,24 +214,28 @@ def create_fixed_dataset(year=None,mode='validation',batch_size=16,
         x = np.float32(np.expand_dims(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/KE_tracks/%s_X.npy' % dataset),axis=1),axis=1))
         y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/KE_tracks/%s_y.npy' % dataset),axis=3))
         z = np.float32(np.expand_dims(np.load('/user/home/al18709/work/tc_data_flipped_t/%s_y.npy' % dataset),axis=3))
-
+    print('dataset opened!')
     # normalise the data??
     # normalise rain
     # x[:,0] = np.log10(1+x[:,0])
     y = np.log10(1+y)
+    print('y normalised',flush=True)
 
     # normalise mslp
     x[:,:,:,0] = (x[:,:,:,0]-np.mean(x[:,:,:,0]))/np.std(x[:,:,:,0])
+    print('x normalised',flush=True)
 
     # normalise the rest by max
     z = z/np.max(z)
     for i in range(1,x.shape[-1]):
         x[:,:,:,i] = x[:,:,:,i]/np.max(x[:,:,:,i])
+    
+    print('all variables normalised')
 
     # ds = tf.data.Dataset.from_tensor_slices((x, y))
     ds = tf.data.Dataset.from_tensor_slices((x, z, y))
 
-
+    print('dataset changed to tensor')
 
     ds = ds.batch(batch_size)
     # return_dic=False #adding this in to get roc curve to work

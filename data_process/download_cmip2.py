@@ -28,7 +28,7 @@ for ym in yrmonths:
 
 	ret = subprocess.call(cmd)
 	if not ret==0:
-		raise Exception('Error with wget command')
+		raise Exception('Error with command')
 
 
 
