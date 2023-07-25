@@ -33,3 +33,5 @@ for ym in yrmonths:
 
 
 # scp jasmin-sci:/badc/cmip6/data/PRIMAVERA/HighResMIP/CMCC/CMCC-CM2-VHR4/hist-1950/r1i1p1f1/Prim6hr/pr/gn/v20180705/pr_Prim6hr_CMCC-CM2-VHR4_hist-1950_r1i1p1f1_gn_197901010000-197901311800.nc pr_Prim6hr_CMCC-CM2-VHR4_hist-1950_r1i1p1f1_gn_197901010000-197901311800.nc
+# scp jasmin-sci:/home/users/vosps/MIROC6/historical/NH/*_newtime2.nc NH
+# scp jasmin-sci:/home/users/vosps/MIROC6/historical/SH/*_newtime2.nc SH

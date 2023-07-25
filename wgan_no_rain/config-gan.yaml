@@ -11,12 +11,12 @@ MODEL:
     # change padding to zero padding?
         
 SETUP:
-    log_folder: "/user/home/al18709/work/gan/logs_wgan_no_rain_v10"
+    log_folder: "/user/home/al18709/work/gan/logs_wgan_no_rain_v11"
     # log_folder: "/user/home/al18709/work/dsrnngan/logs"
 
 GENERATOR:
     filters_gen: 256 #128, when this was 256 it might have helped with better spatial structure!
-    noise_channels: 6 # used for GAN, used to be 4, but tat was for 9 input channels, so could decrease this.
+    noise_channels: 24 # used for GAN, used to be 4, but tat was for 9 input channels, so could decrease this.
     latent_variables: 1 # used for VAEGAN
     learning_rate_gen: 1e-6 #1e-5 change to 1e-6
 

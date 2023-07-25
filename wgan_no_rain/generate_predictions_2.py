@@ -167,7 +167,8 @@ def generate_predictions(*,
 		img_real = outputs
 		img_pred = []	   
 		# noise_shape = inputs[0,...,0].shape + (noise_channels,)
-		noise_shape = (10,10) + (noise_channels,)
+		# noise_shape = (10,10) + (noise_channels,)
+		noise_shape = (5,5) + (noise_channels,)
 		print('noise shape: ',noise_shape)
 		if i == nbatches:
 			noise_gen = NoiseGenerator(noise_shape, batch_size=remainder) # does noise gen need to be outside of the for loop?

@@ -43,7 +43,8 @@ class WGANGP(object):
         print(load_files)
         # self.gen.load_weights(load_files["gen_weights"])
         # self.disc.load_weights(load_files["disc_weights"])
-        self.gen.load_weights('/user/home/al18709/work/gan/logs_wgan_no_rain_v4/models/gen_weights-2598400.h5')
+        self.gen.load_weights('/user/home/al18709/work/gan/logs_wgan_no_rain_v10/models/gen_weights-0844800.h5')
+        # self.gen.load_weights('/user/home/al18709/work/gan/logs_wgan_no_rain_v10/models-gen_weights.h5')
         # self.disc.load_weights("/user/home/al18709/work/gan/logs_wgan_no_rain_v4/models-disc_weights.h5")
         # self.gen.load_weights(load_files["gen_weights"]) # figure out why this breaks
         self.disc.load_weights(load_files["disc_weights"])
