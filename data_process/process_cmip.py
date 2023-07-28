@@ -67,18 +67,28 @@ def regrid(fp):
 # pr_6hrPlev_MIROC6_historical_r1i1p1f1_gn_198001010300-198001312100.nc
 
 
-# model = 'MIROC6'
+model = 'MPI-ESM1-2-LR'
+hemisphere = 'SH'
+experiment = 'CMIP6' # or 'CMIP6'
+scenario = 'historical'
+resolution = 10
+
+# model = 'CMCC-CM2-VHR4'
 # hemisphere = 'SH'
-# experiment = 'CMIP6' # or 'CMIP6'
+# experiment = 'HighResMIP'
 # scenario = 'historical'
 # resolution = 10
 
-model = 'CMCC-CM2-VHR4'
+model = 'MPI-ESM1-2-HR'
+model_short = 'MPI'
 hemisphere = 'NH'
 experiment = 'HighResMIP'
 scenario = 'historical'
 resolution = 10
 
+# /bp1/geog-tropical/data/CMIP6/HighResMIP-rain/CMCC/CMCC-CM2-HR4/hist-1950/r1i1p1f1/Prim6hr/pr/gn/latest
+# /bp1/geog-tropical/data/CMIP6/HighResMIP-rain/CMCC/CMCC-CM2-HR4/highres-future/r1i1p1f1/Prim6hr/pr/gn/latest
+# /bp1/geog-tropical/data/CMIP6/HighResMIP-rain/MPI/MPI-ESM1-2-HR/highres-future/r1i1p1f1/Prim6hr/pr/gn/latest
 if scenario == 'historical':
 	mini_scen = 'hist'
 	scen_yr_start = '1950'
@@ -90,9 +100,15 @@ yrmonths=generate_yrmonths()
 # define variables depending on which type of dataset we have
 if experiment == 'HighResMIP':
 	rainfall_fps = [f'/user/home/al18709/work/CMIP6/HighResMIP/{model}/{scenario}/pr/pr_Prim6hr_{model}_{mini_scen}-{scen_yr_start}_r1i1p1f1_gn_{yrmonth}-{yrmonth}_regrid.nc' for yrmonth in yrmonths]
+	if scenario == 'historical':
+		s = 'hist-1950'
+	else:
+		s = 'highres-future'
+	rainfall_fps = [f'/bp1/geog-tropical/data/CMIP6/HighResMIP-rain/{model_short}/{model}/{s}/r1i1p1f1/Prim6hr/pr/gn/latest/pr_Prim6hr_{model}_{mini_scen}-{scen_yr_start}_r1i1p1f1_gn_{yrmonth}-{yrmonth}_regrid.nc' for yrmonth in yrmonths]
 	time1 = ''
 	time2 = ''
 	rainfall_dir =  f'/user/home/al18709/work/CMIP6/HighResMIP/{model}/{scenario}/pr/pr_Prim6hr_{model}_{mini_scen}-{scen_yr_start}_r1i1p1f1_gn_'
+	rainfall_dir = f'/bp1/geog-tropical/data/CMIP6/HighResMIP-rain/{model_short}/{model}/{s}/r1i1p1f1/Prim6hr/pr/gn/latest/pr_Prim6hr_{model}_{mini_scen}-{scen_yr_start}_r1i1p1f1_gn_'
 	tracking_fp = f'/user/home/al18709/work/CMIP6/HighResMIP/{model}/{scenario}/tracks/TC-{hemisphere}_TRACK_{model}_{mini_scen}-{scen_yr_start}_r1i1p1f1_gn_{scen_yr_start}0101-{scen_yr_end}1231.nc'
 	new_fp = f'/user/home/al18709/work/CMIP6/HighResMIP/{model}/{scenario}/storm_rain/'
 	tracking_ds = xr.open_dataset(tracking_fp)
@@ -183,13 +199,13 @@ elif experiment == 'CMIP6':
 # track_id = tracking_ds_tracks.TRACK_ID #num points?
 # w_speed = tracking_ds_record.sfcWind #time?
 index = []
-not_tc_idx = np.array(range(0,len(lats)))
+# not_tc_idx = np.array(range(0,len(lats)))
 all_lats = np.zeros((len(lats),int(1000/resolution)))
 all_lons = np.zeros((len(lats),int(1000/resolution)))
 # all_rain = np.zeros((len(lats),int(1000/resolution),int(1000/resolution)))
 all_rain = np.ones((len(lats),int(1000/resolution),int(1000/resolution)))
 # all_id = pd.DataFrame({'sid':[0]*len(lats)})
-all_id = pd.DataFrame({'sid':['0']*len(lats)})
+all_id = pd.DataFrame({'sid':['0']*len(lats),'year':[0]*len(lats),'month':[0]*len(lats),'day':[0]*len(lats),'hour':[0]*len(lats)})
 print('processing ',len(lats), ' storm samples...')
 
 print('w speed shape',w_speed.values.shape)
@@ -227,7 +243,7 @@ for j,i in enumerate(storm_start.values):
 	
 	
 	# filter out years where we don't have the rainfall file yet 2015
-	if not set(storm_year.values) & set(range(1979,1980)):
+	if not set(storm_year.values) & set(range(1979,2015)):
 	# if not set(storm_year.values) & set([1979]):
 		print('year %s not in range' % storm_year.values[0])
 		print('storm year: ', storm_year.values)
@@ -269,7 +285,10 @@ for j,i in enumerate(storm_start.values):
 		if experiment == 'CMIP6':
 			rainfall_fp = f'{rainfall_dir}{storm_year.values[k]}01{time1}-{storm_year.values[k]}12{time2}.nc'
 		elif experiment == 'HighResMIP':
-			rainfall_fp = f'{rainfall_dir}{storm_year.values[k]}{month}-{storm_year.values[k]}{month}.nc'
+			if model == 'MPI-ESM1-2-HR':
+				rainfall_fp = f'{rainfall_dir}{storm_year.values[k]}01010556-{storm_year.values[k]}12312356.nc'
+			else:
+				rainfall_fp = f'{rainfall_dir}{storm_year.values[k]}{month}-{storm_year.values[k]}{month}.nc'
 		print('month', month)
 		print('year: ', storm_year.values[k])
 		print(rainfall_fp)
@@ -291,7 +310,10 @@ for j,i in enumerate(storm_start.values):
 		try:
 			rainfall_slice = rainfall_ds.sel(time=rain_time).pr
 		except:
-			rainfall_slice = rainfall_ds.sel(time=rain_time + np.timedelta64(3,'h')).pr
+			if model == 'MPI-ESM1-2-HR':
+				rainfall_slice = rainfall_ds.sel(time=rain_time - np.timedelta64(6,'h') - np.timedelta64(4,'m')).pr # midday is 11:56? or midday is 17:56
+			else:
+				rainfall_slice = rainfall_ds.sel(time=rain_time + np.timedelta64(3,'h')).pr # midday is 3pm - so 3pm represents the end of the timestep and midday represents the middle of the timestep?
 
 		print('rainfall was timesliced successfully')
 		print('rainfall time: ',rainfall_slice.time)
@@ -383,6 +405,10 @@ for j,i in enumerate(storm_start.values):
 			# all_id = all_id.sid.str.replace([storm_track_idx+k],storm_sid)
 			# all_id[storm_track_idx+k].sid = storm_sid
 			all_id.sid.iloc[storm_track_idx+k] = storm_sid
+			all_id.year.iloc[storm_track_idx+k] = storm_year[k]
+			all_id.month.iloc[storm_track_idx+k] = storm_month[k]
+			all_id.day.iloc[storm_track_idx+k] = storm_day[k]
+			all_id.hour.iloc[storm_track_idx+k] = storm_hour[k]
 			index.append(storm_track_idx+k)
 			# all_id[i+k] = storm_sid
 		else:
@@ -400,8 +426,12 @@ for j,i in enumerate(storm_start.values):
 			# all_id = all_id.sid.str.replace([storm_track_idx+k],storm_sid)
 			# all_id[storm_track_idx+k].sid = storm_sid
 			all_id.sid.iloc[storm_track_idx+k] = storm_sid
+			all_id.year.iloc[storm_track_idx+k] = storm_year[k]
+			all_id.month.iloc[storm_track_idx+k] = storm_month[k]
+			all_id.day.iloc[storm_track_idx+k] = storm_day[k]
+			all_id.hour.iloc[storm_track_idx+k] = storm_hour[k]
 			print(all_id)
-			not_tc_idx = np.delete(not_tc_idx,storm_track_idx+k)
+			# not_tc_idx = np.delete(not_tc_idx,storm_track_idx+k)
 			index.append(storm_track_idx+k)
 			# all_id[i+k] = f'TC_EC-Earth3p_hist_{year}_NH_{j}'
 			# all_id.append(f'TC_EC-Earth3p_hist_{year}_NH_{j}')
@@ -417,14 +447,28 @@ for j,i in enumerate(storm_start.values):
 # 	else:
 # 		continue
 
-if experiment == 'CMIP6':
-	# rainfall_fp = f'{rainfall_dir}{storm_year.values[k]}01{time1}-{storm_year.values[k]}12{time2}.nc'
-	path = f'/user/home/al18709/work/CMIP6/HighResMIP/{model}/{scenario}/pr/pr_Prim6hr_{model}_{mini_scen}-{scen_yr_start}_r1i1p1f1_gn_*regrid.nc'
-elif experiment == 'HighResMIP':
-	# rainfall_fp = f'{rainfall_dir}{storm_year.values[k]}{month}-{storm_year.values[k]}{month}.nc'
-	path = f'/user/home/al18709/work/CMIP6/{model}/pr/{scenario}/pr_6hrPlev_{model}_{scenario}_r1i1p1f1_gn_*regrid.nc'
+	if experiment == 'HighResMIP':
+		# rainfall_fp = f'{rainfall_dir}{storm_year.values[k]}01{time1}-{storm_year.values[k]}12{time2}.nc'
+		path = f'/user/home/al18709/work/CMIP6/HighResMIP/{model}/{scenario}/pr/'
+	elif experiment == 'CMIP6':
+		# rainfall_fp = f'{rainfall_dir}{storm_year.values[k]}{month}-{storm_year.values[k]}{month}.nc'
+		path = f'/user/home/al18709/work/CMIP6/{model}/pr/{scenario}/'
 
-subprocess.run(['rm', path])
+	regrid_files = os.listdir(path)
+	# print(regrid_files)
+	n_files = 0
+	for item in regrid_files:
+		# print(item)
+		if item.endswith("regrid.nc"):
+			n_files = n_files+1
+	if n_files > 2:
+		for i in regrid_files:
+			print(i)
+			if i.endswith("regrid.nc"):
+				print('removing ',path,i)
+				os.remove(os.path.join(path, i))
+
+	# subprocess.run(['rm', path])
 
 print('number of weak timesteps: ',len(index))
 print('removed duplicates: ',set(index))
@@ -451,7 +495,7 @@ all_lons = all_lons[index]
 all_id = all_id.iloc[index]
 
 # all_id = all_id.iloc[all_id.index[~np.isin(np.arange(len(all_id)), index)]]
-print(len(not_tc_idx))
+# print(len(not_tc_idx))
 # all_rain = exclude_weak(all_rain,not_tc_idx)
 # all_lats = exclude_weak(all_lats,not_tc_idx)
 # all_lons = exclude_weak(all_lons,not_tc_idx)

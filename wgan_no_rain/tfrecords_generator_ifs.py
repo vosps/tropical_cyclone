@@ -22,7 +22,7 @@ def DataGenerator(year, batch_size, repeat=True, downsample=False, weights=None)
 
 def create_mixed_dataset(year,batch_size,era_shape=(1,6),
                          out_shape=(100,100,1),repeat=True,downsample = False,
-                         folder=records_folder, shuffle_size = 1024,
+                         folder=records_folder, shuffle_size = 64,
                          weights = None):
 
     classes = 4
@@ -90,7 +90,7 @@ def _dataset_downsampler_list(inputs, constants, outputs):
 # def create_dataset(year,clss,era_shape=(10,10,9),con_shape=(100,100,2),out_shape=(100,100,1),
 #                    folder=records_folder, shuffle_size = 1024, repeat=True):
 def create_dataset(year,clss,era_shape=(1,1,6),out_shape=(100,100,1),
-                   folder=records_folder, shuffle_size = 1024, repeat=True):
+                   folder=records_folder, shuffle_size = 64, repeat=True):
     """
     this function creates the dataset in the format input, constants, output
 

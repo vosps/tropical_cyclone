@@ -5,7 +5,7 @@ import pandas as pd
 from tfrecords_generator_ifs import create_fixed_dataset
 import setupmodel
 from noise import NoiseGenerator
-import gc
+import gc,os
 
 
 def flip(tc):
@@ -51,11 +51,12 @@ def generate_predictions(*,
 					gcm = False,
 					# plot_ecpoint=True,
 					):
-		
+
+
 	# define initial variables
 	# input_channels = 1
 	input_channels = 6
-	noise_channels = 6 #4
+	# noise_channels = 6 #4
 	batch_size = 512
 	num_images = 150
 		
@@ -118,6 +119,15 @@ def generate_predictions(*,
 	print('log folder is:',log_folder)
 	print(vaegan)
 	gen_weights_file = log_folder + '/models-gen_weights.h5'
+	files = os.listdir(log_folder + '/models/')
+	checkpoints = []
+	for file in files:
+		cp = file[-10:-3]
+		checkpoints.append(int(cp))
+	print(checkpoints)
+	latest_checkpoint = max(checkpoints)
+	# latest_checkpoint = '64000'
+	gen_weights_file = log_folder + '/models/' +'gen_weights-0' + str(latest_checkpoint) + '.h5'
 	# gen_weights_file = log_folder + '/models-gen_opt_weights.h5' # TODO: this has different construction to gen_weights - ask andrew and lucy
 	model.gen.built = True
 	model.gen.load_weights(gen_weights_file) 
