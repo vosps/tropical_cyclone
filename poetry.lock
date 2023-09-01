@@ -1411,6 +1411,21 @@ numpy = [
 ]
 
 [[package]]
+name = "opencv-contrib-python"
+version = "4.8.0.74"
+description = "Wrapper package for OpenCV python bindings."
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+numpy = [
+    {version = ">=1.19.3", markers = "python_version >= \"3.6\" and platform_system == \"Linux\" and platform_machine == \"aarch64\" or python_version >= \"3.9\""},
+    {version = ">=1.17.0", markers = "python_version >= \"3.7\""},
+    {version = ">=1.17.3", markers = "python_version >= \"3.8\""},
+]
+
+[[package]]
 name = "opencv-python"
 version = "4.3.0.36"
 description = "Wrapper package for OpenCV python bindings."

@@ -219,7 +219,9 @@ for i in range(num_samples):
     else:
         if mode == 'GAN':
             noise_shape = inputs['lo_res_inputs'][0,...,0].shape + (noise_channels,)
+            noise_hr_shape = inputs['hi_res_inputs'][0,...,0].shape + (noise_channels,)
             noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size)
+            noise_hr_gen = NoiseGenerator(noise_hr_shape, batch_size=batch_size)
         elif mode == 'VAEGAN':
             noise_shape = inputs['lo_res_inputs'][0,...,0].shape + (latent_variables,)
             noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size)
@@ -229,8 +231,9 @@ for i in range(num_samples):
             mean, logvar = gen.encoder([inputs['lo_res_inputs']])         
         for j in range(pred_ensemble_size):
             inputs['noise_input'] = noise_gen()
+            inputs['noise_hr_inputs'] = noise_hr_gen()
             if mode == 'GAN':
-                gan_inputs = [inputs['lo_res_inputs'], inputs['hi_res_inputs'], inputs['noise_input']]
+                gan_inputs = [inputs['lo_res_inputs'], inputs['hi_res_inputs'], inputs['noise_input'], inputs['noise_hr_input']]
                 pred_ensemble.append(data.denormalise(gen.predict(gan_inputs)))
                 print(f"sample number {i+1}")
                 print(f"max predicted value is {np.amax(data.denormalise(gen.predict(gan_inputs)))}")

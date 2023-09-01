@@ -26,13 +26,16 @@ def train_model(*,
         # noise_shape = (img_shape[0], img_shape[1], noise_channels)
         print('img_shape',img_shape)
         # noise_shape = (1, noise_channels)
-        # noise_shape = (10,10, noise_channels)
-        noise_shape = (5,5, noise_channels)
+        noise_shape = (10,10, noise_channels)
+        noise_hr_shape = (50,50, noise_channels)
+        # noise_shape = (5,5, noise_channels)
         noise_gen = noise.NoiseGenerator(noise_shape, batch_size=batch_size)
-        print(noise_shape)
+        noise_hr_gen = noise.NoiseGenerator(noise_hr_shape, batch_size=batch_size)
+        print('noise shape: ', noise_shape)
+        print('noise_hr shape: ', noise_hr_shape)
         print(batch_gen_train)
-        loss_log = model.train(batch_gen_train, noise_gen,
-                               steps_per_checkpoint, training_ratio=5)
+        loss_log = model.train(batch_gen_train, noise_gen, noise_hr_gen,
+                               steps_per_checkpoint, training_ratio=7) #used to be 5
 
     elif mode == 'VAEGAN':
         print('training vaegan')

@@ -205,6 +205,7 @@ if __name__ == "__main__":
             # initialize GAN
             print('mode',mode)
             print('arch',arch)
+            print('noise channels before setting up model: ', noise_channels)
             model = setupmodel.setup_model(
                 mode=mode,
                 arch=arch,

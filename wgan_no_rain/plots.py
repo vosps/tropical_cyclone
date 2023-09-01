@@ -55,10 +55,13 @@ def plot_sequences(gen,
     if mode == 'GAN':
         for i in range(num_instances):
             # noise_shape = cond[0,...,0].shape + (noise_channels,)
-            # noise_shape = (10,10) + (noise_channels,) # changed to this because cond shape changes within model
-            noise_shape = (5,5) + (noise_channels,) # changed to this because cond shape changes within model
+            noise_shape = (10,10) + (noise_channels,) # changed to this because cond shape changes within model
+            # noise_shape = (5,5) + (noise_channels,) # changed to this because cond shape changes within model
             noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size)
-            seq_gen.append(gen.predict([cond, const, noise_gen()]))
+            # noise_hr_shape = (100,100) + (noise_channels,)
+            noise_hr_shape = (50,50) + (noise_channels,)
+            noise_hr_gen = NoiseGenerator(noise_hr_shape, batch_size=batch_size)
+            seq_gen.append(gen.predict([cond, const, noise_gen(),noise_hr_gen()]))
             # seq_gen.append(gen.predict([cond, noise_gen()]))
     elif mode == 'det':
         for i in range(num_instances):

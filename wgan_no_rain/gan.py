@@ -78,6 +78,7 @@ class WGANGP(object):
             cond_shapes = input_shapes(self.gen, "lo_res_inputs")
             const_shapes = input_shapes(self.gen, "hi_res_inputs")
             noise_shapes = input_shapes(self.gen, "noise_input")
+            noise_hr_shapes = input_shapes(self.gen, "hr_noise_input_hr")
 
         sample_shapes = input_shapes(self.disc, "output")
         
@@ -87,6 +88,7 @@ class WGANGP(object):
                 print('cond shapes: ',cond_shapes)
                 print('const shapes: ',const_shapes)
                 print('noise shapes: ',noise_shapes)
+                print('noise hr shapes: ',noise_hr_shapes)
                 cond_in = [Input(shape=cond_shapes[0])] # this might error if cond_shapes doesn't exist
                 const_in = [Input(shape=const_shapes[0])]
                 
@@ -94,9 +96,11 @@ class WGANGP(object):
                     noise_in = [Input(shape=noise_shapes[0])]
                 else:
                     noise_in = [Input(shape=noise_shapes[0])]
-                gen_in = cond_in + const_in + noise_in
+                noise_hr_in = [Input(shape=noise_hr_shapes[0])]
+                gen_in = cond_in + const_in + noise_in + noise_hr_in
 
-                gen_out = self.gen(gen_in[0:3])  # only use cond/const/noise
+                # gen_out = self.gen(gen_in[0:3])  # only use cond/const/noise
+                gen_out = self.gen(gen_in[0:4])
                 # gen_out = self.gen(gen_in[0:2])  # this might be getting rid of const but if it thows back an error then got back?
                 gen_out = ensure_list(gen_out)
                 disc_in_gen = cond_in + const_in + gen_out
@@ -123,8 +127,9 @@ class WGANGP(object):
             cond_in = [Input(shape=s,name='lo_res_inputs') for s in cond_shapes]
             const_in = [Input(shape=s,name='hi_res_inputs') for s in const_shapes]
             noise_in = [Input(shape=s,name='noise_input') for s in noise_shapes]
+            noise_hr_in = [Input(shape=s,name='noise_input_hr') for s in noise_hr_shapes]
             sample_in = [Input(shape=s,name='output') for s in sample_shapes]
-            gen_in = cond_in + const_in + noise_in
+            gen_in = cond_in + const_in + noise_in + noise_hr_in
             # gen_in = cond_in + noise_in
             disc_in_real = sample_in[0]
             if self.mode == 'GAN':
@@ -146,7 +151,7 @@ class WGANGP(object):
             # print(disc_out_avg)
             # print(disc_in_avg)
             disc_gp = GradientPenalty()([disc_out_avg, disc_in_avg])
-            self.disc_trainer = Model(inputs=cond_in + const_in + noise_in + sample_in,
+            self.disc_trainer = Model(inputs=cond_in + const_in + noise_in + noise_hr_in + sample_in,
                                       outputs=[disc_out_real, disc_out_fake, disc_gp], 
                                       name='disc_trainer')
             # self.disc_trainer = Model(inputs=cond_in + noise_in + sample_in,
@@ -185,7 +190,7 @@ class WGANGP(object):
             )
             self.disc_trainer.summary()
 
-    def train(self, batch_gen, noise_gen, num_gen_batches=1, 
+    def train(self, batch_gen, noise_gen, noise_hr_gen, num_gen_batches=1, 
         training_ratio=1, show_progress=True):
 
         disc_target_real = None
@@ -222,7 +227,7 @@ class WGANGP(object):
                 
                 with Nontrainable(self.gen):   
                     dl = self.disc_trainer.train_on_batch(
-                        [cond,const,noise_gen(),sample], disc_target)
+                        [cond,const,noise_gen(),noise_hr_gen(),sample], disc_target)
                         # [cond,noise_gen(),sample], disc_target)
 
                 if disc_loss is None:
@@ -245,14 +250,16 @@ class WGANGP(object):
                 if self.ensemble_size is None:
                     gt_outputs = [gen_target]
                     noise_list = [noise_gen()]
+                    noise_hr_list = [noise_hr_gen()]
                 else:
                     # noise_list = [noise_gen()
                     #               for ii in range(self.ensemble_size + 1)]
                     noise_list = [noise_gen()]
+                    noise_hr_list = [noise_hr_gen()]
                     gt_outputs = [gen_target, sample]
                 # print('condconst',len(condconst))
                 # print('noise list',len(noise_list))
-                gt_inputs = condconst + noise_list
+                gt_inputs = condconst + noise_list + noise_hr_list
 
                 if self.mode == 'GAN':
                     # print(len(gt_inputs)) # list of size 3, should be 2?

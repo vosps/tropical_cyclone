@@ -1,8 +1,15 @@
 import os,subprocess
+
+
 print('running')
-dir = '/user/home/al18709/work/CMIP6/TaiESM/pr/ssp585/'
-files = os.listdir(dir)
-print(files)
+model = 'BCC-CSM2-MR'
+dir = f'/bp1/geog-tropical/data/CMIP6/CMIP6-rain/{model}/pr/ssp585/'
+all_files = os.listdir(dir)
+print(all_files)
+files = []
+for f in all_files:
+    if '3hr' in f:
+        files.append(f)
 file_root = files[0][:-28]
 print(file_root)
 for file in files:
@@ -20,5 +27,12 @@ for new_file in new_files:
         year = new_file[-7:-3]
         print(new_file)
         print(year)
-
-        subprocess.run(['mv',dir+new_file,dir+new_file_root+year+'01010300-'+year+'12312100.nc'])
+        print(new_file_root)
+        if model == 'MPI-ESM1-2-LR':
+            time1 = '01010130'
+            time2 = '12312230'
+        else:
+            time1 = '01010300'
+            time2 = '12312100'
+        subprocess.run(['mv',dir+new_file,dir+new_file_root+year+time1+'-'+year+time2+ '.nc'])
+        print(dir+new_file_root+year+time1+'-'+year+time2+ '.nc')

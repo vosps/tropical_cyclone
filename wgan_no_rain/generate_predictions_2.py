@@ -128,6 +128,7 @@ def generate_predictions(*,
 	latest_checkpoint = max(checkpoints)
 	# latest_checkpoint = '64000'
 	gen_weights_file = log_folder + '/models/' +'gen_weights-0' + str(latest_checkpoint) + '.h5'
+	# gen_weights_file = log_folder + '/models/' +'gen_weights-' + str(latest_checkpoint) + '.h5'
 	# gen_weights_file = log_folder + '/models-gen_opt_weights.h5' # TODO: this has different construction to gen_weights - ask andrew and lucy
 	model.gen.built = True
 	model.gen.load_weights(gen_weights_file) 
@@ -177,15 +178,24 @@ def generate_predictions(*,
 		img_real = outputs
 		img_pred = []	   
 		# noise_shape = inputs[0,...,0].shape + (noise_channels,)
-		# noise_shape = (10,10) + (noise_channels,)
-		noise_shape = (5,5) + (noise_channels,)
+		# noise_shape = (5,5) + (noise_channels,)
+		noise_shape = (10,10) + (noise_channels,)
+		# noise_hr_shape = (100,100) + (noise_channels,)
+		noise_hr_shape = (50,50) + (noise_channels,)
 		print('noise shape: ',noise_shape)
+		print('noise_hr shape" ',noise_hr_shape)
 		if i == nbatches:
 			noise_gen = NoiseGenerator(noise_shape, batch_size=remainder) # does noise gen need to be outside of the for loop?
+			noise_hr_gen = NoiseGenerator(noise_hr_shape, batch_size=remainder)
 			img_pred = np.zeros((remainder,100,100,20))
 		else:
 			noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size) # does noise gen need to be outside of the for loop?
+			noise_hr_gen = NoiseGenerator(noise_hr_shape, batch_size=batch_size)
 			img_pred = np.zeros((batch_size,100,100,20))
+			
+		
+		print('noise gen shape',noise_gen().shape)
+		print('noise gen hr shape',noise_hr_gen().shape)
 
 		for j in range(20): #do 50 ensemble members
 				
@@ -204,8 +214,14 @@ def generate_predictions(*,
 			
 			else:
 				nn = noise_gen()
+				nn_hr = noise_hr_gen()
+				print('inputs shape: ', inputs.shape)
+				print('topography.shape: ',topography.shape)
+				print('noise shape: ',nn.shape)
+				print('noise_hr shape: ', nn_hr.shape)
+
 				# pred_single = np.array(model.gen.predict([inputs,nn]))[:,:,:,0] # this one
-				pred_single = np.array(model.gen.predict([inputs,topography,nn]))[:,:,:,0]
+				pred_single = np.array(model.gen.predict([inputs,topography,nn,nn_hr]))[:,:,:,0]
 
 				# pred_single = np.array(model.gen.predict_on_batch([inputs,nn]))[:,:,:,0]
 				gc.collect()
