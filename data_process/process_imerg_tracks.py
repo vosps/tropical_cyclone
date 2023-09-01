@@ -92,7 +92,7 @@ tracks['USA_SSHS'] = pd.to_numeric(tracks['USA_SSHS'])
 tracks['SEASON'] = pd.to_numeric(tracks['SEASON'])
 
 tracks = tracks[tracks['SEASON'] >= 2000]
-tracks = tracks[tracks['SEASON'] <= 2000]
+tracks = tracks[tracks['SEASON'] <= 2005]
 # tracks = tracks[tracks['SEASON'] == 2000]
 print(tracks)
 # tracks = tracks[tracks['ISO_TIME'].dt.dayofyear >= 153]

@@ -96,17 +96,17 @@ model_offset = -timedelta(hours=6)
 # run = 'r1i1p1f1'
 # seems to only be 4 timepoints strong enough
 
-# model = 'EC-Earth3P-HR'
-# model_short = 'EC-Earth'
-# hemisphere = 'SH'
-# experiment = 'HighresMIP'
-# scenario = 'ssp585'
-# resolution = 10
-# g = 'gr'
-# model_cal = 'proleptic_gregorian'
-# model_offset = -timedelta(hours=3) # NH SH hist
-# model_offset = -timedelta(hours=3) # NH SH ssp585
-# run = 'r1i1p2f1'
+model = 'EC-Earth3P-HR'
+model_short = 'EC-Earth'
+hemisphere = 'NH'
+experiment = 'HighresMIP'
+scenario = 'ssp585'
+resolution = 10
+g = 'gr'
+model_cal = 'proleptic_gregorian'
+model_offset = -timedelta(hours=3) # NH SH hist
+model_offset = -timedelta(hours=3) # NH SH ssp585
+run = 'r1i1p2f1'
 
 
 if scenario == 'historical':
@@ -276,7 +276,7 @@ for j,i in enumerate(storm_start.values):
 		if (offset.month != month) and (model == 'CMCC-CM2-VHR4'):
 			new_month = offset.month
 			new_month_length = calc_days_in_month(new_month,year)
-			if (str(year) in ['2016','2020','2024','2028','2032','2036','2040','2044','2048','2052']) and (str(new_month) == '2'):
+			if (str(year) in ['2016','2020','2024','2028','2032','2036','2040','2044','2048','2052']) and (str(new_month) == '02'):
 				new_month_length = '28'
 			if new_month not in [10,11,12]:
 				new_month = f'0{new_month}'
