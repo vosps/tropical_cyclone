@@ -93,7 +93,7 @@ model = 'NorESM2-LM'
 # ssp585 ready
 hemisphere = 'SH'
 experiment = 'CMIP6' # or 'CMIP6'
-scenario = 'ssp585'
+scenario = 'historical'
 resolution = 10
 model_cal = 'noleap'
 model_offset = -timedelta(hours=3) # NH ssp585 yes
@@ -142,47 +142,48 @@ yr2 = 2101
 # yr1 = 2050
 # yr2 = 2100
 
-# model = 'IPSL-CM6A-LR'
-# # ssp585 ready
-# hemisphere = 'NH'
-# experiment = 'CMIP6'
-# scenario = 'historical'
-# g = 'gr'
-# resolution = 10
-# model_cal = 'gregorian'
-# # model_offset = -timedelta(hours=7,minutes=30) # NH hist was -7.5 next go try -10.5
-# model_offset = -timedelta(hours=4,minutes=30) # NH ssp585 was -7.5
-# # model_offset = -timedelta(hours=10,minutes=30) # SH ssp585 yes
-# # model_offset = -timedelta(hours=13,minutes=30) # SH hist was -10.5 trying -13.5
-# # NH
-# # lat_offset = 1
-# # lon_offset = 2
-# # SH
-# # lat_offset = -1
-# # lon_offset = 2
-# # try for all
-# lat_offset = 0 
-# lon_offset = 0
+model = 'IPSL-CM6A-LR'
+# ssp585 ready
+hemisphere = 'SH'
+experiment = 'CMIP6'
+scenario = 'historical'
+g = 'gr'
+resolution = 10
+model_cal = 'gregorian'
+# model_offset = -timedelta(hours=7,minutes=30) # NH hist correct
+model_offset = -timedelta(hours=4,minutes=30) # NH ssp585 correct
+# model_offset = -timedelta(hours=10,minutes=30) # SH ssp585 yes
+model_offset = -timedelta(hours=7,minutes=30) # SH hist 
+# NH
+# lat_offset = 1
+# lon_offset = 2
+# SH
+# lat_offset = -1
+# lon_offset = 2
+# try for all
+lat_offset = 0 
+lon_offset = 0
 # lat_offset = 1 # NH ssp585 and hist
 # lon_offset = 1.5 # NH ssp585 and hist
-# yr1 = 2055
-# yr2 = 2100
+yr1 = 2055
+yr2 = 2100
 
-# model = 'MRI-ESM2-0'
-# # ssp585 ready
-# hemisphere = 'NH'
-# experiment = 'CMIP6'
-# scenario = 'historical'
-# g = 'gn'
-# resolution = 10
-# model_cal = 'proleptic_gregorian'
-# model_offset = -timedelta(hours=4,minutes=30) # NH ssp585 verified
-# model_offset = -timedelta(hours=7,minutes=30) # NH hist was -4.5
-# # model_offset = -timedelta(hours=4,minutes=30) #SH hist and ssp585
-# lat_offset = 0
-# lon_offset = 0
-# yr1 = 2050
-# yr2 = 2101
+model = 'MRI-ESM2-0'
+# ssp585 ready
+hemisphere = 'NH'
+experiment = 'CMIP6'
+scenario = 'ssp585'
+g = 'gn'
+resolution = 10
+model_cal = 'proleptic_gregorian'
+model_offset = -timedelta(hours=4,minutes=30) # NH ssp585 verified
+# model_offset = -timedelta(hours=7,minutes=30) # NH hist verified
+# model_offset = -timedelta(hours=4,minutes=30) #SH hist and ssp585
+lat_offset = 0
+lon_offset = 0
+lon_offset = 0.5 #NH ssp585
+yr1 = 2050
+yr2 = 2101
 
 # model = 'EC-Earth3'
 # # ssp585 ready

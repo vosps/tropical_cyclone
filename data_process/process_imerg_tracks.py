@@ -199,15 +199,19 @@ for track_i in range(len(tracks)):
 	if '-' in track_hour:
 		track_hour = "235959"
 		doy = str(int(doy) - 1)
+		
 
 	if doy[4:] not in generate_days(year):
+		continue
+
+	if str(doy[4:]) == '000':
 		continue
 
 	print(year)
 	print(doy)
 	print(track_hour)
 	
-	rain_dir = f'/bp1/geog-tropical/data/Obs/IMERG-V07/{year}/{doy[4:]}/'
+	# rain_dir = f'/bp1/geog-tropical/data/Obs/IMERG-V07/{year}/{doy[4:]}/'
 	rain_dir = f'/bp1/geog-tropical/data/Obs/IMERG-V06/{year}/{doy[4:]}/'
 	print(rain_dir)
 	# use this if looking at V07 data

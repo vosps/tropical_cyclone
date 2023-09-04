@@ -83,7 +83,8 @@ resolution = 10
 model_cal = '365_day'
 g = 'gn'
 run = 'r1i1p1f1'
-model_offset = -timedelta(hours=6)
+model_offset = -timedelta(hours=6) # for both hist
+model_offset = +timedelta(hours=6) # try for ssp585, 0 was still a bit warbly as was -6
 
 # model = 'MPI-ESM1-2-HR'
 # model_short = 'MPI'
@@ -96,17 +97,17 @@ model_offset = -timedelta(hours=6)
 # run = 'r1i1p1f1'
 # seems to only be 4 timepoints strong enough
 
-model = 'EC-Earth3P-HR'
-model_short = 'EC-Earth'
-hemisphere = 'NH'
-experiment = 'HighresMIP'
-scenario = 'ssp585'
-resolution = 10
-g = 'gr'
-model_cal = 'proleptic_gregorian'
-model_offset = -timedelta(hours=3) # NH SH hist
-model_offset = -timedelta(hours=3) # NH SH ssp585
-run = 'r1i1p2f1'
+# model = 'EC-Earth3P-HR'
+# model_short = 'EC-Earth'
+# hemisphere = 'NH'
+# experiment = 'HighresMIP'
+# scenario = 'historical'
+# resolution = 10
+# g = 'gr'
+# model_cal = 'proleptic_gregorian'
+# model_offset = -timedelta(hours=3) # NH SH hist
+# model_offset = -timedelta(hours=3) # NH SH ssp585
+# run = 'r1i1p2f1'
 
 
 if scenario == 'historical':
@@ -236,6 +237,8 @@ for j,i in enumerate(storm_start.values):
 
 		month_length = calc_days_in_month(month,year)
 		print('tc month is: ',month)
+		if (str(year) in ['2016','2020','2024','2028','2032','2036','2040','2044','2048','2052']) and (str(month) == '02'):
+			month_length = '28'
 
 		if model == 'MPI-ESM1-2-HR':
 			rainfall_fp = f'{rainfall_dir}{storm_year.values[k]}01010556-{storm_year.values[k]}12312356.nc'
@@ -276,13 +279,21 @@ for j,i in enumerate(storm_start.values):
 		if (offset.month != month) and (model == 'CMCC-CM2-VHR4'):
 			new_month = offset.month
 			new_month_length = calc_days_in_month(new_month,year)
-			if (str(year) in ['2016','2020','2024','2028','2032','2036','2040','2044','2048','2052']) and (str(new_month) == '02'):
-				new_month_length = '28'
+
+			
+			
 			if new_month not in [10,11,12]:
 				new_month = f'0{new_month}'
 			else:
 				new_month = new_month
+
+			if (str(year) in ['2016','2020','2024','2028','2032','2036','2040','2044','2048','2052']) and (str(new_month) == '02'):
+				new_month_length = '28'
+				print('new month length')
+
 			rainfall_fp = f'{rainfall_dir}{storm_year.values[k]}{new_month}010000-{storm_year.values[k]}{new_month}{new_month_length}1800.nc'
+
+			
 			if Path(rainfall_fp[:-3] + '_regrid.nc').is_file():
 				print(rainfall_fp[:-3] + '_regrid.nc')
 				regrid_rainfall_fp = rainfall_fp[:-3] + '_regrid.nc'
@@ -293,6 +304,7 @@ for j,i in enumerate(storm_start.values):
 				print('regridded ', rainfall_fp)
 			regrid_files.append(regrid_rainfall_fp)
 			print('regrid files: ',regrid_files)
+			print(regrid_rainfall_fp)
 			rainfall_ds = xr.open_dataset(regrid_rainfall_fp,use_cftime=True)
 			print('rainfall time: ',rainfall_ds.time)
 			print('rain time: ',offset)
