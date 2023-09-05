@@ -181,7 +181,7 @@ model_offset = -timedelta(hours=4,minutes=30) # NH ssp585 verified
 # model_offset = -timedelta(hours=4,minutes=30) #SH hist and ssp585
 lat_offset = 0
 lon_offset = 0
-lon_offset = 0.5 #NH ssp585
+lon_offset = 1 #NH ssp585
 yr1 = 2050
 yr2 = 2101
 

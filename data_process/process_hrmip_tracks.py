@@ -76,7 +76,7 @@ cal_greg = ['MPI-ESM1-2-LR','MIROC6']
 # define initial variables
 model = 'CMCC-CM2-VHR4'
 model_short = 'CMCC'
-hemisphere = 'NH'
+hemisphere = 'SH'
 experiment = 'HighResMIP'
 scenario = 'ssp585'
 resolution = 10
@@ -84,7 +84,7 @@ model_cal = '365_day'
 g = 'gn'
 run = 'r1i1p1f1'
 model_offset = -timedelta(hours=6) # for both hist
-model_offset = +timedelta(hours=6) # try for ssp585, 0 was still a bit warbly as was -6
+model_offset = +timedelta(hours=6) # try for ssp585, 0 was still a bit warbly as was -6, +6 better but still wierd
 
 # model = 'MPI-ESM1-2-HR'
 # model_short = 'MPI'
@@ -105,8 +105,9 @@ model_offset = +timedelta(hours=6) # try for ssp585, 0 was still a bit warbly as
 # resolution = 10
 # g = 'gr'
 # model_cal = 'proleptic_gregorian'
-# model_offset = -timedelta(hours=3) # NH SH hist
-# model_offset = -timedelta(hours=3) # NH SH ssp585
+# model_offset = -timedelta(hours=3) # NH SH hist og runs
+# model_offset = -timedelta(hours=6) # NH hist try to fix
+# # model_offset = -timedelta(hours=3) # NH SH ssp585
 # run = 'r1i1p2f1'
 
 
