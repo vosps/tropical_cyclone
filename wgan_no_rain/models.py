@@ -131,13 +131,13 @@ def generator(mode,
     print(f"Shape after second concatenate: {generator_output.shape}")
 
     # Pass through 3 residual blocks
-    for i in range(6):
+    for i in range(3):
         generator_output = residual_block(generator_output, filters=filters_gen, conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate, padding=padding, force_1d_conv=forceconv)
     print(f"Shape after third residual block: {generator_output.shape}")
 
     # define new activation function
     def custom_activation(x):
-        return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.1)+1)
+        return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.05)+1)
     get_custom_objects().update({'custom_activation': Activation(custom_activation)})
     
     # Output layer
