@@ -72,7 +72,7 @@ cal_greg = ['MPI-ESM1-2-LR','MIROC6']
 
 model = 'MPI-ESM1-2-LR'
 # done
-hemisphere = 'SH'
+hemisphere = 'NH'
 experiment = 'CMIP6' # or 'CMIP6'
 scenario = 'ssp585'
 resolution = 10
@@ -80,9 +80,9 @@ model_cal = 'proleptic_gregorian'
 g = 'gn'
 model_offset = -timedelta(hours=4,minutes=30) # histrical SH
 model_offset = -timedelta(hours=7,minutes=30) # ssp585 NH is the best correct so far
-model_offset = -timedelta(hours=4,minutes=30) # ssp585 NH
+model_offset = -timedelta(hours=7,minutes=30) # ssp585 NH, can't tell if 7,5 or 4.5 are any different, 1.5 is utterly awful
 # model_offset = -timedelta(hours=4,minutes=30) # hist NH trying, also 
-model_offset = -timedelta(hours=7,minutes=30) # ssp585 SH
+# model_offset = -timedelta(hours=7,minutes=30) # ssp585 SH
 lat_offset = -1
 lon_offset = 0
 lat_offset = 0 #SH
@@ -169,23 +169,23 @@ yr2 = 2100
 # yr1 = 2055
 # yr2 = 2100
 
-model = 'MRI-ESM2-0'
-# ssp585 ready
-hemisphere = 'NH'
-experiment = 'CMIP6'
-scenario = 'ssp585'
-g = 'gn'
-resolution = 10
-model_cal = 'proleptic_gregorian'
-model_offset = -timedelta(hours=4,minutes=30) # NH ssp585 verified
-model_offset = -timedelta(hours=7,minutes=30) # NH ssp585 testing -7.5 was the best so far. trying -10.5
-# model_offset = -timedelta(hours=7,minutes=30) # NH hist verified
-# model_offset = -timedelta(hours=4,minutes=30) #SH hist and ssp585
-lat_offset = 0
-lon_offset = 0
-lon_offset = 0 #NH ssp585
-yr1 = 2050
-yr2 = 2101
+# model = 'MRI-ESM2-0'
+# # ssp585 ready
+# hemisphere = 'NH'
+# experiment = 'CMIP6'
+# scenario = 'ssp585'
+# g = 'gn'
+# resolution = 10
+# model_cal = 'proleptic_gregorian'
+# model_offset = -timedelta(hours=4,minutes=30) # NH ssp585 verified
+# model_offset = -timedelta(hours=7,minutes=30) # NH ssp585 testing -7.5 was the best so far. trying -10.5
+# # model_offset = -timedelta(hours=7,minutes=30) # NH hist verified
+# # model_offset = -timedelta(hours=4,minutes=30) #SH hist and ssp585
+# lat_offset = 0
+# lon_offset = 0
+# lon_offset = 0 #NH ssp585
+# yr1 = 2050
+# yr2 = 2101
 
 # model = 'EC-Earth3'
 # # ssp585 ready

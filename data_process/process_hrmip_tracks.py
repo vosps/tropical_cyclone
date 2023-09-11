@@ -85,7 +85,7 @@ g = 'gn'
 run = 'r1i1p1f1'
 model_offset = -timedelta(hours=6) # for both hist
 model_offset = +timedelta(hours=12) # try for ssp585, 0 was still a bit warbly as was -6, +6 better but still wierd,
-model_offset = -timedelta(hours=6) # ssp585 SH, +6 was better but still weird, trying +12, +12 definite stretching, +18 stretched and weaker
+model_offset = +timedelta(hours=12) # ssp585 SH, +6 was better but still weird, trying +12, +12 definite stretching, +18 stretched and weaker
 # model = 'MPI-ESM1-2-HR'
 # model_short = 'MPI'
 # hemisphere = 'SH'
@@ -97,19 +97,19 @@ model_offset = -timedelta(hours=6) # ssp585 SH, +6 was better but still weird, t
 # run = 'r1i1p1f1'
 # seems to only be 4 timepoints strong enough
 
-model = 'EC-Earth3P-HR'
-model_short = 'EC-Earth'
-hemisphere = 'NH'
-experiment = 'HighresMIP'
-scenario = 'ssp585'
-resolution = 10
-g = 'gr'
-model_cal = 'proleptic_gregorian'
-model_offset = -timedelta(hours=3) # NH SH hist og runs
-model_offset = -timedelta(hours=12) # NH hist try to fix, -6 centre (-2,1), -9 centre (-3,0)
-# model_offset = -timedelta(hours=3) # SH ssp585
-model_offset = -timedelta(hours=18) # NH ssp585 (-3,0) for -9, trying -12 (-3,0), trying -18
-run = 'r1i1p2f1'
+# model = 'EC-Earth3P-HR'
+# model_short = 'EC-Earth'
+# hemisphere = 'NH'
+# experiment = 'HighresMIP'
+# scenario = 'ssp585'
+# resolution = 10
+# g = 'gr'
+# model_cal = 'proleptic_gregorian'
+# model_offset = -timedelta(hours=3) # NH SH hist og runs
+# model_offset = -timedelta(hours=12) # NH hist try to fix, -6 centre (-2,1), -9 centre (-3,0)
+# # model_offset = -timedelta(hours=3) # SH ssp585
+# model_offset = -timedelta(hours=3) # NH ssp585 (-3,0) for -9, trying -12 (-3,0), trying -18 (-3.5,0), trying -3?
+# run = 'r1i1p2f1'
 
 
 if scenario == 'historical':

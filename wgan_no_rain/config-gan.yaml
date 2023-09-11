@@ -11,7 +11,7 @@ MODEL:
     # change padding to zero padding?
         
 SETUP:
-    log_folder: "/user/home/al18709/work/gan/logs_wgan_no_rain_v21"
+    log_folder: "/user/home/al18709/work/gan/logs_wgan_no_rain_v22"
     # log_folder: "/user/home/al18709/work/dsrnngan/logs"
 
 GENERATOR:
@@ -29,7 +29,7 @@ TRAIN:
     train_years: [2016, 2017, 2018] 
     training_weights: [0.4, 0.3, 0.2, 0.1]
     # num_samples: 320000
-    num_samples: 16400000 #1280000 #1960000 #640000, 1320000 when this was 1280000 it might have helped with the spatial strcuture!
+    num_samples: 320000 #16400000 #1280000 #1960000 #640000, 1320000 when this was 1280000 it might have helped with the spatial strcuture!
     # steps_per_checkpoint: 3200 # perhaps this needs to be looked at. 200 too low, 3200 too slow. number of images is around 40,000
     steps_per_checkpoint: 800 # 800 # 200 this affects number of training samples trained on before saving? so when this was 3,200 it took a long time to train as there were 52,000 samples to go through each checkpoint
     batch_size: 16  # can use 400x16 without CL, or 3200x2 with CL
