@@ -18,12 +18,12 @@ GENERATOR:
     filters_gen: 128 #128, when this was 256 it might have helped with better spatial structure!
     noise_channels: 8 # used for GAN, used to be 4, but tat was for 9 input channels, so could decrease this.
     latent_variables: 1 # used for VAEGAN
-    learning_rate_gen: 1e-6 #1e-5 change to 1e-6
+    learning_rate_gen: 1e-5 #1e-5 change to 1e-6
 
 DISCRIMINATOR:
     # filters_disc: 512 #512
     filters_disc: 512 #512 when it was 756 it might have helped with performance metrics
-    learning_rate_disc: 1e-5 # 1e-5 was working with 1e-5
+    learning_rate_disc: 1e-5 # 1e-5 was working with 1e-6
 
 TRAIN:
     train_years: [2016, 2017, 2018] 

@@ -76,7 +76,7 @@ cal_greg = ['MPI-ESM1-2-LR','MIROC6']
 # define initial variables
 model = 'CMCC-CM2-VHR4'
 model_short = 'CMCC'
-hemisphere = 'SH'
+hemisphere = 'NH'
 experiment = 'HighResMIP'
 scenario = 'ssp585'
 resolution = 10
@@ -85,7 +85,7 @@ g = 'gn'
 run = 'r1i1p1f1'
 model_offset = -timedelta(hours=6) # for both hist
 model_offset = +timedelta(hours=12) # try for ssp585, 0 was still a bit warbly as was -6, +6 better but still wierd,
-model_offset = +timedelta(hours=12) # ssp585 SH, +6 was better but still weird, trying +12, +12 definite stretching, +18 stretched and weaker
+model_offset = +timedelta(hours=0) # ssp585 SH, +6 was better but still weird, trying +12, +12 definite stretching, +18 stretched and weaker
 # model = 'MPI-ESM1-2-HR'
 # model_short = 'MPI'
 # hemisphere = 'SH'
@@ -110,6 +110,33 @@ model_offset = +timedelta(hours=12) # ssp585 SH, +6 was better but still weird, 
 # # model_offset = -timedelta(hours=3) # SH ssp585
 # model_offset = -timedelta(hours=3) # NH ssp585 (-3,0) for -9, trying -12 (-3,0), trying -18 (-3.5,0), trying -3?
 # run = 'r1i1p2f1'
+
+# model = 'CMCC-CM2-HR4'
+# g = 'gn'
+# model_cal = '365_day' # but tracks are in proleptic gregorian?
+# run = 'r1i1p1f1'
+# model_short = 'CMCC'
+# hemsipere = 'SH'
+# experiment = 'HighresMIP'
+# scenario = 'historical'
+# resolution = 10
+# model_offset = -timedelta(hours=0)
+
+
+model = 'MPI-ESM1-2-HR'
+# /bp1/geog-tropical/data/CMIP6/HighResMIP-rain/MPI/MPI-ESM1-2-HR/hist-1950/r1i1p1f1/Prim6hr/pr/gn/latest
+g = 'gn'
+model_short = 'MPI'
+model_cal = 'proleptic_gregorian'
+run = 'r1i1p1f1'
+hemsipere = 'SH'
+experiment = 'HighresMIP'
+scenario = 'ssp585'
+resolution = 10
+model_offset = -timedelta(hours=0,minutes=4)
+
+
+# /badc/cmip6/data/PRIMAVERA/HighResMIP/CNRM-CERFACS/CNRM-CM6-1/hist-1950/r1i1p1f2/Prim6hr/pr/gr/latest
 
 
 if scenario == 'historical':
@@ -139,6 +166,8 @@ rainfall_dir = f'/bp1/geog-tropical/data/CMIP6/HighResMIP-rain/{model}/pr/{scena
 rainfall_dir = f'/bp1/geog-tropical/data/CMIP6/HighResMIP-rain/{model}/pr/{scenario}/pr_3hr_{model}_{mini_scen}_{run}_{g}_'
 if model =='CMCC-CM2-VHR4':
 	rainfall_dir = f'/bp1/geog-tropical/data/CMIP6/HighResMIP-rain/{model}/pr/{scenario}/pr_Prim6hr_{model}_{s}_{run}_{g}_'
+elif (model == 'CMCC-CM2-HR4') or (model == 'MPI-ESM1-2-HR'):
+	rainfall_dir = f'/bp1/geog-tropical/data/CMIP6/HighResMIP-rain/{model_short}/{model}/{s}/{run}/Prim6hr/pr/{g}/latest/pr_Prim6hr_{model}_{s}_{run}_{g}_'
 tracking_fp = f'/user/home/al18709/work/CMIP6/HighResMIP/{model}/{scenario}/tracks/TC-{hemisphere}_TRACK_{model}_{mini_scen}-{scen_yr_start}_r1i1p1f1_gn_{scen_yr_start}0101-{scen_yr_end}1231.nc'
 tracking_fp = f'/user/home/al18709/work/CMIP6/HighResMIP/{model}/tracks/{scenario}/{hemisphere}/TC-{hemisphere}_TRACK_{model}_{mini_scen}-{scen_yr_start}_{run}_gr_{scen_yr_start}0101-{scen_yr_end}1231.nc'
 tracking_fp = f'/user/home/al18709/work/CMIP6/HighResMIP/{model}/tracks/{scenario}/{hemisphere}/TC-{hemisphere}_TRACK_{model}_{mini_scen}_{run}_{g}_{scen_yr_start}0101-{scen_yr_end}1231.nc'
@@ -248,6 +277,8 @@ for j,i in enumerate(storm_start.values):
 			rainfall_fp = f'{rainfall_dir}{storm_year.values[k]}01010000-{storm_year.values[k]}12312100.nc'
 			if storm_year.values[k] == 2014:
 				rainfall_fp = f'{rainfall_dir}{storm_year.values[k]}01010000-{storm_year.values[k]}12311800.nc'
+		# elif (model == 'CMCC-CM2-HR4') or (model == 'MPI-ESM1-2-HR'):
+		# 	rainfall_fp = f'{rainfall_dir}{storm_year.values[k]}{month}010000-{storm_year.values[k]}{month}{month_length}1800.nc'
 		else:
 			rainfall_fp = f'{rainfall_dir}{storm_year.values[k]}{month}010000-{storm_year.values[k]}{month}{month_length}1800.nc'
 		print('month', month)
@@ -450,6 +481,9 @@ for j,i in enumerate(storm_start.values):
 	path = f'/user/home/al18709/work/CMIP6/HighResMIP/{model}/{scenario}/pr/'
 	path = f'/bp1/geog-tropical/data/CMIP6/HighResMIP-rain/{model_short}/{model}/{s}/r1i1p1f1/Prim6hr/pr/gn/latest/'
 	path = f'/bp1/geog-tropical/data/CMIP6/HighResMIP-rain/{model}/pr/{scenario}/'
+
+	if (model == 'CMCC-CM2-HR4') or (model == 'MPI-ESM1-2-HR'):
+		path = f'/bp1/geog-tropical/data/CMIP6/HighResMIP-rain/{model_short}/{model}/{s}/{run}/Prim6hr/pr/{g}/latest/'
 	regrid_files = os.listdir(path)
 	n_files = 0
 	for item in regrid_files:

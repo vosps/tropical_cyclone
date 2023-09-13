@@ -80,7 +80,7 @@ model_cal = 'proleptic_gregorian'
 g = 'gn'
 model_offset = -timedelta(hours=4,minutes=30) # histrical SH
 model_offset = -timedelta(hours=7,minutes=30) # ssp585 NH is the best correct so far
-model_offset = -timedelta(hours=7,minutes=30) # ssp585 NH, can't tell if 7,5 or 4.5 are any different, 1.5 is utterly awful
+model_offset = -timedelta(hours=10,minutes=30) # ssp585 NH, can't tell if 7,5 or 4.5 are any different, 1.5 is utterly awful
 # model_offset = -timedelta(hours=4,minutes=30) # hist NH trying, also 
 # model_offset = -timedelta(hours=7,minutes=30) # ssp585 SH
 lat_offset = -1
