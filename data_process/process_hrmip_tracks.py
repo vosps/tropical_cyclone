@@ -129,12 +129,21 @@ g = 'gn'
 model_short = 'MPI'
 model_cal = 'proleptic_gregorian'
 run = 'r1i1p1f1'
-hemsipere = 'SH'
+hemsipere = 'NH'
 experiment = 'HighresMIP'
 scenario = 'ssp585'
 resolution = 10
 model_offset = -timedelta(hours=0,minutes=4)
 
+model = 'HadGEM3-GC31-HM'
+model_cal = '360_day'
+g = 'gn'
+run = 'r1i1p1f1'
+hemisphere = 'SH'
+experiment = 'HighresMIP'
+scenario = 'historical'
+resolution = 10
+model_offset = -timedelta(hours=1,minutes=30)
 
 # /badc/cmip6/data/PRIMAVERA/HighResMIP/CNRM-CERFACS/CNRM-CM6-1/hist-1950/r1i1p1f2/Prim6hr/pr/gr/latest
 
@@ -168,6 +177,8 @@ if model =='CMCC-CM2-VHR4':
 	rainfall_dir = f'/bp1/geog-tropical/data/CMIP6/HighResMIP-rain/{model}/pr/{scenario}/pr_Prim6hr_{model}_{s}_{run}_{g}_'
 elif (model == 'CMCC-CM2-HR4') or (model == 'MPI-ESM1-2-HR'):
 	rainfall_dir = f'/bp1/geog-tropical/data/CMIP6/HighResMIP-rain/{model_short}/{model}/{s}/{run}/Prim6hr/pr/{g}/latest/pr_Prim6hr_{model}_{s}_{run}_{g}_'
+elif model =='HadGEM3-GC31-HM':
+	rainfall_dir = f'/bp1/geog-tropical/data/CMIP6/HighResMIP-rain/{model}/{scenario}/pr_3hr_{model}_{s}_{run}_{g}_'
 tracking_fp = f'/user/home/al18709/work/CMIP6/HighResMIP/{model}/{scenario}/tracks/TC-{hemisphere}_TRACK_{model}_{mini_scen}-{scen_yr_start}_r1i1p1f1_gn_{scen_yr_start}0101-{scen_yr_end}1231.nc'
 tracking_fp = f'/user/home/al18709/work/CMIP6/HighResMIP/{model}/tracks/{scenario}/{hemisphere}/TC-{hemisphere}_TRACK_{model}_{mini_scen}-{scen_yr_start}_{run}_gr_{scen_yr_start}0101-{scen_yr_end}1231.nc'
 tracking_fp = f'/user/home/al18709/work/CMIP6/HighResMIP/{model}/tracks/{scenario}/{hemisphere}/TC-{hemisphere}_TRACK_{model}_{mini_scen}_{run}_{g}_{scen_yr_start}0101-{scen_yr_end}1231.nc'
@@ -221,8 +232,10 @@ for j,i in enumerate(storm_start.values):
 	# filter out years where we don't have the rainfall file yet 2015
 	if scenario =='ssp585':
 		r = set(range(2015,2050))
+		# r = set(range(2015,2017))
 	else:
 		r = set(range(1979,2015))
+		# r = set(range(1979,1981))
 	if not set(storm_year.values) & r:
 	# if not set(storm_year.values) & set(range(1979,1981)):
 	# if not set(storm_year.values) & set(range(1987,1988)):
@@ -277,6 +290,15 @@ for j,i in enumerate(storm_start.values):
 			rainfall_fp = f'{rainfall_dir}{storm_year.values[k]}01010000-{storm_year.values[k]}12312100.nc'
 			if storm_year.values[k] == 2014:
 				rainfall_fp = f'{rainfall_dir}{storm_year.values[k]}01010000-{storm_year.values[k]}12311800.nc'
+		elif model =='HadGEM3-GC31-HM':
+			# rainfall_fp = f'{rainfall_dir}{storm_year.values[k]}{month}0130-{storm_year.values[k]}{month}302230.nc'
+			if month in ['01','02','03','04','05','06']:
+				first_month = '01'
+				last_month = '06'
+			elif month in ['07','08','09','10','11','12']:
+				first_month = '07'
+				last_month = '12'
+			rainfall_fp = f'{rainfall_dir}{storm_year.values[k]}{first_month}010130-{storm_year.values[k]}{last_month}302230.nc'
 		# elif (model == 'CMCC-CM2-HR4') or (model == 'MPI-ESM1-2-HR'):
 		# 	rainfall_fp = f'{rainfall_dir}{storm_year.values[k]}{month}010000-{storm_year.values[k]}{month}{month_length}1800.nc'
 		else:
@@ -484,6 +506,8 @@ for j,i in enumerate(storm_start.values):
 
 	if (model == 'CMCC-CM2-HR4') or (model == 'MPI-ESM1-2-HR'):
 		path = f'/bp1/geog-tropical/data/CMIP6/HighResMIP-rain/{model_short}/{model}/{s}/{run}/Prim6hr/pr/{g}/latest/'
+	elif model == 'HadGEM3-GC31-HM':
+		path = f'/bp1/geog-tropical/data/CMIP6/HighResMIP-rain/{model}/{scenario}/'
 	regrid_files = os.listdir(path)
 	n_files = 0
 	for item in regrid_files:

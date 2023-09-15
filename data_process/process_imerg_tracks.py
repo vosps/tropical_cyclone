@@ -107,7 +107,7 @@ tracks = pd.merge(tracks,
                       TCs, 
                       on ='SID', 
                       how ='inner')
-tracks = tracks[tracks['USA_SSHS'] >= 0]
+tracks = tracks[tracks['USA_SSHS'] >= 1]
 
 print(tracks)
 

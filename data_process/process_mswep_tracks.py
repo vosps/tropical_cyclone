@@ -107,7 +107,7 @@ tracks = pd.merge(tracks,
                       TCs, 
                       on ='SID', 
                       how ='inner')
-tracks = tracks[tracks['USA_SSHS'] >= 0]
+tracks = tracks[tracks['USA_SSHS'] >= 1]
 
 print(tracks)
 
@@ -209,14 +209,14 @@ for track_i in range(len(tracks)):
 	if str(doy[4:]) == '000':
 		continue
 
-	print(year)
-	print(doy)
+	# print(year)
+	# print(doy)
 	# print(track_hour)
 	
 	# rain_dir = f'/bp1/geog-tropical/data/Obs/IMERG-V07/{year}/{doy[4:]}/'
 	rain_dir = f'/bp1/geog-tropical/data/Obs/MSWEP/3hourly_invertlat/'
 	# {year}{doy[4:]}
-	print(rain_dir)
+	# print(rain_dir)
 	# use this if looking at V07 data
 	# rainfall_fps = os.listdir(rain_dir)
 	# for f in rainfall_fps:
@@ -225,7 +225,7 @@ for track_i in range(len(tracks)):
 	# 		print('rainfall_fp is: ',rainfall_fp)
 	# 	else:
 	# 		continue
-	print(hour)
+	# print(hour)
 	if hour not in ['00','03','06','09','12','15','18','21','24']:
 		if hour in ['02','05','08','11','14','17','20','23']:
 			hour = int(hour) + 1
@@ -254,7 +254,10 @@ for track_i in range(len(tracks)):
 	# regrid files into correct grid
 	# regrid_rainfall_fp = handle_regrid(rainfall_fp)
 	# try:
-	print(rainfall_fp)
+	# print(rainfall_fp)
+	if rainfall_fp == '/bp1/geog-tropical/data/Obs/MSWEP/3hourly_invertlat/1986031.21.nc':
+		print('fp not found!')
+		continue
 	rainfall_ds = Dataset(rainfall_fp, 'r')
 	# except: 
 	# 	print('couldnt open dataset')
@@ -266,13 +269,13 @@ for track_i in range(len(tracks)):
 	rain_lat = rainfall_ds.variables['lat'][:] #lat
 	rain_lon = rainfall_ds.variables['lon'][:] #lon
 	rain_data = rainfall_ds.variables['precipitation'][0,:,:] #lon
-	print('initial rain data shape',rain_data.shape)
-	print('initial rain lat shape',rain_lat.shape)
-	print('initial rain lon shape',rain_lon.shape)
+	# print('initial rain data shape',rain_data.shape)
+	# print('initial rain lat shape',rain_lat.shape)
+	# print('initial rain lon shape',rain_lon.shape)
 	rain_time = rainfall_ds.variables['time'][:]
-	print('initial rain time shape',rain_time.shape)
-	rain_data = np.transpose(rain_data)
-	print('transposed rain_data shape: ',rain_data.shape)
+	# print('initial rain time shape',rain_time.shape)
+	# rain_data = np.transpose(rain_data)
+	# print('transposed rain_data shape: ',rain_data.shape)
 	# rainfall_ds = xr.open_dataset(rainfall_fp,use_cftime=True,engine="h5netcdf")
 	print('centre_lon: ',centre_lon)
 	print('centre_lat: ',centre_lat)
@@ -292,8 +295,8 @@ for track_i in range(len(tracks)):
 		ilon = list(rain_lon).index(rain.sel(lon=centre_lon, method='nearest').lon)
 		ilat = list(rain_lat).index(rain.sel(lat=centre_lat, method='nearest').lat)
 
-	print(rain.sel(lon=centre_lon, method='nearest').lon)
-	print(rain.sel(lat=centre_lat, method='nearest').lat)
+	# print(rain.sel(lon=centre_lon, method='nearest').lon)
+	# print(rain.sel(lat=centre_lat, method='nearest').lat)
 
 	coord_res = 500/resolution
 
@@ -309,25 +312,25 @@ for track_i in range(len(tracks)):
 		lon_upper_bound = int(ilon+coord_res)
 
 
-	print('ilon',ilon)
-	print('ilat',ilat)
+	# print('ilon',ilon)
+	# print('ilat',ilat)
 
-	print(lat_lower_bound)
-	print(lat_upper_bound)
-	print(lon_lower_bound)
-	print(lon_upper_bound)
+	# print(lat_lower_bound)
+	# print(lat_upper_bound)
+	# print(lon_lower_bound)
+	# print(lon_upper_bound)
 
 
 	# if ilon < 100:
 	if ilon < 500/resolution:
-		print('ilon < 500/resolution')
+		# print('ilon < 500/resolution')
 		# diff = 10 - ilon
 		diff = int(500/resolution - ilon)
 		# lon_lower_bound = 512 - diff
-		print('diff: ',diff)
+		# print('diff: ',diff)
 		lon_lower_bound = 3600 - diff
-		print('lon_lower_bound: ',lon_lower_bound)
-		print('lon_upper_bound: ',lon_upper_bound)
+		# print('lon_lower_bound: ',lon_lower_bound)
+		# print('lon_upper_bound: ',lon_upper_bound)
 		data1 = rain_data[lat_lower_bound:lat_upper_bound,lon_lower_bound:-1]
 		data2 = rain_data[lat_lower_bound:lat_upper_bound,0:lon_upper_bound]
 		rain_lats = rain_lat[lat_lower_bound:lat_upper_bound]
@@ -338,18 +341,18 @@ for track_i in range(len(tracks)):
 
 	# elif ilon > 3500:
 	elif ilon > 3600 - 500/resolution:
-		print('ilon > 3600 - 500/resolution')
+		# print('ilon > 3600 - 500/resolution')
 		# diff = 512 - ilon
 		diff = int(51 - (3600 - ilon))
 		print('diff: ',diff)
 		lon_upper_bound = diff
-		print('lon_lower_bound: ',lon_lower_bound)
-		print('lon_upper_bound: ',lon_upper_bound)
-		print('rain shape 1',rain_data.shape)
+		# print('lon_lower_bound: ',lon_lower_bound)
+		# print('lon_upper_bound: ',lon_upper_bound)
+		# print('rain shape 1',rain_data.shape)
 		data1 = rain_data[lat_lower_bound:lat_upper_bound,lon_lower_bound:-1]
 		data2 = rain_data[lat_lower_bound:lat_upper_bound,0:lon_upper_bound]
-		print('data1 shape: ',data1.shape)
-		print('data2 shape: ',data2.shape)
+		# print('data1 shape: ',data1.shape)
+		# print('data2 shape: ',data2.shape)
 		rain_lats = rain_lat[lat_lower_bound:lat_upper_bound]
 		lon1 = rain_lon[lon_lower_bound:-1]
 		lon2 = rain_lon[0:lon_upper_bound]	
@@ -357,7 +360,7 @@ for track_i in range(len(tracks)):
 		rain_lons = np.concatenate((lon1,lon2))
 
 	else:
-		print('lons in limits')
+		# print('lons in limits')
 		rain_lats = rain_lat[lat_lower_bound:lat_upper_bound]
 		rain_lons = rain_lon[lon_lower_bound:lon_upper_bound]
 		rain_data = rain_data[lat_lower_bound:lat_upper_bound,lon_lower_bound:lon_upper_bound]
@@ -367,7 +370,7 @@ for track_i in range(len(tracks)):
 	# change units from kg m-2 s-1 to mm 6hr-1, also check if kg m-2 s-1 or kg m-2 6hr-1
 	# rain_data = rain_data * 86400/4 
 	
-	print('rain data shape',rain_data.shape)
+	# print('rain data shape',rain_data.shape)
 	if rain_data.shape != (int(1000/resolution),int(1000/resolution)):
 		print('wrong data shape')
 		# print(i,j,k)
@@ -394,7 +397,7 @@ for track_i in range(len(tracks)):
 		all_lons[track_i] = rain_lons
 		all_rain[track_i] = rain_data
 		storm_sid = track_id
-		print('storm sid is: ',storm_sid)
+		# print('storm sid is: ',storm_sid)
 		print(track_i)
 		all_id.sid.iloc[track_i] = storm_sid
 		all_id.year.iloc[track_i] = year
@@ -403,12 +406,11 @@ for track_i in range(len(tracks)):
 		all_id.hour.iloc[track_i] = hour
 		all_id.centre_lat[track_i] = centre_lat
 		all_id.centre_lon[track_i] = centre_lon
-		print(all_id)
+		# print(all_id)
 		index.append(track_i)
-		print(storm_sid)
+		# print(storm_sid)
 
 	path = rain_dir
-
 
 
 
