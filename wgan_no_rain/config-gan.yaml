@@ -11,7 +11,7 @@ MODEL:
     # change padding to zero padding?
         
 SETUP:
-    log_folder: "/user/home/al18709/work/gan/logs_wgan_no_rain_v24"
+    log_folder: "/user/home/al18709/work/gan/logs_wgan_no_rain_v27"
     # log_folder: "/user/home/al18709/work/dsrnngan/logs"
 
 GENERATOR:

@@ -637,6 +637,7 @@ for yr_i,yr in enumerate(years):
 			# change units from kg m-2 s-1 to mm day-1
 			# rain_data = rain_data * 86400
 			# change units from kg m-2 s-1 to mm 6hr-1, also check if kg m-2 s-1 or kg m-2 6hr-1
+			# units in precip flux
 			rain_data = rain_data * 86400/4 
 			
 			print('rain data shape',rain_data.shape)

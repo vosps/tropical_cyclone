@@ -72,7 +72,7 @@ def generator(mode,
         print(f"Shape after first concatenate: {generator_output.shape}")
 
     # Pass through 3 residual blocks
-    n_blocks = 2 # this was 3 then 6 now 2 
+    n_blocks = 3 # this was 3 then 6 now 2 
     for i in range(n_blocks):
         generator_output = residual_block(generator_output, filters=filters_gen, conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate, padding=padding, force_1d_conv=forceconv)
     print('End of first residual block')
@@ -89,32 +89,33 @@ def generator(mode,
         generator_output = residual_block(generator_output, filters=block_channels[0], conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate, padding=padding, force_1d_conv=forceconv)
     print(f"Shape after residual block: {generator_output.shape}")
 
-    # concatenate hr noise as a 50 x 50 array
-    noise_input_hr = Input(shape=(None, None, noise_channels), name = "hr_noise_input_hr")
-    print('hr noise input shape: ',noise_input_hr.shape)
-    generator_output = concatenate([generator_output, noise_input_hr])
+    # # concatenate hr noise as a 50 x 50 array
+    # noise_input_hr = Input(shape=(None, None, noise_channels), name = "hr_noise_input_hr")
+    # print('hr noise input shape: ',noise_input_hr.shape)
+    # generator_output = concatenate([generator_output, noise_input_hr])
     # Pass through 3 residual blocks
-    for i in range(2):
-        generator_output = residual_block(generator_output, filters=filters_gen, conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate, padding=padding, force_1d_conv=forceconv)
-    print(f"Shape after third residual block: {generator_output.shape}")
+
+    # for i in range(1):
+    #     generator_output = residual_block(generator_output, filters=filters_gen, conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate, padding=padding, force_1d_conv=forceconv)
+    # print(f"Shape after third residual block: {generator_output.shape}")
 
 
     generator_output = UpSampling2D(size=(2, 2), interpolation='bilinear')(generator_output)
     print(f"Shape after upsampling step 4: {generator_output.shape}")
-    for i in range(2):
-        generator_output = residual_block(generator_output, filters=block_channels[1], conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate, padding=padding, force_1d_conv=forceconv)
+    for i in range(1):
+        generator_output = residual_block(generator_output, filters=block_channels[0], conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate, padding=padding, force_1d_conv=forceconv)
     print(f"Shape after residual block: {generator_output.shape}")
 
-    # now upsampling to 200 x 200
-    generator_output = UpSampling2D(size=(2, 2), interpolation='bilinear')(generator_output)
-    print(f"Shape after upsampling step 4: {generator_output.shape}")
-    for i in range(2):
-        generator_output = residual_block(generator_output, filters=block_channels[1], conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate, padding=padding, force_1d_conv=forceconv)
-    print(f"Shape after residual block: {generator_output.shape}")
-    # and downsampling back to 100 x 100
-    generator_output = Conv2D(filters=block_channels[1], kernel_size=(2, 2), strides=2, padding="valid", activation="relu")(generator_output)
-    for i in range(2):
-        generator_output = residual_block(generator_output, filters=block_channels[1], conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate, padding=padding, force_1d_conv=forceconv)
+    # # now upsampling to 200 x 200
+    # generator_output = UpSampling2D(size=(2, 2), interpolation='bilinear')(generator_output)
+    # print(f"Shape after upsampling step 4: {generator_output.shape}")
+    # for i in range(1):
+    #     generator_output = residual_block(generator_output, filters=block_channels[0], conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate, padding=padding, force_1d_conv=forceconv)
+    # print(f"Shape after residual block: {generator_output.shape}")
+    # # and downsampling back to 100 x 100
+    # generator_output = Conv2D(filters=block_channels[1], kernel_size=(2, 2), strides=2, padding="valid", activation="relu")(generator_output)
+    # for i in range(1):
+    #     generator_output = residual_block(generator_output, filters=block_channels[0], conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate, padding=padding, force_1d_conv=forceconv)
 
 
     # TODO: add a downscaling and upscaling step here to improve spectral power?
@@ -124,7 +125,7 @@ def generator(mode,
 
     # Concatenate with original size constants field and original size noise array?
     # have to rename this layer to 'hr_noise_input_hr' becuase when it was 'noise_input_hr' that seemed to double count as both 'noise_input' and 'noise_input_hr'
-    # noise_input_hr = Input(shape=(None, None, noise_channels), name = "hr_noise_input_hr")
+    noise_input_hr = Input(shape=(None, None, noise_channels), name = "hr_noise_input_hr")
     # print('hr noise input shape: ',noise_input_hr.shape)
     # generator_output = concatenate([generator_output, const_input, noise_input_hr])
     generator_output = concatenate([generator_output, const_input])
@@ -147,6 +148,7 @@ def generator(mode,
 
     if mode == 'GAN':
         model = Model(inputs=[generator_input, const_input, noise_input, noise_input_hr], outputs=generator_output, name='gen')
+        # model = Model(inputs=[generator_input, const_input, noise_input], outputs=generator_output, name='gen')
         # model = Model(inputs=[generator_input, noise_input], outputs=generator_output, name='gen')
         return model
 

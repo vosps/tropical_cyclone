@@ -139,9 +139,9 @@ model = 'HadGEM3-GC31-HM'
 model_cal = '360_day'
 g = 'gn'
 run = 'r1i1p1f1'
-hemisphere = 'SH'
+hemisphere = 'NH'
 experiment = 'HighresMIP'
-scenario = 'historical'
+scenario = 'ssp585'
 resolution = 10
 model_offset = -timedelta(hours=1,minutes=30)
 

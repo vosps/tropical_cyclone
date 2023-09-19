@@ -182,6 +182,8 @@ tracks = tracks.reset_index(drop=True)
 print(tracks)
 for track_i in range(len(tracks)):
 	print('processing tracks: ',track_i)
+	if track_i == 22299:
+		continue
 	track = tracks.loc[track_i]
 	# year = track['ISO_TIME'].dt.year
 	# doy = track['ISO_TIME'].dt.doy
@@ -258,7 +260,14 @@ for track_i in range(len(tracks)):
 	if rainfall_fp == '/bp1/geog-tropical/data/Obs/MSWEP/3hourly_invertlat/1986031.21.nc':
 		print('fp not found!')
 		continue
-	rainfall_ds = Dataset(rainfall_fp, 'r')
+	if rainfall_fp == '/bp1/geog-tropical/data/Obs/MSWEP/3hourly_invertlat/1988029.21.nc':
+		print('fp not found!')
+		continue
+	try:
+		rainfall_ds = Dataset(rainfall_fp, 'r')
+	except:
+		print(rainfall_ds, 'cannot open/doesnt exist')
+		continue
 	# except: 
 	# 	print('couldnt open dataset')
 	# 	print(rainfall_fp)
@@ -268,7 +277,10 @@ for track_i in range(len(tracks)):
 
 	rain_lat = rainfall_ds.variables['lat'][:] #lat
 	rain_lon = rainfall_ds.variables['lon'][:] #lon
-	rain_data = rainfall_ds.variables['precipitation'][0,:,:] #lon
+	try:
+		rain_data = rainfall_ds.variables['precipitation'][0,:,:] #lon
+	except:
+		print(rainfall_fp,'doesnt have precip as variable?')
 	# print('initial rain data shape',rain_data.shape)
 	# print('initial rain lat shape',rain_lat.shape)
 	# print('initial rain lon shape',rain_lon.shape)
