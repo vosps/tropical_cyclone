@@ -92,7 +92,7 @@ tracks['USA_SSHS'] = pd.to_numeric(tracks['USA_SSHS'])
 tracks['SEASON'] = pd.to_numeric(tracks['SEASON'])
 
 tracks = tracks[tracks['SEASON'] >= 1979]
-tracks = tracks[tracks['SEASON'] <= 2020]
+# tracks = tracks[tracks['SEASON'] <= 2020]
 # tracks = tracks[tracks['SEASON'] == 2000]
 print(tracks)
 # tracks = tracks[tracks['ISO_TIME'].dt.dayofyear >= 153]
@@ -107,8 +107,8 @@ tracks = pd.merge(tracks,
                       TCs, 
                       on ='SID', 
                       how ='inner')
-tracks = tracks[tracks['USA_SSHS'] >= 1]
-
+# tracks = tracks[tracks['USA_SSHS'] >= 1]
+tracks = tracks[tracks['USA_SSHS'] >= 0]
 print(tracks)
 
 # extract datetime data
@@ -447,11 +447,12 @@ print(all_id.loc[index].shape)
 print(all_id.loc[index])
 print(new_fp)
 
-np.save(f'{new_fp}storm_lats_{hemisphere}.npy',all_lats[index])
-np.save(f'{new_fp}storm_lons_{hemisphere}.npy',all_lons[index])
-np.save(f'{new_fp}storm_rain_{hemisphere}.npy',all_rain[index])
-np.save(f'{new_fp}storm_index_{hemisphere}.npy',index)
+
+np.save(f'{new_fp}storm_lats_extended_{hemisphere}.npy',all_lats[index])
+np.save(f'{new_fp}storm_lons_extended_{hemisphere}.npy',all_lons[index])
+np.save(f'{new_fp}storm_rain_extended_{hemisphere}.npy',all_rain[index])
+np.save(f'{new_fp}storm_index_extended_{hemisphere}.npy',index)
 # np.save('{new_fp}storm_sid.npy',all_id)
-all_id.loc[index].to_csv(f'{new_fp}storm_sid_{hemisphere}.csv')
+all_id.loc[index].to_csv(f'{new_fp}storm_sid_extended_{hemisphere}.csv')
 print('files saved!')
 
