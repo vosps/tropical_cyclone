@@ -122,53 +122,109 @@ def lookup(row,cal):
 	# date = pd.to_datetime('year' : row.year, 'month' : row.month, 'day' = row.day)
 	return date
 
+def create_xarray_2(lats,lons,data,ensemble=None):
+        if ensemble==None:
+                accumulated_ds = xr.Dataset(
+                        data_vars=dict(
+                                precipitation=(["y", "x"], data)),  
+                        coords=dict(
+                                lon=("x", lons),
+                                lat=("y", lats),
+                        ))
+        else:
+                
+                accumulated_ds = xr.Dataset(
+                        data_vars=dict(
+                                precipitation=(["y","x","ens"], data)),                        
+                        coords=dict(
+                                lon=("x", lons),
+                                lat=("y", lats),
+                                member=("ens", ensemble)
+                        )
+                )
+
+        return accumulated_ds
+
 def assign_location_coords(storm_rain,meta,flip=True):
 	# grab mswep coordinate variables
+	meta = meta.reset_index()
 	fp = '/bp1store/geog-tropical/data/Obs/MSWEP/3hourly_invertlat/2000342.00.nc'
 	d = Dataset(fp, 'r')
 	lat = d.variables['lat'][:] #lat
 	lon = d.variables['lon'][:] #lon
-	print('lat shape: ',lat.shape)
-	print('lon shape: ',lon.shape)
-	time = meta.date
+	order = np.array(meta['date']).argsort()
+	print(meta)
+	print(order)
+	meta_sorted = meta.reindex(order)
+	print(meta_sorted)
+	storm_rain_sorted = storm_rain[order,:,:,:]
+	time = meta_sorted.date
 	print('time',time)
 	print(time.shape)
 	time = list(time)
 	x = np.arange(0,100)
 	y = np.arange(0,100)
-	dims = ['time','x','y']
-	variables = {
-		'rain': (dims, np.zeros((len(time), 100, 100))), 
-		'storm_lats': (dims,np.zeros((len(time), 100, 100))), 
-		'storm_lons': (dims,np.zeros((len(time), 100, 100)))
-		}
-	print(variables)
-	combined = xr.Dataset(
-		data_vars=variables,
-		coords={'time': time, 'x': x, 'y': y})
+	ensemble = np.arange(0,20)
+	dims = ['time','y','x','ens']
+	dims2 = ['time','y','x']
+	ds = xr.Dataset(
+					data_vars=dict(
+							precipitation=(dims, np.zeros((len(time), 100, 100, 20))),
+							storm_lats=(dims2, np.zeros((len(time), 100, 100))),
+							storm_lons=(dims2, np.zeros((len(time), 100, 100)))
+							),                        
+					coords=dict(
+							time=('time',time),
+							lat=("y", y),
+							lon=("x", x),
+							member=("ens", ensemble)
+					)
+			)
+	
 	for i,t in enumerate(time):
-		storm_lats,storm_lons = get_storm_coords(lat,lon,meta,i)
-		print(storm_lats.shape)
-		print(storm_lons.shape)
+		print(i)
+		print('t is: ',t)
+		print(len(time))
+		print(storm_rain_sorted.shape)
+		storm_lats,storm_lons = get_storm_coords(lat,lon,meta_sorted,i)
+		grid_lons, grid_lats = np.meshgrid(storm_lons,storm_lats)
+		# print(storm_lats.shape)
+		# print(storm_lons.shape)
 		# TODO: make storm lats and lons into correct shape (100,100) grids
-		combined.loc[dict(time=t)] = create_xarray(storm_rain[i],storm_lats,storm_lons)
-	return combined
+		data = xr.Dataset(
+					data_vars=dict(
+							precipitation=(['y','x','ens'], storm_rain_sorted[i]),
+							storm_lats=(['y','x'], grid_lats),
+							storm_lons=(['y','x'], grid_lons)
+							),                        
+					coords=dict(
+							lat=("y", y),
+							lon=("x", x),
+							member=("ens", ensemble)
+					)
+			)
+		ds.loc[dict(time=t)] = data
+	return ds
+
+def save_event_set(meta,rain,path,mode):
+	sids = meta.sid
+	sids_unique=sids.drop_duplicates()
+	tracks_grouped = meta.groupby('sid')
+
+	for sid in sids_unique:
+		storm = tracks_grouped.get_group(sid)
+		storm_rain = rain[storm.index,:,:,:]
+		storm_ds = assign_location_coords(storm_rain,storm,flip=True)
+		storm_ds.to_netcdf(f'{path}{mode}_{sid}.nc',format='NETCDF4')
+		# exit()
 
 
-
-# load data
+# load scalar wgan data
 real,inputs,rain,meta = load_tc_data(set='validation',results='ke_tracks')
 meta = pd.read_csv('/user/work/al18709/tc_data_mswep_40/scalar_wgan_valid_meta_with_dates.csv')
-sids = meta.sid
-sids_unique=sids.drop_duplicates()
-nstorms = len(sids_unique)
-tracks_grouped = meta.groupby('sid')
+path = '/user/home/al18709/work/event_sets/wgan_scalar/'
+mode = 'validation'
+save_event_set(meta,rain,path,mode)
 
-for sid in sids_unique:
-	storm = tracks_grouped.get_group(sid)
-	storm_rain = rain[storm.index,:,:,0]
-	storm_ds = assign_location_coords(storm_rain,meta,flip=True)
-	print(storm_ds)
-	exit()
-
+# 
 

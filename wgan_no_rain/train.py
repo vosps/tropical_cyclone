@@ -35,7 +35,7 @@ def train_model(*,
         print('noise_hr shape: ', noise_hr_shape)
         print(batch_gen_train)
         loss_log = model.train(batch_gen_train, noise_gen, noise_hr_gen,
-                               steps_per_checkpoint, training_ratio=4) #used to be 5
+                               steps_per_checkpoint, training_ratio=6) #used to be 5
 
     elif mode == 'VAEGAN':
         print('training vaegan')
