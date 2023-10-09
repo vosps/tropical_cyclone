@@ -128,6 +128,8 @@ def generate_predictions(*,
 	latest_checkpoint = max(checkpoints)
 	# latest_checkpoint = '64000'
 	# gen_weights_file = log_folder + '/models/' +'gen_weights-0' + str(latest_checkpoint) + '.h5'
+	# latest_checkpoint = '0960000' #this one best so far
+	latest_checkpoint = '0960000'
 	gen_weights_file = log_folder + '/models/' +'gen_weights-' + str(latest_checkpoint) + '.h5'
 	# gen_weights_file = log_folder + '/models-gen_opt_weights.h5' # TODO: this has different construction to gen_weights - ask andrew and lucy
 	model.gen.built = True

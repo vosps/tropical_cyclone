@@ -281,6 +281,7 @@ for track_i in range(len(tracks)):
 		rain_data = rainfall_ds.variables['precipitation'][0,:,:] #lon
 	except:
 		print(rainfall_fp,'doesnt have precip as variable?')
+		continue
 	# print('initial rain data shape',rain_data.shape)
 	# print('initial rain lat shape',rain_lat.shape)
 	# print('initial rain lon shape',rain_lon.shape)

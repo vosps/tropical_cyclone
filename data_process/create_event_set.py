@@ -145,7 +145,7 @@ def create_xarray_2(lats,lons,data,ensemble=None):
 
         return accumulated_ds
 
-def assign_location_coords(storm_rain,meta,flip=True):
+def assign_location_coords(storm_rain,meta,flip=True,ens=True):
 	# grab mswep coordinate variables
 	meta = meta.reset_index()
 	fp = '/bp1store/geog-tropical/data/Obs/MSWEP/3hourly_invertlat/2000342.00.nc'
@@ -165,11 +165,28 @@ def assign_location_coords(storm_rain,meta,flip=True):
 	x = np.arange(0,100)
 	y = np.arange(0,100)
 	ensemble = np.arange(0,20)
+	if ens == False:
+		ensemble = np.arange(0,1)
 	dims = ['time','y','x','ens']
 	dims2 = ['time','y','x']
-	ds = xr.Dataset(
+	if ens==True:
+		ds = xr.Dataset(
+						data_vars=dict(
+								precipitation=(dims, np.zeros((len(time), 100, 100, 20))),
+								storm_lats=(dims2, np.zeros((len(time), 100, 100))),
+								storm_lons=(dims2, np.zeros((len(time), 100, 100)))
+								),                        
+						coords=dict(
+								time=('time',time),
+								lat=("y", y),
+								lon=("x", x),
+								member=("ens", ensemble)
+						)
+				)
+	else:
+		ds = xr.Dataset(
 					data_vars=dict(
-							precipitation=(dims, np.zeros((len(time), 100, 100, 20))),
+							precipitation=(dims, np.zeros((len(time), 100, 100, 1))),
 							storm_lats=(dims2, np.zeros((len(time), 100, 100))),
 							storm_lons=(dims2, np.zeros((len(time), 100, 100)))
 							),                        
@@ -206,7 +223,7 @@ def assign_location_coords(storm_rain,meta,flip=True):
 		ds.loc[dict(time=t)] = data
 	return ds
 
-def save_event_set(meta,rain,path,mode):
+def save_event_set(meta,rain,path,mode,ens=True):
 	sids = meta.sid
 	sids_unique=sids.drop_duplicates()
 	tracks_grouped = meta.groupby('sid')
@@ -214,7 +231,7 @@ def save_event_set(meta,rain,path,mode):
 	for sid in sids_unique:
 		storm = tracks_grouped.get_group(sid)
 		storm_rain = rain[storm.index,:,:,:]
-		storm_ds = assign_location_coords(storm_rain,storm,flip=True)
+		storm_ds = assign_location_coords(storm_rain,storm,flip=True,ens=ens)
 		storm_ds.to_netcdf(f'{path}{mode}_{sid}.nc',format='NETCDF4')
 		# exit()
 
@@ -224,7 +241,17 @@ real,inputs,rain,meta = load_tc_data(set='validation',results='ke_tracks')
 meta = pd.read_csv('/user/work/al18709/tc_data_mswep_40/scalar_wgan_valid_meta_with_dates.csv')
 path = '/user/home/al18709/work/event_sets/wgan_scalar/'
 mode = 'validation'
-save_event_set(meta,rain,path,mode)
+print(real.shape)
+# save_event_set(meta,rain,path,mode)
+save_event_set(meta,real,'/user/home/al18709/work/event_sets/truth/',mode,ens=False)
 
-# 
+# load 2D wgan
+real_2,inputs_2,pred_2,meta_2,imput_og,rain_og,meta_og = load_tc_data(set='test',results='kh_tracks')
+real_og_x,_,_,_,_,_,rain_og_x,meta_og_x = load_tc_data(set='extreme_test',results='test')
+meta_og = pd.read_csv('/user/work/al18709/tc_data_mswep_40/original_wgan_test_meta_with_dates.csv')
+meta_og_x = pd.read_csv('/user/work/al18709/tc_data_mswep_40/original_wgan_extreme_test_meta_with_dates.csv')
+path_og = '/user/home/al18709/work/event_sets/wgan/'
+mode_og = 'extreme_test'
+# save_event_set(meta_og,rain_og,path_og,mode_og)
+# save_event_set(meta_og_x,rain_og_x,path_og,mode_og)
 
