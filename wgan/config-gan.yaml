@@ -1,7 +1,7 @@
 GENERAL:
     mode: "GAN" # choices 'det' 'GAN' 'VAEGAN'
     problem_type: "normal" # choices 'normal' 'superresolution'
-    data_mode: 'validation' #'storm_era5_corrected' # validation, test, train, extreme_validation, extreme_test, storm, era5, era5_corrected, storm_era5, storm_era5_corrected
+    data_mode: 'validation_pred-opt_scalar_test_run_1' #'validation_pred-opt_scalar_test_run_1' #'storm_era5_corrected' # validation, test, train, extreme_validation, extreme_test, storm, era5, era5_corrected, storm_era5, storm_era5_corrected
     storm: '2019236N10314'
     
 MODEL:
@@ -11,14 +11,14 @@ MODEL:
     # change padding to zero padding?
         
 SETUP:
-    log_folder: "/user/home/al18709/work/gan/logs_wgan_v2_testing"
+    log_folder: "/user/home/al18709/work/gan/logs_wgan_modular_v3"
     # log_folder: "/user/home/al18709/work/dsrnngan/logs"
 
 GENERATOR:
     filters_gen: 128 #128
     noise_channels: 6 # used for GAN, used to be 4, but tat was for 9 input channels, so could decrease this.
     latent_variables: 1 # used for VAEGAN
-    learning_rate_gen: 1e-6 #1e-5 change to 1e-6
+    learning_rate_gen: 2e-6 # was 1e-6 1e-5 change to 1e-6
 
 DISCRIMINATOR:
     # filters_disc: 512 #512

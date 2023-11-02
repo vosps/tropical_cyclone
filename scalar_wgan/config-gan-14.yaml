@@ -11,35 +11,30 @@ MODEL:
     # change padding to zero padding?
         
 SETUP:
-    log_folder: "/user/home/al18709/work/gan/logs_wgan_no_rain_v32"
+    log_folder: "/user/home/al18709/work/gan/logs_wgan_no_rain_v14"
     # log_folder: "/user/home/al18709/work/dsrnngan/logs"
-    # gen_weights-0588800.h5 is the current best option
-    # also gen_weights-0947200.h5
-    # gen_weights-1280000.h5 of version 32 gives the exact SPD plot I've ever seen, but the qq plot is too high
 
 GENERATOR:
     filters_gen: 128 #128, when this was 256 it might have helped with better spatial structure!
-    noise_channels: 8 # used for GAN, used to be 4, but tat was for 9 input channels, so could decrease this.
+    noise_channels: 16 # used for GAN, used to be 4, but tat was for 9 input channels, so could decrease this.
     latent_variables: 1 # used for VAEGAN
-    learning_rate_gen: 2e-5 # first was 2e-6 #4e-5 #2e-5 #1e-5 change to 1e-6
+    learning_rate_gen: 1e-6 #1e-5 change to 1e-6
 
 DISCRIMINATOR:
     # filters_disc: 512 #512
     filters_disc: 512 #512 when it was 756 it might have helped with performance metrics
-    learning_rate_disc: 2e-5 # first was 1e-6 #8e-6 #5e-6 # 1e-5 was working with 1e-6, 5e-7
-    # Try decaying the learning rate after a bit of training
-    # try generatng just the low resolution rain fields
+    learning_rate_disc: 1e-6 # 1e-5
 
 TRAIN:
     train_years: [2016, 2017, 2018] 
     training_weights: [0.4, 0.3, 0.2, 0.1]
     # num_samples: 320000
-    num_samples: 12800000 #16400000 #1280000 #1960000 #640000, 1320000 when this was 1280000 it might have helped with the spatial strcuture!
+    num_samples: 16400000 #1280000 #1960000 #640000, 1320000 when this was 1280000 it might have helped with the spatial strcuture!
     # steps_per_checkpoint: 3200 # perhaps this needs to be looked at. 200 too low, 3200 too slow. number of images is around 40,000
     steps_per_checkpoint: 800 # 800 # 200 this affects number of training samples trained on before saving? so when this was 3,200 it took a long time to train as there were 52,000 samples to go through each checkpoint
-    batch_size: 16  # can use 400x16 without CL, or 3200x2 with CL
+    batch_size: 32  # can use 400x16 without CL, or 3200x2 with CL
     kl_weight: 1e-2  # used for VAEGAN 1e-8
-    ensemble_size: null # null or 1 size of pred ensemble for content loss, set to 1 for no content loss or 8 as the highest, it was 1 but this caused an error in gan.py i think
+    ensemble_size: null  # null or 1 size of pred ensemble for content loss, set to 1 for no content loss or 8 as the highest, it was 1 but this caused an error in gan.py i think
     content_loss_weight: 0 # set to zero for no content loss or 1000.0 for content loss
 
 VAL:

@@ -22,7 +22,9 @@ import plots
 # import roc
 print('generate predictions')
 from generate_predictions_2 import generate_predictions
-
+# don't print warnings
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 
 print('importing tensorflow...')
 import tensorflow as tf
@@ -76,6 +78,8 @@ if __name__ == "__main__":
     parser.set_defaults(do_training=True)
     parser.add_argument('--no_train', dest='do_training', action='store_false',
                         help="Do NOT carry out training, only perform eval")
+    parser.add_argument('--restart', dest='restart', action='store_true',
+                         help="Restart training from latest checkpoint")
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--eval_full', dest='evalnum', action='store_const', const="full")
     group.add_argument('--eval_short', dest='evalnum', action='store_const', const="short")
@@ -106,6 +110,7 @@ if __name__ == "__main__":
                         help="Plot ROC and AUC curves for small images")
     parser.add_argument('--plot_roc_full', dest='plot_roc_full', action='store_true',
                         help="Plot ROC and AUC curves for full images")
+
     args = parser.parse_args()
 
     if args.evalnum is None and (args.rank_small or args.rank_full or args.qual_small or args.qual_full or args.plot_roc_small or args.plot_roc_full):
@@ -181,8 +186,8 @@ if __name__ == "__main__":
     if problem_type == "normal":
         downsample = False
         # input_channels = 9
-        input_channels = 1
-        # input_channels = 7
+        # input_channels = 1
+        input_channels = 6
     elif problem_type == "superresolution":
         downsample = True
         input_channels = 1
@@ -190,23 +195,31 @@ if __name__ == "__main__":
         raise ValueError("no such problem type, try again!")
 
     if args.do_training:
-        # initialize GAN
-        print('mode',mode)
-        print('arch',arch)
-        model = setupmodel.setup_model(
-            mode=mode,
-            arch=arch,
-            input_channels=input_channels,
-            latent_variables=latent_variables,
-            filters_gen=filters_gen,
-            filters_disc=filters_disc,
-            noise_channels=noise_channels,
-            padding=padding,
-            lr_disc=lr_disc,
-            lr_gen=lr_gen,
-            kl_weight=kl_weight,
-            ensemble_size=ensemble_size,
-            content_loss_weight=content_loss_weight)
+
+        # run with 2 GPUs?
+        # tf.debugging.set_log_device_placement(True)
+        gpus = tf.config.list_logical_devices('GPU')
+        strategy = tf.distribute.MirroredStrategy(gpus)
+        with strategy.scope():
+
+            # initialize GAN
+            print('mode',mode)
+            print('arch',arch)
+            print('noise channels before setting up model: ', noise_channels)
+            model = setupmodel.setup_model(
+                mode=mode,
+                arch=arch,
+                input_channels=input_channels,
+                latent_variables=latent_variables,
+                filters_gen=filters_gen,
+                filters_disc=filters_disc,
+                noise_channels=noise_channels,
+                padding=padding,
+                lr_disc=lr_disc,
+                lr_gen=lr_gen,
+                kl_weight=kl_weight,
+                ensemble_size=ensemble_size,
+                content_loss_weight=content_loss_weight)
 
         batch_gen_train, batch_gen_valid = setupdata.setup_data(
             train_years=train_years,
@@ -217,23 +230,32 @@ if __name__ == "__main__":
             batch_size=batch_size,
             load_full_image=False)
 
-    # Leaving around for now in case this is useful for e.g. multiple training
-#         if load_weights_root:  # load weights and run status
-#             model.load(model.filenames_from_root(load_weights_root))
-#             with open(load_weights_root + "-run_status.json", 'r') as f:
-#                 run_status = json.load(f)
-#             training_samples = run_status["training_samples"]
-
-#             if log_path:
-#                 log_file = "{}/log.txt".format(log_path)
-#                 log = pd.read_csv(log_file)
+    # Disable AutoShard.
+    # options = tf.data.Options()
+    # options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.OFF
+    # batch_gen_train = batch_gen_train.with_options(options)
+    # batch_gen_valid = batch_gen_valid.with_options(options)
 
         if False:
             pass
+
+        if args.restart: # load weights and run status
+
+             model.load(model.filenames_from_root(model_weights_root))
+             with open(log_folder + "/run_status.json", 'r') as f:
+                 run_status = json.load(f)
+             training_samples = run_status["training_samples"]
+             checkpoint = int(training_samples / (steps_per_checkpoint * batch_size)) + 1
+
+             log_file = "{}/log.txt".format(log_folder)
+             log = pd.read_csv(log_file)
+             log_list = [log]
+
         else:  # initialize run status
             training_samples = 0
 
             log_file = os.path.join(log_folder, "log.txt")
+            log_list = []
 
         plot_fname = os.path.join(log_folder, "progress.pdf")
 
@@ -245,15 +267,15 @@ if __name__ == "__main__":
             print('model: ',model)
             print('mode',mode)
             loss_log = train.train_model(model=model,
-                                         mode=mode,
-                                         batch_gen_train=batch_gen_train,
-                                         batch_gen_valid=batch_gen_valid,
-                                         noise_channels=noise_channels,
-                                         latent_variables=latent_variables,
-                                         checkpoint=checkpoint,
-                                         steps_per_checkpoint=steps_per_checkpoint,
-                                         plot_samples=val_size,
-                                         plot_fn=plot_fname)
+                                        mode=mode,
+                                        batch_gen_train=batch_gen_train,
+                                        batch_gen_valid=batch_gen_valid,
+                                        noise_channels=noise_channels,
+                                        latent_variables=latent_variables,
+                                        checkpoint=checkpoint,
+                                        steps_per_checkpoint=steps_per_checkpoint,
+                                        plot_samples=val_size,
+                                        plot_fn=plot_fname)
 
             training_samples += steps_per_checkpoint * batch_size
 

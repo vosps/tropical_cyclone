@@ -5,7 +5,7 @@ import pandas as pd
 from tfrecords_generator_ifs import create_fixed_dataset
 import setupmodel
 from noise import NoiseGenerator
-import gc
+import gc,os
 
 
 def flip(tc):
@@ -51,12 +51,12 @@ def generate_predictions(*,
 					gcm = False,
 					# plot_ecpoint=True,
 					):
-		
+
+
 	# define initial variables
 	# input_channels = 1
-	# input_channels = 7
-	input_channels = 1
-	noise_channels = 6 #4
+	input_channels = 6
+	# noise_channels = 6 #4
 	batch_size = 512
 	num_images = 150
 		
@@ -84,8 +84,10 @@ def generate_predictions(*,
 		num_images,_,_ = np.load('/user/work/al18709/tc_data_era5_flipped_10/y_%s.npy' % storm).shape
 	elif (data_mode == 'era5') or (data_mode == 'era5_corrected'):
 		num_images,_,_ = np.load('/user/home/al18709/work/tc_data_era5_flipped_10/valid_y.npy').shape
-	elif 'scalar' in data_mode:
-		num_images,_,_,_ = np.load('/user/home/al18709/work/gan_predictions_20/%s.npy' % data_mode).shape
+	elif (data_mode == 'miroc') or (data_mode == 'miroc_corrected'):
+		num_images,_ = np.load('/user/work/al18709/tc_data_flipped/KE_tracks/ke_miroc6-hist_qm_corrected.npy')[:30000,:].shape
+	elif (data_mode == 'miroc_ssp585'):
+		num_images,_ = 30000
 	else:
 		# num_images,_,_ = np.load('/user/work/al18709/tc_data_flipped/%s_X.npy' % data_mode).shape
 		num_images,_,_,_ = np.load('/user/work/al18709/tc_data_flipped/%s_combined_X.npy' % data_mode).shape
@@ -117,6 +119,17 @@ def generate_predictions(*,
 	print('log folder is:',log_folder)
 	print(vaegan)
 	gen_weights_file = log_folder + '/models-gen_weights.h5'
+	files = os.listdir(log_folder + '/models/')
+	checkpoints = []
+	for file in files:
+		cp = file[-10:-3]
+		checkpoints.append(int(cp))
+	print(checkpoints)
+	latest_checkpoint = max(checkpoints)
+	# latest_checkpoint = '64000'
+	# gen_weights_file = log_folder + '/models/' +'gen_weights-0' + str(latest_checkpoint) + '.h5'
+	# latest_checkpoint = '0960000' #this one best so far on model 31
+	gen_weights_file = log_folder + '/models/' +'gen_weights-' + str(latest_checkpoint) + '.h5'
 	# gen_weights_file = log_folder + '/models-gen_opt_weights.h5' # TODO: this has different construction to gen_weights - ask andrew and lucy
 	model.gen.built = True
 	model.gen.load_weights(gen_weights_file) 
@@ -125,10 +138,12 @@ def generate_predictions(*,
 	print(data_predict.batch(batch_size))
 	print(iter(data_predict.batch(batch_size)))
 	# define initial variables
-	pred = np.zeros((num_images,100,100,20))
-	seq_real = np.zeros((num_images,100,100,1))
+	# pred = np.zeros((num_images,100,100,20))
+	pred = np.zeros((num_images,10,10,20))
+	# seq_real = np.zeros((num_images,100,100,1))
+	seq_real = np.zeros((num_images,10,10,1))
 	# low_res_inputs = np.zeros((num_images,10,10,1))
-	low_res_inputs = np.zeros((num_images,10,10,7))
+	low_res_inputs = np.zeros((num_images,10,10,6))
 	data_pred_iter = iter(data_predict)
 	# unbatch first
 	nbatches = int(num_images/batch_size)
@@ -151,7 +166,8 @@ def generate_predictions(*,
 				n = remainder
 			else:
 				n = batch_size
-			outputs = np.zeros((n,100,100,1))
+			# outputs = np.zeros((n,100,100,1))
+			outputs = np.zeros((n,10,10,1))
 		# if i !=nbatches:
 		# 	continue
 		print(inputs.shape)
@@ -165,14 +181,27 @@ def generate_predictions(*,
 
 		img_real = outputs
 		img_pred = []	   
-		noise_shape = inputs[0,...,0].shape + (noise_channels,)
+		# noise_shape = inputs[0,...,0].shape + (noise_channels,)
+		# noise_shape = (5,5) + (noise_channels,)
+		noise_shape = (10,10) + (noise_channels,)
+		# noise_hr_shape = (100,100) + (noise_channels,)
+		noise_hr_shape = (50,50) + (noise_channels,)
 		print('noise shape: ',noise_shape)
+		print('noise_hr shape" ',noise_hr_shape)
 		if i == nbatches:
 			noise_gen = NoiseGenerator(noise_shape, batch_size=remainder) # does noise gen need to be outside of the for loop?
-			img_pred = np.zeros((remainder,100,100,20))
+			noise_hr_gen = NoiseGenerator(noise_hr_shape, batch_size=remainder)
+			# img_pred = np.zeros((remainder,100,100,20))
+			img_pred = np.zeros((remainder,10,10,20))
 		else:
 			noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size) # does noise gen need to be outside of the for loop?
-			img_pred = np.zeros((batch_size,100,100,20))
+			noise_hr_gen = NoiseGenerator(noise_hr_shape, batch_size=batch_size)
+			# img_pred = np.zeros((batch_size,100,100,20))
+			img_pred = np.zeros((batch_size,10,10,20))
+			
+		
+		print('noise gen shape',noise_gen().shape)
+		print('noise gen hr shape',noise_hr_gen().shape)
 
 		for j in range(20): #do 50 ensemble members
 				
@@ -191,8 +220,14 @@ def generate_predictions(*,
 			
 			else:
 				nn = noise_gen()
+				nn_hr = noise_hr_gen()
+				print('inputs shape: ', inputs.shape)
+				print('topography.shape: ',topography.shape)
+				print('noise shape: ',nn.shape)
+				print('noise_hr shape: ', nn_hr.shape)
+
 				# pred_single = np.array(model.gen.predict([inputs,nn]))[:,:,:,0] # this one
-				pred_single = np.array(model.gen.predict([inputs,topography,nn]))[:,:,:,0]
+				pred_single = np.array(model.gen.predict([inputs,topography,nn,nn_hr]))[:,:,:,0]
 
 				# pred_single = np.array(model.gen.predict_on_batch([inputs,nn]))[:,:,:,0]
 				gc.collect()
@@ -210,13 +245,13 @@ def generate_predictions(*,
 		print('seq_real.shape: ',seq_real.shape)
 		print('assigning images ',i*batch_size,' to ',i*batch_size + batch_size,'...')
 		if i == nbatches:
-			# seq_real[i*batch_size:,:,:,:] = img_real[:remainder]
-			seq_real[i*batch_size:,:,:,0] = img_real[:remainder]
+			seq_real[i*batch_size:,:,:,:] = img_real[:remainder]
+			# seq_real[i*batch_size:,:,:,0] = img_real[:remainder]
 			pred[i*batch_size:,:,:,:] = img_pred[:remainder]
 			low_res_inputs[i*batch_size:,:,:,:] = inputs[:remainder]
 		else:
-			# seq_real[i*batch_size:i*batch_size + batch_size,:,:,:] = img_real
-			seq_real[i*batch_size:i*batch_size + batch_size,:,:,0] = img_real
+			seq_real[i*batch_size:i*batch_size + batch_size,:,:,:] = img_real
+			# seq_real[i*batch_size:i*batch_size + batch_size,:,:,0] = img_real
 			pred[i*batch_size:i*batch_size + batch_size,:,:,:] = img_pred
 			low_res_inputs[i*batch_size:i*batch_size + batch_size,:,:,:] = inputs
 
@@ -242,8 +277,10 @@ def generate_predictions(*,
 			meta = pd.read_csv('/user/work/al18709/tc_data_era5_flipped_10/meta_%s.csv' % storm)
 		elif (data_mode == 'era5') or (data_mode == 'era5_corrected'):
 			meta = pd.read_csv('/user/work/al18709/tc_data_era5_10/valid_meta.csv')
-		elif 'scalar' in data_mode:
-			meta = pd.read_csv('/user/work/al18709/tc_data_mswep/valid_meta.csv')
+		elif (data_mode == 'miroc') or (data_mode == 'miroc_corrected') or (data_mode == 'miroc_ssp585'):
+			meta = pd.read_csv('/user/home/al18709/work/ibtracks/miroc6_hist_tracks.csv').head(30000)
+			meta.rename(columns={'lat':'centre_lat'},inplace=True)
+			meta.rename(columns={'lon':'centre_lon'},inplace=True)
 		else:
 			meta = pd.read_csv('/user/work/al18709/tc_data_mswep/%s_meta.csv' % data_mode)
 		
@@ -260,7 +297,7 @@ def generate_predictions(*,
 	else:
 		model = 'gan'	
 		# problem = '5_normal_problem'
-		problem = 'modular_test'
+		problem = 'scalar_test_run_1'
 
 	if data_mode == 'storm':
 		problem = storm
@@ -268,19 +305,14 @@ def generate_predictions(*,
 	if data_mode == 'era5_corrected':
 		problem = '3_hrly'
 
-	if 'scalar' in data_mode:
-		data_mode = 'modular_part2'
-
 	seq_real = 10**seq_real - 1
+	# don't need to denormalise the results, actually seems like you do
 	pred = 10**pred - 1
-	low_res_inputs = 10**low_res_inputs - 1
-
-
+	# low_res_inputs = 10**low_res_inputs - 1
 
 	np.save('/user/home/al18709/work/%s_predictions_20/%s_real-%s_%s.npy' % (model,data_mode,checkpoint,problem),seq_real)
 	np.save('/user/home/al18709/work/%s_predictions_20/%s_pred-%s_%s.npy' % (model,data_mode,checkpoint,problem),pred)
 	np.save('/user/home/al18709/work/%s_predictions_20/%s_input-%s_%s.npy' % (model,data_mode,checkpoint,problem),low_res_inputs)
-	print('/user/home/al18709/work/%s_predictions_20/%s_real-%s_%s.npy' % (model,data_mode,checkpoint,problem))
 
 
 
