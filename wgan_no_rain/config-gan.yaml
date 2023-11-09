@@ -21,12 +21,13 @@ GENERATOR:
     filters_gen: 128 #128, when this was 256 it might have helped with better spatial structure!
     noise_channels: 8 # used for GAN, used to be 4, but tat was for 9 input channels, so could decrease this.
     latent_variables: 1 # used for VAEGAN
-    learning_rate_gen: 2e-5 # first was 2e-6 #4e-5 #2e-5 #1e-5 change to 1e-6
+    learning_rate_gen: 2e-6 # first was 2e-6 #4e-5 #2e-5 #1e-5 change to 1e-6
+    # doing 2e-6 to 1e-5 didn't help, so should do 2-7 next time
 
 DISCRIMINATOR:
     # filters_disc: 512 #512
     filters_disc: 512 #512 when it was 756 it might have helped with performance metrics
-    learning_rate_disc: 2e-5 # first was 1e-6 #8e-6 #5e-6 # 1e-5 was working with 1e-6, 5e-7
+    learning_rate_disc: 1e-6 # first was 1e-6 #8e-6 #5e-6 # 1e-5 was working with 1e-6, 5e-7
     # Try decaying the learning rate after a bit of training
     # try generatng just the low resolution rain fields
 

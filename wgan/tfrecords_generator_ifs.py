@@ -150,7 +150,7 @@ def create_dataset(year,clss,era_shape=(10,10,1),out_shape=(100,100,1),
     # x[:,:,:,1] = (x[:,:,:,1]-np.mean(x[:,:,:,1]))/np.std(x[:,:,:,1])
 
     # normalise the rest by max
-    z = z/np.max(z)
+    z = z/np.max(np.abs(z))
     # for i in range(2,x.shape[-1]):
     #     x[:,:,:,i] = x[:,:,:,i]/np.max(x[:,:,:,i])
 
@@ -262,7 +262,7 @@ def create_fixed_dataset(year=None,mode='validation',batch_size=16,
     # x[:,:,:,1] = (x[:,:,:,1]-np.mean(x[:,:,:,1]))/np.std(x[:,:,:,1])
 
     # normalise the rest by max
-    z = z/np.max(z)
+    z = z/np.max(np.abs(z))
     # for i in range(2,x.shape[-1]):
     #     x[:,:,:,i] = x[:,:,:,i]/np.max(x[:,:,:,i])
 

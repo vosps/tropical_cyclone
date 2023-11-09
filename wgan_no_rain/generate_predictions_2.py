@@ -126,7 +126,7 @@ def generate_predictions(*,
 		checkpoints.append(int(cp))
 	print(checkpoints)
 	latest_checkpoint = max(checkpoints)
-	# latest_checkpoint = '1036800'
+	latest_checkpoint = '1280000'
 	# gen_weights_file = log_folder + '/models/' +'gen_weights-0' + str(latest_checkpoint) + '.h5'
 	# latest_checkpoint = '0960000' #this one best so far on model 31
 	# latest_checkpoint = '1280000' #this one best so far on model 32

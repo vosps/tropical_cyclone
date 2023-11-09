@@ -114,22 +114,28 @@ def generate_predictions(*,
 	elif mode == 'GAN':
 		vaegan = False
 
+	# load disc model and make predictions
+	disc_weights_file = log_folder + '/models-disc_weights.h5'
+	model.disc.built = True
+	model.disc.load_weights(disc_weights_file)
+
+	#  load gen model and make predictions
 	print('log folder is:',log_folder)
-	print(vaegan)
 	gen_weights_file = log_folder + '/models-gen_weights.h5'
 	# gen_weights_file = log_folder + '/models-gen_opt_weights.h5' # TODO: this has different construction to gen_weights - ask andrew and lucy
 	model.gen.built = True
-	model.gen.load_weights(gen_weights_file) 
+	model.gen.load_weights(gen_weights_file)
 
-	print(data_predict)
-	print(data_predict.batch(batch_size))
-	print(iter(data_predict.batch(batch_size)))
 	# define initial variables
 	pred = np.zeros((num_images,100,100,20))
 	seq_real = np.zeros((num_images,100,100,1))
+	disc_pred = np.zeros((num_images,1,20))
+	# disc_real = np.zeros((num_images,1))
 	# low_res_inputs = np.zeros((num_images,10,10,1))
 	low_res_inputs = np.zeros((num_images,10,10,7))
+	# disc_inputs = np.zeros((num_images,100,100,20))
 	data_pred_iter = iter(data_predict)
+	
 	# unbatch first
 	nbatches = int(num_images/batch_size)
 	remainder = num_images - nbatches*batch_size
@@ -154,14 +160,9 @@ def generate_predictions(*,
 			outputs = np.zeros((n,100,100,1))
 		# if i !=nbatches:
 		# 	continue
-		print(inputs.shape)
-		print(topography.shape)
-		print(outputs.shape)
 		print('remainder',remainder)
 		print('number of batches',nbatches)
 		print(num_images)
-		print(batch_size)
-		
 
 		img_real = outputs
 		img_pred = []	   
@@ -170,9 +171,11 @@ def generate_predictions(*,
 		if i == nbatches:
 			noise_gen = NoiseGenerator(noise_shape, batch_size=remainder) # does noise gen need to be outside of the for loop?
 			img_pred = np.zeros((remainder,100,100,20))
+			disc_img_pred = np.zeros((remainder,1,20))
 		else:
 			noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size) # does noise gen need to be outside of the for loop?
 			img_pred = np.zeros((batch_size,100,100,20))
+			disc_img_pred = np.zeros((batch_size,1,20))
 
 		for j in range(20): #do 50 ensemble members
 				
@@ -193,6 +196,9 @@ def generate_predictions(*,
 				nn = noise_gen()
 				# pred_single = np.array(model.gen.predict([inputs,nn]))[:,:,:,0] # this one
 				pred_single = np.array(model.gen.predict([inputs,topography,nn]))[:,:,:,0]
+				pred_single_disc = np.array(model.disc.predict([inputs,topography,pred_single]))
+				print('pred single disc shape',pred_single_disc.shape)
+				# [generator_input, const_input, generator_output]
 
 				# pred_single = np.array(model.gen.predict_on_batch([inputs,nn]))[:,:,:,0]
 				gc.collect()
@@ -200,24 +206,29 @@ def generate_predictions(*,
 			# print(pred_single.shape)
 			if i == nbatches:
 				img_pred[:remainder,:,:,j] = pred_single
+				disc_img_pred[:remainder,:,j] = pred_single_disc
 			else:
 				img_pred[:,:,:,j] = pred_single
+				disc_img_pred[:,:,j] = pred_single_disc
 			# print(img_pred.shape)
 			
 
 		print('img pred shape: ',img_pred.shape)
 		print('img real shape: ',img_real.shape)
 		print('seq_real.shape: ',seq_real.shape)
+		print('disc_pred shape', disc_pred.shape)
 		print('assigning images ',i*batch_size,' to ',i*batch_size + batch_size,'...')
 		if i == nbatches:
 			# seq_real[i*batch_size:,:,:,:] = img_real[:remainder]
 			seq_real[i*batch_size:,:,:,0] = img_real[:remainder]
 			pred[i*batch_size:,:,:,:] = img_pred[:remainder]
+			disc_pred[i*batch_size:,:,:] = disc_img_pred[:remainder]
 			low_res_inputs[i*batch_size:,:,:,:] = inputs[:remainder]
 		else:
 			# seq_real[i*batch_size:i*batch_size + batch_size,:,:,:] = img_real
 			seq_real[i*batch_size:i*batch_size + batch_size,:,:,0] = img_real
 			pred[i*batch_size:i*batch_size + batch_size,:,:,:] = img_pred
+			disc_pred[i*batch_size:i*batch_size + batch_size,:,:] = disc_img_pred
 			low_res_inputs[i*batch_size:i*batch_size + batch_size,:,:,:] = inputs
 
 			
@@ -260,7 +271,7 @@ def generate_predictions(*,
 	else:
 		model = 'gan'	
 		# problem = '5_normal_problem'
-		problem = 'modular_test'
+		problem = 'modular_part2_raw'
 
 	if data_mode == 'storm':
 		problem = storm
@@ -269,7 +280,7 @@ def generate_predictions(*,
 		problem = '3_hrly'
 
 	if 'scalar' in data_mode:
-		data_mode = 'modular_part2'
+		data_mode = 'modular_part2_lowres_predictions'
 
 	seq_real = 10**seq_real - 1
 	pred = 10**pred - 1
@@ -279,6 +290,7 @@ def generate_predictions(*,
 
 	np.save('/user/home/al18709/work/%s_predictions_20/%s_real-%s_%s.npy' % (model,data_mode,checkpoint,problem),seq_real)
 	np.save('/user/home/al18709/work/%s_predictions_20/%s_pred-%s_%s.npy' % (model,data_mode,checkpoint,problem),pred)
+	np.save('/user/home/al18709/work/%s_predictions_20/%s_disc_pred-%s_%s.npy' % (model,data_mode,checkpoint,problem),disc_pred)
 	np.save('/user/home/al18709/work/%s_predictions_20/%s_input-%s_%s.npy' % (model,data_mode,checkpoint,problem),low_res_inputs)
 	print('/user/home/al18709/work/%s_predictions_20/%s_real-%s_%s.npy' % (model,data_mode,checkpoint,problem))
 
