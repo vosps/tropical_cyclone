@@ -222,6 +222,7 @@ def create_fixed_dataset(year=None,mode='validation',batch_size=16,
     # normalise rain
     # x[:,0] = np.log10(1+x[:,0])
     y = np.log10(1+y)
+
     print('y normalised',flush=True)
 
     # normalise mslp
