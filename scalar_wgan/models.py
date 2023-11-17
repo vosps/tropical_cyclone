@@ -134,7 +134,8 @@ def generator(mode,
 
     # define new activation function
     def custom_activation(x):
-        return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.1)+1)
+        # return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.1)+1)
+        return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.5)+1)
     get_custom_objects().update({'custom_activation': Activation(custom_activation)})
     
     # Output layer

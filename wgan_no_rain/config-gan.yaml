@@ -11,7 +11,7 @@ MODEL:
     # change padding to zero padding?
         
 SETUP:
-    log_folder: "/user/home/al18709/work/gan/logs_wgan_no_rain_v32"
+    log_folder: "/user/home/al18709/work/gan/logs_wgan_no_rain_v35"
     # log_folder: "/user/home/al18709/work/dsrnngan/logs"
     # gen_weights-0588800.h5 is the current best option
     # also gen_weights-0947200.h5
