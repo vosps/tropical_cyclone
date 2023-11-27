@@ -11,7 +11,7 @@ MODEL:
     # change padding to zero padding?
         
 SETUP:
-    log_folder: "/user/home/al18709/work/gan/logs_scalar_wgan_v5"
+    log_folder: "/user/home/al18709/work/gan/logs_scalar_wgan_v9"
     # make a deeper network and increase number of filters
     # running both types of models it appears the issue is potentially with this section of the architecture. 
     # So it would be worth making this part of the network deeper, perhaps a U-shape architecture

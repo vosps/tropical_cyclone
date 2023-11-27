@@ -90,6 +90,8 @@ if __name__ == "__main__":
     parser.set_defaults(plot_ranks_full=False)
     parser.set_defaults(plot_roc_small=False)
     parser.set_defaults(plot_roc_full=False)
+    parser.add_argument('--restart', dest='restart', action='store_true',
+                         help="Restart training from latest checkpoint")
     parser.add_argument('--rank_small', dest='rank_small', action='store_true',
                         help="Include CRPS/rank evaluation on small images")
     parser.add_argument('--rank_full', dest='rank_full', action='store_true',
@@ -230,6 +232,21 @@ if __name__ == "__main__":
 
         if False:
             pass
+
+        if args.restart: # load weights and run status
+            print(model_weights_root)
+            print(model.filenames_from_root(model_weights_root))
+            model.load(model.filenames_from_root(model_weights_root))
+            with open(log_folder + "/run_status.json", 'r') as f:
+                run_status = json.load(f)
+            training_samples = run_status["training_samples"]
+            checkpoint = int(training_samples / (steps_per_checkpoint * batch_size)) + 1
+
+            log_file = "{}/log.txt".format(log_folder)
+            log = pd.read_csv(log_file)
+            log_list = [log]
+
+       
         else:  # initialize run status
             training_samples = 0
 

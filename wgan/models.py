@@ -2,7 +2,9 @@ import tensorflow as tf
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, concatenate, Conv2D, UpSampling2D
 from tensorflow.keras.layers import GlobalAveragePooling2D, Dense, LeakyReLU
-
+from keras.layers.core import Activation
+from tensorflow.keras import backend as K
+from keras.utils.generic_utils import get_custom_objects
 from blocks import residual_block, const_upscale_block_100
 
 
@@ -101,8 +103,16 @@ def generator(mode,
         generator_output = residual_block(generator_output, filters=filters_gen, conv_size=conv_size, stride=stride, relu_alpha=relu_alpha, norm=norm, dropout_rate=dropout_rate, padding=padding, force_1d_conv=forceconv)
     print(f"Shape after third residual block: {generator_output.shape}")
 
+
+    def custom_activation(x):
+        return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.1)+1)
+        # return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.01)+1)
+    get_custom_objects().update({'custom_activation': Activation(custom_activation)})
+    
     # Output layer
-    generator_output = Conv2D(filters=1, kernel_size=(1, 1), activation='softplus', name="output")(generator_output)
+    # generator_output = Conv2D(filters=1, kernel_size=(1, 1), activation='softplus', name="output")(generator_output)
+    generator_output = Conv2D(filters=1, kernel_size=(1, 1), activation='custom_activation', name="output")(generator_output)
+    # generator_output = Conv2D(filters=1, kernel_size=(1, 1), activation='softplus', name="output")(generator_output)
     print(f"Output shape: {generator_output.shape}")
 
     if mode == 'VAEGAN':
@@ -184,8 +194,41 @@ def discriminator(arch,
     print(f"Shape after residual block: {disc_input.shape}")
     print('End of second residual block')
 
+    # weighted average on lo res input values
+    # GlobalWeightedAveragePooling2D
+    # https://github.com/csvance/keras-global-weighted-pooling/blob/master/gwp.py
+    # https://arxiv.org/pdf/1809.08264.pdf
+
+    # 1. normalise lo_res_input
+    # 2. w_avg = unit matrix + constant * lo_res_input
+    # 3, weighted_disc_input = w_avg * disc_input
+
+    # class GlobalWeightedAveragePooling2D(Layer):
+    #     def __init__(self, **kwargs):
+    #         Layer.__init__(self, **kwargs)
+    #         self.kernel = None
+
+    #     def build(self, input_shape):
+    #         self.kernel = self.add_weight(name='kernel',
+    #                                     shape=(input_shape[1], input_shape[2], 1),
+    #                                     initializer='ones',
+    #                                     trainable=True)
+    #         Layer.build(self, input_shape)
+
+    #     def compute_output_shape(self, input_shape):
+    #         return input_shape[0], input_shape[3],
+
+    #     def call(self, x):
+            
+    #         x = x*self.kernel
+    #         x = K.mean(x, axis=(1, 2))
+
+    #         return x
+
     # discriminator output
     disc_output = GlobalAveragePooling2D()(disc_input)
+    # weights = 
+    # disc_output = GlobalWeightedAveragePooling2D()(disc_input,weights)
     print(f"discriminator output shape after pooling: {disc_output.shape}")
     disc_output = Dense(64, activation='relu')(disc_output)
     print(f"discriminator output shape: {disc_output.shape}")

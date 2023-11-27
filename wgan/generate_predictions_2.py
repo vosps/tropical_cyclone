@@ -122,6 +122,8 @@ def generate_predictions(*,
 	#  load gen model and make predictions
 	print('log folder is:',log_folder)
 	gen_weights_file = log_folder + '/models-gen_weights.h5'
+	# gen_weights_file = '/user/home/al18709/work/gan/logs_wgan_modular_v6/models/gen_weights-2944000.h5'
+	# gen_weights_file = '/user/home/al18709/work/gan/logs_wgan_modular_patchloss_v1/models/gen_weights-0358400.h5'
 	# gen_weights_file = log_folder + '/models-gen_opt_weights.h5' # TODO: this has different construction to gen_weights - ask andrew and lucy
 	model.gen.built = True
 	model.gen.load_weights(gen_weights_file)
@@ -272,6 +274,7 @@ def generate_predictions(*,
 		model = 'gan'	
 		# problem = '5_normal_problem'
 		problem = 'modular_part2_raw'
+		# problem = 'modular_part2_patchloss_raw'
 
 	if data_mode == 'storm':
 		problem = storm
