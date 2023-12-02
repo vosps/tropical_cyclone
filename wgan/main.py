@@ -251,6 +251,7 @@ if __name__ == "__main__":
             training_samples = 0
 
             log_file = os.path.join(log_folder, "log.txt")
+            log_list = []
 
         plot_fname = os.path.join(log_folder, "progress.pdf")
 

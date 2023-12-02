@@ -138,7 +138,8 @@ def generator(mode,
         # return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.5)+1) #too extreme
         # return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.15)+1) #too low again
         # return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.2)+1)
-        return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.25)+1)
+        # return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.25)+1)
+        return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.225)+1)
     get_custom_objects().update({'custom_activation': Activation(custom_activation)})
     
     # Output layer

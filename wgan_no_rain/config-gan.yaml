@@ -11,7 +11,7 @@ MODEL:
     # change padding to zero padding?
         
 SETUP:
-    log_folder: "/user/home/al18709/work/gan/logs_wgan_no_rain_v36"
+    log_folder: "/user/home/al18709/work/gan/logs_wgan_no_rain_v31"
     # log_folder: "/user/home/al18709/work/dsrnngan/logs"
     # gen_weights-0588800.h5 is the current best option
     # also gen_weights-0947200.h5
@@ -21,7 +21,7 @@ GENERATOR:
     filters_gen: 128 #128, when this was 256 it might have helped with better spatial structure!
     noise_channels: 8 # used for GAN, used to be 4, but tat was for 9 input channels, so could decrease this.
     latent_variables: 1 # used for VAEGAN
-    learning_rate_gen: 3e-6 # v35 was 4e-6 # first was 2e-6 #4e-5 #2e-5 #1e-5 change to 1e-6
+    learning_rate_gen: 2e-6 # v35 was 4e-6 # first was 2e-6 #4e-5 #2e-5 #1e-5 change to 1e-6
     # doing 2e-6 to 1e-5 didn't help, so should do 2-7 next time
 
 DISCRIMINATOR:
