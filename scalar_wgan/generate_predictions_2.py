@@ -265,6 +265,7 @@ def generate_predictions(*,
 
 	# print(seq_real)
 	flip = True
+	flip = False
 
 	if flip == True:
 		if data_mode == 'validation':

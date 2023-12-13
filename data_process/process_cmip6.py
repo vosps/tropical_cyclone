@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from netCDF4 import Dataset
 
 def flip(tc):
@@ -38,6 +39,174 @@ def fix_dimensions(lat,lon,data):
 		print(data[:,-1].shape)
 		print(data.shape)
 		data = np.concatenate((data,[data[-1,:]]),axis=0)
+	if len(lon) == 98:
+		print('lon too long')
+		lon = np.append(lon,lon[-1])
+		lon = np.append(lon,lon[-1])
+		print(data[-1,:].shape)
+		print(data[:,-1].shape)
+		print(data.shape)
+		data = np.concatenate((data,np.array([data[:,-1]]).T),axis=1)
+		data = np.concatenate((data,np.array([data[:,-1]]).T),axis=1)
+	if len(lon) == 94:
+		print('lon too long')
+		lon = np.append(lon,lon[-1])
+		lon = np.append(lon,lon[-1])
+		lon = np.append(lon,lon[-1])
+		lon = np.append(lon,lon[-1])
+		lon = np.append(lon,lon[-1])
+		lon = np.append(lon,lon[-1])
+		print(data[-1,:].shape)
+		print(data[:,-1].shape)
+		print(data.shape)
+		data = np.concatenate((data,np.array([data[:,-1]]).T),axis=1)
+		data = np.concatenate((data,np.array([data[:,-1]]).T),axis=1)
+		data = np.concatenate((data,np.array([data[:,-1]]).T),axis=1)
+		data = np.concatenate((data,np.array([data[:,-1]]).T),axis=1)
+		data = np.concatenate((data,np.array([data[:,-1]]).T),axis=1)
+		data = np.concatenate((data,np.array([data[:,-1]]).T),axis=1)
+	if len(lat) == 98:
+		print('lat too long')
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		print(data[-1,:].shape)
+		print(data[:,-1].shape)
+		print(data.shape)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+	if len(lat) == 94:
+		print('lat too long')
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		print(data[-1,:].shape)
+		print(data[:,-1].shape)
+		print(data.shape)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+	if len(lat) == 92:
+		print('lat too long')
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		print(data[-1,:].shape)
+		print(data[:,-1].shape)
+		print(data.shape)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+	if len(lat) == 89:
+		print('lat too long')
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		print(data[-1,:].shape)
+		print(data[:,-1].shape)
+		print(data.shape)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+	if len(lat) == 89:
+		print('lat too long')
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		print(data[-1,:].shape)
+		print(data[:,-1].shape)
+		print(data.shape)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+	if len(lat) == 85:
+		print('lat too long')
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		print(data[-1,:].shape)
+		print(data[:,-1].shape)
+		print(data.shape)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
 	if len(lon) == 101:
 		lon=lon[:-1]
 		data = data[:,:-1]
@@ -48,7 +217,7 @@ def fix_dimensions(lat,lon,data):
 	print(lon.shape,lat.shape,data.shape)
 	return lat,lon,data
 
-def generate_topography(centre_lat,centre_lon,i):
+def generate_topography(tc_topography,centre_lat,centre_lon,i):
 
 	# open file
 	filepath = '/user/work/al18709/topography/topography_10km_nn.nc'
@@ -101,20 +270,63 @@ def generate_topography(centre_lat,centre_lon,i):
 	print('centre_lon',centre_lon)
 	print(data.shape)
 	tc_topography[i,:,:] = data
+	return tc_topography
+
+# 1. set initial variables
+scenario = 'ssp585'
+model = 'canesm'
+
+# for model in ['canesm','cnrm6','ecearth6','ipsl6','miroc6','mpi6','mri6','ukmo']:
+for model in ['miroc6','mpi6','mri6','ukmo']:
+	for scenario in ['hist','ssp245','ssp585']:
+		if model == 'ecearth6':
+			if scenario in ['hist','ssp245']:
+				continue
+		# 2. load data
+		data = np.load('/user/work/al18709/tc_data_flipped/KE_tracks/ke_miroc6-ssp585.npy')
+		print(data.shape)
+		# centre_lats = data[:,4]
+		# centre_lons = data[:,5]
+		# tc_topography = np.zeros((data.shape[0],100,100))
+		data = pd.read_csv(f'/user/home/al18709/work/ke_track_inputs/{model}_{scenario}_tracks.csv')
+		print(data.columns)
+		print(data.shape)
+		tc_topography = np.zeros((data.shape[0],100,100))
+		centre_lats = data['lat']
+		centre_lons = data['lon']
+
+		centre_lons[centre_lons > 180] = centre_lons[centre_lons > 180].copy() - 360
+
+		# 3. extract TC
+		# for i in range(data.shape[0]):
+		# 	centre_lat = centre_lats[i]
+		# 	centre_lon = centre_lons[i]
+		# 	generate_topography(tc_topography,centre_lat,centre_lon,i)
+
+		# np.save('/user/work/al18709/tc_data_flipped_t/miroc_ssp585_topography.npy',tc_topography)
+
+		input_data =np.zeros((data.shape[0],6))
+		input_data[:,0] = data['p'] * 100
+		input_data[:,1] = data['u850']
+		input_data[:,2] = data['v850']
+		input_data[:,3] = data['shear']
+		input_data[:,4] = data['lat']
+		input_data[:,5] = data['lon']
+		np.save(f'/user/home/al18709/work/ke_track_inputs/{model}_{scenario}_tracks.npy',input_data)
+
+		# 4. save topography
+		for i in range(data.shape[0]):
+			centre_lat = centre_lats[i]
+			centre_lon = centre_lons[i]
+			tc_topography = generate_topography(tc_topography,centre_lat,centre_lon,i)
+
+		np.save(f'/user/home/al18709/work/ke_track_inputs/{model}_{scenario}_topography.npy',tc_topography)
 
 
-# load data
-data = np.load('/user/work/al18709/tc_data_flipped/KE_tracks/ke_miroc6-ssp585.npy')
-centre_lats = data[:,4]
-centre_lons = data[:,5]
-tc_topography = np.zeros((data.shape[0],100,100))
-
-# 2. extract TC
-for i in range(data.shape[0]):
-	centre_lat = centre_lats[i]
-	centre_lon = centre_lons[i]
-	generate_topography(centre_lat,centre_lon,i)
-
-
-np.save('/user/work/al18709/tc_data_flipped_t/miroc_ssp585_topography.npy',tc_topography)
+# mslp
+# 			u850
+# 			v850
+# 			shear
+# 			lat
+# 			lon
 

@@ -283,7 +283,9 @@ def globalise_storm_rain(storm,prediction=True):
 				storm_rain = storm.precipitation[t,:,:,i]
 				grid_rain[t,sel[1],sel[0],i] = storm_rain
 		else:
-			storm_rain = storm.precipitation[t,:,:]
+			storm_rain = storm.precipitation[t,:,:,0]
+			print(grid_rain[t,sel[1],sel[0]].shape)
+			print(storm_rain.shape)
 			grid_rain[t,sel[1],sel[0]] = storm_rain
 	return grid_rain
 
@@ -326,38 +328,38 @@ def globalise_storm_rain(storm,prediction=True):
 # save_event_set(meta,disc_pred_mraw,path,mode2b,critic=True)
 # # save_event_set(meta_og_x,rain_og_x,path_og,mode_og)
 
-# save global rain data
-tc_dir = '/user/home/al18709/work/event_sets/wgan_modular/'
-# storm_filename = 'validation_mraw_\*.nc'
-tc_files = os.listdir(tc_dir)
-global_rain = np.zeros((1,1800,3600,20))
-for storm_filename in tc_files:
-	if ('validation_mraw' in storm_filename) & ('.nc' in storm_filename):
-		print(storm_filename)
-		storm = xr.open_dataset(tc_dir + storm_filename)
-		storm_rain = globalise_storm_rain(storm)
-		global_rain = global_rain + np.sum(storm_rain,axis=0)
-np.save('/user/home/al18709/work/event_sets/wgan_modular/validation_mraw_global.npy',global_rain)
+# # save global rain data
+# tc_dir = '/user/home/al18709/work/event_sets/wgan_modular/'
+# # storm_filename = 'validation_mraw_\*.nc'
+# tc_files = os.listdir(tc_dir)
+# global_rain = np.zeros((1,1800,3600,20))
+# for storm_filename in tc_files:
+# 	if ('validation_mraw' in storm_filename) & ('.nc' in storm_filename):
+# 		print(storm_filename)
+# 		storm = xr.open_dataset(tc_dir + storm_filename)
+# 		storm_rain = globalise_storm_rain(storm)
+# 		global_rain = global_rain + np.sum(storm_rain,axis=0)
+# np.save('/user/home/al18709/work/event_sets/wgan_modular/validation_mraw_global.npy',global_rain)
 
-tc_dir = '/user/home/al18709/work/event_sets/wgan/'
-tc_files = os.listdir(tc_dir)
-global_rain = np.zeros((1,1800,3600,20))
-for storm_filename in tc_files:
-	if ('validation' in storm_filename) & ('.nc' in storm_filename):
-		print(storm_filename)
-		storm = xr.open_dataset(tc_dir + storm_filename)
-		storm_rain = globalise_storm_rain(storm)
-		global_rain = global_rain + np.sum(storm_rain,axis=0)
-np.save('/user/home/al18709/work/event_sets/wgan/validation_global.npy',global_rain)
+# tc_dir = '/user/home/al18709/work/event_sets/wgan/'
+# tc_files = os.listdir(tc_dir)
+# global_rain = np.zeros((1,1800,3600,20))
+# for storm_filename in tc_files:
+# 	if ('validation' in storm_filename) & ('.nc' in storm_filename):
+# 		print(storm_filename)
+# 		storm = xr.open_dataset(tc_dir + storm_filename)
+# 		storm_rain = globalise_storm_rain(storm)
+# 		global_rain = global_rain + np.sum(storm_rain,axis=0)
+# np.save('/user/home/al18709/work/event_sets/wgan/validation_global.npy',global_rain)
 
 
 tc_dir = '/user/home/al18709/work/event_sets/truth/'
 tc_files = os.listdir(tc_dir)
-global_rain = np.zeros((1,1800,3600,20))
+global_rain = np.zeros((1800,3600))
 for storm_filename in tc_files:
 	if ('validation' in storm_filename) & ('.nc' in storm_filename):
 		print(storm_filename)
 		storm = xr.open_dataset(tc_dir + storm_filename)
-		storm_rain = globalise_storm_rain(storm)
+		storm_rain = globalise_storm_rain(storm,prediction=False)
 		global_rain = global_rain + np.sum(storm_rain,axis=0)
 np.save('/user/home/al18709/work/event_sets/truth/validation_global.npy',global_rain)

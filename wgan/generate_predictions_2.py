@@ -121,8 +121,30 @@ def generate_predictions(*,
 
 	#  load gen model and make predictions
 	print('log folder is:',log_folder)
-	gen_weights_file = log_folder + '/models-gen_weights.h5'
-	# gen_weights_file = '/user/home/al18709/work/gan/logs_wgan_modular_v6/models/gen_weights-2944000.h5'
+	# gen_weights_file = log_folder + '/models-gen_weights.h5'
+	gen_weights_file = '/user/home/al18709/work/gan/logs_wgan_modular_v7/models/gen_weights-19814400.h5'
+	# version 7 7552000 best PSD so far
+	# 7577600 worse
+	# 7603200 worse
+	# 7526400 worse
+	# 9676800 worse
+	# 8217600 okay
+	# 8012800 worse
+	# 6092800 awful
+	# 28416000 worse
+	# 30464000 alright
+	# 19712000 pretty good
+	# 19763200 similar
+	# 13542400 okay
+	# 31001600 fine
+	# 25497600 worse
+	# 19788800 worse
+	# 19635200 worse
+	# 19814400 best
+	# 19891200
+	# 19916800
+	# 20044800
+
 	# gen_weights_file = '/user/home/al18709/work/gan/logs_wgan_modular_patchloss_v1/models/gen_weights-0358400.h5'
 	# gen_weights_file = log_folder + '/models-gen_opt_weights.h5' # TODO: this has different construction to gen_weights - ask andrew and lucy
 	model.gen.built = True
