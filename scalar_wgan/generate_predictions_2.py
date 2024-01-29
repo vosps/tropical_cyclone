@@ -5,6 +5,7 @@ import pandas as pd
 from tfrecords_generator_ifs import create_fixed_dataset
 import setupmodel
 from noise import NoiseGenerator
+import tensorflow as tf
 import gc,os
 
 
@@ -59,6 +60,7 @@ def generate_predictions(*,
 	# noise_channels = 6 #4
 	batch_size = 512
 	num_images = 150
+	j_ = 0
 		
 
 	# initialise model
@@ -88,6 +90,17 @@ def generate_predictions(*,
 		num_images,_ = np.load('/user/work/al18709/tc_data_flipped/KE_tracks/ke_miroc6-hist_qm_corrected.npy')[:30000,:].shape
 	elif (data_mode == 'miroc_ssp585'):
 		num_images,_ = 30000
+	elif "event_set" in data_mode:
+		input_string = data_mode
+        # Find the index of the first and second underscores
+		first_underscore_index = input_string.find("_")
+		second_underscore_index = input_string.find("_", first_underscore_index + 1)
+        # Check if both underscores are found
+		if first_underscore_index != -1 and second_underscore_index != -1:
+            # Extract the two groups
+			model_ = input_string[:first_underscore_index]
+			scenario = input_string[first_underscore_index + 1:second_underscore_index]
+		num_images,_,_,_ = np.float32(np.expand_dims(np.expand_dims(np.load(f'/user/home/al18709/work/ke_track_inputs/{model_}_{scenario}_tracks.npy'),axis=1),axis=1)).shape      
 	else:
 		# num_images,_,_ = np.load('/user/work/al18709/tc_data_flipped/%s_X.npy' % data_mode).shape
 		num_images,_,_,_ = np.load('/user/work/al18709/tc_data_flipped/%s_combined_X.npy' % data_mode).shape
@@ -103,11 +116,18 @@ def generate_predictions(*,
 		batch_size = num_images
 		
 	# load relevant data
-	data_predict = create_fixed_dataset(predict_year,
-										batch_size=batch_size,
-										downsample=False,
-										mode = data_mode,
-										storm=storm)
+	if "event_set" not in data_mode:
+		data_predict = create_fixed_dataset(predict_year,
+											batch_size=batch_size,
+											downsample=False,
+											mode = data_mode,
+											storm=storm)
+	else:
+		x,z,y = create_fixed_dataset(predict_year,
+											batch_size=batch_size,
+											downsample=False,
+											mode = data_mode,
+											storm=storm)
 
 		
 	# load model weights from main file
@@ -130,13 +150,14 @@ def generate_predictions(*,
 	# gen_weights_file = log_folder + '/models/' +'gen_weights-0' + str(latest_checkpoint) + '.h5'
 	# latest_checkpoint = '0960000' #this one best so far on model 31
 	gen_weights_file = log_folder + '/models/' +'gen_weights-' + str(latest_checkpoint) + '.h5'
+	# gen_weights_files = '/user/home/al18709/work/gan/logs_scalar_wgan_v13/models/gen_weights-1075200.h5' # best option
 	# gen_weights_file = log_folder + '/models-gen_opt_weights.h5' # TODO: this has different construction to gen_weights - ask andrew and lucy
 	model.gen.built = True
 	model.gen.load_weights(gen_weights_file) 
 
-	print(data_predict)
-	print(data_predict.batch(batch_size))
-	print(iter(data_predict.batch(batch_size)))
+	# print(data_predict)
+	# print(data_predict.batch(batch_size))
+	# print(iter(data_predict.batch(batch_size)))
 	# define initial variables
 	# pred = np.zeros((num_images,100,100,20))
 	pred = np.zeros((num_images,10,10,20))
@@ -144,7 +165,17 @@ def generate_predictions(*,
 	seq_real = np.zeros((num_images,10,10,1))
 	# low_res_inputs = np.zeros((num_images,10,10,1))
 	low_res_inputs = np.zeros((num_images,10,10,6))
-	data_pred_iter = iter(data_predict)
+	
+	if "event_set" not in data_mode:
+		data_pred_iter = iter(data_predict)
+	else:
+		n_b = int(num_images/batch_size)
+		n_b_10 = int(n_b/10) * num_images
+		# data_predict = tf.data.Dataset.from_tensor_slices((x[:n_b_3], z[:n_b_3], y[:n_b_3]))
+		# data_pred_iter = iter(data_predict)
+		# x_iter = iter(x)
+		# z_iter = iter(z)
+		# y_iter = iter(y)
 	# unbatch first
 	nbatches = int(num_images/batch_size)
 	remainder = num_images - nbatches*batch_size
@@ -160,7 +191,29 @@ def generate_predictions(*,
 		
 		print('running batch ',i,'...')
 		# inputs, outputs = next(data_pred_iter)
-		inputs, topography, outputs = next(data_pred_iter)
+		if "event_set" not in data_mode:
+			inputs, topography, outputs = next(data_pred_iter)
+		else:
+			number_of_loaded_batches = 10
+			if i in [n * int(n_b/number_of_loaded_batches) for n in range(number_of_loaded_batches+1)]:
+				print('batch ', i)
+				first_image_i = j_*int(num_images/number_of_loaded_batches)
+				second_image_i = (j_+1)*int(num_images/number_of_loaded_batches)
+				print(first_image_i,second_image_i)
+				print('number in loaded batch',second_image_i - first_image_i)
+				x_ = x[first_image_i:second_image_i,:,:,:]
+				z_ = z[first_image_i:second_image_i,:,:,:]
+				y_ = y[first_image_i:second_image_i,:,:,:]
+				print('shapes: ',x_.shape,y_.shape,z_.shape)
+				ds = tf.data.Dataset.from_tensor_slices((x_, z_, y_))
+				data_predict = ds.batch(batch_size)
+				data_pred_iter = iter(data_predict)
+				inputs,topography,outputs = next(data_pred_iter)
+				j_ = j_+1
+		print(data_pred_iter)
+		print(data_predict)
+			
+			
 		if (data_mode == 'era5') or (data_mode == 'era5_corrected') or (data_mode == 'storm_era5') or (data_mode == 'storm_era5_corrected'):
 			if i == batch_size:
 				n = remainder
@@ -170,9 +223,9 @@ def generate_predictions(*,
 			outputs = np.zeros((n,10,10,1))
 		# if i !=nbatches:
 		# 	continue
-		print(inputs.shape)
-		print(topography.shape)
-		print(outputs.shape)
+		# print(inputs.shape)
+		# print(topography.shape)
+		# print(outputs.shape)
 		print('remainder',remainder)
 		print('number of batches',nbatches)
 		print(num_images)
@@ -221,12 +274,25 @@ def generate_predictions(*,
 			else:
 				nn = noise_gen()
 				nn_hr = noise_hr_gen()
-				print('inputs shape: ', inputs.shape)
-				print('topography.shape: ',topography.shape)
-				print('noise shape: ',nn.shape)
-				print('noise_hr shape: ', nn_hr.shape)
+				# print('inputs shape: ', inputs.shape)
+				# print('topography.shape: ',topography.shape)
+				# print('noise shape: ',nn.shape)
+				# print('noise_hr shape: ', nn_hr.shape)
+				if "event_set" in data_mode:
+					# nn = tf.data.Dataset.from_tensor_slices((nn))
+					# nn_hr = tf.data.Dataset.from_tensor_slices((nn_hr))
+					print(nn.dtype)
+					print(nn_hr.dtype)
+					# print(inputs.dtype)
+					# print(topography.dtype)
+					# inputs = np.array(inputs)
+					# topography = np.array(topography)
+					# print(inputs.dtype)
+					# print(topography.dtype)
 
 				# pred_single = np.array(model.gen.predict([inputs,nn]))[:,:,:,0] # this one
+				print(inputs)
+				print(topography)
 				pred_single = np.array(model.gen.predict([inputs,topography,nn,nn_hr]))[:,:,:,0]
 
 				# pred_single = np.array(model.gen.predict_on_batch([inputs,nn]))[:,:,:,0]
@@ -245,12 +311,18 @@ def generate_predictions(*,
 		print('seq_real.shape: ',seq_real.shape)
 		print('assigning images ',i*batch_size,' to ',i*batch_size + batch_size,'...')
 		if i == nbatches:
-			seq_real[i*batch_size:,:,:,:] = img_real[:remainder]
+			if "event_set" not in data_mode:
+				seq_real[i*batch_size:,:,:,:] = img_real[:remainder]
+			else:
+				seq_real[i*batch_size:,:,:,:] = img_pred[:remainder,:,:,0:1]
 			# seq_real[i*batch_size:,:,:,0] = img_real[:remainder]
 			pred[i*batch_size:,:,:,:] = img_pred[:remainder]
 			low_res_inputs[i*batch_size:,:,:,:] = inputs[:remainder]
 		else:
-			seq_real[i*batch_size:i*batch_size + batch_size,:,:,:] = img_real
+			if "event_set" not in data_mode:
+				seq_real[i*batch_size:i*batch_size + batch_size,:,:,:] = img_real
+			else:
+				seq_real[i*batch_size:i*batch_size + batch_size,:,:,:] = img_pred[:,:,:,0:1]
 			# seq_real[i*batch_size:i*batch_size + batch_size,:,:,0] = img_real
 			pred[i*batch_size:i*batch_size + batch_size,:,:,:] = img_pred
 			low_res_inputs[i*batch_size:i*batch_size + batch_size,:,:,:] = inputs
@@ -305,6 +377,9 @@ def generate_predictions(*,
 
 	if data_mode == 'era5_corrected':
 		problem = '3_hrly'
+	
+	if 'event_set' in data_mode:
+		problem = 'event_set'
 
 	seq_real = 10**seq_real - 1
 	# don't need to denormalise the results, actually seems like you do

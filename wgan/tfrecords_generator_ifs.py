@@ -240,9 +240,14 @@ def create_fixed_dataset(year=None,mode='validation',batch_size=16,
         nsamples,_,_,_ = x.shape
         y = np.zeros((nsamples,100,100))
         # y = np.float32(np.load('/user/work/al18709/tc_data_flipped/%s_combined_y.npy' % dataset))
-        z = np.float32(np.load('/user/home/al18709/work/tc_data_flipped_t/valid_y.npy'))
+        if "extreme_test" in mode:
+            z = np.float32(np.load('/user/home/al18709/work/tc_data_flipped_t/extreme_test_y.npy'))
+        else:
+            z = np.float32(np.load('/user/home/al18709/work/tc_data_flipped_t/valid_y.npy'))
     else:
         if mode == 'validation':
+            dataset = 'valid'
+        elif mode == 'validation_weighted':
             dataset = 'valid'
         else:
             dataset = mode

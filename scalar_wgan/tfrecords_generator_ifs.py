@@ -2,6 +2,7 @@ import numpy as np
 import tensorflow as tf
 import glob
 from data import all_ifs_fields,ifs_hours
+# import re
 
 records_folder = '/ppdata/tfrecordsIFS20/'
 return_dic = True
@@ -206,6 +207,37 @@ def create_fixed_dataset(year=None,mode='validation',batch_size=16,
         x = np.float32(np.expand_dims(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/KE_tracks/ke_miroc6-ssp585.npy'),axis=1),axis=1))[:30000,:,::]
         y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/KE_tracks/train_y.npy'),axis=3))[:30000,:,::]
         z = np.float32(np.expand_dims(np.load('/user/home/al18709/work/tc_data_flipped_t/miroc_ssp585_topography.npy'),axis=3))[:30000,:,::]
+    elif 'event_set' in mode:
+        # regex = r"(.+)_(.+)_event_set"
+        # Your regular expression
+        # pattern = re.compile(r'(.+)_(.+)_event_set')
+
+        # # Use search to find the match
+        # match = pattern.search(mode)
+
+        # # Check if there is a match
+        # if match:
+        #     # Access captured groups using group(1) and group(2)
+        #     model = match.group(1)
+        #     scenario = match.group(2)
+        input_string = mode
+
+        # Find the index of the first and second underscores
+        first_underscore_index = input_string.find("_")
+        second_underscore_index = input_string.find("_", first_underscore_index + 1)
+
+        # Check if both underscores are found
+        if first_underscore_index != -1 and second_underscore_index != -1:
+            # Extract the two groups
+            model = input_string[:first_underscore_index]
+            scenario = input_string[first_underscore_index + 1:second_underscore_index]
+
+        x = np.float32(np.expand_dims(np.expand_dims(np.load(f'/user/home/al18709/work/ke_track_inputs/{model}_{scenario}_tracks.npy'),axis=1),axis=1))
+        y = np.float32(np.expand_dims(np.load(f'/user/home/al18709/work/ke_track_inputs/{model}_{scenario}_topography.npy'),axis=3))
+        z = np.float32(np.expand_dims(np.load(f'/user/home/al18709/work/ke_track_inputs/{model}_{scenario}_topography.npy'),axis=3))
+        print(x.shape)
+        print(y.shape)
+        print(z.shape)
     else:
         if mode == 'validation':
             dataset = 'valid'
@@ -237,20 +269,26 @@ def create_fixed_dataset(year=None,mode='validation',batch_size=16,
     print('all variables normalised')
 
     # ds = tf.data.Dataset.from_tensor_slices((x, y))
-    ds = tf.data.Dataset.from_tensor_slices((x, z, y))
+    if "event_set" not in mode:
+        ds = tf.data.Dataset.from_tensor_slices((x, z, y))
 
-    print('dataset changed to tensor')
+        print('dataset changed to tensor')
 
-    ds = ds.batch(batch_size)
-    # return_dic=False #adding this in to get roc curve to work
-    if downsample and return_dic:
-        ds=ds.map(_dataset_downsampler)
-    elif downsample and not return_dic:
-        ds=ds.map(_dataset_downsampler_list)
-    print('ds in new format',ds)
+        ds = ds.batch(batch_size)
+        # return_dic=False #adding this in to get roc curve to work
+        if downsample and return_dic:
+            ds=ds.map(_dataset_downsampler)
+        elif downsample and not return_dic:
+            ds=ds.map(_dataset_downsampler_list)
+        print('ds in new format',ds)
+
+        return ds
+    
+    else:
+        return x,z,y
 
 
-    return ds
+    
         
 
 def _float_feature(list_of_floats):  # float32

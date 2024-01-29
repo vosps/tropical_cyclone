@@ -78,6 +78,9 @@ def generate_predictions(*,
 	if data_mode == 'validation':
 		# num_images,_,_ = np.load('/user/work/al18709/tc_data_flipped/valid_X.npy').shape
 		num_images,_,_,_ = np.load('/user/work/al18709/tc_data_flipped/valid_combined_X.npy').shape
+	elif data_mode == 'validation_weighted':
+		# num_images,_,_ = np.load('/user/work/al18709/tc_data_flipped/valid_X.npy').shape
+		num_images,_,_,_ = np.load('/user/work/al18709/tc_data_flipped/valid_combined_X.npy').shape
 	elif data_mode == 'storm':
 		num_images,_,_ = np.load('/user/work/al18709/tc_data_mswep_extend_flipped/y_%s.npy' % storm).shape
 	elif (data_mode == 'storm_era5') or (data_mode == 'storm_era5_corrected'):
@@ -85,6 +88,7 @@ def generate_predictions(*,
 	elif (data_mode == 'era5') or (data_mode == 'era5_corrected'):
 		num_images,_,_ = np.load('/user/home/al18709/work/tc_data_era5_flipped_10/valid_y.npy').shape
 	elif 'scalar' in data_mode:
+		print('data mode: ',data_mode)
 		num_images,_,_,_ = np.load('/user/home/al18709/work/gan_predictions_20/%s.npy' % data_mode).shape
 	else:
 		# num_images,_,_ = np.load('/user/work/al18709/tc_data_flipped/%s_X.npy' % data_mode).shape
@@ -122,7 +126,7 @@ def generate_predictions(*,
 	#  load gen model and make predictions
 	print('log folder is:',log_folder)
 	# gen_weights_file = log_folder + '/models-gen_weights.h5'
-	gen_weights_file = '/user/home/al18709/work/gan/logs_wgan_modular_v7/models/gen_weights-19814400.h5'
+	gen_weights_file = '/user/home/al18709/work/gan/logs_wgan_modular_v7/models/gen_weights-19814400.h5' #best
 	# version 7 7552000 best PSD so far
 	# 7577600 worse
 	# 7603200 worse
@@ -192,6 +196,8 @@ def generate_predictions(*,
 		img_pred = []	   
 		noise_shape = inputs[0,...,0].shape + (noise_channels,)
 		print('noise shape: ',noise_shape)
+		print('inputs shape: ',inputs.shape)
+		print('topography shape: ',topography.shape)
 		if i == nbatches:
 			noise_gen = NoiseGenerator(noise_shape, batch_size=remainder) # does noise gen need to be outside of the for loop?
 			img_pred = np.zeros((remainder,100,100,20))
@@ -269,6 +275,8 @@ def generate_predictions(*,
 	if flip == True:
 		if data_mode == 'validation':
 			meta = pd.read_csv('/user/work/al18709/tc_data_mswep/valid_meta.csv')
+		elif data_mode == 'validation_weighted':
+			meta = pd.read_csv('/user/work/al18709/tc_data_mswep/valid_meta.csv')
 		elif data_mode == 'storm':
 			meta = pd.read_csv('/user/work/al18709/tc_data_mswep_extend_flipped/meta_%s.csv' % storm)
 		elif data_mode == 'storm_era5':
@@ -278,7 +286,10 @@ def generate_predictions(*,
 		elif (data_mode == 'era5') or (data_mode == 'era5_corrected'):
 			meta = pd.read_csv('/user/work/al18709/tc_data_era5_10/valid_meta.csv')
 		elif 'scalar' in data_mode:
-			meta = pd.read_csv('/user/work/al18709/tc_data_mswep/valid_meta.csv')
+			if 'extreme' in data_mode:
+				meta = pd.read_csv('/user/work/al18709/tc_data_mswep/extreme_test_meta.csv')
+			else:
+				meta = pd.read_csv('/user/work/al18709/tc_data_mswep/valid_meta.csv')
 		else:
 			meta = pd.read_csv('/user/work/al18709/tc_data_mswep/%s_meta.csv' % data_mode)
 		
@@ -305,7 +316,8 @@ def generate_predictions(*,
 		problem = '3_hrly'
 
 	if 'scalar' in data_mode:
-		data_mode = 'modular_part2_lowres_predictions'
+		data_mode = 'modular_part2_lowres_predictions_%s' % data_mode
+	
 
 	seq_real = 10**seq_real - 1
 	pred = 10**pred - 1

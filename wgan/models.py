@@ -1,12 +1,33 @@
 import tensorflow as tf
 from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Input, concatenate, Conv2D, UpSampling2D
+from tensorflow.keras.layers import Input, concatenate, Conv2D, UpSampling2D, Layer
 from tensorflow.keras.layers import GlobalAveragePooling2D, Dense, LeakyReLU
 from keras.layers.core import Activation
 from tensorflow.keras import backend as K
 from keras.utils.generic_utils import get_custom_objects
 from blocks import residual_block, const_upscale_block_100
 
+class GlobalWeightedAveragePooling2D(Layer):
+    def __init__(self, **kwargs):
+        Layer.__init__(self, **kwargs)
+        self.kernel = None
+
+    def build(self, input_shape):
+        self.kernel = self.add_weight(name='kernel',
+                                    shape=(input_shape[1], input_shape[2], 1),
+                                    initializer='ones',
+                                    trainable=True)
+        Layer.build(self, input_shape)
+
+    def compute_output_shape(self, input_shape):
+        return input_shape[0], input_shape[3],
+
+    def call(self, x):
+        
+        x = x*self.kernel
+        x = K.mean(x, axis=(1, 2))
+
+        return x
 
 def generator(mode,
               arch,
@@ -216,7 +237,7 @@ def discriminator(arch,
     #         Layer.build(self, input_shape)
 
     #     def compute_output_shape(self, input_shape):
-    #         return input_shape[0], input_shape[3],
+    #         return input_shape[0], input_shape[3], 
 
     #     def call(self, x):
             
@@ -225,10 +246,15 @@ def discriminator(arch,
 
     #         return x
 
+
+    weights = False
     # discriminator output
-    disc_output = GlobalAveragePooling2D()(disc_input)
+    if weights == False:
+        disc_output = GlobalAveragePooling2D()(disc_input)
     # weights = 
-    # disc_output = GlobalWeightedAveragePooling2D()(disc_input,weights)
+    # disc_weighted = weighted_layer_thing()(disc_input)
+    else:
+        disc_output = GlobalWeightedAveragePooling2D()(disc_input)
     print(f"discriminator output shape after pooling: {disc_output.shape}")
     disc_output = Dense(64, activation='relu')(disc_output)
     print(f"discriminator output shape: {disc_output.shape}")
