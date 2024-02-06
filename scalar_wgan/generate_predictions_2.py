@@ -147,6 +147,7 @@ def generate_predictions(*,
 	print(checkpoints)
 	latest_checkpoint = max(checkpoints)
 	# latest_checkpoint = '64000'
+	latest_checkpoint = '0640000'
 	# gen_weights_file = log_folder + '/models/' +'gen_weights-0' + str(latest_checkpoint) + '.h5'
 	# latest_checkpoint = '0960000' #this one best so far on model 31
 	gen_weights_file = log_folder + '/models/' +'gen_weights-' + str(latest_checkpoint) + '.h5'
@@ -370,7 +371,7 @@ def generate_predictions(*,
 	else:
 		model = 'gan'	
 		# problem = '5_normal_problem'
-		problem = 'scalar_test_run_1'
+		problem = 'scalar_test_run_3'
 
 	if data_mode == 'storm':
 		problem = storm
@@ -389,6 +390,7 @@ def generate_predictions(*,
 	np.save('/user/home/al18709/work/%s_predictions_20/%s_real-%s_%s.npy' % (model,data_mode,checkpoint,problem),seq_real)
 	np.save('/user/home/al18709/work/%s_predictions_20/%s_pred-%s_%s.npy' % (model,data_mode,checkpoint,problem),pred)
 	np.save('/user/home/al18709/work/%s_predictions_20/%s_input-%s_%s.npy' % (model,data_mode,checkpoint,problem),low_res_inputs)
+	print('/user/home/al18709/work/%s_predictions_20/%s_pred-%s_%s.npy' % (model,data_mode,checkpoint,problem))
 
 
 

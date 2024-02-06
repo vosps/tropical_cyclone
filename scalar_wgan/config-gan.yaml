@@ -1,7 +1,7 @@
 GENERAL:
     mode: "GAN" # choices 'det' 'GAN' 'VAEGAN'
     problem_type: "normal" # choices 'normal' 'superresolution'
-    data_mode: 'extreme_test' #'canesm_hist_event_set' #'storm_era5_corrected' # validation, test, train, extreme_validation, extreme_test, storm, era5, era5_corrected, storm_era5, storm_era5_corrected
+    data_mode: 'validation' #'canesm_hist_event_set' #'storm_era5_corrected' # validation, test, train, extreme_validation, extreme_test, storm, era5, era5_corrected, storm_era5, storm_era5_corrected
     storm: '2019236N10314'
     
 MODEL:
@@ -11,7 +11,9 @@ MODEL:
     # change padding to zero padding?
         
 SETUP:
-    log_folder: "/user/home/al18709/work/gan/logs_scalar_wgan_v11"
+    log_folder: "/user/home/al18709/work/gan/logs_scalar_wgan_v15"
+    # log_folder: "/user/home/al18709/work/gan/logs_scalar_wgan_v8" #better mean rainfall qq plot
+    # log_folder: "/user/home/al18709/work/gan/logs_scalar_wgan_v11" og
     # make a deeper network and increase number of filters
     # "/user/home/al18709/work/gan/logs_scalar_wgan_v13"
     # running both types of models it appears the issue is potentially with this section of the architecture. 
@@ -21,14 +23,14 @@ SETUP:
     # also gen_weights-0947200.h5
 
 GENERATOR:
-    filters_gen: 128 #128, when this was 256 it might have helped with better spatial structure!
+    filters_gen: 256 # 128 #128, when this was 256 it might have helped with better spatial structure!
     noise_channels: 8 # used for GAN, used to be 4, but tat was for 9 input channels, so could decrease this.
     latent_variables: 1 # used for VAEGAN
     learning_rate_gen: 2e-6 #2e-5 #1e-5 change to 1e-6
 
 DISCRIMINATOR:
     # filters_disc: 512 #512
-    filters_disc: 512 #512 when it was 756 it might have helped with performance metrics
+    filters_disc: 756 #512 when it was 756 it might have helped with performance metrics
     learning_rate_disc: 1e-6 #5e-6 # 1e-5 was working with 1e-6, 5e-7
     # Try decaying the learning rate after a bit of training
     # try generatng just the low resolution rain fields
@@ -37,7 +39,7 @@ TRAIN:
     train_years: [2016, 2017, 2018] 
     training_weights: [0.4, 0.3, 0.2, 0.1]
     # num_samples: 320000
-    num_samples: 1280000 #16400000 #1280000 #1960000 #640000, 1320000 when this was 1280000 it might have helped with the spatial strcuture!
+    num_samples: 2560000 #16400000 #1280000 #1960000 #640000, 1320000 when this was 1280000 it might have helped with the spatial strcuture!
     # steps_per_checkpoint: 3200 # perhaps this needs to be looked at. 200 too low, 3200 too slow. number of images is around 40,000
     steps_per_checkpoint: 800 # 800 # 200 this affects number of training samples trained on before saving? so when this was 3,200 it took a long time to train as there were 52,000 samples to go through each checkpoint
     batch_size: 16  # can use 400x16 without CL, or 3200x2 with CL

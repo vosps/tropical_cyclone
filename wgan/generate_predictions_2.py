@@ -125,8 +125,8 @@ def generate_predictions(*,
 
 	#  load gen model and make predictions
 	print('log folder is:',log_folder)
-	# gen_weights_file = log_folder + '/models-gen_weights.h5'
-	gen_weights_file = '/user/home/al18709/work/gan/logs_wgan_modular_v7/models/gen_weights-19814400.h5' #best
+	gen_weights_file = log_folder + '/models-gen_weights.h5'
+	# gen_weights_file = '/user/home/al18709/work/gan/logs_wgan_modular_v7/models/gen_weights-19814400.h5' #best use this
 	# version 7 7552000 best PSD so far
 	# 7577600 worse
 	# 7603200 worse
@@ -287,7 +287,7 @@ def generate_predictions(*,
 			meta = pd.read_csv('/user/work/al18709/tc_data_era5_10/valid_meta.csv')
 		elif 'scalar' in data_mode:
 			if 'extreme' in data_mode:
-				meta = pd.read_csv('/user/work/al18709/tc_data_mswep/extreme_test_meta.csv')
+				meta = pd.read_csv('/user/work/al18709/tc_data_mswep/extreme_valid_meta.csv')
 			else:
 				meta = pd.read_csv('/user/work/al18709/tc_data_mswep/valid_meta.csv')
 		else:
@@ -306,8 +306,8 @@ def generate_predictions(*,
 	else:
 		model = 'gan'	
 		# problem = '5_normal_problem'
-		problem = 'modular_part2_raw'
-		# problem = 'modular_part2_patchloss_raw'
+		# problem = 'modular_part2_raw'
+		problem = 'modular_part2_patchloss_raw'
 
 	if data_mode == 'storm':
 		problem = storm
@@ -323,7 +323,7 @@ def generate_predictions(*,
 	pred = 10**pred - 1
 	low_res_inputs = 10**low_res_inputs - 1
 
-
+	print(pred)
 
 	np.save('/user/home/al18709/work/%s_predictions_20/%s_real-%s_%s.npy' % (model,data_mode,checkpoint,problem),seq_real)
 	np.save('/user/home/al18709/work/%s_predictions_20/%s_pred-%s_%s.npy' % (model,data_mode,checkpoint,problem),pred)

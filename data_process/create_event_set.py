@@ -10,7 +10,7 @@ import pandas as pd
 import warnings
 import xarray as xr
 
-# from utils.evaluation import find_landfalling_tcs,tc_region,create_xarray,get_storm_coords
+from utils.evaluation import find_landfalling_tcs,tc_region,create_xarray,get_storm_coords
 
 from utils.data import load_tc_data
 from utils.plot import make_cmap
@@ -311,7 +311,7 @@ def globalise_storm_rain(storm,prediction=True):
 # save_event_set(meta_og,rain_og,path_og,mode_og)
 # # save_event_set(meta_og_x,rain_og_x,path_og,mode_og_x)
 
-# load modular wgan
+# load modular wgan part 2 only
 # modular_pred_2 = np.load('/user/home/al18709/work/gan_predictions_20/modular_part2_lowres_predictions_pred-opt_modular_part2_raw.npy')
 # pred_mraw = np.load('/user/home/al18709/work/gan_predictions_20/validation_pred-opt_modular_part2_raw.npy')
 # disc_pred_mraw = np.load('/user/home/al18709/work/gan_predictions_20/validation_disc_pred-opt_modular_part2_raw.npy')
@@ -326,6 +326,28 @@ def globalise_storm_rain(storm,prediction=True):
 # # save_event_set(meta,modular_pred_2,mode1)
 # save_event_set(meta,pred_mraw,path,mode2)
 # save_event_set(meta,disc_pred_mraw,path,mode2b,critic=True)
+# # save_event_set(meta_og_x,rain_og_x,path_og,mode_og)
+
+# load modular wgan part 1 and 2
+# modular_pred_1_and_2 = np.load('/user/home/al18709/work/gan_predictions_20/modular_part2_lowres_predictions_pred-opt_modular_part2_raw.npy')
+pred_1and2 = np.load('/user/home/al18709/work/gan_predictions_20/modular_part2_lowres_predictions_validation_pred-opt_scalar_test_run_1_pred-opt_modular_part2_raw.npy')
+disc_pred_1and2 = np.load('/user/home/al18709/work/gan_predictions_20/modular_part2_lowres_predictions_validation_pred-opt_scalar_test_run_1_disc_pred-opt_modular_part2_raw.npy')
+meta = pd.read_csv('/user/work/al18709/tc_data_mswep_40/scalar_wgan_valid_meta_with_dates.csv')
+
+mode2 = 'validation_1and2'
+mode2b = 'validation_1and2_critic'
+path = '/user/home/al18709/work/event_sets/wgan_modular/'
+# # save_event_set(meta,modular_pred_2,mode1)
+save_event_set(meta,pred_1and2,path,mode2)
+save_event_set(meta,disc_pred_1and2,path,mode2b,critic=True)
+
+pred_1and2 = np.load('/user/home/al18709/work/gan_predictions_20/modular_part2_lowres_predictions_extreme_valid_pred-opt_scalar_test_run_1_pred-opt_modular_part2_raw.npy')
+disc_pred_1and2 = np.load('/user/home/al18709/work/gan_predictions_20/modular_part2_lowres_predictions_extreme_valid_pred-opt_scalar_test_run_1_disc_pred-opt_modular_part2_raw.npy')
+meta = pd.read_csv('/user/work/al18709/tc_data_mswep_40/scalar_wgan_extreme_valid_meta_with_dates.csv')
+mode2 = 'extreme_valid_1and2'
+mode2b = 'extreme_valid_1and2_critic'
+save_event_set(meta,pred_1and2,path,mode2)
+save_event_set(meta,disc_pred_1and2,path,mode2b,critic=True)
 # # save_event_set(meta_og_x,rain_og_x,path_og,mode_og)
 
 # # save global rain data
@@ -353,13 +375,13 @@ def globalise_storm_rain(storm,prediction=True):
 # np.save('/user/home/al18709/work/event_sets/wgan/validation_global.npy',global_rain)
 
 
-tc_dir = '/user/home/al18709/work/event_sets/truth/'
-tc_files = os.listdir(tc_dir)
-global_rain = np.zeros((1800,3600))
-for storm_filename in tc_files:
-	if ('validation' in storm_filename) & ('.nc' in storm_filename):
-		print(storm_filename)
-		storm = xr.open_dataset(tc_dir + storm_filename)
-		storm_rain = globalise_storm_rain(storm,prediction=False)
-		global_rain = global_rain + np.sum(storm_rain,axis=0)
-np.save('/user/home/al18709/work/event_sets/truth/validation_global.npy',global_rain)
+# tc_dir = '/user/home/al18709/work/event_sets/truth/'
+# tc_files = os.listdir(tc_dir)
+# global_rain = np.zeros((1800,3600))
+# for storm_filename in tc_files:
+# 	if ('validation' in storm_filename) & ('.nc' in storm_filename):
+# 		print(storm_filename)
+# 		storm = xr.open_dataset(tc_dir + storm_filename)
+# 		storm_rain = globalise_storm_rain(storm,prediction=False)
+# 		global_rain = global_rain + np.sum(storm_rain,axis=0)
+# np.save('/user/home/al18709/work/event_sets/truth/validation_global.npy',global_rain)

@@ -5,7 +5,55 @@ from tensorflow.keras.layers import GlobalAveragePooling2D, Dense, LeakyReLU
 from keras.layers.core import Activation
 from tensorflow.keras import backend as K
 from keras.utils.generic_utils import get_custom_objects
+import numpy as np
 from blocks import residual_block, const_upscale_block_100
+
+class GlobalRadialWeightedAveragePooling2D(Layer):
+    def __init__(self, **kwargs):
+        super(GlobalRadialWeightedAveragePooling2D, self).__init__(**kwargs)
+        self.kernel = None
+
+    def build(self, input_shape):
+        rows, cols, channels = input_shape[1:4]
+        print(rows)
+        print(cols)
+        print(channels)
+        print(input_shape)
+        # Create a 2D Gaussian-like pattern
+        rows = input_shape[1] if input_shape[1] is not None else 10
+        cols = input_shape[2] if input_shape[2] is not None else 10
+        channels = input_shape[3] if input_shape[3] is not None else 512
+        
+        center_row, center_col = rows // 2, cols // 2
+        row_grid, col_grid = np.ogrid[:rows, :cols]
+        centre_weights_1 = np.exp(-((row_grid - center_row) ** 2 + (col_grid - center_col) ** 2) / (2.0 * 3**2))  # 3 is the standard deviation
+        centre_weights_5 = np.exp(-((np.minimum(np.abs(row_grid - center_row), np.abs(row_grid - center_row + 1)) +
+                             np.minimum(np.abs(col_grid - center_col), np.abs(col_grid - center_col + 1))) / 2.0) / (2.0 * 0.9**2))
+        
+        # Expand dimensions to match the input shape
+        centre_weights = np.expand_dims(centre_weights_5, axis=-1)
+        centre_weights = np.repeat(centre_weights,channels,axis=-1)
+        # centre_weights = np.expand_dims(centre_weights, axis=0)
+        print(centre_weights.shape)
+
+        # Initialize the kernel with the center weights
+        self.kernel = self.add_weight(name='kernel',
+                                      shape=(rows, cols, channels),
+                                      initializer=lambda shape, dtype=None: centre_weights,
+                                      trainable=True)
+        Layer.build(self, input_shape)
+        # super(GlobalWeightedAveragePooling2D, self).build(input_shape)
+
+    def compute_output_shape(self, input_shape):
+        # return input_shape[0], input_shape[-1]
+        return input_shape[0], input_shape[3] 
+
+    def call(self, x):
+        x = x * self.kernel
+        x = K.mean(x, axis=(1, 2))
+        return x
+
+
 
 class GlobalWeightedAveragePooling2D(Layer):
     def __init__(self, **kwargs):
@@ -247,14 +295,15 @@ def discriminator(arch,
     #         return x
 
 
-    weights = False
+    weights = True
     # discriminator output
     if weights == False:
         disc_output = GlobalAveragePooling2D()(disc_input)
     # weights = 
     # disc_weighted = weighted_layer_thing()(disc_input)
     else:
-        disc_output = GlobalWeightedAveragePooling2D()(disc_input)
+        disc_output = GlobalRadialWeightedAveragePooling2D()(disc_input)
+
     print(f"discriminator output shape after pooling: {disc_output.shape}")
     disc_output = Dense(64, activation='relu')(disc_output)
     print(f"discriminator output shape: {disc_output.shape}")
