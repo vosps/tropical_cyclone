@@ -141,7 +141,7 @@ def generator(mode,
         # return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.25)+1)
         # return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.225)+1) #best for mean
         # return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.23)+1) # best for ver1
-        return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.24)+1)
+        return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.241)+1)
     get_custom_objects().update({'custom_activation': Activation(custom_activation)})
     
     # Output layer
