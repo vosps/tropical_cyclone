@@ -286,7 +286,12 @@ def generate_predictions(*,
 		elif (data_mode == 'era5') or (data_mode == 'era5_corrected'):
 			meta = pd.read_csv('/user/work/al18709/tc_data_era5_10/valid_meta.csv')
 		elif 'scalar' in data_mode:
-			if 'extreme' in data_mode:
+			if 'test' in data_mode:
+				if 'extreme' in data_mode:
+					meta = pd.read_csv('/user/work/al18709/tc_data_mswep/extreme_test_meta.csv')
+				else:
+					meta = pd.read_csv('/user/work/al18709/tc_data_mswep/test_meta.csv')
+			elif 'extreme' in data_mode:
 				meta = pd.read_csv('/user/work/al18709/tc_data_mswep/extreme_valid_meta.csv')
 			else:
 				meta = pd.read_csv('/user/work/al18709/tc_data_mswep/valid_meta.csv')

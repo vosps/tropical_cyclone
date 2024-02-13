@@ -19,20 +19,21 @@ outdir = '/user/home/al18709/work/tc_data_flipped/'
 
 for dataset in ['train','test','valid','extreme_valid','extreme_test']:
 	mswep_X = np.load(indir_mswep+'mswep_' + dataset+'_X.npy')
-	X = np.zeros((mswep_X.shape[0],mswep_X.shape[1],mswep_X.shape[2],7))
+	X = np.zeros((mswep_X.shape[0],mswep_X.shape[1],mswep_X.shape[2],9))
 	X[:,:,:,0] = mswep_X
 	i=0
-	for var in ['mslp','q-925','u-200','u-850','v-200','v-850']:
+	for var in ['mslp','q-925','u-200','u-850','v-200','v-850','t-600','rh-600']:
 		var_X = np.load(indir_var + var + '_' + dataset + '_X.npy')
 		i = i+1
+		print('var_X shape: ',var_X.shape)
 		X[:,:,:,i] = var_X
 	print(X.shape)
-	np.save(outdir + dataset+ '_combined_X.npy',X)
+	np.save(outdir + dataset+ '_combined_X_all.npy',X)
 
 	y = np.load(indir_mswep+'mswep_' + dataset+'_y.npy')
-	np.save(outdir + dataset+ '_combined_y.npy',y)
+	np.save(outdir + dataset+ '_combined_y_all.npy',y)
 	meta = pd.read_csv('/user/home/al18709/work/tc_data_mswep/' +dataset+'_meta.csv')
-	meta.to_csv(outdir + dataset + '_meta.csv')
+	meta.to_csv(outdir + dataset + '_meta_all.csv')
 
 
 

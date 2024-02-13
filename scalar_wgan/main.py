@@ -187,7 +187,7 @@ if __name__ == "__main__":
         downsample = False
         # input_channels = 9
         # input_channels = 1
-        input_channels = 6
+        input_channels = 8
     elif problem_type == "superresolution":
         downsample = True
         input_channels = 1

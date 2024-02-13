@@ -11,7 +11,7 @@ from blocks import residual_block, const_upscale_block_100, const_upscale_block_
 
 def generator(mode,
               arch,
-              input_channels=6,
+              input_channels=8,
               latent_variables=1,
               noise_channels=8,
               filters_gen=64,
@@ -139,9 +139,9 @@ def generator(mode,
         # return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.15)+1) #too low again
         # return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.2)+1)
         # return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.25)+1)
-        # return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.225)+1) #best for mean
+        return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.225)+1) #best for mean
         # return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.23)+1) # best for ver1
-        return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.241)+1)
+        # return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.25)+1) # currently using for patchgan change
     get_custom_objects().update({'custom_activation': Activation(custom_activation)})
     
     # Output layer
@@ -158,7 +158,7 @@ def generator(mode,
 
 
 def discriminator(arch,
-                  input_channels=6,
+                  input_channels=8,
                   constant_fields=1, #2
                   filters_disc=64,
                   conv_size=(3, 3),

@@ -11,7 +11,7 @@ MODEL:
     # change padding to zero padding?
         
 SETUP:
-    log_folder: "/user/home/al18709/work/gan/logs_scalar_wgan_v16"
+    log_folder: "/user/home/al18709/work/gan/logs_scalar_wgan_more_inputs_v1"
     # log_folder: "/user/home/al18709/work/gan/logs_scalar_wgan_v8" #better mean rainfall qq plot
     # log_folder: "/user/home/al18709/work/gan/logs_scalar_wgan_v11" og
     # make a deeper network and increase number of filters
@@ -23,14 +23,14 @@ SETUP:
     # also gen_weights-0947200.h5
 
 GENERATOR:
-    filters_gen: 256 # 128 #128, when this was 256 it might have helped with better spatial structure!
+    filters_gen: 128 # 256 new current run # 128 #128, when this was 256 it might have helped with better spatial structure!
     noise_channels: 8 # used for GAN, used to be 4, but tat was for 9 input channels, so could decrease this.
     latent_variables: 1 # used for VAEGAN
     learning_rate_gen: 2e-6 #2e-5 #1e-5 change to 1e-6
 
 DISCRIMINATOR:
     # filters_disc: 512 #512
-    filters_disc: 756 #512 when it was 756 it might have helped with performance metrics
+    filters_disc: 512 #756 new current run #512 when it was 756 it might have helped with performance metrics
     learning_rate_disc: 1e-6 #5e-6 # 1e-5 was working with 1e-6, 5e-7
     # Try decaying the learning rate after a bit of training
     # try generatng just the low resolution rain fields

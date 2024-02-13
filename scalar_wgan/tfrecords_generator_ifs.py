@@ -125,7 +125,7 @@ def create_dataset(year,clss,era_shape=(1,1,6),out_shape=(100,100,1),
     # ds = ds.map(lambda x: _parse_batch(x, insize=era_shape,consize=con_shape,
     #                                    outsize=out_shape))
     print('making ds the first time...')
-    fl = ['/user/work/al18709/tc_data_flipped/KE_tracks/train_X.npy']
+    fl = ['/user/work/al18709/tc_data_flipped/KE_tracks/all_train_X.npy']
     files_ds = tf.data.Dataset.list_files(fl)
     ds = tf.data.TFRecordDataset(files_ds,
                                  num_parallel_reads=AUTOTUNE)
@@ -134,7 +134,7 @@ def create_dataset(year,clss,era_shape=(1,1,6),out_shape=(100,100,1),
     
     # insert my code here
     print('loading in tropical cyclone data...')
-    x = np.float32(np.expand_dims(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/KE_tracks/train_X.npy'),axis=1),axis=1)) # inputs are (nimags,1,nfeatures)
+    x = np.float32(np.expand_dims(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/KE_tracks/all_train_X.npy'),axis=1),axis=1)) # inputs are (nimags,1,nfeatures)
     # y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/KE_tracks/train_y.npy'),axis=3))
     y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/KE_tracks/train_y_regrid.npy'),axis=3))
     z = np.float32(np.expand_dims(np.load('/user/home/al18709/work/tc_data_flipped_t/train_y.npy'),axis=3)) # this is the topography variable (nimags,100,100)
@@ -245,7 +245,7 @@ def create_fixed_dataset(year=None,mode='validation',batch_size=16,
             dataset = mode
         # x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/%s_X.npy' % dataset),axis=3))
         # y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/%s_y.npy' % dataset),axis=3))
-        x = np.float32(np.expand_dims(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/KE_tracks/%s_X.npy' % dataset),axis=1),axis=1))
+        x = np.float32(np.expand_dims(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/KE_tracks/all_%s_X.npy' % dataset),axis=1),axis=1))
         y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/KE_tracks/%s_y_regrid.npy' % dataset),axis=3))
         # y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/KE_tracks/%s_y.npy' % dataset),axis=3))
         z = np.float32(np.expand_dims(np.load('/user/home/al18709/work/tc_data_flipped_t/%s_y.npy' % dataset),axis=3))

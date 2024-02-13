@@ -35,12 +35,12 @@ print('variable: ', variable)
 # filepaths_complete = os.listdir('/bp1store/geog-tropical/data/ERA-5/hour/precipitation_invertlat_em/')
 
 # define filepaths and directories
-filepaths = glob.glob('/bp1store/geog-tropical/data/ERA-5/hour/%s/*.nc' % variable)
-regex = r"/bp1store/geog-tropical/data/ERA-5/hour/%s/(.+?).nc" % variable
-new_dir = '/bp1store/geog-tropical/data/ERA-5/hour/%s_invertlat/' % variable
+filepaths = glob.glob('/bp1/geog-tropical/data/ERA-5/hour/%s/*.nc' % variable)
+regex = r"/bp1/geog-tropical/data/ERA-5/hour/%s/(.+?).nc" % variable
+new_dir = '/bp1/geog-tropical/data/ERA-5/hour/%s_invertlat/' % variable
 if not os.path.exists(new_dir):
-	os.makedirs('/bp1store/geog-tropical/data/ERA-5/hour/%s_invertlat/' % variable)
-filepaths_complete = os.listdir('/bp1store/geog-tropical/data/ERA-5/hour/%s_invertlat/' % variable)
+	os.makedirs('/bp1/geog-tropical/data/ERA-5/hour/%s_invertlat/' % variable)
+filepaths_complete = os.listdir('/bp1/geog-tropical/data/ERA-5/hour/%s_invertlat/' % variable)
 
 # loop through filepaths and invert latitudes so they are consistent with mswep
 for fp in filepaths:
@@ -50,10 +50,10 @@ for fp in filepaths:
 	if filename in filepaths_complete:
 		print(filename)
 		continue
-	outfile1 = '/bp1store/geog-tropical/data/ERA-5/hour/%s_invertlat/tmp.nc' % variable
+	outfile1 = '/bp1/geog-tropical/data/ERA-5/hour/%s_invertlat/tmp.nc' % variable
 	# outfile2 = fp[:53] + '_invertlat' + fp[53:]
 	# outfile2 = '/bp1store/geog-tropical/data/ERA-5/hour/%s_invertlat_em/' % variable + fp[-34:]
-	outfile2 = '/bp1store/geog-tropical/data/ERA-5/hour/%s_invertlat/' % variable + filename + '.nc'
+	outfile2 = '/bp1/geog-tropical/data/ERA-5/hour/%s_invertlat/' % variable + filename + '.nc'
 	
 	
 

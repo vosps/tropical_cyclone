@@ -56,7 +56,7 @@ def generate_predictions(*,
 
 	# define initial variables
 	# input_channels = 1
-	input_channels = 6
+	input_channels = 8
 	# noise_channels = 6 #4
 	batch_size = 512
 	num_images = 150
@@ -147,7 +147,7 @@ def generate_predictions(*,
 	print(checkpoints)
 	latest_checkpoint = max(checkpoints)
 	# latest_checkpoint = '64000'
-	latest_checkpoint = '0640000'
+	# latest_checkpoint = '0640000'
 	# gen_weights_file = log_folder + '/models/' +'gen_weights-0' + str(latest_checkpoint) + '.h5'
 	# latest_checkpoint = '0960000' #this one best so far on model 31
 	gen_weights_file = log_folder + '/models/' +'gen_weights-' + str(latest_checkpoint) + '.h5'
@@ -371,7 +371,9 @@ def generate_predictions(*,
 	else:
 		model = 'gan'	
 		# problem = '5_normal_problem'
-		problem = 'scalar_test_run_3'
+		problem = 'scalar_test_run_4'
+		problem = 'scalar_test_run_more_inputs'
+		# problem = 'scalar_test_run_1'
 
 	if data_mode == 'storm':
 		problem = storm
