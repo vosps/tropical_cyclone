@@ -13,7 +13,7 @@ def generator(mode,
               arch,
               input_channels=8,
               latent_variables=1,
-              noise_channels=8,
+              noise_channels=6,
               filters_gen=64,
               img_shape=(100, 100),
               constant_fields=1, #2
@@ -139,9 +139,9 @@ def generator(mode,
         # return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.15)+1) #too low again
         # return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.2)+1)
         # return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.25)+1)
-        return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.225)+1) #best for mean
+        return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.23)+1) #best for mean currently testing on more input variables
         # return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.23)+1) # best for ver1
-        # return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.25)+1) # currently using for patchgan change
+        # return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.25)+1) # currently using for patchgan change v18
     get_custom_objects().update({'custom_activation': Activation(custom_activation)})
     
     # Output layer

@@ -292,13 +292,21 @@ def globalise_storm_rain(storm,prediction=True):
 
 
 # load scalar wgan data
-# real,inputs,rain,meta = load_tc_data(set='validation',results='ke_tracks')
-# meta = pd.read_csv('/user/work/al18709/tc_data_mswep_40/scalar_wgan_valid_meta_with_dates.csv')
+real,inputs,rain,meta = load_tc_data(set='test',results='ke_tracks')
+meta = pd.read_csv('/user/work/al18709/tc_data_mswep_40/scalar_wgan_test_meta_with_dates.csv')
 # path = '/user/home/al18709/work/event_sets/wgan_scalar/'
-# mode = 'validation'
+mode = 'test'
 # print(real.shape)
 # save_event_set(meta,rain,path,mode)
-# save_event_set(meta,real,'/user/home/al18709/work/event_sets/truth/',mode,ens=False)
+save_event_set(meta,real,'/user/home/al18709/work/event_sets/truth/',mode,ens=False)
+
+real,inputs,rain,meta = load_tc_data(set='extreme_test',results='ke_tracks')
+meta = pd.read_csv('/user/work/al18709/tc_data_mswep_40/scalar_wgan_extreme_test_meta_with_dates.csv')
+# path = '/user/home/al18709/work/event_sets/wgan_scalar/'
+mode = 'extreme_test'
+# print(real.shape)
+# save_event_set(meta,rain,path,mode)
+save_event_set(meta,real,'/user/home/al18709/work/event_sets/truth/',mode,ens=False)
 
 # # load 2D wgan
 # real_2,inputs_2,pred_2,meta_2,imput_og,rain_og,meta_og = load_tc_data(set='validation',results='kh_tracks')
@@ -313,39 +321,48 @@ def globalise_storm_rain(storm,prediction=True):
 
 # load modular wgan part 2 only
 # modular_pred_2 = np.load('/user/home/al18709/work/gan_predictions_20/modular_part2_lowres_predictions_pred-opt_modular_part2_raw.npy')
-# pred_mraw = np.load('/user/home/al18709/work/gan_predictions_20/validation_pred-opt_modular_part2_raw.npy')
-# disc_pred_mraw = np.load('/user/home/al18709/work/gan_predictions_20/validation_disc_pred-opt_modular_part2_raw.npy')
-# meta = pd.read_csv('/user/work/al18709/tc_data_mswep_40/scalar_wgan_valid_meta_with_dates.csv')
+pred_mraw = np.load('/user/home/al18709/work/gan_predictions_20/test_pred-opt_modular_part2_raw.npy')
+disc_pred_mraw = np.load('/user/home/al18709/work/gan_predictions_20/test_disc_pred-opt_modular_part2_raw.npy')
+meta = pd.read_csv('/user/work/al18709/tc_data_mswep_40/modular_wgan_test_meta_with_dates.csv')
 # path_og = '/user/home/al18709/work/event_sets/wgan/'
 # mode_og = 'extreme_test'
-# mode1 = 'validation_modular'
-# mode1b = 'validation_modular_critic'
-# mode2 = 'validation_mraw'
-# mode2b = 'validation_mraw_critic'
-# path = '/user/home/al18709/work/event_sets/wgan_modular/'
-# # save_event_set(meta,modular_pred_2,mode1)
-# save_event_set(meta,pred_mraw,path,mode2)
-# save_event_set(meta,disc_pred_mraw,path,mode2b,critic=True)
-# # save_event_set(meta_og_x,rain_og_x,path_og,mode_og)
+# mode1 = 'test_modular'
+# mode1b = 'test_modular_critic'
+mode2 = 'test_mraw'
+mode2b = 'test_mraw_critic'
+path = '/user/home/al18709/work/event_sets/wgan_modular/'
+# save_event_set(meta,modular_pred_2,mode1)
+save_event_set(meta,pred_mraw,path,mode2)
+save_event_set(meta,disc_pred_mraw,path,mode2b,critic=True)
+# save_event_set(meta_og_x,rain_og_x,path_og,mode_og)
+
+pred_mraw = np.load('/user/home/al18709/work/gan_predictions_20/extreme_test_pred-opt_modular_part2_raw.npy')
+disc_pred_mraw = np.load('/user/home/al18709/work/gan_predictions_20/extreme_test_disc_pred-opt_modular_part2_raw.npy')
+meta = pd.read_csv('/user/work/al18709/tc_data_mswep_40/modular_wgan_extreme_test_meta_with_dates.csv')
+mode2 = 'extreme_test_mraw'
+mode2b = 'extreme_test_mraw_critic'
+path = '/user/home/al18709/work/event_sets/wgan_modular/'
+save_event_set(meta,pred_mraw,path,mode2)
+save_event_set(meta,disc_pred_mraw,path,mode2b,critic=True)
 
 # load modular wgan part 1 and 2
 # modular_pred_1_and_2 = np.load('/user/home/al18709/work/gan_predictions_20/modular_part2_lowres_predictions_pred-opt_modular_part2_raw.npy')
-pred_1and2 = np.load('/user/home/al18709/work/gan_predictions_20/modular_part2_lowres_predictions_validation_pred-opt_scalar_test_run_1_pred-opt_modular_part2_raw.npy')
-disc_pred_1and2 = np.load('/user/home/al18709/work/gan_predictions_20/modular_part2_lowres_predictions_validation_pred-opt_scalar_test_run_1_disc_pred-opt_modular_part2_raw.npy')
-meta = pd.read_csv('/user/work/al18709/tc_data_mswep_40/scalar_wgan_valid_meta_with_dates.csv')
+pred_1and2 = np.load('/user/home/al18709/work/gan_predictions_20/modular_part2_lowres_predictions_test_pred-opt_scalar_test_run_1_pred-opt_modular_part2_raw.npy')
+disc_pred_1and2 = np.load('/user/home/al18709/work/gan_predictions_20/modular_part2_lowres_predictions_test_pred-opt_scalar_test_run_1_disc_pred-opt_modular_part2_raw.npy')
+meta = pd.read_csv('/user/work/al18709/tc_data_mswep_40/modular_wgan_test_meta_with_dates.csv')
 
-mode2 = 'validation_1and2'
-mode2b = 'validation_1and2_critic'
+mode2 = 'test_1and2'
+mode2b = 'test_1and2_critic'
 path = '/user/home/al18709/work/event_sets/wgan_modular/'
 # # save_event_set(meta,modular_pred_2,mode1)
 save_event_set(meta,pred_1and2,path,mode2)
 save_event_set(meta,disc_pred_1and2,path,mode2b,critic=True)
 
-pred_1and2 = np.load('/user/home/al18709/work/gan_predictions_20/modular_part2_lowres_predictions_extreme_valid_pred-opt_scalar_test_run_1_pred-opt_modular_part2_raw.npy')
-disc_pred_1and2 = np.load('/user/home/al18709/work/gan_predictions_20/modular_part2_lowres_predictions_extreme_valid_pred-opt_scalar_test_run_1_disc_pred-opt_modular_part2_raw.npy')
-meta = pd.read_csv('/user/work/al18709/tc_data_mswep_40/scalar_wgan_extreme_valid_meta_with_dates.csv')
-mode2 = 'extreme_valid_1and2'
-mode2b = 'extreme_valid_1and2_critic'
+pred_1and2 = np.load('/user/home/al18709/work/gan_predictions_20/modular_part2_lowres_predictions_extreme_test_pred-opt_scalar_test_run_1_pred-opt_modular_part2_raw.npy')
+disc_pred_1and2 = np.load('/user/home/al18709/work/gan_predictions_20/modular_part2_lowres_predictions_extreme_test_pred-opt_scalar_test_run_1_disc_pred-opt_modular_part2_raw.npy')
+meta = pd.read_csv('/user/work/al18709/tc_data_mswep_40/modular_wgan_extreme_test_meta_with_dates.csv')
+mode2 = 'extreme_test_1and2'
+mode2b = 'extreme_test_1and2_critic'
 save_event_set(meta,pred_1and2,path,mode2)
 save_event_set(meta,disc_pred_1and2,path,mode2b,critic=True)
 # # save_event_set(meta_og_x,rain_og_x,path_og,mode_og)

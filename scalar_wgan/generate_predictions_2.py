@@ -57,6 +57,7 @@ def generate_predictions(*,
 	# define initial variables
 	# input_channels = 1
 	input_channels = 8
+	# input_channels = 6
 	# noise_channels = 6 #4
 	batch_size = 512
 	num_images = 150
@@ -148,6 +149,7 @@ def generate_predictions(*,
 	latest_checkpoint = max(checkpoints)
 	# latest_checkpoint = '64000'
 	# latest_checkpoint = '0640000'
+	# latest_checkpoint = '0716800'
 	# gen_weights_file = log_folder + '/models/' +'gen_weights-0' + str(latest_checkpoint) + '.h5'
 	# latest_checkpoint = '0960000' #this one best so far on model 31
 	gen_weights_file = log_folder + '/models/' +'gen_weights-' + str(latest_checkpoint) + '.h5'
@@ -165,7 +167,7 @@ def generate_predictions(*,
 	# seq_real = np.zeros((num_images,100,100,1))
 	seq_real = np.zeros((num_images,10,10,1))
 	# low_res_inputs = np.zeros((num_images,10,10,1))
-	low_res_inputs = np.zeros((num_images,10,10,6))
+	low_res_inputs = np.zeros((num_images,10,10,8))
 	
 	if "event_set" not in data_mode:
 		data_pred_iter = iter(data_predict)
@@ -292,8 +294,8 @@ def generate_predictions(*,
 					# print(topography.dtype)
 
 				# pred_single = np.array(model.gen.predict([inputs,nn]))[:,:,:,0] # this one
-				print(inputs)
-				print(topography)
+				print('inputs shape',inputs.shape)
+				# print(topography)
 				pred_single = np.array(model.gen.predict([inputs,topography,nn,nn_hr]))[:,:,:,0]
 
 				# pred_single = np.array(model.gen.predict_on_batch([inputs,nn]))[:,:,:,0]
@@ -371,7 +373,7 @@ def generate_predictions(*,
 	else:
 		model = 'gan'	
 		# problem = '5_normal_problem'
-		problem = 'scalar_test_run_4'
+		# problem = 'scalar_test_run_5'
 		problem = 'scalar_test_run_more_inputs'
 		# problem = 'scalar_test_run_1'
 

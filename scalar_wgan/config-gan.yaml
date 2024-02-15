@@ -11,7 +11,8 @@ MODEL:
     # change padding to zero padding?
         
 SETUP:
-    log_folder: "/user/home/al18709/work/gan/logs_scalar_wgan_more_inputs_v1"
+    log_folder: "/user/home/al18709/work/gan/logs_scalar_wgan_more_inputs_v2"
+    # log_folder: "/user/home/al18709/work/gan/logs_scalar_wgan_v18" testing
     # log_folder: "/user/home/al18709/work/gan/logs_scalar_wgan_v8" #better mean rainfall qq plot
     # log_folder: "/user/home/al18709/work/gan/logs_scalar_wgan_v11" og
     # make a deeper network and increase number of filters

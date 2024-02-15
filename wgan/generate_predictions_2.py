@@ -126,7 +126,7 @@ def generate_predictions(*,
 	#  load gen model and make predictions
 	print('log folder is:',log_folder)
 	gen_weights_file = log_folder + '/models-gen_weights.h5'
-	# gen_weights_file = '/user/home/al18709/work/gan/logs_wgan_modular_v7/models/gen_weights-19814400.h5' #best use this
+	gen_weights_file = '/user/home/al18709/work/gan/logs_wgan_modular_v7/models/gen_weights-19814400.h5' #best use this
 	# version 7 7552000 best PSD so far
 	# 7577600 worse
 	# 7603200 worse
@@ -311,8 +311,8 @@ def generate_predictions(*,
 	else:
 		model = 'gan'	
 		# problem = '5_normal_problem'
-		# problem = 'modular_part2_raw'
-		problem = 'modular_part2_patchloss_raw'
+		problem = 'modular_part2_raw'
+		# problem = 'modular_part2_patchloss_raw'
 
 	if data_mode == 'storm':
 		problem = storm

@@ -47,27 +47,42 @@ def find_dates_ibtracs(meta):
 	
 
 # load current 1D dataset
-real,inputs,pred,meta = load_tc_data(set='validation',results='ke_tracks')
-dates = find_dates_ibtracs(meta)
-meta['date'] = dates
-meta.to_csv('/user/work/al18709/tc_data_mswep_40/scalar_wgan_valid_meta_with_dates.csv')
+# real,inputs,pred,meta = load_tc_data(set='validation',results='ke_tracks')
+# dates = find_dates_ibtracs(meta)
+# meta['date'] = dates
+# meta.to_csv('/user/work/al18709/tc_data_mswep_40/scalar_wgan_valid_meta_with_dates.csv')
 
 # load original 2D WGAN
-real_2,inputs_2,pred_2,meta_2,imput_og,pred_og,meta_og = load_tc_data(set='validation',results='kh_tracks')
-meta_2['date'] = find_dates_ibtracs(meta_2)
-# meta_og['date'] = find_dates_ibtracs(meta_og,'gregorian')
-real_og_x,_,_,_,_,_,pred_og_x,meta_og_x = load_tc_data(set='extreme_test',results='test')
-meta_og_x['date'] = find_dates_ibtracs(meta_og_x)
-meta_og = pd.read_csv('/user/work/al18709/tc_data_mswep_40/valid_meta.csv')
-meta_og['date'] = find_dates_ibtracs(meta_og)
-meta_og_x.to_csv('/user/work/al18709/tc_data_mswep_40/original_wgan_extreme_test_meta_with_dates.csv')
-meta_og.to_csv('/user/work/al18709/tc_data_mswep_40/original_wgan_valid_meta_with_dates.csv')
+# real_2,inputs_2,pred_2,meta_2,imput_og,pred_og,meta_og = load_tc_data(set='validation',results='kh_tracks')
+# meta_2['date'] = find_dates_ibtracs(meta_2)
+# # meta_og['date'] = find_dates_ibtracs(meta_og,'gregorian')
+# real_og_x,_,_,_,_,_,pred_og_x,meta_og_x = load_tc_data(set='extreme_test',results='test')
+# meta_og_x['date'] = find_dates_ibtracs(meta_og_x)
+# meta_og = pd.read_csv('/user/work/al18709/tc_data_mswep_40/valid_meta.csv')
+# meta_og['date'] = find_dates_ibtracs(meta_og)
+# meta_og_x.to_csv('/user/work/al18709/tc_data_mswep_40/original_wgan_extreme_test_meta_with_dates.csv')
+# meta_og.to_csv('/user/work/al18709/tc_data_mswep_40/original_wgan_valid_meta_with_dates.csv')
 # meta_valid = pd.read_csv('/user/work/al18709/tc_data_flipped/valid_meta.csv')
 
-real_2,inputs_2,pred_2,meta_2,imput_og,pred_og,meta_og = load_tc_data(set='test',results='kh_tracks')
-meta_og = pd.read_csv('/user/work/al18709/tc_data_mswep_40/test_meta.csv')
-meta_og['date'] = find_dates_ibtracs(meta_og)
-meta_og.to_csv('/user/work/al18709/tc_data_mswep_40/original_wgan_test_meta_with_dates.csv')
+# real_2,inputs_2,pred_2,meta_2,imput_og,pred_og,meta_og = load_tc_data(set='test',results='kh_tracks')
+# meta_og = pd.read_csv('/user/work/al18709/tc_data_mswep_40/test_meta.csv')
+# meta_og['date'] = find_dates_ibtracs(meta_og)
+# meta_og.to_csv('/user/work/al18709/tc_data_mswep_40/original_wgan_test_meta_with_dates.csv')
 
+meta = pd.read_csv('/user/work/al18709/tc_data_flipped/test_meta.csv')
+meta['date'] = find_dates_ibtracs(meta)
+meta.to_csv('/user/work/al18709/tc_data_mswep_40/modular_wgan_test_meta_with_dates.csv')
+
+meta = pd.read_csv('/user/work/al18709/tc_data_flipped/valid_meta.csv')
+meta['date'] = find_dates_ibtracs(meta)
+meta.to_csv('/user/work/al18709/tc_data_mswep_40/modular_wgan_valid_meta_with_dates.csv')
+
+meta = pd.read_csv('/user/work/al18709/tc_data_flipped/extreme_test_meta.csv')
+meta['date'] = find_dates_ibtracs(meta)
+meta.to_csv('/user/work/al18709/tc_data_mswep_40/modular_wgan_extreme_test_meta_with_dates.csv')
+
+meta = pd.read_csv('/user/work/al18709/tc_data_flipped/extreme_valid_meta.csv')
+meta['date'] = find_dates_ibtracs(meta)
+meta.to_csv('/user/work/al18709/tc_data_mswep_40/modular_wgan_extreme_valid_meta_with_dates.csv')
 
 # TODO everything in gregorian calendar... double check this

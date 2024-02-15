@@ -1,7 +1,7 @@
 GENERAL:
     mode: "GAN" # choices 'det' 'GAN' 'VAEGAN'
     problem_type: "normal" # choices 'normal' 'superresolution'
-    data_mode: 'validation' #'validation_pred-opt_scalar_test_run_3' #'extreme_test_pred-opt_scalar_test_run_1' #'validation_pred-opt_scalar_test_run_1' #'storm_era5_corrected' # validation, test, train, extreme_validation, extreme_test, storm, era5, era5_corrected, storm_era5, storm_era5_corrected
+    data_mode: 'validation_pred-opt_scalar_test_run_more_inputs' #'validation_pred-opt_scalar_test_run_3' #'extreme_test_pred-opt_scalar_test_run_1' #'validation_pred-opt_scalar_test_run_1' #'storm_era5_corrected' # validation, test, train, extreme_validation, extreme_test, storm, era5, era5_corrected, storm_era5, storm_era5_corrected
     storm: '2019236N10314'
     
 MODEL:
@@ -11,8 +11,8 @@ MODEL:
     # change padding to zero padding?
         
 SETUP:
-    log_folder: "/user/home/al18709/work/gan/logs_wgan_weighted_modular_v2" #patchloss
-    # log_folder: "/user/home/al18709/work/gan/logs_wgan_modular_v7" # best
+    # log_folder: "/user/home/al18709/work/gan/logs_wgan_weighted_modular_v2" #patchloss
+    log_folder: "/user/home/al18709/work/gan/logs_wgan_modular_v7" # best
     # log_folder: "/user/home/al18709/work/gan/logs_wgan_modular_v9" # most recent
     # log_folder: "/user/home/al18709/work/gan/logs_wgan_modular_patchloss_v1"
     # log_folder: "/user/home/al18709/work/dsrnngan/logs"
