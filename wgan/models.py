@@ -295,7 +295,7 @@ def discriminator(arch,
     #         return x
 
 
-    weights = False
+    weights = True
     # discriminator output
     if weights == False:
         disc_output = GlobalAveragePooling2D()(disc_input)

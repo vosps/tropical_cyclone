@@ -126,28 +126,18 @@ def generate_predictions(*,
 	#  load gen model and make predictions
 	print('log folder is:',log_folder)
 	gen_weights_file = log_folder + '/models-gen_weights.h5'
-	gen_weights_file = '/user/home/al18709/work/gan/logs_wgan_modular_v7/models/gen_weights-19814400.h5' #best use this
+	gen_weights_files = log_folder + 'models/gen_weights-9984000.h5'
+	# gen_weights_file = '/user/home/al18709/work/gan/logs_wgan_modular_v7/models/gen_weights-19814400.h5' #best use this
 	# version 7 7552000 best PSD so far
-	# 7577600 worse
-	# 7603200 worse
-	# 7526400 worse
-	# 9676800 worse
-	# 8217600 okay
-	# 8012800 worse
-	# 6092800 awful
-	# 28416000 worse
-	# 30464000 alright
-	# 19712000 pretty good
-	# 19763200 similar
-	# 13542400 okay
-	# 31001600 fine
-	# 25497600 worse
-	# 19788800 worse
-	# 19635200 worse
-	# 19814400 best
-	# 19891200
-	# 19916800
-	# 20044800
+	# 9600000 no
+	# 9420800 better - same as mwgan 1 and 2
+	# 9497600 quite close to the wgan part 2 but tails off a tiny bit at the end.
+	# 9472000 not much better
+	# 9190400 not lunch better
+	# 9523200 kind of like but not as good 9497600 
+	# 9574400 good but not best
+	# 9548800 awful
+	# 9984000 best so far
 
 	# gen_weights_file = '/user/home/al18709/work/gan/logs_wgan_modular_patchloss_v1/models/gen_weights-0358400.h5'
 	# gen_weights_file = log_folder + '/models-gen_opt_weights.h5' # TODO: this has different construction to gen_weights - ask andrew and lucy
@@ -311,8 +301,8 @@ def generate_predictions(*,
 	else:
 		model = 'gan'	
 		# problem = '5_normal_problem'
-		problem = 'modular_part2_raw'
-		# problem = 'modular_part2_patchloss_raw'
+		# problem = 'modular_part2_raw'
+		problem = 'modular_part2_patchloss_raw'
 
 	if data_mode == 'storm':
 		problem = storm
