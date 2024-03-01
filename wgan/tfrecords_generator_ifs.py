@@ -248,6 +248,9 @@ def create_fixed_dataset(year=None,mode='validation',batch_size=16,
             z = np.float32(np.load('/user/home/al18709/work/tc_data_flipped_t/test_y.npy'))
         else:
             z = np.float32(np.load('/user/home/al18709/work/tc_data_flipped_t/valid_y.npy'))
+        print(x.shape)
+        print(y.shape)
+        print(z.shape)
     else:
         if mode == 'validation':
             dataset = 'valid'
@@ -261,6 +264,11 @@ def create_fixed_dataset(year=None,mode='validation',batch_size=16,
         x = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/%s_combined_X.npy' % dataset)[:,:,:,0],axis=3))
         y = np.float32(np.load('/user/work/al18709/tc_data_flipped/%s_combined_y.npy' % dataset))
         z = np.float32(np.load('/user/home/al18709/work/tc_data_flipped_t/%s_y.npy' % dataset))
+        print('here')
+        print(mode)
+        print(x.shape)
+        print(y.shape)
+        print(z.shape)
 
     # normalise the data??
     # normalise rain

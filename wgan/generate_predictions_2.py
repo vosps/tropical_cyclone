@@ -126,7 +126,9 @@ def generate_predictions(*,
 	#  load gen model and make predictions
 	print('log folder is:',log_folder)
 	gen_weights_file = log_folder + '/models-gen_weights.h5'
-	gen_weights_files = log_folder + 'models/gen_weights-9984000.h5'
+	gen_weights_file = log_folder + '/models/gen_weights-18892800.h5' #patchgan v3 best so far? could be models-gen_weights
+	print(gen_weights_file)
+	# gen_weights_file = log_folder + 'models/gen_weights-9984000.h5' #patchgan v2 best so far?
 	# gen_weights_file = '/user/home/al18709/work/gan/logs_wgan_modular_v7/models/gen_weights-19814400.h5' #best use this
 	# version 7 7552000 best PSD so far
 	# 9600000 no
@@ -137,7 +139,14 @@ def generate_predictions(*,
 	# 9523200 kind of like but not as good 9497600 
 	# 9574400 good but not best
 	# 9548800 awful
-	# 9984000 best so far
+	# 9984000 best so far, is it though?
+	# 19148800 no different
+	# 19814400 pretty good
+	# 20147200 disc no
+	# 18892800 disc no try again
+	# 18918400 disc no
+	# 18790400 no change
+	# 16460800
 
 	# gen_weights_file = '/user/home/al18709/work/gan/logs_wgan_modular_patchloss_v1/models/gen_weights-0358400.h5'
 	# gen_weights_file = log_folder + '/models-gen_opt_weights.h5' # TODO: this has different construction to gen_weights - ask andrew and lucy
@@ -302,7 +311,7 @@ def generate_predictions(*,
 		model = 'gan'	
 		# problem = '5_normal_problem'
 		# problem = 'modular_part2_raw'
-		problem = 'modular_part2_patchloss_raw'
+		problem = 'modular_part2_patchloss_raw_4'
 
 	if data_mode == 'storm':
 		problem = storm
@@ -319,12 +328,14 @@ def generate_predictions(*,
 	low_res_inputs = 10**low_res_inputs - 1
 
 	print(pred)
+	print(np.sum(pred))
 
 	np.save('/user/home/al18709/work/%s_predictions_20/%s_real-%s_%s.npy' % (model,data_mode,checkpoint,problem),seq_real)
 	np.save('/user/home/al18709/work/%s_predictions_20/%s_pred-%s_%s.npy' % (model,data_mode,checkpoint,problem),pred)
 	np.save('/user/home/al18709/work/%s_predictions_20/%s_disc_pred-%s_%s.npy' % (model,data_mode,checkpoint,problem),disc_pred)
 	np.save('/user/home/al18709/work/%s_predictions_20/%s_input-%s_%s.npy' % (model,data_mode,checkpoint,problem),low_res_inputs)
 	print('/user/home/al18709/work/%s_predictions_20/%s_real-%s_%s.npy' % (model,data_mode,checkpoint,problem))
+	print('/user/home/al18709/work/%s_predictions_20/%s_disc_pred-%s_%s.npy' % (model,data_mode,checkpoint,problem))
 
 
 

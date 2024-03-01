@@ -68,10 +68,16 @@ def load_tc_data(set = 'validation',results = 'final'):
 		mswep_meta = pd.read_csv('/user/home/al18709/work/tc_data_mswep_40/%s_meta.csv' % set)
 		return era5,era5_real,era5_input,era5_meta,mswep,mswep_real,mswep_input,mswep_meta
 	elif results == 'ke_tracks':
-		pred = np.load("/user/home/al18709/work/gan_predictions_20/validation_pred-opt_no_rain_test_run_1.npy")
-		inputs = np.load("/user/home/al18709/work/gan_predictions_20/validation_input-opt_no_rain_test_run_1.npy")
-		real = np.load("/user/home/al18709/work/gan_predictions_20/validation_real-opt_no_rain_test_run_1.npy")
-		meta = pd.read_csv('/user/work/al18709/tc_data_flipped/valid_meta.csv')
+		if set == 'validation':
+			pred = np.load("/user/home/al18709/work/gan_predictions_20/validation_pred-opt_no_rain_test_run_1.npy")
+			inputs = np.load("/user/home/al18709/work/gan_predictions_20/validation_input-opt_no_rain_test_run_1.npy")
+			real = np.load("/user/home/al18709/work/gan_predictions_20/validation_real-opt_no_rain_test_run_1.npy")
+			meta = pd.read_csv('/user/work/al18709/tc_data_flipped/valid_meta.csv')
+		else:
+			pred = np.load(f"/user/home/al18709/work/gan_predictions_20/{set}_pred-opt_no_rain_test_run_1.npy")
+			inputs = np.load(f"/user/home/al18709/work/gan_predictions_20/{set}_input-opt_no_rain_test_run_1.npy")
+			real = np.load(f"/user/home/al18709/work/gan_predictions_20/{set}_real-opt_no_rain_test_run_1.npy")
+			meta = pd.read_csv(f'/user/work/al18709/tc_data_flipped/{set}_meta.csv')
 		return real,inputs,pred,meta
 	elif results == 'kh_tracks':
 		real = np.load('/user/home/al18709/work/gan_predictions_20/%s_real-opt_combined_test_run_1.npy' % set)

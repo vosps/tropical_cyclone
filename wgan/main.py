@@ -32,18 +32,20 @@ from tensorflow.python.client import device_lib
 print('device lib imported!')
 
 print(device_lib.list_local_devices())
-print(tf.config.list_physical_devices('GPU'))
+print('gpus: ',tf.config.list_physical_devices('GPU'))
 print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 # print("Is GPU available? ",tf.test.is_gpu_available())
 # tf.config.experimental.set_memory_growth(gpus[0], True)
 
 # try this
 gpus = tf.config.experimental.list_physical_devices('GPU')
-tf.config.experimental.set_memory_growth(gpus[0], True)
-
+if tf.config.list_physical_devices('GPU') != []:
+    tf.config.experimental.set_memory_growth(gpus[0], True)
+print('gpus: ',gpus)
 # if using more than 1 GPU need to make sure memory is same in both
-for gpu in gpus:
-    tf.config.experimental.set_memory_growth(gpu, True)
+if tf.config.list_physical_devices('GPU') != []:
+    for gpu in gpus:
+        tf.config.experimental.set_memory_growth(gpu, True)
 
 # fix random memory issue
 # TF_GPU_ALLOCATOR=cuda_malloc_async
@@ -299,7 +301,9 @@ if __name__ == "__main__":
 
             # Save model weights each checkpoint
             gen_weights_file = os.path.join(model_weights_root, "gen_weights-{:07d}.h5".format(training_samples))
+            disc_weights_file = os.path.join(model_weights_root, "disc_weights-{:07d}.h5".format(training_samples))
             model.gen.save_weights(gen_weights_file)
+            model.disc.save_weights(disc_weights_file)
 
     else:
         print("Training skipped...")

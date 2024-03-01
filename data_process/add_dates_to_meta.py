@@ -88,19 +88,26 @@ def find_dates_ibtracs(meta):
 # TODO everything in gregorian calendar... double check this
 
 # load current 1D dataset
-real,inputs,pred,meta = load_tc_data(set='test',results='ke_tracks')
-dates = find_dates_ibtracs(meta)
-meta['date'] = dates
-meta.to_csv('/user/work/al18709/tc_data_mswep_40/scalar_wgan_test_meta_with_dates.csv')
+# real,inputs,pred,meta = load_tc_data(set='test',results='ke_tracks')
+# dates = find_dates_ibtracs(meta)
+# meta['date'] = dates
+# meta.to_csv('/user/work/al18709/tc_data_mswep_40/scalar_wgan_test_meta_with_dates.csv')
 
-real,inputs,pred,meta = load_tc_data(set='extreme_test',results='ke_tracks')
-dates = find_dates_ibtracs(meta)
-meta['date'] = dates
-meta.to_csv('/user/work/al18709/tc_data_mswep_40/scalar_wgan_extreme_test_meta_with_dates.csv')
+# real,inputs,pred,meta = load_tc_data(set='extreme_test',results='ke_tracks')
+# dates = find_dates_ibtracs(meta)
+# meta['date'] = dates
+# meta.to_csv('/user/work/al18709/tc_data_mswep_40/scalar_wgan_extreme_test_meta_with_dates.csv')
 
 real,inputs,pred,meta = load_tc_data(set='extreme_valid',results='ke_tracks')
 dates = find_dates_ibtracs(meta)
 meta['date'] = dates
 meta.to_csv('/user/work/al18709/tc_data_mswep_40/scalar_wgan_extreme_valid_meta_with_dates.csv')
+
+
+
+# real,inputs,pred,meta = load_tc_data(set='extreme_valid',results='ke_tracks')
+# dates = find_dates_ibtracs(meta)
+# meta['date'] = dates
+# meta.to_csv('/user/work/al18709/tc_data_mswep_40/scalar_wgan_extreme_valid_meta_with_dates.csv')
 
 

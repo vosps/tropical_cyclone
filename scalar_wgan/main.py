@@ -128,7 +128,8 @@ if __name__ == "__main__":
             print(setup_params)
         except yaml.YAMLError as exc:
             print(exc)
-
+    print(args)
+    print(setup_params)
     mode = setup_params["GENERAL"]["mode"]
     data_mode = setup_params["GENERAL"]["data_mode"]
     storm = setup_params["GENERAL"]["storm"]
@@ -187,7 +188,7 @@ if __name__ == "__main__":
         downsample = False
         # input_channels = 9
         # input_channels = 1
-        input_channels = 8
+        input_channels = 6
     elif problem_type == "superresolution":
         downsample = True
         input_channels = 1

@@ -56,7 +56,7 @@ def generate_predictions(*,
 
 	# define initial variables
 	# input_channels = 1
-	input_channels = 8
+	input_channels = 6
 	# input_channels = 6
 	# noise_channels = 6 #4
 	batch_size = 512
@@ -167,7 +167,7 @@ def generate_predictions(*,
 	# seq_real = np.zeros((num_images,100,100,1))
 	seq_real = np.zeros((num_images,10,10,1))
 	# low_res_inputs = np.zeros((num_images,10,10,1))
-	low_res_inputs = np.zeros((num_images,10,10,8))
+	low_res_inputs = np.zeros((num_images,10,10,6))
 	
 	if "event_set" not in data_mode:
 		data_pred_iter = iter(data_predict)
@@ -374,8 +374,9 @@ def generate_predictions(*,
 		model = 'gan'	
 		# problem = '5_normal_problem'
 		# problem = 'scalar_test_run_5'
-		problem = 'scalar_test_run_more_inputs'
-		# problem = 'scalar_test_run_1'
+		# problem = 'scalar_test_run_more_inputs'
+		problem = 'scalar_test_run_1'
+		problem = 'scalar_test_run_1b'
 
 	if data_mode == 'storm':
 		problem = storm
