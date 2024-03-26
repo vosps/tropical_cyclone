@@ -120,16 +120,17 @@ def generate_predictions(*,
 
 	# load disc model and make predictions
 	disc_weights_file = log_folder + '/models-disc_weights.h5'
+	# disc_weights_file = log_folder + '/models/disc_weights-22988800.h5' #patchgan v3 best
 	model.disc.built = True
 	model.disc.load_weights(disc_weights_file)
-
+	print(disc_weights_file)
 	#  load gen model and make predictions
 	print('log folder is:',log_folder)
 	gen_weights_file = log_folder + '/models-gen_weights.h5'
-	gen_weights_file = log_folder + '/models/gen_weights-18892800.h5' #patchgan v3 best so far? could be models-gen_weights
+	# gen_weights_file = log_folder + '/models/gen_weights-22988800.h5' #patchgan v3 best
 	print(gen_weights_file)
 	# gen_weights_file = log_folder + 'models/gen_weights-9984000.h5' #patchgan v2 best so far?
-	# gen_weights_file = '/user/home/al18709/work/gan/logs_wgan_modular_v7/models/gen_weights-19814400.h5' #best use this
+	gen_weights_file = '/user/home/al18709/work/gan/logs_wgan_modular_v7/models/gen_weights-19814400.h5' #best use this
 	# version 7 7552000 best PSD so far
 	# 9600000 no
 	# 9420800 better - same as mwgan 1 and 2
@@ -148,15 +149,29 @@ def generate_predictions(*,
 	# 18790400 no change
 	# 16460800
 
+	# patchgan v3/4
+	# 18892800 no
+	# 18944000 same as above
+	# 19097600 similar
+	# 9830400 same
+	# 0076800 rubbish
+	# 20224000 kind of better
+	# 21120000 better direction
+	# 21196800 slightly worse than 21120000
+	# 21299200 good
+	# 21324800 best so far
+	# 22988800 best
+
 	# gen_weights_file = '/user/home/al18709/work/gan/logs_wgan_modular_patchloss_v1/models/gen_weights-0358400.h5'
 	# gen_weights_file = log_folder + '/models-gen_opt_weights.h5' # TODO: this has different construction to gen_weights - ask andrew and lucy
 	model.gen.built = True
 	model.gen.load_weights(gen_weights_file)
 
 	# define initial variables
-	pred = np.zeros((num_images,100,100,20))
+	n_ensembles = 20
+	pred = np.zeros((num_images,100,100,n_ensembles))
 	seq_real = np.zeros((num_images,100,100,1))
-	disc_pred = np.zeros((num_images,1,20))
+	disc_pred = np.zeros((num_images,1,n_ensembles))
 	# disc_real = np.zeros((num_images,1))
 	# low_res_inputs = np.zeros((num_images,10,10,1))
 	low_res_inputs = np.zeros((num_images,10,10,7))
@@ -199,14 +214,14 @@ def generate_predictions(*,
 		print('topography shape: ',topography.shape)
 		if i == nbatches:
 			noise_gen = NoiseGenerator(noise_shape, batch_size=remainder) # does noise gen need to be outside of the for loop?
-			img_pred = np.zeros((remainder,100,100,20))
-			disc_img_pred = np.zeros((remainder,1,20))
+			img_pred = np.zeros((remainder,100,100,n_ensembles))
+			disc_img_pred = np.zeros((remainder,1,n_ensembles))
 		else:
 			noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size) # does noise gen need to be outside of the for loop?
-			img_pred = np.zeros((batch_size,100,100,20))
-			disc_img_pred = np.zeros((batch_size,1,20))
+			img_pred = np.zeros((batch_size,100,100,n_ensembles))
+			disc_img_pred = np.zeros((batch_size,1,n_ensembles))
 
-		for j in range(20): #do 50 ensemble members
+		for j in range(n_ensembles): #do 50 ensemble members
 				
 			if vaegan:
 				noise_shape = np.array(inputs)[0, ..., 0].shape + (latent_variables,)
@@ -310,8 +325,8 @@ def generate_predictions(*,
 	else:
 		model = 'gan'	
 		# problem = '5_normal_problem'
-		# problem = 'modular_part2_raw'
-		problem = 'modular_part2_patchloss_raw_4'
+		problem = 'modular_part2_raw'
+		# problem = 'modular_part2_patchloss_raw_4'
 
 	if data_mode == 'storm':
 		problem = storm
@@ -320,7 +335,7 @@ def generate_predictions(*,
 		problem = '3_hrly'
 
 	if 'scalar' in data_mode:
-		data_mode = 'modular_part2_lowres_predictions_%s' % data_mode
+		data_mode = 'modular_part2_lowres_predictions_%s_2' % data_mode
 	
 
 	seq_real = 10**seq_real - 1

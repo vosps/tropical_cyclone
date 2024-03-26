@@ -90,7 +90,7 @@ def _dataset_downsampler_list(inputs, constants, outputs):
 
 # def create_dataset(year,clss,era_shape=(10,10,9),con_shape=(100,100,2),out_shape=(100,100,1),
 #                    folder=records_folder, shuffle_size = 1024, repeat=True):
-def create_dataset(year,clss,era_shape=(1,1,8),out_shape=(100,100,1),
+def create_dataset(year,clss,era_shape=(1,1,6),out_shape=(100,100,1),
                    folder=records_folder, shuffle_size = 64, repeat=True):
     """
     this function creates the dataset in the format input, constants, output
@@ -137,15 +137,21 @@ def create_dataset(year,clss,era_shape=(1,1,8),out_shape=(100,100,1),
     print('loading in tropical cyclone data...')
     # x = np.float32(np.expand_dims(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/KE_tracks/all_train_X.npy'),axis=1),axis=1)) # inputs are (nimags,1,nfeatures)
     x1 = np.float32(np.expand_dims(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/KE_tracks/train_X.npy'),axis=1),axis=1))
+    # x2 = np.float32(np.expand_dims(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/KE_tracks/extreme_test_X.npy'),axis=1),axis=1))
     x2 = np.float32(np.expand_dims(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/KE_tracks/extreme_valid_X.npy'),axis=1),axis=1))
     x = np.concatenate((x1,x2),axis=0)
+    # x = x1
     # y = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/KE_tracks/train_y.npy'),axis=3))
     y1 = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/KE_tracks/train_y_regrid.npy'),axis=3))
+    # y2 = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/KE_tracks/extreme_test_y_regrid.npy'),axis=3))
     y2 = np.float32(np.expand_dims(np.load('/user/work/al18709/tc_data_flipped/KE_tracks/extreme_valid_y_regrid.npy'),axis=3))
     y = np.concatenate((y1,y2),axis=0)
+    # y = y1
     z1 = np.float32(np.expand_dims(np.load('/user/home/al18709/work/tc_data_flipped_t/train_y.npy'),axis=3)) # this is the topography variable (nimags,100,100)
+    # z2 = np.float32(np.expand_dims(np.load('/user/home/al18709/work/tc_data_flipped_t/extreme_test_y.npy'),axis=3))
     z2 = np.float32(np.expand_dims(np.load('/user/home/al18709/work/tc_data_flipped_t/extreme_valid_y.npy'),axis=3))
     z = np.concatenate((z1,z2),axis=0)
+    # z = z1
     # z = np.float32(np.expand_dims(np.load('/user/home/al18709/work/tc_data_flipped_t/train_y_regrid.npy'),axis=3))
 
     # normalise the data??

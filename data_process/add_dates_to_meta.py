@@ -65,9 +65,11 @@ def find_dates_ibtracs(meta):
 # meta_valid = pd.read_csv('/user/work/al18709/tc_data_flipped/valid_meta.csv')
 
 # real_2,inputs_2,pred_2,meta_2,imput_og,pred_og,meta_og = load_tc_data(set='test',results='kh_tracks')
-# meta_og = pd.read_csv('/user/work/al18709/tc_data_mswep_40/test_meta.csv')
-# meta_og['date'] = find_dates_ibtracs(meta_og)
-# meta_og.to_csv('/user/work/al18709/tc_data_mswep_40/original_wgan_test_meta_with_dates.csv')
+meta_og = pd.read_csv('/user/work/al18709/tc_data_mswep_40/test_meta.csv')
+meta_og['date'] = find_dates_ibtracs(meta_og)
+meta_og.to_csv('/user/work/al18709/tc_data_mswep_40/original_wgan_test_meta_with_dates.csv')
+print('hellloooooooo')
+exit()
 
 # meta = pd.read_csv('/user/work/al18709/tc_data_flipped/test_meta.csv')
 # meta['date'] = find_dates_ibtracs(meta)

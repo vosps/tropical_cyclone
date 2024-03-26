@@ -291,35 +291,38 @@ def globalise_storm_rain(storm,prediction=True):
 
 
 
-# load scalar wgan data
+# # load scalar wgan data
 # real,inputs,rain,meta = load_tc_data(set='test',results='ke_tracks')
 # meta = pd.read_csv('/user/work/al18709/tc_data_mswep_40/scalar_wgan_test_meta_with_dates.csv')
-# # path = '/user/home/al18709/work/event_sets/wgan_scalar/'
+# path = '/user/home/al18709/work/event_sets/wgan_scalar/'
 # mode = 'test'
+# # # print(real.shape)
+# save_event_set(meta,rain,path,mode)
+# exit()
+# save_event_set(meta,real,'/user/home/al18709/work/event_sets/truth/',mode,ens=False)
+
+# real,inputs,rain,meta = load_tc_data(set='extreme_valid',results='ke_tracks')
+# meta = pd.read_csv('/user/work/al18709/tc_data_mswep_40/scalar_wgan_extreme_valid_meta_with_dates.csv')
+# # path = '/user/home/al18709/work/event_sets/wgan_scalar/'
+# mode = 'extreme_valid'
 # # print(real.shape)
 # # save_event_set(meta,rain,path,mode)
 # save_event_set(meta,real,'/user/home/al18709/work/event_sets/truth/',mode,ens=False)
-
-real,inputs,rain,meta = load_tc_data(set='extreme_valid',results='ke_tracks')
-meta = pd.read_csv('/user/work/al18709/tc_data_mswep_40/scalar_wgan_extreme_valid_meta_with_dates.csv')
-# path = '/user/home/al18709/work/event_sets/wgan_scalar/'
-mode = 'extreme_valid'
-# print(real.shape)
-# save_event_set(meta,rain,path,mode)
-save_event_set(meta,real,'/user/home/al18709/work/event_sets/truth/',mode,ens=False)
 # issues with test set, might need to rerun for all.
-exit()
 
-# # load 2D wgan
-# real_2,inputs_2,pred_2,meta_2,imput_og,rain_og,meta_og = load_tc_data(set='validation',results='kh_tracks')
-# real_og_x,_,_,_,_,_,rain_og_x,meta_og_x = load_tc_data(set='extreme_valid',results='test')
-# meta_og = pd.read_csv('/user/work/al18709/tc_data_mswep_40/original_wgan_valid_meta_with_dates.csv')
-# # meta_og_x = pd.read_csv('/user/work/al18709/tc_data_mswep_40/original_wgan_extreme_validation_meta_with_dates.csv')
+
+# # # load 2D wgan
+# # real_2,inputs_2,pred_2,meta_2,imput_og,rain_og,meta_og = load_tc_data(set='test',results='kh_tracks')
+# real_og,_,_,_,_,_,rain_og,meta_og = load_tc_data(set='test',results='test')
+# # real_og_x,_,_,_,_,_,rain_og_x,meta_og_x = load_tc_data(set='extreme_valid',results='test')
+# meta_og = pd.read_csv('/user/work/al18709/tc_data_mswep_40/original_wgan_test_meta_with_dates.csv')
+# # # meta_og_x = pd.read_csv('/user/work/al18709/tc_data_mswep_40/original_wgan_extreme_validation_meta_with_dates.csv')
 # path_og = '/user/home/al18709/work/event_sets/wgan/'
-# # mode_og_x = 'extreme_validation'
-# mode_og = 'validation'
+# # # mode_og_x = 'extreme_validation'
+# mode_og = 'test'
 # save_event_set(meta_og,rain_og,path_og,mode_og)
-# # save_event_set(meta_og_x,rain_og_x,path_og,mode_og_x)
+# # # save_event_set(meta_og_x,rain_og_x,path_og,mode_og_x)
+# exit()
 
 # # load modular wgan part 2 only
 # # modular_pred_2 = np.load('/user/home/al18709/work/gan_predictions_20/modular_part2_lowres_predictions_pred-opt_modular_part2_raw.npy')
@@ -370,13 +373,26 @@ path = '/user/home/al18709/work/event_sets/wgan_modular/'
 # save_event_set(meta,disc_pred_1and2,path,mode2b,critic=True)
 # # # save_event_set(meta_og_x,rain_og_x,path_og,mode_og)
 
-pred_1and2 = np.load('/user/home/al18709/work/gan_predictions_20/modular_part2_lowres_predictions_extreme_valid_pred-opt_scalar_test_run_1_pred-opt_modular_part2_raw.npy')
-disc_pred_1and2 = np.load('/user/home/al18709/work/gan_predictions_20/modular_part2_lowres_predictions_extreme_valid_pred-opt_scalar_test_run_1_disc_pred-opt_modular_part2_raw.npy')
-meta = pd.read_csv('/user/work/al18709/tc_data_mswep_40/modular_wgan_extreme_valid_meta_with_dates.csv')
-mode2 = 'extreme_valid_1and2'
-mode2b = 'extreme_valid_1and2_critic'
+# path = '/user/home/al18709/work/event_sets/wgan_modular/'
+# pred_1and2 = np.load('/user/home/al18709/work/gan_predictions_20/modular_part2_lowres_predictions_validation_pred-opt_scalar_test_run_1_best_2_pred-opt_modular_part2_raw.npy')
+# disc_pred_1and2 = np.load('/user/home/al18709/work/gan_predictions_20/modular_part2_lowres_predictions_validation_pred-opt_scalar_test_run_1_best_2_disc_pred-opt_modular_part2_raw.npy')
+# meta = pd.read_csv('/user/work/al18709/tc_data_mswep_40/modular_wgan_valid_meta_with_dates.csv')
+# mode2 = 'validation_1and2'
+# mode2b = 'validation_1and2_critic'
+# save_event_set(meta,pred_1and2,path,mode2)
+# save_event_set(meta,disc_pred_1and2,path,mode2b,critic=True)
+
+# exit()
+
+path = '/user/home/al18709/work/event_sets/patchgan/'
+pred_1and2 = np.load('/user/home/al18709/work/gan_predictions_20/validation_pred-opt_modular_part2_patchloss_raw_4.npy')
+disc_pred_1and2 = np.load('/user/home/al18709/work/gan_predictions_20/validation_disc_pred-opt_modular_part2_patchloss_raw_4.npy')
+meta = pd.read_csv('/user/work/al18709/tc_data_mswep_40/modular_wgan_valid_meta_with_dates.csv')
+mode2 = 'patchgan'
+mode2b = 'patchgan_critic'
 save_event_set(meta,pred_1and2,path,mode2)
 save_event_set(meta,disc_pred_1and2,path,mode2b,critic=True)
+exit()
 
 # # save global rain data
 # tc_dir = '/user/home/al18709/work/event_sets/wgan_modular/'

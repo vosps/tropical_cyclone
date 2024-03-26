@@ -1,7 +1,7 @@
 GENERAL:
     mode: "GAN" # choices 'det' 'GAN' 'VAEGAN'
     problem_type: "normal" # choices 'normal' 'superresolution'
-    data_mode: 'validation' #'validation_pred-opt_scalar_test_run_3' #'extreme_test_pred-opt_scalar_test_run_1' #'validation_pred-opt_scalar_test_run_1' #'storm_era5_corrected' # validation, test, train, extreme_validation, extreme_test, storm, era5, era5_corrected, storm_era5, storm_era5_corrected
+    data_mode: 'extreme_valid_pred-opt_scalar_test_run_1_best' #'validation_pred-opt_scalar_test_run_3' #'extreme_test_pred-opt_scalar_test_run_1' #'validation_pred-opt_scalar_test_run_1' #'storm_era5_corrected' # validation, test, train, extreme_validation, extreme_test, storm, era5, era5_corrected, storm_era5, storm_era5_corrected
     storm: '2019236N10314'
     
 MODEL:
@@ -11,8 +11,9 @@ MODEL:
     # change padding to zero padding?
         
 SETUP:
-    log_folder: "/user/home/al18709/work/gan/logs_wgan_weighted_modular_v3" # patchloss best, run: 9984000, saved as: modular_part2_patchloss_raw_3
-    # log_folder: "/user/home/al18709/work/gan/logs_wgan_modular_v7" # best, run: 19814400, saved as: pred-opt_modular_part2_raw
+    # log_folder: "/user/home/al18709/work/gan/logs_wgan_weighted_modular_v3" # best, run: 22988800, saved as: xtreme_test_disc_pred-opt_modular_part2_patchloss_raw_4.npy
+    # patchloss best, run: 9984000, saved as: modular_part2_patchloss_raw_3
+    log_folder: "/user/home/al18709/work/gan/logs_wgan_modular_v7" # best, run: 19814400, saved as: pred-opt_modular_part2_raw
     # log_folder: "/user/home/al18709/work/gan/logs_wgan_modular_v9" # most recent
     # log_folder: "/user/home/al18709/work/gan/logs_wgan_modular_patchloss_v1"
     # log_folder: "/user/home/al18709/work/dsrnngan/logs"

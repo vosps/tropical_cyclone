@@ -236,7 +236,7 @@ def create_fixed_dataset(year=None,mode='validation',batch_size=16,
         print(x.shape)
         print(y.shape)
     elif 'scalar' in mode:
-        x = np.float32(np.expand_dims(np.load('/user/home/al18709/work/gan_predictions_20/%s.npy' % mode)[:,:,:,0],axis=3))
+        x = np.float32(np.expand_dims(np.load('/user/home/al18709/work/gan_predictions_20/%s.npy' % mode)[:,:,:,0],axis=3))*1.34
         nsamples,_,_,_ = x.shape
         y = np.zeros((nsamples,100,100))
         # y = np.float32(np.load('/user/work/al18709/tc_data_flipped/%s_combined_y.npy' % dataset))
@@ -244,6 +244,8 @@ def create_fixed_dataset(year=None,mode='validation',batch_size=16,
             z = np.float32(np.load('/user/home/al18709/work/tc_data_flipped_t/extreme_test_y.npy'))
         elif "extreme_valid" in mode:
             z = np.float32(np.load('/user/home/al18709/work/tc_data_flipped_t/extreme_valid_y.npy'))
+        elif "valid" in mode:
+            z = np.float32(np.load('/user/home/al18709/work/tc_data_flipped_t/valid_y.npy'))
         elif "test" in mode:
             z = np.float32(np.load('/user/home/al18709/work/tc_data_flipped_t/test_y.npy'))
         else:

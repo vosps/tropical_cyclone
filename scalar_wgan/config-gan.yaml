@@ -1,7 +1,7 @@
 GENERAL:
     mode: "GAN" # choices 'det' 'GAN' 'VAEGAN'
     problem_type: "normal" # choices 'normal' 'superresolution'
-    data_mode: 'extreme_valid' #'canesm_hist_event_set' #'storm_era5_corrected' # validation, test, train, extreme_validation, extreme_test, storm, era5, era5_corrected, storm_era5, storm_era5_corrected
+    data_mode: 'validation' #'canesm_hist_event_set' #'storm_era5_corrected' # validation, test, train, extreme_validation, extreme_test, storm, era5, era5_corrected, storm_era5, storm_era5_corrected
     storm: '2019236N10314'
     
 MODEL:
@@ -16,8 +16,9 @@ SETUP:
     # log_folder: "/user/home/al18709/work/gan/logs_scalar_wgan_v8" #better mean rainfall qq plot
     # log_folder: "/user/home/al18709/work/gan/logs_scalar_wgan_v11" #og best
     # make a deeper network and increase number of filters
-    # log_folder: "/user/home/al18709/work/gan/logs_scalar_wgan_v13" # best?
-    log_folder: "/user/home/al18709/work/gan/logs_scalar_wgan_v13d" # replicate the best?
+    # log_folder: "/user/home/al18709/work/gan/logs_scalar_wgan_v13" # best
+    log_folder: "/user/home/al18709/work/gan/logs_scalar_wgan_v13g" # CURRENT VERSION BEST replicating the best? training currently doing well
+    # log_folder: "/user/home/al18709/work/gan/logs_scalar_wgan_v13j" # NEW VERSION trying to improve
     # running both types of models it appears the issue is potentially with this section of the architecture. 
     # So it would be worth making this part of the network deeper, perhaps a U-shape architecture
     # log_folder: "/user/home/al18709/work/dsrnngan/logs"

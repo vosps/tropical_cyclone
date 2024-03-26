@@ -140,7 +140,11 @@ def generator(mode,
         # return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.2)+1)
         # return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.25)+1)
         # return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.245)+1) #best for mean currently testing on more input variables, 1.235 was too low
-        return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.257)+1) # best for ver1
+        # return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.257)+1) # best for ver1
+        # return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.259)+1) # test for ver1
+        # return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.16)+1) # current best for version g
+        return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.09)+1) # current test for version g too high, if too low 1.165
+        # return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.145)+1) # currently looking for version i
         # return K.log(K.exp(x)+1)-K.log(K.exp((x-1)/1.25)+1) # currently using for patchgan change v18
     get_custom_objects().update({'custom_activation': Activation(custom_activation)})
     

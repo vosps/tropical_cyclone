@@ -147,11 +147,16 @@ def generate_predictions(*,
 		checkpoints.append(int(cp))
 	print(checkpoints)
 	latest_checkpoint = max(checkpoints)
+	latest_checkpoint = '0448000' # better extreme but not quite right
+	latest_checkpoint = '0537600' # worse
+	latest_checkpoint = '0204800' #g best 1.16
+	# latest_checkpoint = '0332800'
 	# latest_checkpoint = '64000'
 	# latest_checkpoint = '0640000'
 	# latest_checkpoint = '0716800'
 	# gen_weights_file = log_folder + '/models/' +'gen_weights-0' + str(latest_checkpoint) + '.h5'
 	# latest_checkpoint = '0960000' #this one best so far on model 31
+	
 	gen_weights_file = log_folder + '/models/' +'gen_weights-' + str(latest_checkpoint) + '.h5'
 	# gen_weights_files = '/user/home/al18709/work/gan/logs_scalar_wgan_v13/models/gen_weights-1075200.h5' # best option
 	# gen_weights_file = log_folder + '/models-gen_opt_weights.h5' # TODO: this has different construction to gen_weights - ask andrew and lucy
@@ -163,7 +168,8 @@ def generate_predictions(*,
 	# print(iter(data_predict.batch(batch_size)))
 	# define initial variables
 	# pred = np.zeros((num_images,100,100,20))
-	pred = np.zeros((num_images,10,10,20))
+	n_ensembles = 2
+	pred = np.zeros((num_images,10,10,n_ensembles))
 	# seq_real = np.zeros((num_images,100,100,1))
 	seq_real = np.zeros((num_images,10,10,1))
 	# low_res_inputs = np.zeros((num_images,10,10,1))
@@ -248,18 +254,18 @@ def generate_predictions(*,
 			noise_gen = NoiseGenerator(noise_shape, batch_size=remainder) # does noise gen need to be outside of the for loop?
 			noise_hr_gen = NoiseGenerator(noise_hr_shape, batch_size=remainder)
 			# img_pred = np.zeros((remainder,100,100,20))
-			img_pred = np.zeros((remainder,10,10,20))
+			img_pred = np.zeros((remainder,10,10,n_ensembles))
 		else:
 			noise_gen = NoiseGenerator(noise_shape, batch_size=batch_size) # does noise gen need to be outside of the for loop?
 			noise_hr_gen = NoiseGenerator(noise_hr_shape, batch_size=batch_size)
 			# img_pred = np.zeros((batch_size,100,100,20))
-			img_pred = np.zeros((batch_size,10,10,20))
+			img_pred = np.zeros((batch_size,10,10,n_ensembles))
 			
 		
 		print('noise gen shape',noise_gen().shape)
 		print('noise gen hr shape',noise_hr_gen().shape)
 
-		for j in range(20): #do 50 ensemble members
+		for j in range(n_ensembles): #do 50 ensemble members
 				
 			if vaegan:
 				noise_shape = np.array(inputs)[0, ..., 0].shape + (latent_variables,)
@@ -375,8 +381,9 @@ def generate_predictions(*,
 		# problem = '5_normal_problem'
 		# problem = 'scalar_test_run_5'
 		# problem = 'scalar_test_run_more_inputs'
-		problem = 'scalar_test_run_1'
-		problem = 'scalar_test_run_1b'
+		problem = 'scalar_test_run_1_best'
+		# problem = 'scalar_test_run_1b' # good so faf
+		# problem = 'scalar_test_run_1c' # best?
 
 	if data_mode == 'storm':
 		problem = storm
