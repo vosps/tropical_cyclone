@@ -253,6 +253,26 @@ def create_fixed_dataset(year=None,mode='validation',batch_size=16,
         print(x.shape)
         print(y.shape)
         print(z.shape)
+    elif 'event_set' in mode:
+        input_string = mode
+
+        # Find the index of the first and second underscores
+        first_underscore_index = input_string.find("_")
+        second_underscore_index = input_string.find("_", first_underscore_index + 1)
+
+        # Check if both underscores are found
+        if first_underscore_index != -1 and second_underscore_index != -1:
+            # Extract the two groups
+            model = input_string[:first_underscore_index]
+            scenario = input_string[first_underscore_index + 1:second_underscore_index]
+
+        x = np.float32(np.expand_dims(np.load(f'/user/home/al18709/work/ke_track_rain/lr/{model}_{scenario}_pred.npy')[:,:,:,0],axis=3))
+        y = np.float32(np.expand_dims(np.load(f'/user/home/al18709/work/ke_track_inputs/{model}_{scenario}_topography.npy')[:,:,:],axis=3))
+        # y = np.float32(np.load(f'/user/home/al18709/work/ke_track_inputs/{model}_{scenario}_topography.npy'))
+        z = np.float32(np.expand_dims(np.load(f'/user/home/al18709/work/ke_track_inputs/{model}_{scenario}_topography.npy')[:,:,:],axis=3))
+        print(x.shape)
+        print(y.shape)
+        print(z.shape)
     else:
         if mode == 'validation':
             dataset = 'valid'
@@ -286,20 +306,37 @@ def create_fixed_dataset(year=None,mode='validation',batch_size=16,
     #     x[:,:,:,i] = x[:,:,:,i]/np.max(x[:,:,:,i])
 
     # ds = tf.data.Dataset.from_tensor_slices((x, y))
-    ds = tf.data.Dataset.from_tensor_slices((x, z, y))
+    if "event_set" not in mode:
+        ds = tf.data.Dataset.from_tensor_slices((x, z, y))
+
+        print('dataset changed to tensor')
+
+        ds = ds.batch(batch_size)
+        # return_dic=False #adding this in to get roc curve to work
+        if downsample and return_dic:
+            ds=ds.map(_dataset_downsampler)
+        elif downsample and not return_dic:
+            ds=ds.map(_dataset_downsampler_list)
+        print('ds in new format',ds)
+
+        return ds
+    
+    else:
+        return x,z,y
+    # ds = tf.data.Dataset.from_tensor_slices((x, z, y))
 
 
 
-    ds = ds.batch(batch_size)
-    # return_dic=False #adding this in to get roc curve to work
-    if downsample and return_dic:
-        ds=ds.map(_dataset_downsampler)
-    elif downsample and not return_dic:
-        ds=ds.map(_dataset_downsampler_list)
-    print('ds in new format',ds)
+    # ds = ds.batch(batch_size)
+    # # return_dic=False #adding this in to get roc curve to work
+    # if downsample and return_dic:
+    #     ds=ds.map(_dataset_downsampler)
+    # elif downsample and not return_dic:
+    #     ds=ds.map(_dataset_downsampler_list)
+    # print('ds in new format',ds)
 
 
-    return ds
+    # return ds
         
 
 def _float_feature(list_of_floats):  # float32

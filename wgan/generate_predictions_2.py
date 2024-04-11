@@ -4,8 +4,26 @@ import numpy as np
 import pandas as pd
 from tfrecords_generator_ifs import create_fixed_dataset
 import setupmodel
+import tensorflow as tf
 from noise import NoiseGenerator
 import gc
+import resource
+import subprocess
+
+def get_memory_usage():
+    """Get memory usage of current process."""
+    mem_usage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    # Convert from kilobytes to megabytes
+	# Get GPU memory usage
+    try:
+        gpu_mem_info = subprocess.check_output(['nvidia-smi', '--query-gpu=memory.used', '--format=csv,nounits,noheader'])
+        gpu_mem_usage_mb = sum(map(int, gpu_mem_info.decode('utf-8').strip().split('\n')))
+    except Exception as e:
+        print("Failed to get GPU memory usage:", e)
+        gpu_mem_usage_mb = None
+
+    return mem_usage / 1024, gpu_mem_usage_mb
+    # return mem_usage / 1024
 
 
 def flip(tc):
@@ -59,6 +77,7 @@ def generate_predictions(*,
 	noise_channels = 6 #4
 	batch_size = 512
 	num_images = 150
+	j_ = 0
 		
 
 	# initialise model
@@ -90,6 +109,19 @@ def generate_predictions(*,
 	elif 'scalar' in data_mode:
 		print('data mode: ',data_mode)
 		num_images,_,_,_ = np.load('/user/home/al18709/work/gan_predictions_20/%s.npy' % data_mode).shape
+	elif "event_set" in data_mode:
+		input_string = data_mode
+        # Find the index of the first and second underscores
+		first_underscore_index = input_string.find("_")
+		second_underscore_index = input_string.find("_", first_underscore_index + 1)
+        # Check if both underscores are found
+		if first_underscore_index != -1 and second_underscore_index != -1:
+            # Extract the two groups
+			model_ = input_string[:first_underscore_index]
+			scenario = input_string[first_underscore_index + 1:second_underscore_index]
+		num_images,_,_,_ = np.float32(np.load(f'/user/home/al18709/work/ke_track_rain/lr/{model_}_{scenario}_pred.npy')).shape 
+		# num_images,_,_,_ = np.float32(np.load(f'/user/home/al18709/work/ke_track_rain/lr/{model_}_{scenario}_pred.npy'))[:40000,:,:,:].shape 
+		
 	else:
 		# num_images,_,_ = np.load('/user/work/al18709/tc_data_flipped/%s_X.npy' % data_mode).shape
 		num_images,_,_,_ = np.load('/user/work/al18709/tc_data_flipped/%s_combined_X.npy' % data_mode).shape
@@ -105,11 +137,35 @@ def generate_predictions(*,
 		batch_size = num_images
 		
 	# load relevant data
-	data_predict = create_fixed_dataset(predict_year,
-										batch_size=batch_size,
-										downsample=False,
-										mode = data_mode,
-										storm=storm)
+	# load relevant data
+	if "event_set" not in data_mode:
+		data_predict = create_fixed_dataset(predict_year,
+											batch_size=batch_size,
+											downsample=False,
+											mode = data_mode,
+											storm=storm)
+	else:
+		print('opening event set in chunks...')
+		cpu_memory_usage_mb,gpu_memory_usage_mb = get_memory_usage()
+		print(f"CPU memory usage: {cpu_memory_usage_mb:.2f} MB")
+		print(f"GPU memory usage: {gpu_memory_usage_mb:.2f} MB")
+		x,z,y = create_fixed_dataset(predict_year,
+											batch_size=batch_size,
+											downsample=False,
+											mode = data_mode,
+											storm=storm)
+		print('shapes are:')
+		print(x.shape)
+		print(y.shape)
+		print(z.shape)
+		cpu_memory_usage_mb,gpu_memory_usage_mb = get_memory_usage()
+		print(f"CPU memory usage: {cpu_memory_usage_mb:.2f} MB")
+		print(f"GPU memory usage: {gpu_memory_usage_mb:.2f} MB")
+	# data_predict = create_fixed_dataset(predict_year,
+	# 									batch_size=batch_size,
+	# 									downsample=False,
+	# 									mode = data_mode,
+	# 									storm=storm)
 
 		
 	# load model weights from main file
@@ -166,9 +222,15 @@ def generate_predictions(*,
 	# gen_weights_file = log_folder + '/models-gen_opt_weights.h5' # TODO: this has different construction to gen_weights - ask andrew and lucy
 	model.gen.built = True
 	model.gen.load_weights(gen_weights_file)
+	cpu_memory_usage_mb,gpu_memory_usage_mb = get_memory_usage()
+	print(f"CPU memory usage: {cpu_memory_usage_mb:.2f} MB")
+	print(f"GPU memory usage: {gpu_memory_usage_mb:.2f} MB")
 
 	# define initial variables
-	n_ensembles = 20
+	if "event_set" not in data_mode:
+		n_ensembles = 20
+	else:
+		n_ensembles = 5
 	pred = np.zeros((num_images,100,100,n_ensembles))
 	seq_real = np.zeros((num_images,100,100,1))
 	disc_pred = np.zeros((num_images,1,n_ensembles))
@@ -176,7 +238,24 @@ def generate_predictions(*,
 	# low_res_inputs = np.zeros((num_images,10,10,1))
 	low_res_inputs = np.zeros((num_images,10,10,7))
 	# disc_inputs = np.zeros((num_images,100,100,20))
-	data_pred_iter = iter(data_predict)
+	# cpu_memory_usage_mb,gpu_memory_usage_mb = get_memory_usage()
+	# print(f"CPU memory usage: {cpu_memory_usage_mb:.2f} MB")
+	# print(f"GPU memory usage: {gpu_memory_usage_mb:.2f} MB")
+	if "event_set" not in data_mode:
+		data_pred_iter = iter(data_predict)
+	else:
+		n_b = int(num_images/batch_size)
+		print('num images: ',num_images)
+		print('batch size: ',batch_size)
+		print('n_b: ',n_b)
+		n_b_10 = int(n_b/10) * num_images
+		# data_predict = tf.data.Dataset.from_tensor_slices((x[:n_b_3], z[:n_b_3], y[:n_b_3]))
+		# data_pred_iter = iter(data_predict)
+		# x_iter = iter(x)
+		# z_iter = iter(z)
+		# y_iter = iter(y)
+
+	# data_pred_iter = iter(data_predict)
 	
 	# unbatch first
 	nbatches = int(num_images/batch_size)
@@ -193,8 +272,70 @@ def generate_predictions(*,
 		
 		print('running batch ',i,'...')
 		# inputs, outputs = next(data_pred_iter)
-		inputs, topography, outputs = next(data_pred_iter)
-		if (data_mode == 'era5') or (data_mode == 'era5_corrected') or (data_mode == 'storm_era5') or (data_mode == 'storm_era5_corrected'):
+		# inputs, topography, outputs = next(data_pred_iter)
+
+		if "event_set" not in data_mode:
+			inputs, topography, outputs = next(data_pred_iter)
+		else:	
+			number_of_loaded_batches = 10
+			number_of_loaded_batches = 8 #TODO: something not adding up with the remainders
+			# for i in range 0, 100, 200, 300, load a new batch of images in
+			list = [n * int(n_b/number_of_loaded_batches) for n in range(number_of_loaded_batches)]
+			list_diff = list[1] - list[0]
+			if i in [n * int(n_b/number_of_loaded_batches) for n in range(number_of_loaded_batches)]:
+			# if i in [n * int(n_b/number_of_loaded_batches) for n in range(number_of_loaded_batches+1)]:
+				print('batch ', i)
+				print('n_b is:',n_b)
+				print([n * int(n_b/number_of_loaded_batches) for n in range(number_of_loaded_batches+1)])
+				print('j_:',j_)
+				# first_image_i = j_*int(num_images/number_of_loaded_batches)
+				# second_image_i = (j_+1)*int(num_images/number_of_loaded_batches)
+				first_image_i = i * batch_size 
+				second_image_i = (i+list_diff) * batch_size
+				print(first_image_i,second_image_i)
+				print('number in loaded batch',second_image_i - first_image_i)
+				x_ = x[first_image_i:second_image_i,:,:,:]
+				z_ = z[first_image_i:second_image_i,:,:,:]
+				y_ = y[first_image_i:second_image_i,:,:,:]
+				# y_ = y[first_image_i:second_image_i,:,:]
+				print('shapes: ',x_.shape,y_.shape,z_.shape)
+				ds = tf.data.Dataset.from_tensor_slices((x_, z_, y_))
+				data_predict = ds.batch(batch_size)
+				data_pred_iter = iter(data_predict)
+				# inputs,topography,outputs = next(data_pred_iter)
+				j_ = j_+1
+				# print('remainder batch starts on i =',int(np.floor(n_b / (number_of_loaded_batches))))
+				print('remainder batch starts on i =',int(number_of_loaded_batches * np.floor(n_b / (number_of_loaded_batches))))
+				print(batch_size * np.floor(n_b / (number_of_loaded_batches)))
+			elif i == int(number_of_loaded_batches * np.floor(n_b / (number_of_loaded_batches))):
+				# i == batch_size * np.floor(n_b / (number_of_loaded_batches)): # remainder
+				print('last batch ', i)
+				print('n_b is:',n_b)
+				# print([n * int(n_b/number_of_loaded_batches) for n in range(number_of_loaded_batches+1)])
+				first_image_i = i * batch_size 
+				# first_image_i = j_*int(num_images/number_of_loaded_batches)
+				# second_image_i = (j_+1)*int(num_images/number_of_loaded_batches)
+				print(first_image_i)
+				# print('number in loaded batch',second_image_i - first_image_i)
+				x_ = x[first_image_i:,:,:,:]
+				z_ = z[first_image_i:,:,:,:]
+				y_ = y[first_image_i:,:,:,:]
+				print('remainder shapes: ',x_.shape,y_.shape,z_.shape)
+				ds = tf.data.Dataset.from_tensor_slices((x_, z_, y_))
+				data_predict = ds.batch(batch_size)
+				data_pred_iter = iter(data_predict)
+				# inputs,topography,outputs = next(data_pred_iter)
+				j_ = j_+1
+			# inputs,topography,outputs = next(data_pred_iter)
+			inputs,topography,_ = next(data_pred_iter)
+			outputs = tf.zeros_like(topography)
+
+
+
+
+
+
+		if (data_mode == 'era5') or (data_mode == 'era5_corrected') or (data_mode == 'storm_era5') or (data_mode == 'storm_era5_corrected') or ('event_set' in data_mode):
 			if i == batch_size:
 				n = remainder
 			else:
@@ -213,6 +354,7 @@ def generate_predictions(*,
 		print('inputs shape: ',inputs.shape)
 		print('topography shape: ',topography.shape)
 		if i == nbatches:
+
 			noise_gen = NoiseGenerator(noise_shape, batch_size=remainder) # does noise gen need to be outside of the for loop?
 			img_pred = np.zeros((remainder,100,100,n_ensembles))
 			disc_img_pred = np.zeros((remainder,1,n_ensembles))
@@ -263,14 +405,23 @@ def generate_predictions(*,
 		print('disc_pred shape', disc_pred.shape)
 		print('assigning images ',i*batch_size,' to ',i*batch_size + batch_size,'...')
 		if i == nbatches:
+			print(i,nbatches)
+			print('match')
 			# seq_real[i*batch_size:,:,:,:] = img_real[:remainder]
-			seq_real[i*batch_size:,:,:,0] = img_real[:remainder]
+			if "event_set" not in data_mode:
+				seq_real[i*batch_size:,:,:,0] = img_real[:remainder]
+			# else:
+				# seq_real[i*batch_size:,:,:,:] = img_real[:remainder]
 			pred[i*batch_size:,:,:,:] = img_pred[:remainder]
 			disc_pred[i*batch_size:,:,:] = disc_img_pred[:remainder]
 			low_res_inputs[i*batch_size:,:,:,:] = inputs[:remainder]
 		else:
 			# seq_real[i*batch_size:i*batch_size + batch_size,:,:,:] = img_real
-			seq_real[i*batch_size:i*batch_size + batch_size,:,:,0] = img_real
+			if "event_set" not in data_mode:
+				seq_real[i*batch_size:i*batch_size + batch_size,:,:,0] = img_real
+			# else:
+				# seq_real[i*batch_size:i*batch_size + batch_size,:,:,:] = img_real
+				# seq_real[i*batch_size:i*batch_size + batch_size,:,:,:] = img_real
 			pred[i*batch_size:i*batch_size + batch_size,:,:,:] = img_pred
 			disc_pred[i*batch_size:i*batch_size + batch_size,:,:] = disc_img_pred
 			low_res_inputs[i*batch_size:i*batch_size + batch_size,:,:,:] = inputs
@@ -309,12 +460,35 @@ def generate_predictions(*,
 				meta = pd.read_csv('/user/work/al18709/tc_data_mswep/extreme_valid_meta.csv')
 			else:
 				meta = pd.read_csv('/user/work/al18709/tc_data_mswep/valid_meta.csv')
+		elif 'event_set' in data_mode:
+			meta = pd.read_csv(f'/user/home/al18709/work/ke_track_inputs/{model_}_{scenario}_tracks.csv')
+			meta['centre_lat'] = meta.lat
+			meta['centre_lon'] = meta.lon
+			print(meta.columns)
 		else:
 			meta = pd.read_csv('/user/work/al18709/tc_data_mswep/%s_meta.csv' % data_mode)
-		
-		seq_real = find_and_flip(seq_real,meta)
-		pred = find_and_flip(pred,meta)
-		low_res_inputs = find_and_flip(low_res_inputs,meta)
+			
+		print('restoring correct TC orientation...')
+		if 'event_set' not in data_mode:
+			seq_real = find_and_flip(seq_real,meta)
+			low_res_inputs = find_and_flip(low_res_inputs,meta)
+			pred = find_and_flip(pred,meta)
+		else:
+			# Get a reference to the global namespace
+			global_vars = globals()
+
+			# Filter out variables to delete
+			vars_to_delete = ['seq_real','model','img_pred','disc_img_pred','pred_single','pred_single_disc','topography','ds','x','y','z','x_','y_','z_','data_predict','data_predict_iter']
+
+			# Delete variables
+			for var_name in list(global_vars.keys()):
+				if var_name in vars_to_delete and not callable(global_vars[var_name]):
+					print('deleting ',var_name,'...')
+					del global_vars[var_name]
+			# for var_name in vars_to_delete:
+			# 	del global_vars[var_name]
+			
+			pred = find_and_flip(pred,meta)
 
 
 
@@ -337,20 +511,45 @@ def generate_predictions(*,
 	if 'scalar' in data_mode:
 		data_mode = 'modular_part2_lowres_predictions_%s_2' % data_mode
 	
+	if 'event_set' in data_mode:
+		print('saving event set to: /user/home/al18709/work/ke_track_rain/hr/')
+		problem = 'event_set'
 
-	seq_real = 10**seq_real - 1
-	pred = 10**pred - 1
-	low_res_inputs = 10**low_res_inputs - 1
+		# # Get a reference to the global namespace
+		# global_vars = globals()
 
-	print(pred)
-	print(np.sum(pred))
+		# # Filter out variables to delete
+		# vars_to_delete = [var_name for var_name in global_vars if var_name not in ['pred', 'disc_pred','model_','scenario']]
 
-	np.save('/user/home/al18709/work/%s_predictions_20/%s_real-%s_%s.npy' % (model,data_mode,checkpoint,problem),seq_real)
-	np.save('/user/home/al18709/work/%s_predictions_20/%s_pred-%s_%s.npy' % (model,data_mode,checkpoint,problem),pred)
-	np.save('/user/home/al18709/work/%s_predictions_20/%s_disc_pred-%s_%s.npy' % (model,data_mode,checkpoint,problem),disc_pred)
-	np.save('/user/home/al18709/work/%s_predictions_20/%s_input-%s_%s.npy' % (model,data_mode,checkpoint,problem),low_res_inputs)
-	print('/user/home/al18709/work/%s_predictions_20/%s_real-%s_%s.npy' % (model,data_mode,checkpoint,problem))
-	print('/user/home/al18709/work/%s_predictions_20/%s_disc_pred-%s_%s.npy' % (model,data_mode,checkpoint,problem))
+		# # Delete variables
+		# for var_name in vars_to_delete:
+		# 	del global_vars[var_name]
+
+		# seq_real = 10**seq_real - 1
+		# don't need to denormalise the results, actually seems like you do
+		pred = 10**pred - 1
+		print('saving event set to: /user/home/al18709/work/ke_track_rain/hr/')
+		print('Memory usage: ',resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024,'MB')
+		# np.save(f'/user/home/al18709/work/ke_track_rain/lr/{model_}_{scenario}_real.npy',seq_real)
+		np.save(f'/user/home/al18709/work/ke_track_rain/hr/{model_}_{scenario}_pred.npy',pred)
+		# np.save(f'/user/home/al18709/work/ke_track_rain/lr/{model_}_{scenario}_input.npy',low_res_inputs)
+		print(f'/user/home/al18709/work/ke_track_rain/hr/{model_}_{scenario}_pred.npy')
+		np.save(f'/user/home/al18709/work/ke_track_rain/hr/{model_}_{scenario}_disc_pred.npy',disc_pred)
+	else:
+
+		seq_real = 10**seq_real - 1
+		pred = 10**pred - 1
+		low_res_inputs = 10**low_res_inputs - 1
+
+		print(pred)
+		print(np.sum(pred))
+
+		np.save('/user/home/al18709/work/%s_predictions_20/%s_real-%s_%s.npy' % (model,data_mode,checkpoint,problem),seq_real)
+		np.save('/user/home/al18709/work/%s_predictions_20/%s_pred-%s_%s.npy' % (model,data_mode,checkpoint,problem),pred)
+		np.save('/user/home/al18709/work/%s_predictions_20/%s_disc_pred-%s_%s.npy' % (model,data_mode,checkpoint,problem),disc_pred)
+		np.save('/user/home/al18709/work/%s_predictions_20/%s_input-%s_%s.npy' % (model,data_mode,checkpoint,problem),low_res_inputs)
+		print('/user/home/al18709/work/%s_predictions_20/%s_real-%s_%s.npy' % (model,data_mode,checkpoint,problem))
+		print('/user/home/al18709/work/%s_predictions_20/%s_disc_pred-%s_%s.npy' % (model,data_mode,checkpoint,problem))
 
 
 

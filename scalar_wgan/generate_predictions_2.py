@@ -179,6 +179,9 @@ def generate_predictions(*,
 		data_pred_iter = iter(data_predict)
 	else:
 		n_b = int(num_images/batch_size)
+		print('num images: ',num_images)
+		print('batch size: ',batch_size)
+		print('n_b: ',n_b)
 		n_b_10 = int(n_b/10) * num_images
 		# data_predict = tf.data.Dataset.from_tensor_slices((x[:n_b_3], z[:n_b_3], y[:n_b_3]))
 		# data_pred_iter = iter(data_predict)
@@ -202,12 +205,22 @@ def generate_predictions(*,
 		# inputs, outputs = next(data_pred_iter)
 		if "event_set" not in data_mode:
 			inputs, topography, outputs = next(data_pred_iter)
-		else:
+		else:	
 			number_of_loaded_batches = 10
-			if i in [n * int(n_b/number_of_loaded_batches) for n in range(number_of_loaded_batches+1)]:
+			number_of_loaded_batches = 8 #TODO: something not adding up with the remainders
+			# for i in range 0, 100, 200, 300, load a new batch of images in
+			list = [n * int(n_b/number_of_loaded_batches) for n in range(number_of_loaded_batches)]
+			list_diff = list[1] - list[0]
+			if i in [n * int(n_b/number_of_loaded_batches) for n in range(number_of_loaded_batches)]:
+			# if i in [n * int(n_b/number_of_loaded_batches) for n in range(number_of_loaded_batches+1)]:
 				print('batch ', i)
-				first_image_i = j_*int(num_images/number_of_loaded_batches)
-				second_image_i = (j_+1)*int(num_images/number_of_loaded_batches)
+				print('n_b is:',n_b)
+				print([n * int(n_b/number_of_loaded_batches) for n in range(number_of_loaded_batches+1)])
+				print('j_:',j_)
+				# first_image_i = j_*int(num_images/number_of_loaded_batches)
+				# second_image_i = (j_+1)*int(num_images/number_of_loaded_batches)
+				first_image_i = i * batch_size 
+				second_image_i = (i+list_diff) * batch_size
 				print(first_image_i,second_image_i)
 				print('number in loaded batch',second_image_i - first_image_i)
 				x_ = x[first_image_i:second_image_i,:,:,:]
@@ -217,13 +230,38 @@ def generate_predictions(*,
 				ds = tf.data.Dataset.from_tensor_slices((x_, z_, y_))
 				data_predict = ds.batch(batch_size)
 				data_pred_iter = iter(data_predict)
-				inputs,topography,outputs = next(data_pred_iter)
+				# inputs,topography,outputs = next(data_pred_iter)
 				j_ = j_+1
+				# print('remainder batch starts on i =',int(np.floor(n_b / (number_of_loaded_batches))))
+				print('remainder batch starts on i =',int(number_of_loaded_batches * np.floor(n_b / (number_of_loaded_batches))))
+				print(batch_size * np.floor(n_b / (number_of_loaded_batches)))
+			elif i == int(number_of_loaded_batches * np.floor(n_b / (number_of_loaded_batches))):
+				# i == batch_size * np.floor(n_b / (number_of_loaded_batches)): # remainder
+				print('last batch ', i)
+				print('n_b is:',n_b)
+				# print([n * int(n_b/number_of_loaded_batches) for n in range(number_of_loaded_batches+1)])
+				first_image_i = i * batch_size 
+				# first_image_i = j_*int(num_images/number_of_loaded_batches)
+				# second_image_i = (j_+1)*int(num_images/number_of_loaded_batches)
+				print(first_image_i)
+				# print('number in loaded batch',second_image_i - first_image_i)
+				x_ = x[first_image_i:,:,:,:]
+				z_ = z[first_image_i:,:,:,:]
+				y_ = y[first_image_i:,:,:,:]
+				print('remainder shapes: ',x_.shape,y_.shape,z_.shape)
+				ds = tf.data.Dataset.from_tensor_slices((x_, z_, y_))
+				data_predict = ds.batch(batch_size)
+				data_pred_iter = iter(data_predict)
+				# inputs,topography,outputs = next(data_pred_iter)
+				j_ = j_+1
+			inputs,topography,outputs = next(data_pred_iter)
+
 		print(data_pred_iter)
 		print(data_predict)
+		print('data mode: ',data_mode)
 			
 			
-		if (data_mode == 'era5') or (data_mode == 'era5_corrected') or (data_mode == 'storm_era5') or (data_mode == 'storm_era5_corrected'):
+		if (data_mode == 'era5') or (data_mode == 'era5_corrected') or (data_mode == 'storm_era5') or (data_mode == 'storm_era5_corrected') or ('event_set' in data_mode):
 			if i == batch_size:
 				n = remainder
 			else:
@@ -301,7 +339,9 @@ def generate_predictions(*,
 
 				# pred_single = np.array(model.gen.predict([inputs,nn]))[:,:,:,0] # this one
 				print('inputs shape',inputs.shape)
-				# print(topography)
+				print('topography shape',topography.shape)
+				print('nn shape', nn.shape)
+				print('nn_hr shape',nn_hr.shape)
 				pred_single = np.array(model.gen.predict([inputs,topography,nn,nn_hr]))[:,:,:,0]
 
 				# pred_single = np.array(model.gen.predict_on_batch([inputs,nn]))[:,:,:,0]
@@ -393,16 +433,24 @@ def generate_predictions(*,
 	
 	if 'event_set' in data_mode:
 		problem = 'event_set'
+		seq_real = 10**seq_real - 1
+		# don't need to denormalise the results, actually seems like you do
+		pred = 10**pred - 1
+		# np.save(f'/user/home/al18709/work/ke_track_rain/lr/{model_}_{scenario}_real.npy',seq_real)
+		np.save(f'/user/home/al18709/work/ke_track_rain/lr/{model_}_{scenario}_pred.npy',pred)
+		# np.save(f'/user/home/al18709/work/ke_track_rain/lr/{model_}_{scenario}_input.npy',low_res_inputs)
+		print(f'/user/home/al18709/work/ke_track_rain/lr/{model_}_{scenario}_pred.npy')
+	else:
 
-	seq_real = 10**seq_real - 1
-	# don't need to denormalise the results, actually seems like you do
-	pred = 10**pred - 1
-	# low_res_inputs = 10**low_res_inputs - 1
+		seq_real = 10**seq_real - 1
+		# don't need to denormalise the results, actually seems like you do
+		pred = 10**pred - 1
+		# low_res_inputs = 10**low_res_inputs - 1
 
-	np.save('/user/home/al18709/work/%s_predictions_20/%s_real-%s_%s.npy' % (model,data_mode,checkpoint,problem),seq_real)
-	np.save('/user/home/al18709/work/%s_predictions_20/%s_pred-%s_%s.npy' % (model,data_mode,checkpoint,problem),pred)
-	np.save('/user/home/al18709/work/%s_predictions_20/%s_input-%s_%s.npy' % (model,data_mode,checkpoint,problem),low_res_inputs)
-	print('/user/home/al18709/work/%s_predictions_20/%s_pred-%s_%s.npy' % (model,data_mode,checkpoint,problem))
+		np.save('/user/home/al18709/work/%s_predictions_20/%s_real-%s_%s.npy' % (model,data_mode,checkpoint,problem),seq_real)
+		np.save('/user/home/al18709/work/%s_predictions_20/%s_pred-%s_%s.npy' % (model,data_mode,checkpoint,problem),pred)
+		np.save('/user/home/al18709/work/%s_predictions_20/%s_input-%s_%s.npy' % (model,data_mode,checkpoint,problem),low_res_inputs)
+		print('/user/home/al18709/work/%s_predictions_20/%s_pred-%s_%s.npy' % (model,data_mode,checkpoint,problem))
 
 
 
