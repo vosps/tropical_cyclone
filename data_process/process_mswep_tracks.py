@@ -91,15 +91,20 @@ tracks = tracks.replace(' ', np.nan)
 tracks['USA_SSHS'] = pd.to_numeric(tracks['USA_SSHS'])
 tracks['SEASON'] = pd.to_numeric(tracks['SEASON'])
 
-tracks = tracks[tracks['SEASON'] >= 1979]
-tracks = tracks[tracks['SEASON'] <= 2020]
+# tracks = tracks[tracks['SEASON'] >= 1979]
+# tracks = tracks[tracks['SEASON'] <= 2020]
+tracks = tracks[tracks['SEASON'] >= 2000]
+tracks = tracks[tracks['SEASON'] <= 2014]
+
+
 # tracks = tracks[tracks['SEASON'] == 2000]
 print(tracks)
 # tracks = tracks[tracks['ISO_TIME'].dt.dayofyear >= 153]
 # tracks = tracks[tracks['ISO_TIME'].dt.dayofyear <= 158]
 tracks = tracks[tracks['NATURE'] == 'TS']
 
-TCs = tracks[tracks['USA_SSHS'] >= 1]['SID']
+# TCs = tracks[tracks['USA_SSHS'] >= 1]['SID']
+TCs = tracks[tracks['USA_SSHS'] >= 0]['SID']
 TCs = TCs.drop_duplicates()
 print('number of TCs: ', len(TCs))
 # reference tracks with TCs
@@ -449,11 +454,19 @@ print(all_id.loc[index])
 print(new_fp)
 
 
-np.save(f'{new_fp}storm_lats_extended_{hemisphere}.npy',all_lats[index])
-np.save(f'{new_fp}storm_lons_extended_{hemisphere}.npy',all_lons[index])
-np.save(f'{new_fp}storm_rain_extended_{hemisphere}.npy',all_rain[index])
-np.save(f'{new_fp}storm_index_extended_{hemisphere}.npy',index)
+# np.save(f'{new_fp}storm_lats_extended_{hemisphere}.npy',all_lats[index])
+# np.save(f'{new_fp}storm_lons_extended_{hemisphere}.npy',all_lons[index])
+# np.save(f'{new_fp}storm_rain_extended_{hemisphere}.npy',all_rain[index])
+# np.save(f'{new_fp}storm_index_extended_{hemisphere}.npy',index)
+# # np.save('{new_fp}storm_sid.npy',all_id)
+# all_id.loc[index].to_csv(f'{new_fp}storm_sid_extended_{hemisphere}.csv')
+# print('files saved!')
+
+np.save(f'{new_fp}storm_lats_tcs_and_ts.npy',all_lats[index])
+np.save(f'{new_fp}storm_lons_tcs_and_ts.npy',all_lons[index])
+np.save(f'{new_fp}storm_rain_tcs_and_ts.npy',all_rain[index])
+np.save(f'{new_fp}storm_index_tcs_and_ts.npy',index)
 # np.save('{new_fp}storm_sid.npy',all_id)
-all_id.loc[index].to_csv(f'{new_fp}storm_sid_extended_{hemisphere}.csv')
+all_id.loc[index].to_csv(f'{new_fp}storm_sid_tcs_and_ts.csv')
 print('files saved!')
 

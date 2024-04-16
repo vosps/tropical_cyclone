@@ -10,6 +10,7 @@ import gc
 import resource
 import subprocess
 
+
 def get_memory_usage():
     """Get memory usage of current process."""
     mem_usage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
@@ -44,6 +45,8 @@ def find_and_flip(data,meta):
 	for i in nh_indices:
 		X_flipped = flip(data[i])
 		data[i] = X_flipped
+
+	
 	
 	return data
 
@@ -146,9 +149,9 @@ def generate_predictions(*,
 											storm=storm)
 	else:
 		print('opening event set in chunks...')
-		cpu_memory_usage_mb,gpu_memory_usage_mb = get_memory_usage()
-		print(f"CPU memory usage: {cpu_memory_usage_mb:.2f} MB")
-		print(f"GPU memory usage: {gpu_memory_usage_mb:.2f} MB")
+		# cpu_memory_usage_mb,gpu_memory_usage_mb = get_memory_usage()
+		# print(f"CPU memory usage: {cpu_memory_usage_mb:.2f} MB")
+		# print(f"GPU memory usage: {gpu_memory_usage_mb:.2f} MB")
 		x,z,y = create_fixed_dataset(predict_year,
 											batch_size=batch_size,
 											downsample=False,
@@ -158,9 +161,9 @@ def generate_predictions(*,
 		print(x.shape)
 		print(y.shape)
 		print(z.shape)
-		cpu_memory_usage_mb,gpu_memory_usage_mb = get_memory_usage()
-		print(f"CPU memory usage: {cpu_memory_usage_mb:.2f} MB")
-		print(f"GPU memory usage: {gpu_memory_usage_mb:.2f} MB")
+		# cpu_memory_usage_mb,gpu_memory_usage_mb = get_memory_usage()
+		# print(f"CPU memory usage: {cpu_memory_usage_mb:.2f} MB")
+		# print(f"GPU memory usage: {gpu_memory_usage_mb:.2f} MB")
 	# data_predict = create_fixed_dataset(predict_year,
 	# 									batch_size=batch_size,
 	# 									downsample=False,
@@ -222,15 +225,15 @@ def generate_predictions(*,
 	# gen_weights_file = log_folder + '/models-gen_opt_weights.h5' # TODO: this has different construction to gen_weights - ask andrew and lucy
 	model.gen.built = True
 	model.gen.load_weights(gen_weights_file)
-	cpu_memory_usage_mb,gpu_memory_usage_mb = get_memory_usage()
-	print(f"CPU memory usage: {cpu_memory_usage_mb:.2f} MB")
-	print(f"GPU memory usage: {gpu_memory_usage_mb:.2f} MB")
+	# cpu_memory_usage_mb,gpu_memory_usage_mb = get_memory_usage()
+	# print(f"CPU memory usage: {cpu_memory_usage_mb:.2f} MB")
+	# print(f"GPU memory usage: {gpu_memory_usage_mb:.2f} MB")
 
 	# define initial variables
 	if "event_set" not in data_mode:
 		n_ensembles = 20
 	else:
-		n_ensembles = 5
+		n_ensembles = 1
 	pred = np.zeros((num_images,100,100,n_ensembles))
 	seq_real = np.zeros((num_images,100,100,1))
 	disc_pred = np.zeros((num_images,1,n_ensembles))
@@ -271,6 +274,7 @@ def generate_predictions(*,
 	# for i in range(nbatches):
 		
 		print('running batch ',i,'...')
+		print(f'Memory usage for batch {i}: ',resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024,'MB')
 		# inputs, outputs = next(data_pred_iter)
 		# inputs, topography, outputs = next(data_pred_iter)
 
@@ -288,25 +292,32 @@ def generate_predictions(*,
 				print('n_b is:',n_b)
 				print([n * int(n_b/number_of_loaded_batches) for n in range(number_of_loaded_batches+1)])
 				print('j_:',j_)
-				# first_image_i = j_*int(num_images/number_of_loaded_batches)
-				# second_image_i = (j_+1)*int(num_images/number_of_loaded_batches)
 				first_image_i = i * batch_size 
 				second_image_i = (i+list_diff) * batch_size
 				print(first_image_i,second_image_i)
 				print('number in loaded batch',second_image_i - first_image_i)
+				print('Memory usage before assigning x_: ',resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024,'MB')
 				x_ = x[first_image_i:second_image_i,:,:,:]
+				print('Memory usage before assigning z_: ',resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024,'MB')
 				z_ = z[first_image_i:second_image_i,:,:,:]
+				print('Memory usage before assigning y_: ',resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024,'MB')
 				y_ = y[first_image_i:second_image_i,:,:,:]
 				# y_ = y[first_image_i:second_image_i,:,:]
 				print('shapes: ',x_.shape,y_.shape,z_.shape)
+				print('Memory usage before assigning ds: ',resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024,'MB')
 				ds = tf.data.Dataset.from_tensor_slices((x_, z_, y_))
+				print('Memory usage before assigning data_predict: ',resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024,'MB')
 				data_predict = ds.batch(batch_size)
+				print('Memory usage before assigning data_predict_iter: ',resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024,'MB')
 				data_pred_iter = iter(data_predict)
+				print('Memory usage after assigning data_predict_iter: ',resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024,'MB')
+				
 				# inputs,topography,outputs = next(data_pred_iter)
 				j_ = j_+1
 				# print('remainder batch starts on i =',int(np.floor(n_b / (number_of_loaded_batches))))
 				print('remainder batch starts on i =',int(number_of_loaded_batches * np.floor(n_b / (number_of_loaded_batches))))
 				print(batch_size * np.floor(n_b / (number_of_loaded_batches)))
+				
 			elif i == int(number_of_loaded_batches * np.floor(n_b / (number_of_loaded_batches))):
 				# i == batch_size * np.floor(n_b / (number_of_loaded_batches)): # remainder
 				print('last batch ', i)
@@ -317,6 +328,7 @@ def generate_predictions(*,
 				# second_image_i = (j_+1)*int(num_images/number_of_loaded_batches)
 				print(first_image_i)
 				# print('number in loaded batch',second_image_i - first_image_i)
+				
 				x_ = x[first_image_i:,:,:,:]
 				z_ = z[first_image_i:,:,:,:]
 				y_ = y[first_image_i:,:,:,:]
@@ -326,13 +338,13 @@ def generate_predictions(*,
 				data_pred_iter = iter(data_predict)
 				# inputs,topography,outputs = next(data_pred_iter)
 				j_ = j_+1
+				
 			# inputs,topography,outputs = next(data_pred_iter)
+			print('Memory usage before doing next data_predict_iter: ',resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024,'MB')
 			inputs,topography,_ = next(data_pred_iter)
+			print('Memory usage after doing next data_predict_iter: ',resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024,'MB')
+			
 			outputs = tf.zeros_like(topography)
-
-
-
-
 
 
 		if (data_mode == 'era5') or (data_mode == 'era5_corrected') or (data_mode == 'storm_era5') or (data_mode == 'storm_era5_corrected') or ('event_set' in data_mode):
@@ -354,7 +366,6 @@ def generate_predictions(*,
 		print('inputs shape: ',inputs.shape)
 		print('topography shape: ',topography.shape)
 		if i == nbatches:
-
 			noise_gen = NoiseGenerator(noise_shape, batch_size=remainder) # does noise gen need to be outside of the for loop?
 			img_pred = np.zeros((remainder,100,100,n_ensembles))
 			disc_img_pred = np.zeros((remainder,1,n_ensembles))
@@ -410,24 +421,32 @@ def generate_predictions(*,
 			# seq_real[i*batch_size:,:,:,:] = img_real[:remainder]
 			if "event_set" not in data_mode:
 				seq_real[i*batch_size:,:,:,0] = img_real[:remainder]
+				low_res_inputs[i*batch_size:,:,:,:] = inputs[:remainder]
 			# else:
 				# seq_real[i*batch_size:,:,:,:] = img_real[:remainder]
 			pred[i*batch_size:,:,:,:] = img_pred[:remainder]
 			disc_pred[i*batch_size:,:,:] = disc_img_pred[:remainder]
-			low_res_inputs[i*batch_size:,:,:,:] = inputs[:remainder]
+
+			gc.collect()
+			
 		else:
 			# seq_real[i*batch_size:i*batch_size + batch_size,:,:,:] = img_real
 			if "event_set" not in data_mode:
 				seq_real[i*batch_size:i*batch_size + batch_size,:,:,0] = img_real
+				low_res_inputs[i*batch_size:i*batch_size + batch_size,:,:,:] = inputs
 			# else:
 				# seq_real[i*batch_size:i*batch_size + batch_size,:,:,:] = img_real
 				# seq_real[i*batch_size:i*batch_size + batch_size,:,:,:] = img_real
 			pred[i*batch_size:i*batch_size + batch_size,:,:,:] = img_pred
 			disc_pred[i*batch_size:i*batch_size + batch_size,:,:] = disc_img_pred
-			low_res_inputs[i*batch_size:i*batch_size + batch_size,:,:,:] = inputs
+			
+			gc.collect()
 
 			
 	# TODO: transfer to cpu memory not gpu memory
+	if 'event_set' in data_mode:
+		tf.keras.backend.clear_session()
+
 	print(mode)
 	print(data_mode)
 	print(seq_real.shape)
@@ -474,21 +493,16 @@ def generate_predictions(*,
 			low_res_inputs = find_and_flip(low_res_inputs,meta)
 			pred = find_and_flip(pred,meta)
 		else:
-			# Get a reference to the global namespace
-			global_vars = globals()
+			print('Memory usage before deleting variables: ',resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024,'MB')
+			del nn, seq_real, low_res_inputs, model, img_pred, disc_img_pred, pred_single, pred_single_disc, topography, ds, x, y, z, x_, y_, z_, data_predict
+			gc.collect()
+			print('Memory usage after deleting variables: ',resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024,'MB')
+			pred_flipped = find_and_flip(pred,meta)
+			del pred,meta
+			gc.collect()
 
-			# Filter out variables to delete
-			vars_to_delete = ['seq_real','model','img_pred','disc_img_pred','pred_single','pred_single_disc','topography','ds','x','y','z','x_','y_','z_','data_predict','data_predict_iter']
 
-			# Delete variables
-			for var_name in list(global_vars.keys()):
-				if var_name in vars_to_delete and not callable(global_vars[var_name]):
-					print('deleting ',var_name,'...')
-					del global_vars[var_name]
-			# for var_name in vars_to_delete:
-			# 	del global_vars[var_name]
 			
-			pred = find_and_flip(pred,meta)
 
 
 
@@ -513,28 +527,25 @@ def generate_predictions(*,
 	
 	if 'event_set' in data_mode:
 		print('saving event set to: /user/home/al18709/work/ke_track_rain/hr/')
-		problem = 'event_set'
-
-		# # Get a reference to the global namespace
-		# global_vars = globals()
-
-		# # Filter out variables to delete
-		# vars_to_delete = [var_name for var_name in global_vars if var_name not in ['pred', 'disc_pred','model_','scenario']]
-
-		# # Delete variables
-		# for var_name in vars_to_delete:
-		# 	del global_vars[var_name]
-
-		# seq_real = 10**seq_real - 1
-		# don't need to denormalise the results, actually seems like you do
-		pred = 10**pred - 1
-		print('saving event set to: /user/home/al18709/work/ke_track_rain/hr/')
 		print('Memory usage: ',resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024,'MB')
-		# np.save(f'/user/home/al18709/work/ke_track_rain/lr/{model_}_{scenario}_real.npy',seq_real)
-		np.save(f'/user/home/al18709/work/ke_track_rain/hr/{model_}_{scenario}_pred.npy',pred)
-		# np.save(f'/user/home/al18709/work/ke_track_rain/lr/{model_}_{scenario}_input.npy',low_res_inputs)
-		print(f'/user/home/al18709/work/ke_track_rain/hr/{model_}_{scenario}_pred.npy')
+		problem = 'event_set'
+		np.save(f'/user/home/al18709/work/ke_track_rain/hr/{model_}_{scenario}_pred.npy',pred_flipped)
 		np.save(f'/user/home/al18709/work/ke_track_rain/hr/{model_}_{scenario}_disc_pred.npy',disc_pred)
+		# del pred_flipped
+		# vars_to_keep = ['np','problem','model_','scenario','resource']
+		# for var_name in globals().keys():
+		# 	if var_name not in vars_to_keep and not callable(globals()[var_name]):
+		# 		print('deleting ',var_name,'...')
+		# 		del globals()[var_name]
+		# gc.collect()
+		
+		# data_pred = np.load(f'/user/home/al18709/work/ke_track_rain/hr/{model_}_{scenario}_pred.npy')
+		# print(data_pred.shape)
+		pred_flipped_normalised = 10**pred_flipped - 1
+		print('saving event set to: /user/home/al18709/work/ke_track_rain/hr/')	
+		np.save(f'/user/home/al18709/work/ke_track_rain/hr/{model_}_{scenario}_pred.npy',pred_flipped_normalised)		
+		print(f'saved! /user/home/al18709/work/ke_track_rain/hr/{model_}_{scenario}_pred.npy')
+		
 	else:
 
 		seq_real = 10**seq_real - 1
