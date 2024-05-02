@@ -437,9 +437,11 @@ def generate_predictions(*,
 		# don't need to denormalise the results, actually seems like you do
 		pred = 10**pred - 1
 		# np.save(f'/user/home/al18709/work/ke_track_rain/lr/{model_}_{scenario}_real.npy',seq_real)
-		np.save(f'/user/home/al18709/work/ke_track_rain/lr/{model_}_{scenario}_pred.npy',pred)
+		# np.save(f'/user/home/al18709/work/ke_track_rain/lr/{model_}_{scenario}_pred.npy',pred)
+		np.save(f'/user/home/al18709/work/ke_track_rain/lr/{model_}_{scenario}_qm.npy',pred)
 		# np.save(f'/user/home/al18709/work/ke_track_rain/lr/{model_}_{scenario}_input.npy',low_res_inputs)
-		print(f'/user/home/al18709/work/ke_track_rain/lr/{model_}_{scenario}_pred.npy')
+		# print(f'/user/home/al18709/work/ke_track_rain/lr/{model_}_{scenario}_pred.npy')
+		print(f'/user/home/al18709/work/ke_track_rain/lr/{model_}_{scenario}_qm.npy')
 	else:
 
 		seq_real = 10**seq_real - 1

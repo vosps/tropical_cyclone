@@ -159,6 +159,7 @@ if __name__ == "__main__":
     max_pooling = setup_params["EVAL"]["max_pooling"]
     avg_pooling = setup_params["EVAL"]["avg_pooling"]
 
+    print('Processing data mode: ',data_mode)
     # otherwise these are of type string, e.g. '1e-5'
     lr_gen = float(lr_gen)
     lr_disc = float(lr_disc)

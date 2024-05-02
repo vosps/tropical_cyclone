@@ -285,14 +285,16 @@ def get_storm_coords(lat,lon,meta,i,era5=False):
                 lat_upper_bound = lat_upper_bound +1
                 print(lat_upper_bound)
 
-        if meta['centre_lon'][i] > 175: 
+        if meta['centre_lon'][i] >= 175:
+                print('over centre')
                 diff = lon_upper_bound - lon_lower_bound
                 second_upper_bound = 100 - diff
                 storm_lats = lat[lat_lower_bound:lat_upper_bound]
                 lon1 = lon[lon_lower_bound:lon_upper_bound]
                 lon2 = lon[0:second_upper_bound]
                 storm_lons = np.concatenate((lon1,lon2))
-        elif meta['centre_lon'][i] < -175:
+        elif meta['centre_lon'][i] <= -175:
+                print('under centre')
                 diff = lon_upper_bound - lon_lower_bound
                 second_upper_bound = 100 - diff
                 storm_lats = lat[lat_lower_bound:lat_upper_bound]
@@ -303,7 +305,47 @@ def get_storm_coords(lat,lon,meta,i,era5=False):
                 storm_lats = lat[lat_lower_bound:lat_upper_bound]
                 storm_lons = lon[lon_lower_bound:lon_upper_bound]
 
+        print('shapes lat :', storm_lats.shape)
+        print('shapes lon :', storm_lons.shape)
+        (lats_shape,) = storm_lats.shape
+        (lons_shape,) = storm_lons.shape
+        print(lats_shape)
+        print(lons_shape)
+        if lats_shape < 100:
+                print('lats',lats_shape)
+                diff = 100 - lats_shape
+                storm_lats = lat[lat_lower_bound:lat_upper_bound + diff]
+        if lons_shape < 100:
+                print('incorrect lons shape: shape clipped')
+                print('lon lower bound',lon_lower_bound)
+                print('lon upper bound',lon_upper_bound)
+                diff = lon_upper_bound - lon_lower_bound
+                if diff < 100:
+                        storm_lons = lon[lon_lower_bound:lon_upper_bound+diff]
+                        lons_shape, = storm_lons.shape
+                        if lons_shape < 100:
+                                storm_lons = lon[lon_lower_bound - diff:lon_upper_bound]
+                # diff = 100 - lons_shape
+                # storm_lons = lon[lon_lower_bound:lon_upper_bound + diff]
+                # print(storm_lons.shape)
+                # (check,) = storm_lons.shape
+                # if check < 100:
+                #         # second_upper_bound = 100 - diff
+                #         print('check:',check)
+                #         lon1 = lon[-check:]
+                #         print(lon1.shape)
+                #         diff = 100 - check
+                #         lon2 = lon[:diff]
+                #         print(lon2.shape)
+                #         storm_lons = np.concatenate((lon1,lon2))
+                #         print('fixed shape: ',storm_lons.shape)
 
+        if storm_lats.shape == (101,):
+                storm_lats = lat[lat_lower_bound:lat_upper_bound - 1]
+        if storm_lons.shape == (101,):
+                storm_lons = lon[lon_lower_bound:lon_upper_bound - 1]
+        
+        
         return storm_lats,storm_lons
 
 def plot_accumulated(data,lats,lons,basin_sids,vmin=0,vmax=200,plot='show',cmap='Blues',title='Accumulated Rainfall',levels=[0,50,100,150,200,250,300],centre_lats=None,centre_lons=None,intensity=None):

@@ -543,8 +543,10 @@ def generate_predictions(*,
 		# print(data_pred.shape)
 		pred_flipped_normalised = 10**pred_flipped - 1
 		print('saving event set to: /user/home/al18709/work/ke_track_rain/hr/')	
-		np.save(f'/user/home/al18709/work/ke_track_rain/hr/{model_}_{scenario}_pred.npy',pred_flipped_normalised)		
-		print(f'saved! /user/home/al18709/work/ke_track_rain/hr/{model_}_{scenario}_pred.npy')
+		# np.save(f'/user/home/al18709/work/ke_track_rain/hr/{model_}_{scenario}_pred.npy',pred_flipped_normalised)
+		np.save(f'/user/home/al18709/work/ke_track_rain/hr/{model_}_{scenario}_pred_qm.npy',pred_flipped_normalised)	
+		print(f'saved! /user/home/al18709/work/ke_track_rain/hr/{model_}_{scenario}_pred_qm.npy')	
+		# print(f'saved! /user/home/al18709/work/ke_track_rain/hr/{model_}_{scenario}_pred.npy')
 		
 	else:
 

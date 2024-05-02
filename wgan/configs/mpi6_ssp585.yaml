@@ -1,7 +1,7 @@
 GENERAL:
     mode: "GAN" # choices 'det' 'GAN' 'VAEGAN'
     problem_type: "normal" # choices 'normal' 'superresolution'
-    data_mode: mri6_hist_event_set #'extreme_valid_pred-opt_scalar_test_run_1_best' #'validation_pred-opt_scalar_test_run_3' #'extreme_test_pred-opt_scalar_test_run_1' #'validation_pred-opt_scalar_test_run_1' #'storm_era5_corrected' # validation, test, train, extreme_validation, extreme_test, storm, era5, era5_corrected, storm_era5, storm_era5_corrected
+    data_mode: mpi6_ssp585_event_set #'extreme_valid_pred-opt_scalar_test_run_1_best' #'validation_pred-opt_scalar_test_run_3' #'extreme_test_pred-opt_scalar_test_run_1' #'validation_pred-opt_scalar_test_run_1' #'storm_era5_corrected' # validation, test, train, extreme_validation, extreme_test, storm, era5, era5_corrected, storm_era5, storm_era5_corrected
     storm: '2019236N10314'
     
 MODEL:

@@ -10,7 +10,7 @@ def find_and_flip(centre_lat,centre_lon,data):
 	print(centre_lat)
 	sh_indices = (centre_lat < 0)
 	nh_indices = (centre_lat > 0)
-	print(nh_indices)
+	# print(nh_indices)
 
 	# flip the nh tcs so they are rotating anticlockwise (in the raw data array)
 	# in mswep they can be plotted correctly with the mswep lats and lons, but the raw data shows them flipped as mswep has descending latitudes
@@ -124,6 +124,23 @@ def fix_dimensions(lat,lon,data):
 		data = np.concatenate((data,[data[-1,:]]),axis=0)
 		data = np.concatenate((data,[data[-1,:]]),axis=0)
 		data = np.concatenate((data,[data[-1,:]]),axis=0)
+	
+	if len(lat) == 95:
+		print('lat too long')
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		
+		print(data[-1,:].shape)
+		print(data[:,-1].shape)
+		print(data.shape)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
 		
 	if len(lat) == 92:
 		print('lat too long')
@@ -199,6 +216,50 @@ def fix_dimensions(lat,lon,data):
 		data = np.concatenate((data,[data[-1,:]]),axis=0)
 		data = np.concatenate((data,[data[-1,:]]),axis=0)
 		data = np.concatenate((data,[data[-1,:]]),axis=0)
+	if len(lat) == 91:
+		print('lat too long')
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+	
+		print(data[-1,:].shape)
+		print(data[:,-1].shape)
+		print(data.shape)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+	if len(lat) == 93:
+		print('lat too long')
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+	
+		print(data[-1,:].shape)
+		print(data[:,-1].shape)
+		print(data.shape)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
 	if len(lat) == 89:
 		print('lat too long')
 		lat = np.append(lat,lat[-1])
@@ -250,6 +311,39 @@ def fix_dimensions(lat,lon,data):
 		print(data[-1,:].shape)
 		print(data[:,-1].shape)
 		print(data.shape)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
+	if len(lat) == 86:
+		print('lat too long')
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		lat = np.append(lat,lat[-1])
+		print(data[-1,:].shape)
+		print(data[:,-1].shape)
+		print(data.shape)
+		data = np.concatenate((data,[data[-1,:]]),axis=0)
 		data = np.concatenate((data,[data[-1,:]]),axis=0)
 		data = np.concatenate((data,[data[-1,:]]),axis=0)
 		data = np.concatenate((data,[data[-1,:]]),axis=0)
@@ -423,9 +517,9 @@ def generate_topography(tc_topography,centre_lat,centre_lon,i):
 	
 	data = find_and_flip(centre_lat,centre_lon,data)
 
-	print('centre_lat',centre_lat)
-	print('centre_lon',centre_lon)
-	print('data shape', data.shape)
+	# print('centre_lat',centre_lat)
+	# print('centre_lon',centre_lon)
+	# print('data shape', data.shape)
 	tc_topography[i,:,:] = data
 	return tc_topography
 
@@ -435,19 +529,22 @@ model = 'canesm'
 
 # for model in ['canesm','cnrm6','ecearth6','ipsl6','miroc6','mpi6','mri6','ukmo']:
 for model in ['ukmo']:
-	for scenario in ['hist','ssp245','ssp585']:
-		if model == 'ecearth6':
-			if scenario in ['hist','ssp245']:
-				continue
+	print('model: ',model)
+	# for scenario in ['hist','ssp245','ssp585']:
+	for scenario in ['ssp245','ssp585']:
+		print('scenario: ', scenario)
+		# if model == 'ecearth6':
+		# 	if scenario in ['hist','ssp245']:
+		# 		continue
 		# 2. load data
-		data = np.load('/user/work/al18709/tc_data_flipped/KE_tracks/ke_miroc6-ssp585.npy')
-		print(data.shape)
+		# data = np.load('/user/work/al18709/tc_data_flipped/KE_tracks/ke_miroc6-ssp585.npy')
+		# print(data.shape)
 		# centre_lats = data[:,4]
 		# centre_lons = data[:,5]
 		# tc_topography = np.zeros((data.shape[0],100,100))
 		data = pd.read_csv(f'/user/home/al18709/work/ke_track_inputs/{model}_{scenario}_tracks.csv')
-		print(data.columns)
-		print(data.shape)
+		# print(data.columns)
+		# print(data.shape)
 		tc_topography = np.zeros((data.shape[0],100,100))
 		centre_lats = data['lat']
 		centre_lons = data['lon']
@@ -470,6 +567,7 @@ for model in ['ukmo']:
 		input_data[:,4] = data['lat']
 		input_data[:,5] = data['lon']
 		np.save(f'/user/home/al18709/work/ke_track_inputs/{model}_{scenario}_tracks.npy',input_data)
+		print(f'/user/home/al18709/work/ke_track_inputs/{model}_{scenario}_tracks.npy','saved!')
 
 		# 4. save topography
 		for i in range(data.shape[0]):
@@ -478,6 +576,7 @@ for model in ['ukmo']:
 			tc_topography = generate_topography(tc_topography,centre_lat,centre_lon,i)
 
 		np.save(f'/user/home/al18709/work/ke_track_inputs/{model}_{scenario}_topography.npy',tc_topography)
+		print(f'/user/home/al18709/work/ke_track_inputs/{model}_{scenario}_topography.npy','saved!')
 
 
 # mslp

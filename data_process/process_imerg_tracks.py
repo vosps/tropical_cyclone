@@ -91,8 +91,12 @@ tracks = tracks.replace(' ', np.nan)
 tracks['USA_SSHS'] = pd.to_numeric(tracks['USA_SSHS'])
 tracks['SEASON'] = pd.to_numeric(tracks['SEASON'])
 
+# tracks = tracks[tracks['SEASON'] >= 2000]
+# tracks = tracks[tracks['SEASON'] <= 2020]
+
 tracks = tracks[tracks['SEASON'] >= 2000]
-tracks = tracks[tracks['SEASON'] <= 2020]
+tracks = tracks[tracks['SEASON'] <= 2014]
+
 # tracks = tracks[tracks['SEASON'] == 2000]
 print(tracks)
 # tracks = tracks[tracks['ISO_TIME'].dt.dayofyear >= 153]
@@ -204,9 +208,15 @@ for track_i in range(len(tracks)):
 		
 
 	if doy[4:] not in generate_days(year):
+		print('year: ',year)
+		print(doy[4:])
+		print('continue')
 		continue
 
 	if str(doy[4:]) == '000':
+		print(year)
+		print(str(doy[4:]))
+		print('continue')
 		continue
 
 	print(year)
@@ -223,6 +233,8 @@ for track_i in range(len(tracks)):
 			rainfall_fp = rain_dir + f
 			print('rainfall_fp is: ',rainfall_fp)
 		else:
+			# print('rainfall_fp is: ',f)
+			# print('continue')
 			continue
 
 	
@@ -244,6 +256,7 @@ for track_i in range(len(tracks)):
 	except: 
 		print('couldnt open dataset')
 		print(rainfall_fp)
+		print('continue')
 		continue
 
 	rain_lat = rainfall_ds['Grid'].variables['lat'][:] #lat
@@ -416,11 +429,11 @@ print(all_id.loc[index].shape)
 print(all_id.loc[index])
 print(new_fp)
 
-np.save(f'{new_fp}storm_lats_extended_{hemisphere}.npy',all_lats[index])
-np.save(f'{new_fp}storm_lons_extended_{hemisphere}.npy',all_lons[index])
-np.save(f'{new_fp}storm_rain_extended_{hemisphere}.npy',all_rain[index])
-np.save(f'{new_fp}storm_index_extended_{hemisphere}.npy',index)
+np.save(f'{new_fp}storm_lats_2.npy',all_lats[index])
+np.save(f'{new_fp}storm_lons_2.npy',all_lons[index])
+np.save(f'{new_fp}storm_rain_2.npy',all_rain[index])
+np.save(f'{new_fp}storm_index_2.npy',index)
 # np.save('{new_fp}storm_sid.npy',all_id)
-all_id.loc[index].to_csv(f'{new_fp}storm_sid_extended_{hemisphere}.csv')
+all_id.loc[index].to_csv(f'{new_fp}storm_sid_2.csv')
 print('files saved!')
 

@@ -266,7 +266,8 @@ def create_fixed_dataset(year=None,mode='validation',batch_size=16,
             model = input_string[:first_underscore_index]
             scenario = input_string[first_underscore_index + 1:second_underscore_index]
 
-        x = np.float32(np.expand_dims(np.load(f'/user/home/al18709/work/ke_track_rain/lr/{model}_{scenario}_pred.npy')[:,:,:,0],axis=3))
+        # x = np.float32(np.expand_dims(np.load(f'/user/home/al18709/work/ke_track_rain/lr/{model}_{scenario}_pred.npy')[:,:,:,0],axis=3))
+        x = np.float32(np.expand_dims(np.load(f'/user/home/al18709/work/ke_track_rain/lr/{model}_{scenario}_qm.npy')[:,:,:,0],axis=3))
         y = np.float32(np.expand_dims(np.load(f'/user/home/al18709/work/ke_track_inputs/{model}_{scenario}_topography.npy')[:,:,:],axis=3))
         # y = np.float32(np.load(f'/user/home/al18709/work/ke_track_inputs/{model}_{scenario}_topography.npy'))
         z = np.float32(np.expand_dims(np.load(f'/user/home/al18709/work/ke_track_inputs/{model}_{scenario}_topography.npy')[:,:,:],axis=3))

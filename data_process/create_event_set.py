@@ -208,6 +208,30 @@ def assign_location_coords(storm_rain,storm_meta,flip=True,ens=True):
 		print(storm_rain_sorted.shape)
 		storm_lats,storm_lons = get_storm_coords(lat,lon,meta_sorted,i)
 		grid_lons, grid_lats = np.meshgrid(storm_lons,storm_lats)
+		print('shapes 1')
+		print(storm_lats.shape)
+		print(storm_lons.shape)
+		lats_lon,lats_lat = grid_lats.shape
+		lons_lon,lons_lat = grid_lons.shape
+		print('shapes 2')
+		print(grid_lats.shape)
+		print(grid_lons.shape)
+	
+
+		if lats_lon > 100:
+			grid_lats = grid_lats[:100,:]
+		if lats_lat > 100:
+			grid_lats = grid_lats[:,:100]
+		# if lats_lat < 100:
+		# 	diff = 100 - lats_lon
+		# 	grid_lats = grid_lats[,:]
+		
+		if lons_lon > 100:
+			grid_lons = grid_lons[:100,:]
+		if lons_lat > 100:
+			grid_lons = grid_lons[:,:100]
+
+
 		# print(storm_lats.shape)
 		# print(storm_lons.shape)
 		# TODO: make storm lats and lons into correct shape (100,100) grids
@@ -271,9 +295,17 @@ def globalise_storm_rain(storm,prediction=True):
 		mlat = storm_lats[0,0]
 		if mlon.values > Mlon.values:
 			continue
-		# print(Mlon.values,mlon.values)
-		Xspan = np.where((grid_x <= Mlon) & (grid_x >= mlon))[1][[0, -1]]
-		Yspan = np.where((grid_y <= Mlat) & (grid_y >= mlat))[0][[0, -1]]
+		print(Mlon.values,mlon.values)
+		print(Mlat.values,mlat.values)
+		if Mlon.values < mlon.values:
+			print('longitude not monotonically increasing')
+			print(storm_lons)
+		print(grid_x)
+		print(grid_y)
+		print(Mlon,mlon)
+		print(np.where((grid_x <= Mlon.values) & (grid_x >= mlon.values)))
+		Xspan = np.where((grid_x <= Mlon.values) & (grid_x >= mlon.values))[1][[0, -1]]
+		Yspan = np.where((grid_y <= Mlat.values) & (grid_y >= mlat.values))[0][[0, -1]] #adding in .values here to see if that fixes things
 
 		# Create a selection
 		sel = [slice(Xspan[0], Xspan[1] + 1), slice(Yspan[0], Yspan[1] + 1)]
@@ -289,6 +321,80 @@ def globalise_storm_rain(storm,prediction=True):
 			grid_rain[t,sel[1],sel[0]] = storm_rain
 	return grid_rain
 
+def find_dates(sids,model_cal):
+
+	dates = sids.apply(lambda row : cf.datetime(calendar=model_cal,
+									year=row.year,
+									month=row.month,
+									day=row.day,
+									hour=row.hour
+									), axis=1)
+	return dates
+
+
+
+print('chips')
+
+# ['canesm','cnrm6','ecearth6','ipsl6','miroc6','mpi6','mri6','ukmo']
+# 'canesm'#'cnrm6'#'ecearth6'#'ipsl6'#'miroc6'#'ukmo'#'mpi6' #'mri6'
+# miroc6 calendar is not standard
+# ipsl6 calendar is not standard
+model = 'canesm'
+print(model)
+scenario = 'hist'
+print(scenario)
+data = np.load(f'/user/home/al18709/work/ke_track_rain/hr/{model}_{scenario}_pred_qm.npy')
+meta = pd.read_csv(f'/user/home/al18709/work/ke_track_inputs/{model}_{scenario}_tracks.csv')
+meta.lon[meta.lon > 180] = meta.lon[meta.lon >180] - 360
+meta2 = pd.DataFrame({'sid':meta.sid ,'centre_lat':meta.lat, 'centre_lon':meta.lon, 'hour':meta.hour, 'day':meta.day,'month':meta.month, 'year':meta.year})
+rain = data[meta2.year >= 2000]
+meta3 = meta2[meta2.year >= 2000].reset_index()
+meta4 = pd.DataFrame({'sid':meta3.sid ,'centre_lat':meta3.centre_lat, 'centre_lon':meta3.centre_lon,'date':find_dates(meta,'standard')})
+path = f'/user/home/al18709/work/event_sets/wgan_{model}_{scenario}/'
+if os.path.exists(path):
+	print(f'{path} exists!')
+else:
+	os.makedirs(path)
+mode = 'chips'
+save_event_set(meta4,rain,path,mode,ens=False)
+
+tc_dir = f'/user/home/al18709/work/event_sets/wgan_{model}_{scenario}/'
+tc_files = os.listdir(tc_dir)
+global_rain = np.zeros((1800,3600))
+for storm_filename in tc_files:
+	if ('.nc' in storm_filename):
+		print(storm_filename)
+		storm = xr.open_dataset(tc_dir + storm_filename)
+		storm_rain = globalise_storm_rain(storm,prediction=False)
+		global_rain = global_rain + np.sum(storm_rain,axis=0)
+np.save(f'/user/home/al18709/work/event_sets/wgan_{model}_{scenario}/{model}_{scenario}_accumulated_global.npy',global_rain)
+
+
+exit()
+print('mswep')
+mswep_rain = np.expand_dims(np.load('/user/home/al18709/work/CMIP6/MSWEP/storm_rain/storm_rain_tcs_and_ts.npy'),axis=-1)
+mswep_lats = np.load('/user/home/al18709/work/CMIP6/MSWEP/storm_rain/storm_lats_tcs_and_ts.npy')
+mswep_lons = np.load('/user/home/al18709/work/CMIP6/MSWEP/storm_rain/storm_lons_tcs_and_ts.npy')
+print(mswep_lats.shape)
+print(mswep_lons.shape)
+meta = pd.read_csv('/user/home/al18709/work/CMIP6/MSWEP/storm_rain/storm_sid_tcs_and_ts.csv')
+mswep_meta = pd.DataFrame({'sid':meta.sid ,'centre_lat':meta.centre_lat, 'centre_lon':meta.centre_lon,'date':find_dates(meta,'standard')})
+path = '/user/home/al18709/work/event_sets/MSWEP/'
+mode = 'mswep'
+save_event_set(mswep_meta,mswep_rain,path,mode,ens=False)
+
+tc_dir = '/user/home/al18709/work/event_sets/MSWEP/'
+tc_files = os.listdir(tc_dir)
+global_rain = np.zeros((1800,3600))
+for storm_filename in tc_files:
+	if ('.nc' in storm_filename):
+		print(storm_filename)
+		storm = xr.open_dataset(tc_dir + storm_filename)
+		storm_rain = globalise_storm_rain(storm,prediction=False)
+		global_rain = global_rain + np.sum(storm_rain,axis=0)
+np.save('/user/home/al18709/work/event_sets/MSWEP/accumulated_global.npy',global_rain)
+
+# TODO: check longitude goes between -180 and 180 not 0-360.
 
 
 # # load scalar wgan data
@@ -359,7 +465,7 @@ def globalise_storm_rain(storm,prediction=True):
 
 # mode2 = 'test_1and2'
 # mode2b = 'test_1and2_critic'
-path = '/user/home/al18709/work/event_sets/wgan_modular/'
+# path = '/user/home/al18709/work/event_sets/wgan_modular/'
 # # # save_event_set(meta,modular_pred_2,mode1)
 # save_event_set(meta,pred_1and2,path,mode2)
 # save_event_set(meta,disc_pred_1and2,path,mode2b,critic=True)
@@ -384,15 +490,15 @@ path = '/user/home/al18709/work/event_sets/wgan_modular/'
 
 # exit()
 
-path = '/user/home/al18709/work/event_sets/patchgan/'
-pred_1and2 = np.load('/user/home/al18709/work/gan_predictions_20/validation_pred-opt_modular_part2_patchloss_raw_4.npy')
-disc_pred_1and2 = np.load('/user/home/al18709/work/gan_predictions_20/validation_disc_pred-opt_modular_part2_patchloss_raw_4.npy')
-meta = pd.read_csv('/user/work/al18709/tc_data_mswep_40/modular_wgan_valid_meta_with_dates.csv')
-mode2 = 'patchgan'
-mode2b = 'patchgan_critic'
-save_event_set(meta,pred_1and2,path,mode2)
-save_event_set(meta,disc_pred_1and2,path,mode2b,critic=True)
-exit()
+# path = '/user/home/al18709/work/event_sets/patchgan/'
+# pred_1and2 = np.load('/user/home/al18709/work/gan_predictions_20/validation_pred-opt_modular_part2_patchloss_raw_4.npy')
+# disc_pred_1and2 = np.load('/user/home/al18709/work/gan_predictions_20/validation_disc_pred-opt_modular_part2_patchloss_raw_4.npy')
+# meta = pd.read_csv('/user/work/al18709/tc_data_mswep_40/modular_wgan_valid_meta_with_dates.csv')
+# mode2 = 'patchgan'
+# mode2b = 'patchgan_critic'
+# save_event_set(meta,pred_1and2,path,mode2)
+# save_event_set(meta,disc_pred_1and2,path,mode2b,critic=True)
+# exit()
 
 # # save global rain data
 # tc_dir = '/user/home/al18709/work/event_sets/wgan_modular/'
