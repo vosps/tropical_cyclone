@@ -114,6 +114,10 @@ def lookup(row,cal):
 	# 				)
 	if row.year not in range(1979,2023):
 		return 0
+	elif (row.month == 2) and (row.day == 29):
+		return 0
+	elif (row.month == 2) and (row.day == 30):
+		return 0
 	else:
 		date = cf.datetime(calendar=cal,
 						year=row.year,
@@ -254,8 +258,10 @@ def save_event_set(meta,rain,path,mode,ens=True,critic=False):
 	sids = meta.sid
 	sids_unique=sids.drop_duplicates()
 	tracks_grouped = meta.groupby('sid')
+	print('tracks_grouped:',tracks_grouped)
 
 	for sid in sids_unique:
+		print('sid: ',sid)
 		storm = tracks_grouped.get_group(sid)
 		if critic == False:
 			storm_rain = rain[storm.index,:,:,:]
@@ -295,14 +301,14 @@ def globalise_storm_rain(storm,prediction=True):
 		mlat = storm_lats[0,0]
 		if mlon.values > Mlon.values:
 			continue
-		print(Mlon.values,mlon.values)
-		print(Mlat.values,mlat.values)
+		# print(Mlon.values,mlon.values)
+		# print(Mlat.values,mlat.values)
 		if Mlon.values < mlon.values:
 			print('longitude not monotonically increasing')
-			print(storm_lons)
-		print(grid_x)
-		print(grid_y)
-		print(Mlon,mlon)
+			# print(storm_lons)
+		# print(grid_x)
+		# print(grid_y)
+		# print(Mlon,mlon)
 		print(np.where((grid_x <= Mlon.values) & (grid_x >= mlon.values)))
 		Xspan = np.where((grid_x <= Mlon.values) & (grid_x >= mlon.values))[1][[0, -1]]
 		Yspan = np.where((grid_y <= Mlat.values) & (grid_y >= mlat.values))[0][[0, -1]] #adding in .values here to see if that fixes things
@@ -339,27 +345,39 @@ print('chips')
 # 'canesm'#'cnrm6'#'ecearth6'#'ipsl6'#'miroc6'#'ukmo'#'mpi6' #'mri6'
 # miroc6 calendar is not standard
 # ipsl6 calendar is not standard
-model = 'canesm'
+# canesm calendar is not standard
+# https://loca.ucsd.edu/loca-calendar/
+model = 'miroc6'
+cal = 'standard'
+# cal = 'proleptic_gregorian'
 print(model)
 scenario = 'hist'
 print(scenario)
 data = np.load(f'/user/home/al18709/work/ke_track_rain/hr/{model}_{scenario}_pred_qm.npy')
 meta = pd.read_csv(f'/user/home/al18709/work/ke_track_inputs/{model}_{scenario}_tracks.csv')
-meta.lon[meta.lon > 180] = meta.lon[meta.lon >180] - 360
+meta.lon[meta.lon > 180] = meta.lon[meta.lon > 180] - 360
 meta2 = pd.DataFrame({'sid':meta.sid ,'centre_lat':meta.lat, 'centre_lon':meta.lon, 'hour':meta.hour, 'day':meta.day,'month':meta.month, 'year':meta.year})
 rain = data[meta2.year >= 2000]
 meta3 = meta2[meta2.year >= 2000].reset_index()
-meta4 = pd.DataFrame({'sid':meta3.sid ,'centre_lat':meta3.centre_lat, 'centre_lon':meta3.centre_lon,'date':find_dates(meta,'standard')})
+
+condition = (meta3.month !=2 ) & (meta3.day != 30)
+
+rain_cond = rain[condition]
+meta_cond = meta3[condition].reset_index()
+
+meta4 = pd.DataFrame({'sid':meta_cond.sid ,'centre_lat':meta_cond.centre_lat, 'centre_lon':meta_cond.centre_lon,'date':find_dates(meta_cond,cal)})
 path = f'/user/home/al18709/work/event_sets/wgan_{model}_{scenario}/'
 if os.path.exists(path):
 	print(f'{path} exists!')
 else:
 	os.makedirs(path)
 mode = 'chips'
-save_event_set(meta4,rain,path,mode,ens=False)
+save_event_set(meta4,rain_cond,path,mode,ens=False)
+
+print('event set saved',path)
 
 tc_dir = f'/user/home/al18709/work/event_sets/wgan_{model}_{scenario}/'
-tc_files = os.listdir(tc_dir)
+tc_files = np.sort(os.listdir(tc_dir))
 global_rain = np.zeros((1800,3600))
 for storm_filename in tc_files:
 	if ('.nc' in storm_filename):

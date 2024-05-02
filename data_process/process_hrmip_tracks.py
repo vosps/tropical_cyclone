@@ -261,7 +261,7 @@ for j,i in enumerate(storm_start.values):
 		
 		# # storm_id_step = storm_id[k]
 		# if speed < 33.:
-		if speed < 33.:
+		if speed <= 33.:
 			# print(speed)
 			# index.append(i+k)
 			storm_sid = f'{model}_{scenario}_{year}_{hemisphere}_{j}'

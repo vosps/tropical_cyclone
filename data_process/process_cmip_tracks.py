@@ -436,7 +436,7 @@ for yr_i,yr in enumerate(years):
 			speed = storm_speed[k]
 			
 			# if speed < 33.:
-			if speed < 41.25: # have to use adjustment term as using 850 hpa winds
+			if speed <= 41.25: # have to use adjustment term as using 850 hpa winds
 				storm_sid = f'{model}_{scenario}_{year}_{hemisphere}_{j}'
 				print('storm too weak',storm_sid)
 				continue
