@@ -105,16 +105,21 @@ def accumulated_rain(storm,meta,real,pred_gan,inputs,flip=True):
 # 		j = j+1
 
 # 	return storm_lats,storm_lons
-def lookup(row,cal):
+def lookup(row,cal,scenario):
 	# date = cf.datetime(calendar=cal,
 	# 				year=row.year,
 	# 				month=row.month,
 	# 				day=row.day,
 	# 				hour=row.hour
 	# 				)
-	if row.year not in range(1979,2023):
-		return 0
-	elif (row.month == 2) and (row.day == 29):
+	if scenario == 'hist':
+		if row.year not in range(1979,2023):
+			return 0	
+	else:
+		if row.year not in range(2069,2100):
+			return 0	
+		
+	if (row.month == 2) and (row.day == 29):
 		return 0
 	elif (row.month == 2) and (row.day == 30):
 		return 0
@@ -220,7 +225,20 @@ def assign_location_coords(storm_rain,storm_meta,flip=True,ens=True):
 		print('shapes 2')
 		print(grid_lats.shape)
 		print(grid_lons.shape)
-	
+		
+		if lats_lon < 100:
+			print('here')
+			d = 100 - lats_lon
+			new_array1 = np.zeros((100, 100))
+			new_array2 = np.zeros((100, 100))
+			new_array1[:lats_lon, :] = grid_lats
+			new_array2[:lats_lon, :] = grid_lons
+			new_array1[lats_lon:,:] = grid_lats[-d,:]
+			new_array2[lats_lon:,:] = grid_lons[-d,:]
+			grid_lats = new_array1
+			grid_lons = new_array2
+			print(grid_lats.shape)
+			print(grid_lons.shape)
 
 		if lats_lon > 100:
 			grid_lats = grid_lats[:100,:]
@@ -254,7 +272,7 @@ def assign_location_coords(storm_rain,storm_meta,flip=True,ens=True):
 		ds.loc[dict(time=t)] = data
 	return ds
 
-def save_event_set(meta,rain,path,mode,ens=True,critic=False):
+def save_event_set(meta,rain,path,mode,scenario,ens=True,critic=False):
 	sids = meta.sid
 	sids_unique=sids.drop_duplicates()
 	tracks_grouped = meta.groupby('sid')
@@ -324,10 +342,12 @@ def globalise_storm_rain(storm,prediction=True):
 			storm_rain = storm.precipitation[t,:,:,0]
 			print(grid_rain[t,sel[1],sel[0]].shape)
 			print(storm_rain.shape)
+			if grid_rain[t,sel[1],sel[0]] != (100,100):
+				continue
 			grid_rain[t,sel[1],sel[0]] = storm_rain
 	return grid_rain
 
-def find_dates(sids,model_cal):
+def find_dates(sids,model_cal,scenario):
 
 	dates = sids.apply(lambda row : cf.datetime(calendar=model_cal,
 									year=row.year,
@@ -347,32 +367,42 @@ print('chips')
 # ipsl6 calendar is not standard
 # canesm calendar is not standard
 # https://loca.ucsd.edu/loca-calendar/
-model = 'miroc6'
+model = 'ukmo'
 cal = 'standard'
 # cal = 'proleptic_gregorian'
 print(model)
-scenario = 'hist'
+scenario = 'ssp585'
+if scenario == 'hist':
+	yr1 = 2000
+	yr2 = 2014
+else:
+	yr1 = 2085
+	yr2 = 2099
 print(scenario)
 data = np.load(f'/user/home/al18709/work/ke_track_rain/hr/{model}_{scenario}_pred_qm.npy')
 meta = pd.read_csv(f'/user/home/al18709/work/ke_track_inputs/{model}_{scenario}_tracks.csv')
 meta.lon[meta.lon > 180] = meta.lon[meta.lon > 180] - 360
 meta2 = pd.DataFrame({'sid':meta.sid ,'centre_lat':meta.lat, 'centre_lon':meta.lon, 'hour':meta.hour, 'day':meta.day,'month':meta.month, 'year':meta.year})
-rain = data[meta2.year >= 2000]
-meta3 = meta2[meta2.year >= 2000].reset_index()
 
-condition = (meta3.month !=2 ) & (meta3.day != 30)
+condition1 = (meta2.year >= yr1) & (meta2.year <= yr2)
+rain = data[condition1]
+meta3 = meta2[condition1].reset_index()
+# rain2 = rain[meta3.year <= yr2]
+# meta4 = meta3[meta3.year <= yr2].reset_index()
 
-rain_cond = rain[condition]
-meta_cond = meta3[condition].reset_index()
+condition2 = (meta3.month !=2 ) & (meta3.day != 30)
 
-meta4 = pd.DataFrame({'sid':meta_cond.sid ,'centre_lat':meta_cond.centre_lat, 'centre_lon':meta_cond.centre_lon,'date':find_dates(meta_cond,cal)})
+rain_cond = rain[condition2]
+meta_cond = meta3[condition2].reset_index()
+
+meta5 = pd.DataFrame({'sid':meta_cond.sid ,'centre_lat':meta_cond.centre_lat, 'centre_lon':meta_cond.centre_lon,'date':find_dates(meta_cond,cal,scenario)})
 path = f'/user/home/al18709/work/event_sets/wgan_{model}_{scenario}/'
 if os.path.exists(path):
 	print(f'{path} exists!')
 else:
 	os.makedirs(path)
 mode = 'chips'
-save_event_set(meta4,rain_cond,path,mode,ens=False)
+# save_event_set(meta5,rain_cond,path,mode,scenario,ens=False)
 
 print('event set saved',path)
 
