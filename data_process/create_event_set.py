@@ -367,11 +367,12 @@ print('chips')
 # ipsl6 calendar is not standard
 # canesm calendar is not standard
 # https://loca.ucsd.edu/loca-calendar/
-model = 'ukmo'
+# ukmo, mri6, ecearth6, miroc6,cnrm6,canesm,ipsl6
+model = 'mpi6'
 cal = 'standard'
 # cal = 'proleptic_gregorian'
 print(model)
-scenario = 'ssp585'
+scenario = 'ssp245'
 if scenario == 'hist':
 	yr1 = 2000
 	yr2 = 2014
@@ -402,7 +403,7 @@ if os.path.exists(path):
 else:
 	os.makedirs(path)
 mode = 'chips'
-# save_event_set(meta5,rain_cond,path,mode,scenario,ens=False)
+save_event_set(meta5,rain_cond,path,mode,scenario,ens=False)
 
 print('event set saved',path)
 

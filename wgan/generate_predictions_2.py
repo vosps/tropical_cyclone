@@ -122,7 +122,7 @@ def generate_predictions(*,
             # Extract the two groups
 			model_ = input_string[:first_underscore_index]
 			scenario = input_string[first_underscore_index + 1:second_underscore_index]
-		num_images,_,_,_ = np.float32(np.load(f'/user/home/al18709/work/ke_track_rain/lr/{model_}_{scenario}_pred.npy')).shape 
+		num_images,_,_,_ = np.float32(np.load(f'/user/home/al18709/work/ke_track_rain/lr/{model_}_{scenario}_qm.npy')).shape 
 		# num_images,_,_,_ = np.float32(np.load(f'/user/home/al18709/work/ke_track_rain/lr/{model_}_{scenario}_pred.npy'))[:40000,:,:,:].shape 
 		
 	else:
