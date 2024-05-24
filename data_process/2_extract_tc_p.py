@@ -101,9 +101,18 @@ def process_apply_mswep(x):
 	# define variables
 	result = 1
 	filepath = x.loc['filepath_mswep']
+	print('filepath',filepath)
+	print('test',filepath[60:62])
 
 	# remove filepaths which relate to timestamps we don't have in MSWEP
-	if filepath[65:67] not in ['00','03','06','09','12','15','18','21']:
+	# if filepath[65:67] not in ['00','03','06','09','12','15','18','21']:
+	# 	print('test',filepath[65:67])
+	# 	result = 0
+	# remove filepaths which relate to timestamps we don't have in MSWEP
+	if filepath[60:62] not in ['00','03','06','09','12','15','18','21']:
+		print('test',filepath[60:62])
+		# print(filepath[65])
+		print(filepath)
 		result = 0
 
 	if result == 1:
@@ -266,7 +275,8 @@ def process_apply_topography(x):
 	# print(da)
 	if cat not in [1,2,3,4,5]:
 		cat = 0
-	
+	if 'NOT_NAMED' in str(name):
+		name = 'NOTNAMED'
 	da.to_netcdf('/user/work/al18709/tropical_cyclones/topography/' + str(name) + '_' + str(sid) + '_hour-' + str(time) + '_idx-' + str(i) + '_cat-' + str(int(cat)) + '_basin-' + str(basin) + '_centrelat-' + str(centre_lat) + '_centrelon-' + str(centre_lon) + '.nc')
 	# print('%s saved!' % filepath)
 
@@ -395,6 +405,7 @@ def process_apply_variable(x):
 	
 	result = 1
 	filepath = x.loc['filepath_var']
+	print('processing filepath: ',filepath)
 
 	# remove filepaths which relate to timestamps we don't have in ERA5
 	print('the hour is: ',str(x.loc['hour']))
@@ -403,8 +414,9 @@ def process_apply_variable(x):
 		result = 0
 
 	if result == 1:
-		print(filepath)
+		print('filepath is: ',filepath)
 		if glob.glob(filepath) == []:
+			print('no filename?')
 			with open('logs/error_filepaths.txt', 'w') as f:
 					f.write(filepath)
 					f.write('\n')
@@ -490,6 +502,7 @@ def process_apply_variable(x):
 				data = d.sel(time=tc_time).variables[variable][lat_lower_bound:lat_upper_bound,lon_lower_bound:lon_upper_bound]
 				lat = lat[lat_lower_bound:lat_upper_bound]
 				lon = lon[lon_lower_bound:lon_upper_bound]
+				print('data shape',data.shape)
 
 				if data.shape != (10,10): #TODO: check this doesn't mess with orientation later
 					print('wrong data shape')
@@ -520,9 +533,13 @@ def process_apply_variable(x):
 					cat = 0
 				if centre_lon > 180:
 					centre_lon = centre_lon - 360
-				print('saving new era5 file...')
+				print('saving new file...')
+				if 'NOT_NAMED' in str(name):
+					name = 'NOTNAMED'
 				da.to_netcdf('/user/work/al18709/tropical_cyclones/var/' + str(name) + '_' + str(sid) + '_hour-' + str(time) + '_idx-' + str(i) + '_cat-' + str(int(cat)) + '_basin-' + str(basin) + '_centrelat-' + str(centre_lat) + '_centrelon-' + str(centre_lon) + '.nc')
-				print('%s saved!' % filepath)
+				# print('%s saved!' % filepath)
+
+				print('/user/work/al18709/tropical_cyclones/var/' + str(name) + '_' + str(sid) + '_hour-' + str(time) + '_idx-' + str(i) + '_cat-' + str(int(cat)) + '_basin-' + str(basin) + '_centrelat-' + str(centre_lat) + '_centrelon-' + str(centre_lon) + '.nc' + ' saved!')
 	else:
 		print('%s not saved!' % filepath)
 
@@ -574,6 +591,7 @@ def process_variable(df):
 
 def process_topography(df):
 	print('doing process...')
+	print('df is: ', df)
 	res = df.apply(process_apply_topography,axis=1)
 	return res
 
@@ -589,7 +607,7 @@ if __name__ == '__main__':
 	# dataset = 'mswep' # or imerg
 	# dataset = 'imerg'
 	# dataset = 'era5'
-	df = pd.read_csv('/user/work/al18709/ibtracks/tc_files.csv')
+	df = pd.read_csv('/user/work/al18709/ibtracks/tc_files_tcs_and_storms.csv')
 	# df = pd.read_csv('/user/work/al18709/ibtracks/tc_files_all.csv')
 	df_split = np.array_split(df, 64)
 	p = Pool(processes=64)

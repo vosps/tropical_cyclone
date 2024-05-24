@@ -101,7 +101,10 @@ def generate_predictions(*,
             # Extract the two groups
 			model_ = input_string[:first_underscore_index]
 			scenario = input_string[first_underscore_index + 1:second_underscore_index]
-		num_images,_,_,_ = np.float32(np.expand_dims(np.expand_dims(np.load(f'/user/home/al18709/work/ke_track_inputs/{model_}_{scenario}_tracks.npy'),axis=1),axis=1)).shape      
+		if model_ == 'mswep':
+			num_images,_,_,_ = np.float32(np.expand_dims(np.expand_dims(np.load(f'/user/work/al18709/tc_data_flipped/KE_tracks/{model_}_{scenario}_qm.npy'),axis=1),axis=1)).shape
+		else:
+			num_images,_,_,_ = np.float32(np.expand_dims(np.expand_dims(np.load(f'/user/home/al18709/work/ke_track_inputs/{model_}_{scenario}_tracks.npy'),axis=1),axis=1)).shape      
 	else:
 		# num_images,_,_ = np.load('/user/work/al18709/tc_data_flipped/%s_X.npy' % data_mode).shape
 		num_images,_,_,_ = np.load('/user/work/al18709/tc_data_flipped/%s_combined_X.npy' % data_mode).shape
@@ -129,6 +132,10 @@ def generate_predictions(*,
 											downsample=False,
 											mode = data_mode,
 											storm=storm)
+		print('shapes are:::')
+		print(x.shape)
+		print(y.shape)
+		print(z.shape)
 
 		
 	# load model weights from main file
@@ -245,6 +252,7 @@ def generate_predictions(*,
 				# second_image_i = (j_+1)*int(num_images/number_of_loaded_batches)
 				print(first_image_i)
 				# print('number in loaded batch',second_image_i - first_image_i)
+				print('z shape is:',z.shape)
 				x_ = x[first_image_i:,:,:,:]
 				z_ = z[first_image_i:,:,:,:]
 				y_ = y[first_image_i:,:,:,:]
@@ -357,6 +365,8 @@ def generate_predictions(*,
 
 		print('img pred shape: ',img_pred.shape)
 		print('img real shape: ',img_real.shape)
+		# if model_ == 'mswep':
+		# 	seq_real = img_real
 		print('seq_real.shape: ',seq_real.shape)
 		print('assigning images ',i*batch_size,' to ',i*batch_size + batch_size,'...')
 		if i == nbatches:
@@ -438,10 +448,12 @@ def generate_predictions(*,
 		pred = 10**pred - 1
 		# np.save(f'/user/home/al18709/work/ke_track_rain/lr/{model_}_{scenario}_real.npy',seq_real)
 		# np.save(f'/user/home/al18709/work/ke_track_rain/lr/{model_}_{scenario}_pred.npy',pred)
-		np.save(f'/user/home/al18709/work/ke_track_rain/lr/{model_}_{scenario}_qm.npy',pred)
+		# np.save(f'/user/home/al18709/work/ke_track_rain/lr/{model_}_{scenario}_qm.npy',pred)
+		np.save(f'/user/home/al18709/work/ke_track_rain/lr/{model_}_{scenario}_all_tcs.npy',pred)
 		# np.save(f'/user/home/al18709/work/ke_track_rain/lr/{model_}_{scenario}_input.npy',low_res_inputs)
 		# print(f'/user/home/al18709/work/ke_track_rain/lr/{model_}_{scenario}_pred.npy')
-		print(f'/user/home/al18709/work/ke_track_rain/lr/{model_}_{scenario}_qm.npy')
+		print(f'/user/home/al18709/work/ke_track_rain/lr/{model_}_{scenario}_all_tcs.npy')
+		print(pred)
 	else:
 
 		seq_real = 10**seq_real - 1

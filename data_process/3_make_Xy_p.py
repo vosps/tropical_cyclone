@@ -109,7 +109,7 @@ def save_Xy(grouped_tcs):
 		# loop though tc filepaths
 		for i,filepath in enumerate(tc):
 			print(i,end='\r')
-			# print('filepath = ', filepath)
+			print('filepath = ', filepath)
 			ds = xr.open_dataset(filepath)
 			if dataset == 'era5':
 				idx = re.match(regex,tc[i]).groups()[1]

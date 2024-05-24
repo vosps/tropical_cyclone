@@ -1,7 +1,7 @@
 GENERAL:
     mode: "GAN" # choices 'det' 'GAN' 'VAEGAN'
     problem_type: "normal" # choices 'normal' 'superresolution'
-    data_mode: 'canesm_ssp245_event_set' #'canesm_hist_event_set' #'storm_era5_corrected' # validation, test, train, extreme_validation, extreme_test, storm, era5, era5_corrected, storm_era5, storm_era5_corrected
+    data_mode: 'mswep_obs_event_set' #'canesm_hist_event_set' #'storm_era5_corrected' # validation, test, train, extreme_validation, extreme_test, storm, era5, era5_corrected, storm_era5, storm_era5_corrected
     storm: '2019236N10314'
     
 MODEL:

@@ -122,7 +122,10 @@ def generate_predictions(*,
             # Extract the two groups
 			model_ = input_string[:first_underscore_index]
 			scenario = input_string[first_underscore_index + 1:second_underscore_index]
-		num_images,_,_,_ = np.float32(np.load(f'/user/home/al18709/work/ke_track_rain/lr/{model_}_{scenario}_qm.npy')).shape 
+		if model_ == 'mswep':
+			num_images,_,_,_ = np.float32(np.load(f'/user/home/al18709/work/ke_track_rain/lr/{model_}_{scenario}_all_tcs.npy')).shape 
+		else:
+			num_images,_,_,_ = np.float32(np.load(f'/user/home/al18709/work/ke_track_rain/lr/{model_}_{scenario}_qm.npy')).shape 
 		# num_images,_,_,_ = np.float32(np.load(f'/user/home/al18709/work/ke_track_rain/lr/{model_}_{scenario}_pred.npy'))[:40000,:,:,:].shape 
 		
 	else:
@@ -480,10 +483,16 @@ def generate_predictions(*,
 			else:
 				meta = pd.read_csv('/user/work/al18709/tc_data_mswep/valid_meta.csv')
 		elif 'event_set' in data_mode:
-			meta = pd.read_csv(f'/user/home/al18709/work/ke_track_inputs/{model_}_{scenario}_tracks.csv')
-			meta['centre_lat'] = meta.lat
-			meta['centre_lon'] = meta.lon
-			print(meta.columns)
+			if 'mswep' in data_mode:
+				meta = pd.read_csv(f'/user/work/al18709/tc_data_flipped/KE_tracks/tcs_and_storms_meta2.csv')
+				meta['centre_lat'] = meta.centre_lat
+				meta['centre_lon'] = meta.centre_lon
+				print(meta.columns)
+			else:
+				meta = pd.read_csv(f'/user/home/al18709/work/ke_track_inputs/{model_}_{scenario}_tracks.csv')
+				meta['centre_lat'] = meta.lat
+				meta['centre_lon'] = meta.lon
+				print(meta.columns)
 		else:
 			meta = pd.read_csv('/user/work/al18709/tc_data_mswep/%s_meta.csv' % data_mode)
 			

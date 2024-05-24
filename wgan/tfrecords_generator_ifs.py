@@ -267,13 +267,21 @@ def create_fixed_dataset(year=None,mode='validation',batch_size=16,
             scenario = input_string[first_underscore_index + 1:second_underscore_index]
 
         # x = np.float32(np.expand_dims(np.load(f'/user/home/al18709/work/ke_track_rain/lr/{model}_{scenario}_pred.npy')[:,:,:,0],axis=3))
-        x = np.float32(np.expand_dims(np.load(f'/user/home/al18709/work/ke_track_rain/lr/{model}_{scenario}_qm.npy')[:,:,:,0],axis=3))
-        y = np.float32(np.expand_dims(np.load(f'/user/home/al18709/work/ke_track_inputs/{model}_{scenario}_topography.npy')[:,:,:],axis=3))
-        # y = np.float32(np.load(f'/user/home/al18709/work/ke_track_inputs/{model}_{scenario}_topography.npy'))
-        z = np.float32(np.expand_dims(np.load(f'/user/home/al18709/work/ke_track_inputs/{model}_{scenario}_topography.npy')[:,:,:],axis=3))
-        print(x.shape)
-        print(y.shape)
-        print(z.shape)
+        if model == 'mswep':
+            x = np.float32(np.expand_dims(np.load(f'/user/home/al18709/work/ke_track_rain/lr/{model}_{scenario}_all_tcs.npy')[:,:,:,0],axis=3))
+            y = np.float32(np.expand_dims(np.load(f'/user/work/al18709/tc_data_flipped/KE_tracks/tcs_and_storms_t.npy'),axis=3))
+            z = np.float32(np.expand_dims(np.load(f'/user/work/al18709/tc_data_flipped/KE_tracks/tcs_and_storms_t.npy'),axis=3))
+            print(x.shape)
+            print(y.shape)
+            print(z.shape)
+        else:
+            x = np.float32(np.expand_dims(np.load(f'/user/home/al18709/work/ke_track_rain/lr/{model}_{scenario}_qm.npy')[:,:,:,0],axis=3))
+            y = np.float32(np.expand_dims(np.load(f'/user/home/al18709/work/ke_track_inputs/{model}_{scenario}_topography.npy')[:,:,:],axis=3))
+            # y = np.float32(np.load(f'/user/home/al18709/work/ke_track_inputs/{model}_{scenario}_topography.npy'))
+            z = np.float32(np.expand_dims(np.load(f'/user/home/al18709/work/ke_track_inputs/{model}_{scenario}_topography.npy')[:,:,:],axis=3))
+            print(x.shape)
+            print(y.shape)
+            print(z.shape)
     else:
         if mode == 'validation':
             dataset = 'valid'

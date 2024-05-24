@@ -24,7 +24,7 @@ import numpy as np
 import glob
 import pandas as pd
 from itertools import groupby
-import re
+import re,os
 from numpy.random import default_rng
 import seaborn as sns
 import sys
@@ -64,7 +64,7 @@ def create_set(tcs,dataset='imerg',resolution=100):
 	set_y = np.zeros((1,100,100))
 	if resolution == 40:
 		set_X = np.zeros((1,40,40))
-	elif dataset == 'mswep'or dataset == 'var' or dataset == 't':
+	elif dataset == 'mswep' or dataset == 'var' or dataset == 't':
 		set_X = np.zeros((1,10,10))
 	elif (dataset == 'era5') and (resolution == 40):
 		set_X = np.zeros((1,40,40))
@@ -76,8 +76,10 @@ def create_set(tcs,dataset='imerg',resolution=100):
 
 	# loop through each tc
 	for i,tc in enumerate(tcs):
-		if (glob.glob('/user/work/al18709/tc_Xy/y_%s.npy' % tc) == []) and (dataset != 'var'): # TODO: this directory doesn't have much in it
-			continue
+		print('tc count is: ',i)
+		# print('tc is ', tc)
+		# if (glob.glob('/user/work/al18709/tc_Xy/y_%s.npy' % tc) == []) and ((dataset != 'var') or (dataset != 't')): # TODO: this directory doesn't have much in it
+		# 	continue
 		if resolution == 40:
 			y = np.load('/user/work/al18709/tc_Xy_40/y_%s.npy' % tc,allow_pickle = True)
 			X = np.load('/user/work/al18709/tc_Xy_40/X_%s.npy' % tc,allow_pickle = True)
@@ -91,10 +93,14 @@ def create_set(tcs,dataset='imerg',resolution=100):
 			X = np.load('/user/work/al18709/tc_Xy_%s_10/X_%s.npy' % (dataset,tc),allow_pickle = True)
 			meta = pd.read_csv('/user/work/al18709/tc_Xy/meta_%s.csv' % tc)
 		elif dataset == 'var':
+			print('number of files in critical directory: ', len(os.listdir('/user/work/al18709/tc_Xy_var')))
 			X = np.load('/user/work/al18709/tc_Xy_%s/X_%s.npy' % (dataset,tc),allow_pickle = True)
+			print('/user/work/al18709/tc_Xy_%s/X_%s.npy' % (dataset,tc))
+			print('storm shape is: ',X.shape)
 			y = set_y = np.zeros((X.shape[0],100,100))
 			meta = pd.read_csv('/user/work/al18709/tc_Xy_var/meta_%s.csv' % tc)
 		elif dataset == 't':
+			print('tc is: ',tc)
 			y = np.load('/user/work/al18709/tc_Xy_topography/y_%s.npy' % tc,allow_pickle = True)
 			print('sum y is: ',np.sum(y))
 			X = np.zeros((y.shape[0],10,10))
@@ -102,7 +108,7 @@ def create_set(tcs,dataset='imerg',resolution=100):
 		else:
 			y = np.load('/user/work/al18709/tc_Xy_%s_40/y_%s.npy' % (dataset,tc),allow_pickle = True)
 			X = np.load('/user/work/al18709/tc_Xy_%s_40/X_%s.npy' % (dataset,tc),allow_pickle = True)
-		meta2 = pd.read_csv('/user/work/al18709/tc_Xy/meta_%s.csv' % tc) # TODO: make sure this is up to date
+		# meta2 = pd.read_csv('/user/work/al18709/tc_Xy/meta_%s.csv' % tc) # TODO: make sure this is up to date
 		# print(meta)
 		# print(meta2)
 		print(set_X.shape)
@@ -112,7 +118,10 @@ def create_set(tcs,dataset='imerg',resolution=100):
 		set_X = np.vstack((set_X,X))
 		set_y = np.vstack((set_y,y))
 		set_meta = set_meta.append(meta)
-	# print(set_meta)
+	print('set meta shape',set_meta.shape)
+	print('set meta shape',set_meta.sid.drop_duplicates())
+	print(set_X.shape)
+	print(set_y.shape)
 	set_meta = set_meta.reset_index(drop=True)
 	return set_X[1:,:,:],set_y[1:,:,:],set_meta
 
@@ -136,35 +145,61 @@ resolution = 100
 # resolution = 40
 
 # generate list of sids and all their timesteps?
-if dataset not in ['var','t']:
+# if dataset not in ['var','t']:
+# 	tc_dir = '/user/work/al18709/tropical_cyclones/%s/*.nc' % dataset
+# else:
+# 	tc_dir = '/user/work/al18709/tropical_cyclones/mswep/*.nc'
+if dataset in ['var']:
 	tc_dir = '/user/work/al18709/tropical_cyclones/%s/*.nc' % dataset
+elif dataset in ['t']:
+	tc_dir = '/user/work/al18709/tropical_cyclones/topography/*.nc'
 else:
 	tc_dir = '/user/work/al18709/tropical_cyclones/mswep/*.nc'
 filepaths = glob.glob(tc_dir)
+
+if dataset == 'var':
+	filepaths2 = []
+	for f in filepaths:
+		f = f[41:]
+		filepaths2.append(f)
+	filepaths = filepaths2
 print('dataset is: ',dataset)
 print('number of filepaths = ',len(filepaths))
 
 # group by tc sid number
-if dataset == 'mswep' or dataset == 'var' or dataset == 't':
-	regex = r"/user/work/al18709/tropical_cyclones/mswep/.+?_(.+?)_.*?.nc"
+if dataset == 'mswep' or dataset == 'var':
+	# have copied mswep directory to mswep_copy as a backup
+	# regex = r"/user/work/al18709/tropical_cyclones/mswep/.+?_(.+?)_.*?.nc"
+	regex = r".+?_(.+?)_.*?.nc"
+elif dataset == 't':
+	# have copied mswep directory to mswep_copy as a backup
+	# regex = r"/user/work/al18709/tropical_cyclones/mswep/.+?_(.+?)_.*?.nc"
+	regex = r"/user/work/al18709/tropical_cyclones/topography/.+?_(.+?)_.*?.nc"
 elif dataset == 'mswep_extend':
 	regex = r"/user/work/al18709/tropical_cyclones/mswep_extend/.+?_(.+?)_.*?.nc"
 elif dataset == 'era5':
 	regex = r"/user/work/al18709/tropical_cyclones/era5/.+?_(.+?)_.*?.nc"
 
-keyf = lambda text: (re.findall(regex, text)+ [text])[0]
+keyf = lambda text: (re.findall(regex, text)+ [text])[0] #changed 0 to 1
 sids = [gr for gr, items in groupby(sorted(filepaths), key=keyf)]
+
+
+
+print(sids)
 print('number of sids = ',len(sids))
 # pick random 
-print('sids are: ',sids)
+# print('sids are: ',sids)
 # find most extreme tcs
 tcs = []
 max_rains = []
 
 # loop through each tc
 for tc in sids:
-	if dataset == 'mswep' or dataset == 'var' or dataset == 't':
+
+	if dataset == 'mswep':
 		fp = '/user/work/al18709/tc_Xy/X_%s.npy' % tc
+	elif dataset == 'var' or dataset == 't':
+		fp = '/user/work/al18709/tc_Xy_var/X_%s.npy' % tc
 	elif dataset == 'mswep_extend':
 		fp = '/user/work/al18709/tc_Xy_mswep_extend/X_%s.npy' % tc
 	elif dataset == 'era5':
@@ -174,17 +209,33 @@ for tc in sids:
 		data = np.load(fp,allow_pickle=True)
 		# isolate extreme based on mswep
 		max_rain = np.max(data)
-	
+		# tc = 
 		tcs.append(tc)
 		max_rains.append(max_rain)
 	
 	else:
 		continue
 
-	
+
 
 print(len(max_rains))
 print('len sids = ',len(sids))
+print('len of tcs: ',len(tcs))
+tcs = sorted(tcs)
+
+split = False
+if split == False:
+	print('tcs sorted')
+	tcs = np.sort(tcs)
+	print(tcs)
+	all_X,all_y,all_meta = create_set(tcs,dataset=dataset,resolution=resolution)
+	np.save('/user/work/al18709/tc_data_%s/%s_all_X.npy' % (dataset,variable),all_X)
+	all_meta.to_csv('/user/work/al18709/tc_data_%s/%s_all_meta.csv' % (dataset,variable),index=False)
+	print('saving all X and meta')
+	print(all_X.shape)
+	print(all_meta)
+	exit()
+
 
 
 max_idx = list(np.argpartition(max_rains, -100)[-100:])
@@ -210,6 +261,7 @@ test_tcs = random.sample(tcs,n_20)
 train_tcs = sorted(list(set(tcs).difference(set(test_tcs))))
 
 # check the numbers
+print('check the numbers')
 print(len(valid_tcs))
 print(len(test_tcs))
 print(len(train_tcs))
@@ -225,6 +277,8 @@ print(len(extreme_tcs))
 
 
 # print shapes
+print('valid tcs')
+print(valid_tcs)
 print(len(valid_tcs))
 print(len(train_tcs))
 print(len(test_tcs))
@@ -238,6 +292,23 @@ train_X,train_y,train_meta = create_set(train_tcs,dataset=dataset,resolution=res
 test_X,test_y,test_meta = create_set(test_tcs,dataset=dataset,resolution=resolution)
 extreme_test_X,extreme_test_y,extreme_test_meta = create_set(extreme_tcs_test,dataset=dataset,resolution=resolution)
 extreme_valid_X,extreme_valid_y,extreme_valid_meta = create_set(extreme_tcs_valid,dataset=dataset,resolution=resolution)
+
+print('shapes are')
+print(train_X.shape)
+print(test_X.shape)
+print(valid_X.shape)
+print(extreme_test_X.shape)
+print(extreme_valid_X.shape)
+
+print('meta are')
+print(train_meta.sid.drop_duplicates())
+print(test_meta.sid.drop_duplicates())
+print(valid_meta.sid.drop_duplicates())
+print(extreme_test_meta.sid.drop_duplicates())
+print(extreme_valid_meta.sid.drop_duplicates())
+
+# fine up to here
+
 
 def compare(df1,df2,col='Exist'):
 		""" add column to df1 and if row exists in df2 then put true"""
@@ -298,12 +369,12 @@ elif dataset == 'var':
 elif dataset == 't':
 	mswep = False
 
-
-valid_X,valid_y,valid_meta = remove_mismatch(valid_X,valid_y,valid_meta,'valid',mswep=mswep)
-train_X,train_y,train_meta = remove_mismatch(train_X,train_y,train_meta,'train',mswep=mswep)
-test_X,test_y,test_meta = remove_mismatch(test_X,test_y,test_meta,'test',mswep=mswep)
-extreme_test_X,extreme_test_y,extreme_test_meta = remove_mismatch(extreme_test_X,extreme_test_y,extreme_test_meta,'extreme_test',mswep=mswep)
-extreme_valid_X,extreme_valid_X,extreme_valid_meta = remove_mismatch(extreme_valid_X,extreme_valid_y,extreme_valid_meta,'extreme_valid',mswep=mswep)
+# comented this out to fix error with storm numbers
+# valid_X,valid_y,valid_meta = remove_mismatch(valid_X,valid_y,valid_meta,'valid',mswep=mswep)
+# train_X,train_y,train_meta = remove_mismatch(train_X,train_y,train_meta,'train',mswep=mswep)
+# test_X,test_y,test_meta = remove_mismatch(test_X,test_y,test_meta,'test',mswep=mswep)
+# extreme_test_X,extreme_test_y,extreme_test_meta = remove_mismatch(extreme_test_X,extreme_test_y,extreme_test_meta,'extreme_test',mswep=mswep)
+# extreme_valid_X,extreme_valid_X,extreme_valid_meta = remove_mismatch(extreme_valid_X,extreme_valid_y,extreme_valid_meta,'extreme_valid',mswep=mswep)
 
 
 # print shapes
@@ -318,6 +389,13 @@ print(extreme_test_X.shape)
 print(extreme_test_y.shape)
 print(extreme_valid_X.shape)
 print(extreme_valid_y.shape)
+
+print('meta 2 are')
+print(len(train_meta.sid.drop_duplicates()))
+print(len(test_meta.sid.drop_duplicates()))
+print(len(valid_meta.sid.drop_duplicates()))
+print(len(extreme_test_meta.sid.drop_duplicates()))
+print(len(extreme_valid_meta.sid.drop_duplicates()))
 
 
 # exit()
@@ -381,6 +459,8 @@ else:
 	np.save('/user/work/al18709/tc_data_%s/extreme_valid_X.npy' % dataset,extreme_valid_X)
 	np.save('/user/work/al18709/tc_data_%s/extreme_valid_y.npy' % dataset,extreme_valid_y)
 	extreme_valid_meta.to_csv('/user/work/al18709/tc_data_%s/extreme_valid_meta.csv' % dataset,index=False)
+
+# copied original to tc_data_mswep_copy2 and tc_data_mswep_flipped_copy as backup
 
 
 

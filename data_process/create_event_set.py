@@ -472,7 +472,7 @@ def process_file(args):
 # canesm calendar is not standard
 # https://loca.ucsd.edu/loca-calendar/
 # ukmo, mri6, ecearth6, miroc6,cnrm6,canesm,ipsl6,mpi6
-model = 'cnrm6'
+model = 'mpi6'
 cal = 'standard'
 # cal = 'proleptic_gregorian'
 print(model)
@@ -571,7 +571,7 @@ if __name__ == '__main__':
 	pool.join()
 print('results pooled!')
 # exit()
-exit()
+# exit()
 # go through rain arrays and calculate mean
 # import gc
 # gc.collect()
